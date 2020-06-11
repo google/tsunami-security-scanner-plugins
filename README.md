@@ -34,5 +34,5 @@ limitations under the License.
 
 ## Disclaimer
 
-Tsunami Security Scanner and its plugins are not an officially supported Google
-product.
+Tsunami Security Scanner and its plugins are not officially supported Google
+products.
