@@ -4,6 +4,10 @@ This directory contains all Tsunami plugins published by Google.
 
 ## Currently released plugins
 
+## Port Scanner
+
+*   [Nmap Port Scanner](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/portscan/nmap)
+
 ### Detectors
 
 *   [WordPress Exposed Installation Page Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/wordpress)
