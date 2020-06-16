@@ -1,6 +1,6 @@
 # Exposed Jupyter Notebook Detector
 
-This detector checks whether a unauthenticated Jupyter Notebook is exposed.
+This detector checks whether an unauthenticated Jupyter Notebook is exposed.
 Jupyter allows by design to run arbitrary code on the host machine. Having it
 exposed puts the hosting VM at risk of RCE.
 
