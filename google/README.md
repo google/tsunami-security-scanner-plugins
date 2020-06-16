@@ -4,7 +4,7 @@ This directory contains all Tsunami plugins published by Google.
 
 ## Currently released plugins
 
-## Port Scanner
+### Port Scanner
 
 *   [Nmap Port Scanner](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/portscan/nmap)
 
@@ -15,3 +15,13 @@ This directory contains all Tsunami plugins published by Google.
 *   [Exposed Jupyter Notebook Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/jupyter)
 *   [Exposed Jenkins UI Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/jenkins)
 *   [Ncrack Weak Credential Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/credentials/ncrack)
+
+## Build all plugins
+
+Use the following command to build all Google released plugins:
+
+```shell
+./build_all.sh
+```
+
+All generated `jar` files are copied into `build/plugins` folder.
