@@ -21,7 +21,7 @@ mkdir -p "${GENERATED_PLUGINS_PATH}"
 
 # For each Google plugin, build the jar file and copy it to build/plugins
 # folder.
-for plugin_dir in $(find "${SCRIPT_PATH}" -name 'gradlew' -print0 | xargs -0 -n1 dirname | sort --unique") ; do
+for plugin_dir in $(find "${SCRIPT_PATH}" -name 'gradlew' -print0 | xargs -0 -n1 dirname | sort --unique) ; do
   plugin_name="${plugin_dir##*"${SCRIPT_PATH}/"}"
   printf "\nBuilding ${plugin_name} ...\n"
 
