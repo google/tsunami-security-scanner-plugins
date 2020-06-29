@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import javax.inject.Inject;
 import javax.xml.bind.JAXBException;
 
 /**
@@ -186,8 +187,6 @@ public class NmapClient {
     }
   }
 
-  private static final String DEFAULT_NMAP_BINARY_PATH = "/usr/bin/nmap";
-
   private final String nmapBinaryPath;
   private final List<NetworkEndpoint> networkEndpoints = new ArrayList<>();
   private final List<HostDiscoveryTechnique> hostDiscoveryTechniques = new ArrayList<>();
@@ -206,9 +205,10 @@ public class NmapClient {
   private Optional<Integer> versionDetectionIntensity = Optional.empty();
   private Optional<TimingTemplate> timing = Optional.empty();
 
-  /** Constructor using nmap default path. */
-  public NmapClient() throws IOException {
-    this(DEFAULT_NMAP_BINARY_PATH, File.createTempFile("nmap", ".report"));
+  /** Constructor using runtime nmap path. */
+  @Inject
+  public NmapClient(@NmapBinaryPath String nmapBinaryPath) throws IOException {
+    this(nmapBinaryPath, File.createTempFile("nmap", ".report"));
   }
 
   /**

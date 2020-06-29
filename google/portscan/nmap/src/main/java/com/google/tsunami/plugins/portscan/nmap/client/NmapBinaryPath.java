@@ -13,15 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.portscan.nmap;
+package com.google.tsunami.plugins.portscan.nmap.client;
 
-import com.google.tsunami.common.config.annotations.ConfigProperties;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
 
-@ConfigProperties("plugins.google.port_scanner.nmap")
-final class NmapPortScannerConfigs {
-  // Path to the nmap binary.
-  String nmapBinaryPath;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  // Ports and port ranges to scan by nmap.
-  String portTargets;
-}
+/** Annotation for the nmap binary path. */
+@Qualifier
+@Retention(RetentionPolicy.RUNTIME)
+@Target({PARAMETER, METHOD, FIELD})
+public @interface NmapBinaryPath {}

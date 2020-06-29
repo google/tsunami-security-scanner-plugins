@@ -25,6 +25,7 @@ Config properties prefix: `plugins.google.port_scanner.nmap`.
 
 Config values:
 
+*   `nmap_binary_path`: specifies the location of the `nmap` binary.
 *   `port_targets`: specifies which ports the plugin should scan and overrides
     the default. Expected format is a comma separated list of individual ports
     and port ranges, e.g. `80,8080,15000-16000`.
@@ -36,5 +37,6 @@ plugins:
   google:
     port_scanner:
       nmap:
+        nmap_binary_path: "/usr/local/bin/nmap"
         port_targets: "80,8080,15000-16000"
 ```
