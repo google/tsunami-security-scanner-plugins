@@ -19,3 +19,22 @@ Using `gradlew`:
 ```
 
 Tsunami identifiable jar file is located at `build/libs` directory.
+
+## Exported config values
+
+Config properties prefix: `plugins.google.detectors.credentials.ncrack`.
+
+Config values:
+
+*   `ncrack_binary_path`: specifies the location of the `ncrack` binary path.
+
+Example YAML config:
+
+```yaml
+plugins:
+  google:
+    detectors:
+      credentials:
+        ncrack:
+            ncrack_binary_path: "/usr/local/bin/ncrack"
+```
