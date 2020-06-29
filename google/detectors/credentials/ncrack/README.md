@@ -36,5 +36,5 @@ plugins:
     detectors:
       credentials:
         ncrack:
-            ncrack_binary_path: "/usr/local/bin/ncrack"
+          ncrack_binary_path: "/usr/local/bin/ncrack"
 ```
