@@ -59,15 +59,7 @@ public class XMLParserTest {
 
     Nmaprun result = XMLParser.parse(resource);
 
-    assertThat(
-            result
-                .getTargetOrTaskbeginOrTaskprogressOrTaskendOrPrescriptOrPostscriptOrHostOrOutput())
-        .hasSize(1);
-    assertThat(
-            result
-                .getTargetOrTaskbeginOrTaskprogressOrTaskendOrPrescriptOrPostscriptOrHostOrOutput()
-                .get(0))
-        .isInstanceOf(Host.class);
+    assertThat(getHost(result)).isNotNull();
   }
 
   @Test
@@ -76,11 +68,7 @@ public class XMLParserTest {
 
     Nmaprun result = XMLParser.parse(resource);
 
-    Host host =
-        (Host)
-            result
-                .getTargetOrTaskbeginOrTaskprogressOrTaskendOrPrescriptOrPostscriptOrHostOrOutput()
-                .get(0);
+    Host host = getHost(result);
     List<Status> statuses =
         host
             .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
@@ -98,11 +86,7 @@ public class XMLParserTest {
 
     Nmaprun result = XMLParser.parse(resource);
 
-    Host host =
-        (Host)
-            result
-                .getTargetOrTaskbeginOrTaskprogressOrTaskendOrPrescriptOrPostscriptOrHostOrOutput()
-                .get(0);
+    Host host = getHost(result);
     List<Address> addresses =
         host
             .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
@@ -123,11 +107,7 @@ public class XMLParserTest {
 
     Nmaprun result = XMLParser.parse(resource);
 
-    Host host =
-        (Host)
-            result
-                .getTargetOrTaskbeginOrTaskprogressOrTaskendOrPrescriptOrPostscriptOrHostOrOutput()
-                .get(0);
+    Host host = getHost(result);
     List<Ports> ports =
         host
             .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
@@ -147,11 +127,7 @@ public class XMLParserTest {
 
     Nmaprun result = XMLParser.parse(resource);
 
-    Host host =
-        (Host)
-            result
-                .getTargetOrTaskbeginOrTaskprogressOrTaskendOrPrescriptOrPostscriptOrHostOrOutput()
-                .get(0);
+    Host host = getHost(result);
     List<Ports> ports =
         host
             .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
@@ -170,11 +146,7 @@ public class XMLParserTest {
 
     Nmaprun result = XMLParser.parse(resource);
 
-    Host host =
-        (Host)
-            result
-                .getTargetOrTaskbeginOrTaskprogressOrTaskendOrPrescriptOrPostscriptOrHostOrOutput()
-                .get(0);
+    Host host = getHost(result);
     List<Ports> ports =
         host
             .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
@@ -194,11 +166,7 @@ public class XMLParserTest {
 
     Nmaprun result = XMLParser.parse(resource);
 
-    Host host =
-        (Host)
-            result
-                .getTargetOrTaskbeginOrTaskprogressOrTaskendOrPrescriptOrPostscriptOrHostOrOutput()
-                .get(0);
+    Host host = getHost(result);
     List<Os> oses =
         host
             .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
@@ -208,5 +176,15 @@ public class XMLParserTest {
             .collect(ImmutableList.toImmutableList());
     assertThat(oses).hasSize(1);
     assertThat(oses.get(0).getOsfingerprint().get(0).getFingerprint()).contains("linux-gnu");
+  }
+
+  private static Host getHost(Nmaprun nmaprun) {
+    return nmaprun
+        .getTargetOrTaskbeginOrTaskprogressOrTaskendOrPrescriptOrPostscriptOrHostOrOutput()
+        .stream()
+        .filter(obj -> obj instanceof Host)
+        .map(obj -> (Host) obj)
+        .findFirst()
+        .orElse(null);
   }
 }

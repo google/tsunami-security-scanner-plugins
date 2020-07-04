@@ -31,10 +31,23 @@ public final class XmlAttributes {
     return new XmlAttributes(attributes);
   }
 
+  /**
+   * Look up an attribute's value by its name.
+   *
+   * @param name the name of the XML attribute.
+   * @return the value of the XML attribute, or null if attribute not found.
+   */
   public String getValue(String name) {
     return attributes.getValue(name);
   }
 
+  /**
+   * Look up an attribute's value by its name.
+   *
+   * @param name the name of the XML attribute.
+   * @param def the default value for the XML attribute, if name not found.
+   * @return the value of the XML attribute, or the default value if name not found.
+   */
   public String getValue(String name, String def) {
     String value = getValue(name);
     return value == null ? def : value;
