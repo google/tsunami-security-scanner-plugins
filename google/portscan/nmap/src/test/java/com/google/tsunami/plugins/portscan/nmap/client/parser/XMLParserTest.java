@@ -154,10 +154,10 @@ public class XMLParserTest {
             .filter(element -> element instanceof Ports)
             .map(element -> (Ports) element)
             .collect(ImmutableList.toImmutableList());
-    assertThat(ports.get(0).getPort().get(1).getScript()).hasSize(4);
-    assertThat(ports.get(0).getPort().get(1).getScript().get(0).getId())
-        .isEqualTo("fingerprint-strings");
-    assertThat(ports.get(0).getPort().get(1).getScript().get(0).getOutput()).contains("HTTP/1.0");
+    assertThat(ports.get(0).getPort().get(1).getScript()).hasSize(1);
+    assertThat(ports.get(0).getPort().get(1).getScript().get(0).getId()).isEqualTo("http-title");
+    assertThat(ports.get(0).getPort().get(1).getScript().get(0).getOutput())
+        .contains("Error 400 (Bad Request)!!1");
   }
 
   @Test
@@ -175,7 +175,7 @@ public class XMLParserTest {
             .map(element -> (Os) element)
             .collect(ImmutableList.toImmutableList());
     assertThat(oses).hasSize(1);
-    assertThat(oses.get(0).getOsfingerprint().get(0).getFingerprint()).contains("linux-gnu");
+    assertThat(oses.get(0).getOsfingerprint().get(0).getFingerprint()).isEqualTo("fingerprint");
   }
 
   private static Host getHost(Nmaprun nmaprun) {

@@ -65,142 +65,25 @@
       <port protocol="tcp" portid="443">
         <state state="open" reason="syn-ack" reason_ttl="120"/>
         <service name="https" product="sffe"
-            servicefp="SF-Port443-TCP:V=7.70%T=SSL%I=9%D=11/11%Time=5DC9610F%P=x86_64-pc-linux-gnu%r(GetRequest,ACC,&quot;HTTP/1\.0\x20404\x20Not\x20Found\r\nContent-Type:\x20text/html;\x20charset=UTF-8\r\nX-Google-GFE-Backend-Request-Info:\x20eid=D2HJXYbjLYaRdYeyi4AL\r\nX-Google-SCS-Repo:\x20static-on-bigtable/static\r\nX-Google-SCS-Row-Key:\x20/index\.html\r\nX-Content-Type-Options:\x20nosniff\r\nX-Google-Data-Version:\x20279713220\r\nDate:\x20Mon,\x2011\x20Nov\x202019\x2013:24:31\x20GMT\r\nServer:\x20sffe\r\nX-Google-Netmon-Label:\x20/bns/lg/borg/lg/bns/static-on-bigtable/staticfile\.frontend\.sffe/400\r\nContent-Length:\x201561\r\nX-Google-Security-Signals:\x20FRAMEWORK=HTTPSERVER2\r\nX-XSS-Protection:\x200\r\nX-Google-Backends:\x20/bns/lg/borg/lg/bns/static-on-bigtable/staticfile\.frontend\.sffe/400,aczrha3-v6:443\r\nX-Google-GFE-Request-Trace:\x20aczrha3-v6:443,/bns/lg/borg/lg/bns/static-on-bigtable/staticfile\.frontend\.sffe/400,aczrha3-v6:443\r\nX-Google-DOS-Service-Trace:\x20main:static-content\r\nX-Google-Service:\x20static-content-compression-transition\r\nX-Google-GFE-Response-Code-Details-Trace:\x20response_code&quot;)%r(HTTPOptions,AD1,&quot;HTTP/1\.0\x20404\x20Not\x20Found\r\nContent-Type:\x20text/html;\x20charset=UTF-8\r\nX-Google-GFE-Backend-Request-Info:\x20eid=D2HJXdL-MozRygOYz4OQBw\r\nX-Google-SCS-Repo:\x20static-on-bigtable/static\r\nX-Google-SCS-Row-Key:\x20/index\.html\r\nX-Content-Type-Options:\x20nosniff\r\nX-Google-Data-Version:\x20279713220\r\nDate:\x20Mon,\x2011\x20Nov\x202019\x2013:24:31\x20GMT\r\nServer:\x20sffe\r\nX-Google-Netmon-Label:\x20/bns/lg/borg/lg/bns/static-on-bigtable/staticfile\.frontend\.sffe/360\r\nContent-Length:\x201561\r\nX-Google-Security-Signals:\x20FRAMEWORK=HTTPSERVER2\r\nX-XSS-Protection:\x200\r\nX-Google-Backends:\x20/bns/lg/borg/lg/bns/static-on-bigtable/staticfile\.frontend\.sffe/360,aczrhd14-v6:443\r\nX-Google-GFE-Request-Trace:\x20aczrhd14-v6:443,/bns/lg/borg/lg/bns/static-on-bigtable/staticfile\.frontend\.sffe/360,aczrhd14-v6:443\r\nX-Google-DOS-Service-Trace:\x20main:static-content\r\nX-Google-Service:\x20static-content-compression-transition\r\nX-Google-GFE-Response-Code-Details-Trace:\x20response&quot;);"
-            tunnel="ssl" method="probed" conf="10"/>
-        <script id="fingerprint-strings"
-            output="&#xa;  GetRequest: &#xa;    HTTP/1.0 404 Not Found&#xa;    Content-Type: text/html; charset=UTF-8&#xa;">
-          <elem key="GetRequest">&#xa; HTTP/1.0 404 Not Found&#xa; Content-Type:
-            text/html; charset=UTF-8&#xa;
-          </elem>
-          <elem key="HTTPOptions">&#xa; HTTP/1.0 404 Not Found&#xa;
-            Content-Type: text/html; charset=UTF-8&#xa;
-          </elem>
-        </script>
-        <script id="http-server-header" output="sffe">
-          <elem>sffe</elem>
-        </script>
+            servicefp="servicefp" tunnel="ssl" method="probed" conf="10"/>
         <script id="http-title" output="Error 400 (Bad Request)!!1">
           <elem key="title">Error 400 (Bad Request)!!1</elem>
-        </script>
-        <script id="ssl-cert"
-            output="Subject: commonName=dns.google/organizationName=Google LLC/stateOrProvinceName=California/countryName=US&#xa;Subject Alternative Name: DNS:dns.google, DNS:*.dns.google.com, DNS:8888.google, DNS:dns.google.com, DNS:dns64.dns.google, IP Address:2001:4860:4860:0:0:0:0:64, IP Address:2001:4860:4860:0:0:0:0:6464, IP Address:2001:4860:4860:0:0:0:0:8844, IP Address:2001:4860:4860:0:0:0:0:8888, IP Address:8.8.4.4, IP Address:8.8.8.8&#xa;Not valid before: 2019-10-16T12:32:42&#xa;Not valid after:  2020-01-08T12:32:42">
-          <table key="subject">
-            <elem key="commonName">dns.google</elem>
-            <elem key="stateOrProvinceName">California</elem>
-            <elem key="localityName">Mountain View</elem>
-            <elem key="countryName">US</elem>
-            <elem key="organizationName">Google LLC</elem>
-          </table>
-          <table key="issuer">
-            <elem key="commonName">GTS CA 1O1</elem>
-            <elem key="countryName">US</elem>
-            <elem key="organizationName">Google Trust Services</elem>
-          </table>
-          <table key="pubkey">
-            <elem key="bits">2048</elem>
-            <elem key="exponent">userdata: 0x562136472208</elem>
-            <elem key="type">rsa</elem>
-            <elem key="modulus">userdata: 0x562136521a78</elem>
-          </table>
-          <table key="extensions">
-            <table>
-              <elem key="name">X509v3 Key Usage</elem>
-              <elem key="critical">true</elem>
-              <elem key="value">Digital Signature, Key Encipherment</elem>
-            </table>
-            <table>
-              <elem key="value">TLS Web Server Authentication</elem>
-              <elem key="name">X509v3 Extended Key Usage</elem>
-            </table>
-            <table>
-              <elem key="name">X509v3 Basic Constraints</elem>
-              <elem key="critical">true</elem>
-              <elem key="value">CA:FALSE</elem>
-            </table>
-            <table>
-              <elem key="value">
-                11:22:69:9F:58:76:09:91:1F:E8:0A:F9:9A:29:0A:F9:92:85:CA:68
-              </elem>
-              <elem key="name">X509v3 Subject Key Identifier</elem>
-            </table>
-            <table>
-              <elem key="value">
-                keyid:98:D1:F8:6E:10:EB:CF:9B:EC:60:9F:18:90:1B:A0:EB:7D:09:FD:2B&#xa;
-              </elem>
-              <elem key="name">X509v3 Authority Key Identifier</elem>
-            </table>
-            <table>
-              <elem key="value">OCSP - URI:http://ocsp.pki.goog/gts1o1&#xa;CA
-                Issuers - URI:http://pki.goog/gsr2/GTS1O1.crt&#xa;
-              </elem>
-              <elem key="name">Authority Information Access</elem>
-            </table>
-            <table>
-              <elem key="value">DNS:dns.google, DNS:*.dns.google.com,
-                DNS:8888.google, DNS:dns.google.com, DNS:dns64.dns.google, IP
-                Address:2001:4860:4860:0:0:0:0:64, IP
-                Address:2001:4860:4860:0:0:0:0:6464, IP
-                Address:2001:4860:4860:0:0:0:0:8844, IP
-                Address:2001:4860:4860:0:0:0:0:8888, IP Address:8.8.4.4, IP
-                Address:8.8.8.8
-              </elem>
-              <elem key="name">X509v3 Subject Alternative Name</elem>
-            </table>
-            <table>
-              <elem key="value">Policy: 2.23.140.1.2.2&#xa;Policy:
-                1.3.6.1.4.1.11129.2.5.3&#xa;
-              </elem>
-              <elem key="name">X509v3 Certificate Policies</elem>
-            </table>
-            <table>
-              <elem key="value">&#xa;Full Name:&#xa;
-                URI:http://crl.pki.goog/GTS1O1.crl&#xa;
-              </elem>
-              <elem key="name">X509v3 CRL Distribution Points</elem>
-            </table>
-            <table>
-              <elem key="value">Signed Certificate Timestamp:&#xa; Version : v1
-                (0x0)&#xa; Log ID :
-                B2:1E:05:CC:8B:A2:CD:8A:20:4E:87:66:F9:2B:B9:8A:&#xa;
-                25:20:67:6B:DA:FA:70:E7:B2:49:53:2D:EF:8B:90:5E&#xa; Timestamp :
-                Oct 16 13:32:43.222 2019 GMT&#xa; Extensions: none&#xa;
-                Signature : ecdsa-with-SHA256&#xa;
-                30:44:02:20:7E:EE:E0:3E:E1:5E:0D:13:E8:79:49:52:&#xa;
-                7D:33:45:E4:6E:3F:EB:BE:D2:9F:CA:2E:12:A8:BD:7E:&#xa;
-                00:6F:D3:C0:02:20:7A:50:89:7D:F8:56:D1:E3:F9:90:&#xa;
-                32:20:E6:93:0E:EC:97:4D:0B:C4:14:E1:FC:55:0F:A4:&#xa;
-                9C:F4:C7:24:A0:94&#xa;Signed Certificate Timestamp:&#xa; Version
-                : v1 (0x0)&#xa; Log ID :
-                5E:A7:73:F9:DF:56:C0:E7:B5:36:48:7D:D0:49:E0:32:&#xa;
-                7A:91:9A:0C:84:A1:12:12:84:18:75:96:81:71:45:58&#xa; Timestamp :
-                Oct 16 13:32:43.246 2019 GMT&#xa; Extensions: none&#xa;
-                Signature : ecdsa-with-SHA256&#xa;
-                30:44:02:20:75:C6:0C:DF:87:92:6D:6D:59:16:64:B5:&#xa;
-                6C:A7:D6:3A:30:EA:D4:89:94:3B:99:B3:D7:EC:F9:56:&#xa;
-                1B:C1:34:4A:02:20:11:DE:B3:0D:39:03:7D:30:D6:81:&#xa;
-                B9:0B:D9:79:FF:5F:23:3A:DE:90:32:53:25:DB:FE:C4:&#xa;
-                53:CE:89:17:27:92
-              </elem>
-              <elem key="name">CT Precertificate SCTs</elem>
-            </table>
-          </table>
-          <elem key="sig_algo">sha256WithRSAEncryption</elem>
-          <table key="validity">
-            <elem key="notBefore">2019-10-16T12:32:42</elem>
-            <elem key="notAfter">2020-01-08T12:32:42</elem>
-          </table>
-          <elem key="md5">e8a32badeb642091d8c741cf5b50eb31</elem>
-          <elem key="sha1">49c3b11b0203e8c841221b8511bc07fa27ba4218</elem>
-          <elem key="pem">-&#45;&#45;&#45;&#45;BEGIN CERTIFICATE-&#45;&#45;&#45;&#45;&#xa;MIIGGDCCBQCgAwIBAgIQQbJ4M13liYACAAAAAEiVizANBgkqhkiG9w0BAQsFADBC&#xa;MQswCQYDVQQGEwJVUzEeMBwGA1UEChMVR29vZ2xlIFRydXN0IFNlcnZpY2VzMRMw&#xa;EQYDVQQDEwpHVFMgQ0EgMU8xMB4XDTE5MTAxNjEyMzI0MloXDTIwMDEwODEyMzI0&#xa;MlowZDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcT&#xa;DU1vdW50YWluIFZpZXcxEzARBgNVBAoTCkdvb2dsZSBMTEMxEzARBgNVBAMTCmRu&#xa;cy5nb29nbGUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCnG3TQkO4H&#xa;5+TRGDRYmeu4MKYSlmkJya0Qj4I46lNMRR0/VMNCwTNoGZrsk5dJRnbD48v8nqI7&#xa;rYlHmNDe3wZ6Nyg5fWWga96MlOIfrgG6kWa2H2Tp6pDb/qi3jPJysERwD+OuWEsH&#xa;oXvB0u8uG78C2Iahk8RL7d4pKzzZVAErEh0uScQJlmBr3LRpHORhe2E48DJsEHko&#xa;vGRegScpcfpihB5545joLhIW2wqBkKuwsTHE6uL8+272r4T/q4/wRxulBkOmELtr&#xa;laliq/wmBv3YD88T0D9EUTC3Yd2T2BMb/dlafLyhFbVzp1lv8A/RUVQYgMIjxroT&#xa;3ZK1aRnHRL/nAgMBAAGjggLmMIIC4jAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAww&#xa;CgYIKwYBBQUHAwEwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUESJpn1h2CZEf6Ar5&#xa;mikK+ZKFymgwHwYDVR0jBBgwFoAUmNH4bhDrz5vsYJ8YkBug630J/SswZAYIKwYB&#xa;BQUHAQEEWDBWMCcGCCsGAQUFBzABhhtodHRwOi8vb2NzcC5wa2kuZ29vZy9ndHMx&#xa;bzEwKwYIKwYBBQUHMAKGH2h0dHA6Ly9wa2kuZ29vZy9nc3IyL0dUUzFPMS5jcnQw&#xa;gawGA1UdEQSBpDCBoYIKZG5zLmdvb2dsZYIQKi5kbnMuZ29vZ2xlLmNvbYILODg4&#xa;OC5nb29nbGWCDmRucy5nb29nbGUuY29tghBkbnM2NC5kbnMuZ29vZ2xlhxAgAUhg&#xa;SGAAAAAAAAAAAABkhxAgAUhgSGAAAAAAAAAAAGRkhxAgAUhgSGAAAAAAAAAAAIhE&#xa;hxAgAUhgSGAAAAAAAAAAAIiIhwQICAQEhwQICAgIMCEGA1UdIAQaMBgwCAYGZ4EM&#xa;AQICMAwGCisGAQQB1nkCBQMwLwYDVR0fBCgwJjAkoCKgIIYeaHR0cDovL2NybC5w&#xa;a2kuZ29vZy9HVFMxTzEuY3JsMIIBAgYKKwYBBAHWeQIEAgSB8wSB8ADuAHUAsh4F&#xa;zIuizYogTodm+Su5iiUgZ2va+nDnsklTLe+LkF4AAAFt1MVNVgAABAMARjBEAiB+&#xa;7uA+4V4NE+h5SVJ9M0Xkbj/rvtKfyi4SqL1+AG/TwAIgelCJffhW0eP5kDIg5pMO&#xa;7JdNC8QU4fxVD6Sc9MckoJQAdQBep3P531bA57U2SH3QSeAyepGaDIShEhKEGHWW&#xa;gXFFWAAAAW3UxU1uAAAEAwBGMEQCIHXGDN+Hkm1tWRZktWyn1jow6tSJlDuZs9fs&#xa;+VYbwTRKAiAR3rMNOQN9MNaBuQvZef9fIzrekDJTJdv+xFPOiRcnkjANBgkqhkiG&#xa;9w0BAQsFAAOCAQEAZ30SnJTnQyATV3ctltW9Uhfu9B+LotDVIJvVGP70GsB7ukGo&#xa;cTK0WzTE/Pyl79EiZdGik+RE4D/9QssN1NlNxq+XdTaObU9eKvxL0eKSLJJ5OBzg&#xa;Bnc9iY2HhponcpYamtatUrf0jJBZjQg4gbpZntIrxozbtV7nCkqNtkJKlEIPaS89&#xa;BNXWH38+CLju86RupGfeJRYY4kYO7181ws+LL7xr+3rAkZ8Wu6g+pcpAky6LL1Iy&#xa;cjirhZMBkv3FakOIDMhOwrp0NdP4Y8AvGG1kH4Vr1L03wG//jXUEdOo1ddS4zfL7&#xa;97Y0kENH2KRFtUZSarm3r0tkEgXc5/PszsyQKA==&#xa;-&#45;&#45;&#45;&#45;END
-            CERTIFICATE-&#45;&#45;&#45;&#45;&#xa;
-          </elem>
         </script>
       </port>
     </ports>
     <os>
       <portused state="open" proto="tcp" portid="53"/>
-      <osfingerprint
-          fingerprint="OS:SCAN(V=7.70%E=6%D=11/11%OT=53%CT=%CU=%PV=N%G=Y%TM=5DC961DF%P=x86_64-pc-&#xa;OS:linux-gnu)S1(P=680e273800280678XX{32}0035df34e969dccf0cd7a383a012ffff6c&#xa;OS:6b0000020405500402080a980575fcff{4}01030308%ST=0.064371%RT=0.223644)S2(&#xa;OS:P=6808d80300280678XX{32}0035df35c70623350cd7a384a012ffff5c3600000204055&#xa;OS:00402080a0293f79fff{4}01030308%ST=0.164363%RT=0.223694)S3(P=680ceb31002&#xa;OS:80678XX{32}0035df3603e612510cd7a385a012ffff218a0000020405500101080aaca2&#xa;OS:5f40ff{4}01030308%ST=0.264372%RT=0.427673)S4(P=6800802700280678XX{32}00&#xa;OS:35df37c98360ba0cd7a386a012ffff40480000020405500402080a85ee502cff{4}0103&#xa;OS:0308%ST=0.364361%RT=0.427704)S5(P=680e966c00280678XX{32}0035df388901b31&#xa;OS:00cd7a387a012ffff41ed0000020405500402080a65655d3aff{4}01030308%ST=0.464&#xa;OS:366%RT=0.631714)S6(P=680522fb00240678XX{32}0035df390970d4bb0cd7a3889012&#xa;OS:ffffb37c0000020405500402080a65655d9eff{4}%ST=0.564376%RT=0.631745)TECN(&#xa;OS:P=68002fae00200678XX{32}0035df3a93c3071f0cd7a3898012ffffccc900000204055&#xa;OS:00101040201030308%ST=0.731324%RT=0.835654)T4(P=6803741a00140678XX{32}00&#xa;OS:35df3d5bfd6d7500{4}500400008f130000%ST=0.87892%RT=1.04367)EXTRA(FL=1234&#xa;OS:5)&#xa;"/>
+      <osmatch name="name" accuracy="accuracy" line="line">
+        <osclass vendor="vendor0" osgen="osgen0" type="type0"
+            accuracy="accuracy0" osfamily="osfamily0">
+          <cpe>cpe0</cpe>
+        </osclass>
+        <osclass vendor="vendor1" osgen="osgen1" type="type1"
+            accuracy="accuracy1" osfamily="osfamily1">
+          <cpe>cpe1</cpe>
+        </osclass>
+      </osmatch>
+      <osfingerprint fingerprint="fingerprint"/>
     </os>
     <distance value="distance value"/>
     <uptime seconds="1" lastboot="2"/>
