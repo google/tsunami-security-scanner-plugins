@@ -29,7 +29,7 @@ import com.google.tsunami.plugins.portscan.nmap.client.NmapClient.DnsResolution;
 import com.google.tsunami.plugins.portscan.nmap.client.NmapClient.HostDiscoveryTechnique;
 import com.google.tsunami.plugins.portscan.nmap.client.NmapClient.ScanTechnique;
 import com.google.tsunami.plugins.portscan.nmap.client.NmapClient.TimingTemplate;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Nmaprun;
+import com.google.tsunami.plugins.portscan.nmap.client.result.NmapRun;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -37,7 +37,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
-import javax.xml.bind.JAXBException;
+import javax.xml.parsers.ParserConfigurationException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,6 +46,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.xml.sax.SAXException;
 
 /** Tests for {@link NmapClient}. */
 @RunWith(JUnit4.class)
@@ -333,7 +334,8 @@ public class NmapClientTest {
 
   @Test
   public void getResults_onceClientHasRan_returnsNmapRunReport()
-      throws IOException, ExecutionException, InterruptedException, JAXBException {
+      throws IOException, ExecutionException, InterruptedException, ParserConfigurationException,
+          SAXException {
     try (BufferedWriter writer =
         Files.newBufferedWriter(report.toPath(), Charset.defaultCharset())) {
       writer.write(
@@ -346,12 +348,18 @@ public class NmapClientTest {
               + " /tmp/ipv6.xml 2001:4860:4860::8888\"\n"
               + "    start=\"1573478646\" startstr=\"Mon Nov 11 14:24:06 2019\" version=\"7.70\"\n"
               + "    xmloutputversion=\"1.04\">\n"
+              + " <verbose level=\"0\"/>\n"
+              + " <debugging level=\"0\"/>\n"
+              + " <runstats>\n"
+              + "  <finished time=\"1573478879\" elapsed=\"232.81\"/>\n"
+              + "  <hosts up=\"1\" down=\"0\" total=\"1\"/>\n"
+              + " </runstats>\n"
               + "</nmaprun>\n");
     }
     Process process = mock(Process.class, RETURNS_SMART_NULLS);
     when(commandExecutor.execute(any())).thenReturn(process);
 
-    Nmaprun results =
+    NmapRun results =
         client
             .withTargetNetworkEndpoint(NetworkEndpointUtils.forIp("1.1.1.1"))
             .withHostDiscoveryTechnique(HostDiscoveryTechnique.SYN)

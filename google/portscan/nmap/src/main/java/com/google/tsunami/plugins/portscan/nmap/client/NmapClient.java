@@ -28,8 +28,8 @@ import com.google.tsunami.plugins.portscan.nmap.client.data.IPortTarget;
 import com.google.tsunami.plugins.portscan.nmap.client.data.PortRange;
 import com.google.tsunami.plugins.portscan.nmap.client.data.ScriptAndArgs;
 import com.google.tsunami.plugins.portscan.nmap.client.data.SinglePort;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Nmaprun;
 import com.google.tsunami.plugins.portscan.nmap.client.parser.XMLParser;
+import com.google.tsunami.plugins.portscan.nmap.client.result.NmapRun;
 import com.google.tsunami.proto.NetworkEndpoint;
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,7 +43,8 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import javax.inject.Inject;
-import javax.xml.bind.JAXBException;
+import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.SAXException;
 
 /**
  * Client for the open-source nmap tool. Nmap is a network security scanner with support for
@@ -54,7 +55,7 @@ import javax.xml.bind.JAXBException;
  * and 9919:
  *
  * <pre>
- *   Nmaprun scanRunResult =
+ *   NmapRun scanRunResult =
  *         new NmapClient(nmapFile.getAbsolutePath())
  *             .withTargetNetworkEndpoint(NetworkEndpoints.forIp("1.1.1.1"))
  *             .withHostDiscoveryTechnique(HostDiscoveryTechnique.SYN)
@@ -231,8 +232,9 @@ public class NmapClient {
    *     executor suitable for long running and IO blocking tasks. {@link
    *     java.util.concurrent.ThreadPoolExecutor} is a viable option.
    */
-  public Nmaprun run(Executor executor)
-      throws IOException, InterruptedException, ExecutionException, JAXBException {
+  public NmapRun run(Executor executor)
+      throws IOException, InterruptedException, ExecutionException, ParserConfigurationException,
+          SAXException {
     ArrayList<String> arrayList = buildRunCommandArgs();
     String[] args = arrayList.toArray(new String[0]);
     CommandExecutor commandExecutor = CommandExecutorFactory.create(args);

@@ -46,63 +46,6 @@ java {
     }
 }
 
-// Begin: Nmap XML Jaxb class generation.
-def dtdFileSrc = 'https://raw.githubusercontent.com/nmap/nmap/e7e7e9e8c7d83b4ca93a752dea7bb40cbb74df32/docs/nmap.dtd'
-def dtdFileLocal = "${buildDir}/third_party/nmap/nmap.dtd"
-def nmapJaxbSrc = "${buildDir}/generated/nmap_dtd"
-def jaxbPkgName = 'com.google.tsunami.plugins.portscan.nmap.client.data.xml'
-
-configurations {
-    nmapDtd2Java
-}
-
-sourceSets {
-    main {
-        java.srcDirs "${nmapJaxbSrc}"
-    }
-}
-
-task nmapDtd2Java() {
-    doLast {
-        def jaxbTargetDir = file("${nmapJaxbSrc}")
-        if (!jaxbTargetDir.exists()) {
-            jaxbTargetDir.mkdirs()
-        }
-        ant.taskdef(name: 'xjc',
-                classname: 'com.sun.tools.xjc.XJCTask',
-                classpath: configurations.nmapDtd2Java.asPath)
-        ant.jaxbTargetDir = jaxbTargetDir
-        ant.xjc(destdir: "${jaxbTargetDir}",
-                package: "${jaxbPkgName}",
-                schema: "${dtdFileLocal}",
-                fork: true
-        ) {
-            arg(line: '-dtd')
-            jvmarg(value: '-DenableExternalEntityProcessing=true')
-        }
-    }
-}
-
-task downloadNmapDtd(type: AntDownload) {
-    sourceUrl = "${dtdFileSrc}"
-    target = new File("${dtdFileLocal}")
-}
-
-class AntDownload extends DefaultTask {
-    @Input
-    String sourceUrl
-    @OutputFile
-    File target
-
-    @TaskAction
-    void download() {
-        ant.get(src: sourceUrl, dest: target)
-    }
-}
-
-compileJava.dependsOn nmapDtd2Java
-nmapDtd2Java.dependsOn downloadNmapDtd
-// End: Nmap XML Jaxb class generation.
 
 ext {
     autoValueVersion = '1.7'
@@ -110,7 +53,6 @@ ext {
     guavaVersion = '28.2-jre'
     guiceVersion = '4.2.3'
     javaxInjectVersion = '1'
-    jaxbVersion = '2.3.1'
     okhttpVersion = '3.12.0'
     protobufVersion = '3.11.4'
     tsunamiVersion = '0.0.1'
@@ -121,7 +63,6 @@ ext {
 }
 
 dependencies {
-    api "javax.xml.bind:jaxb-api:${jaxbVersion}"
     implementation "com.google.auto.value:auto-value-annotations:${autoValueVersion}"
     implementation "com.google.flogger:flogger:${floggerVersion}"
     implementation "com.google.flogger:google-extensions:${floggerVersion}"
@@ -135,7 +76,6 @@ dependencies {
     implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
     implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
     implementation "javax.inject:javax.inject:${javaxInjectVersion}"
-    implementation "org.glassfish.jaxb:jaxb-runtime:${jaxbVersion}"
     implementation "org.mockito:mockito-core:${mockitoVersion}"
     annotationProcessor "com.google.auto.value:auto-value:${autoValueVersion}"
 
@@ -144,6 +84,4 @@ dependencies {
     testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"
     testImplementation "junit:junit:${junitVersion}"
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"
-
-    nmapDtd2Java "org.glassfish.jaxb:jaxb-xjc:${jaxbVersion}"
 }

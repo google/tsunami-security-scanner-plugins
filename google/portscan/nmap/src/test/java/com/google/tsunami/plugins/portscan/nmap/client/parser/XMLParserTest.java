@@ -17,174 +17,135 @@ package com.google.tsunami.plugins.portscan.nmap.client.parser;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableList;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Address;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Host;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Nmaprun;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Os;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Ports;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Status;
+import com.google.tsunami.plugins.portscan.nmap.client.result.Host;
+import com.google.tsunami.plugins.portscan.nmap.client.result.NmapRun;
+import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
-import javax.xml.bind.JAXBException;
+import javax.xml.parsers.ParserConfigurationException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.xml.sax.SAXException;
 
 /** Tests for {@link XMLParser}. */
 @RunWith(JUnit4.class)
 public class XMLParserTest {
 
   @Test
-  public void parse_always_extractsScanRunInfo() throws JAXBException {
+  public void parse_always_extractsScanRunInfo()
+      throws IOException, SAXException, ParserConfigurationException {
     InputStream resource = getClass().getResourceAsStream("testdata/scanRunIPv6.xml");
 
-    Nmaprun result = XMLParser.parse(resource);
+    NmapRun result = XMLParser.parse(resource);
 
-    assertThat(result.getScanner()).isEqualTo("nmap");
-    assertThat(result.getArgs())
+    assertThat(result.scanner()).isEqualTo("nmap");
+    assertThat(result.args())
         .isEqualTo(
             "nmap -n -sS -Pn -O --version-intensity 9 -sC -sV -6 -oX /tmp/ipv6.xml"
                 + " 2001:4860:4860::8888");
-    assertThat(result.getStart()).isEqualTo("1573478646");
-    assertThat(result.getScaninfo()).hasSize(1);
-    assertThat(result.getScaninfo().get(0).getType()).isEqualTo("syn");
-    assertThat(result.getScaninfo().get(0).getProtocol()).isEqualTo("tcp");
-    assertThat(result.getScaninfo().get(0).getServices()).contains("2725");
+    assertThat(result.start()).isEqualTo("1573478646");
+    assertThat(result.scanInfos()).hasSize(1);
+    assertThat(result.scanInfos().get(0).type()).isEqualTo("syn");
+    assertThat(result.scanInfos().get(0).protocol()).isEqualTo("tcp");
+    assertThat(result.scanInfos().get(0).services()).contains("2725");
   }
 
   @Test
-  public void parse_always_extractsHost() throws JAXBException {
+  public void parse_always_extractsHost()
+      throws IOException, SAXException, ParserConfigurationException {
     InputStream resource = getClass().getResourceAsStream("testdata/scanRunIPv6.xml");
 
-    Nmaprun result = XMLParser.parse(resource);
+    NmapRun result = XMLParser.parse(resource);
 
     assertThat(getHost(result)).isNotNull();
   }
 
   @Test
-  public void parse_always_extractsHostStatus() throws JAXBException {
+  public void parse_always_extractsHostStatus()
+      throws IOException, SAXException, ParserConfigurationException {
     InputStream resource = getClass().getResourceAsStream("testdata/scanRunIPv6.xml");
 
-    Nmaprun result = XMLParser.parse(resource);
+    NmapRun result = XMLParser.parse(resource);
 
     Host host = getHost(result);
-    List<Status> statuses =
-        host
-            .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
-            .stream()
-            .filter(element -> element instanceof Status)
-            .map(element -> (Status) element)
-            .collect(ImmutableList.toImmutableList());
-    assertThat(statuses).hasSize(1);
-    assertThat(statuses.get(0).getState()).isEqualTo("up");
+    assertThat(host).isNotNull();
+    assertThat(host.statuses()).hasSize(1);
+    assertThat(host.statuses().get(0).state()).isEqualTo("up");
   }
 
   @Test
-  public void parse_always_extractsAddress() throws JAXBException {
+  public void parse_always_extractsAddress()
+      throws IOException, SAXException, ParserConfigurationException {
     InputStream resource = getClass().getResourceAsStream("testdata/scanRunIPv6.xml");
 
-    Nmaprun result = XMLParser.parse(resource);
+    NmapRun result = XMLParser.parse(resource);
 
     Host host = getHost(result);
-    List<Address> addresses =
-        host
-            .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
-            .stream()
-            .filter(element -> element instanceof Address)
-            .map(element -> (Address) element)
-            .collect(ImmutableList.toImmutableList());
-
-    assertThat(addresses).hasSize(1);
-    assertThat(addresses.get(0).getAddr()).isEqualTo("2001:4860:4860::8888");
-    assertThat(addresses.get(0).getAddrtype()).isEqualTo("ipv6");
-    assertThat(addresses.get(0).getVendor()).isNull();
+    assertThat(host).isNotNull();
+    assertThat(host.addresses()).hasSize(1);
+    assertThat(host.addresses().get(0).addr()).isEqualTo("2001:4860:4860::8888");
+    assertThat(host.addresses().get(0).addrType()).isEqualTo("ipv6");
+    assertThat(host.addresses().get(0).vendor()).isEmpty();
   }
 
   @Test
-  public void parse_always_extractsPorts() throws JAXBException {
+  public void parse_always_extractsPorts()
+      throws IOException, SAXException, ParserConfigurationException {
     InputStream resource = getClass().getResourceAsStream("testdata/scanRunIPv6.xml");
 
-    Nmaprun result = XMLParser.parse(resource);
+    NmapRun result = XMLParser.parse(resource);
 
     Host host = getHost(result);
-    List<Ports> ports =
-        host
-            .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
-            .stream()
-            .filter(element -> element instanceof Ports)
-            .map(element -> (Ports) element)
-            .collect(ImmutableList.toImmutableList());
-    assertThat(ports).hasSize(1);
-    assertThat(ports.get(0).getPort()).hasSize(2);
-    assertThat(ports.get(0).getPort().get(0).getPortid()).isEqualTo("53");
-    assertThat(ports.get(0).getPort().get(0).getProtocol()).isEqualTo("tcp");
+    assertThat(host).isNotNull();
+    assertThat(host.ports()).hasSize(1);
+    assertThat(host.ports().get(0).ports()).hasSize(2);
+    assertThat(host.ports().get(0).ports().get(0).portId()).isEqualTo("53");
+    assertThat(host.ports().get(0).ports().get(0).protocol()).isEqualTo("tcp");
   }
 
   @Test
-  public void parse_always_extractsPortService() throws JAXBException {
+  public void parse_always_extractsPortService()
+      throws IOException, SAXException, ParserConfigurationException {
     InputStream resource = getClass().getResourceAsStream("testdata/scanRunIPv6.xml");
 
-    Nmaprun result = XMLParser.parse(resource);
+    NmapRun result = XMLParser.parse(resource);
 
     Host host = getHost(result);
-    List<Ports> ports =
-        host
-            .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
-            .stream()
-            .filter(element -> element instanceof Ports)
-            .map(element -> (Ports) element)
-            .collect(ImmutableList.toImmutableList());
-    assertThat(ports.get(0).getPort().get(1).getService().getName()).isEqualTo("https");
-    assertThat(ports.get(0).getPort().get(1).getService().getProduct()).isEqualTo("sffe");
-    assertThat(ports.get(0).getPort().get(1).getService().getTunnel()).isEqualTo("ssl");
+    assertThat(host).isNotNull();
+    assertThat(host.ports().get(0).ports().get(1).service().name()).isEqualTo("https");
+    assertThat(host.ports().get(0).ports().get(1).service().product()).isEqualTo("sffe");
+    assertThat(host.ports().get(0).ports().get(1).service().tunnel()).isEqualTo("ssl");
   }
 
   @Test
-  public void parse_always_extractsScriptOutput() throws JAXBException {
+  public void parse_always_extractsScriptOutput()
+      throws IOException, SAXException, ParserConfigurationException {
     InputStream resource = getClass().getResourceAsStream("testdata/scanRunIPv6.xml");
 
-    Nmaprun result = XMLParser.parse(resource);
+    NmapRun result = XMLParser.parse(resource);
 
     Host host = getHost(result);
-    List<Ports> ports =
-        host
-            .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
-            .stream()
-            .filter(element -> element instanceof Ports)
-            .map(element -> (Ports) element)
-            .collect(ImmutableList.toImmutableList());
-    assertThat(ports.get(0).getPort().get(1).getScript()).hasSize(1);
-    assertThat(ports.get(0).getPort().get(1).getScript().get(0).getId()).isEqualTo("http-title");
-    assertThat(ports.get(0).getPort().get(1).getScript().get(0).getOutput())
+    assertThat(host).isNotNull();
+    assertThat(host.ports().get(0).ports().get(1).scripts()).hasSize(1);
+    assertThat(host.ports().get(0).ports().get(1).scripts().get(0).id()).isEqualTo("http-title");
+    assertThat(host.ports().get(0).ports().get(1).scripts().get(0).output())
         .contains("Error 400 (Bad Request)!!1");
   }
 
   @Test
-  public void parse_always_extractsActiveServiceInfo() throws JAXBException {
+  public void parse_always_extractsActiveServiceInfo()
+      throws IOException, SAXException, ParserConfigurationException {
     InputStream resource = getClass().getResourceAsStream("testdata/scanRunIPv6.xml");
 
-    Nmaprun result = XMLParser.parse(resource);
+    NmapRun result = XMLParser.parse(resource);
 
     Host host = getHost(result);
-    List<Os> oses =
-        host
-            .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
-            .stream()
-            .filter(element -> element instanceof Os)
-            .map(element -> (Os) element)
-            .collect(ImmutableList.toImmutableList());
-    assertThat(oses).hasSize(1);
-    assertThat(oses.get(0).getOsfingerprint().get(0).getFingerprint()).isEqualTo("fingerprint");
+    assertThat(host).isNotNull();
+    assertThat(host.oses()).hasSize(1);
+    assertThat(host.oses().get(0).osFingerprints().get(0).fingerprint()).isEqualTo("fingerprint");
   }
 
-  private static Host getHost(Nmaprun nmaprun) {
-    return nmaprun
-        .getTargetOrTaskbeginOrTaskprogressOrTaskendOrPrescriptOrPostscriptOrHostOrOutput()
-        .stream()
-        .filter(obj -> obj instanceof Host)
-        .map(obj -> (Host) obj)
-        .findFirst()
-        .orElse(null);
+  private static Host getHost(NmapRun nmapRun) {
+    return nmapRun.hosts().stream().findFirst().orElse(null);
   }
 }

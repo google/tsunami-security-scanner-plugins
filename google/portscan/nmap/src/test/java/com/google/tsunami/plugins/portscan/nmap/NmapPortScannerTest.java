@@ -42,7 +42,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import javax.inject.Inject;
-import javax.xml.bind.JAXBException;
+import javax.xml.parsers.ParserConfigurationException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,6 +51,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Spy;
+import org.xml.sax.SAXException;
 
 /** Tests for {@link NmapPortScanner}. */
 @RunWith(JUnit4.class)
@@ -83,7 +84,8 @@ public class NmapPortScannerTest {
 
   @Test
   public void run_whenNmapRunHasOpenPorts_returnsMatchingService()
-      throws InterruptedException, ExecutionException, JAXBException, IOException {
+      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
+          SAXException {
     doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
         .when(nmapClient)
         .run(any());
@@ -104,7 +106,8 @@ public class NmapPortScannerTest {
 
   @Test
   public void run_whenNmapRunReportsClosedPort_returnsEmptyServices()
-      throws InterruptedException, ExecutionException, JAXBException, IOException {
+      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
+          SAXException {
     doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/closedTelnet.xml")))
         .when(nmapClient)
         .run(any());
@@ -120,7 +123,8 @@ public class NmapPortScannerTest {
 
   @Test
   public void run_configHasPortTargets_scansAllTargets()
-      throws InterruptedException, ExecutionException, JAXBException, IOException {
+      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
+          SAXException {
     configs.portTargets = "80,8080,15000-16000";
     doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
         .when(nmapClient)
@@ -144,7 +148,8 @@ public class NmapPortScannerTest {
 
   @Test
   public void run_configHasInvalidPorts_throwsException()
-      throws InterruptedException, ExecutionException, JAXBException, IOException {
+      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
+          SAXException {
     configs.portTargets = "80,8080,abcd";
     doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
         .when(nmapClient)

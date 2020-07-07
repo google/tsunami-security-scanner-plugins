@@ -31,14 +31,13 @@ import com.google.tsunami.plugins.portscan.nmap.client.NmapClient;
 import com.google.tsunami.plugins.portscan.nmap.client.NmapClient.DnsResolution;
 import com.google.tsunami.plugins.portscan.nmap.client.NmapClient.ScanTechnique;
 import com.google.tsunami.plugins.portscan.nmap.client.NmapClient.TimingTemplate;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Address;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Host;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Hostname;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Nmaprun;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Port;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Ports;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Script;
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Service;
+import com.google.tsunami.plugins.portscan.nmap.client.result.Address;
+import com.google.tsunami.plugins.portscan.nmap.client.result.Host;
+import com.google.tsunami.plugins.portscan.nmap.client.result.Hostname;
+import com.google.tsunami.plugins.portscan.nmap.client.result.NmapRun;
+import com.google.tsunami.plugins.portscan.nmap.client.result.Port;
+import com.google.tsunami.plugins.portscan.nmap.client.result.Ports;
+import com.google.tsunami.plugins.portscan.nmap.client.result.Script;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.PortScanningReport;
@@ -55,7 +54,8 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import javax.inject.Inject;
-import javax.xml.bind.JAXBException;
+import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.SAXException;
 
 /** A {@link PortScanner} plugin that uses nmap to scan for open ports and running services. */
 @PluginInfo(
@@ -63,7 +63,7 @@ import javax.xml.bind.JAXBException;
     name = "NmapPortScanner",
     version = "0.1",
     description = "Identifies open ports and fingerprints underlying services using nmap.",
-    author = "Tsunami Dev (tsunami-dev@google.com)",
+    author = "Tsunami Team (tsunami-dev@google.com)",
     bootstrapModule = NmapPortScannerBootstrapModule.class)
 public final class NmapPortScanner implements PortScanner {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
@@ -90,7 +90,7 @@ public final class NmapPortScanner implements PortScanner {
     try {
       logger.atInfo().log("Starting nmap scan.");
       Stopwatch stopwatch = Stopwatch.createStarted();
-      Nmaprun result =
+      NmapRun result =
           setPortTargets(nmapClient)
               .withDnsResolution(DnsResolution.NEVER)
               .treatAllHostsAsOnline()
@@ -106,7 +106,11 @@ public final class NmapPortScanner implements PortScanner {
           "Finished nmap scan on target '%s' in %s.",
           loggableScanTarget(scanTarget), stopwatch.stop());
       return extractServicesFromNmapRun(result);
-    } catch (IOException | JAXBException | InterruptedException | ExecutionException e) {
+    } catch (IOException
+        | InterruptedException
+        | ExecutionException
+        | SAXException
+        | ParserConfigurationException e) {
       logger.atSevere().withCause(e).log("Nmap scan failed.");
       return PortScanningReport.newBuilder()
           .setTargetInfo(
@@ -136,16 +140,16 @@ public final class NmapPortScanner implements PortScanner {
     return nmapClient;
   }
 
-  private PortScanningReport extractServicesFromNmapRun(Nmaprun nmaprun) {
+  private PortScanningReport extractServicesFromNmapRun(NmapRun nmapRun) {
     logger.atInfo().log("Building PortScanningReport from Nmap result.");
     PortScanningReport.Builder portScanningReportBuilder =
-        PortScanningReport.newBuilder().setTargetInfo(buildTargetInfoFromNmaprun(nmaprun));
+        PortScanningReport.newBuilder().setTargetInfo(buildTargetInfoFromNmaprun(nmapRun));
 
-    Optional<Host> host = getHostFromNmapRun(nmaprun);
+    Optional<Host> host = getHostFromNmapRun(nmapRun);
     host.flatMap(NmapPortScanner::getPortsFromHost)
         .ifPresent(
             ports ->
-                ports.getPort().stream()
+                ports.ports().stream()
                     .filter(NmapPortScanner::isPortOpen)
                     .forEach(
                         port -> {
@@ -156,10 +160,10 @@ public final class NmapPortScanner implements PortScanner {
     return portScanningReportBuilder.build();
   }
 
-  private TargetInfo buildTargetInfoFromNmaprun(Nmaprun nmaprun) {
+  private TargetInfo buildTargetInfoFromNmaprun(NmapRun nmapRun) {
     return TargetInfo.newBuilder()
         .addNetworkEndpoints(
-            getHostFromNmapRun(nmaprun)
+            getHostFromNmapRun(nmapRun)
                 .map(this::buildNetworkEndpointFromHost)
                 .orElse(scanTarget.getNetworkEndpoint()))
         .build();
@@ -169,9 +173,9 @@ public final class NmapPortScanner implements PortScanner {
     Optional<Address> address = getAddressFromHost(host);
     Optional<Hostname> hostname = getHostnameFromHost(host);
     if (address.isPresent()) {
-      return NetworkEndpointUtils.forIp(address.get().getAddr());
+      return NetworkEndpointUtils.forIp(address.get().addr());
     } else if (hostname.isPresent()) {
-      return NetworkEndpointUtils.forHostname(hostname.get().getName());
+      return NetworkEndpointUtils.forHostname(hostname.get().name());
     } else {
       return scanTarget.getNetworkEndpoint();
     }
@@ -189,65 +193,47 @@ public final class NmapPortScanner implements PortScanner {
     getSoftwareFromPort(port).ifPresent(networkServiceBuilder::setSoftware);
     getSoftwareVersionSetFromPort(port).ifPresent(networkServiceBuilder::setVersionSet);
     getBannerScriptFromPort(port)
-        .ifPresent(script -> networkServiceBuilder.addBanner(script.getOutput()));
+        .ifPresent(script -> networkServiceBuilder.addBanner(script.output()));
     return networkServiceBuilder.build();
   }
 
   private static Optional<Script> getBannerScriptFromPort(Port port) {
-    return port.getScript().stream()
-        .filter(script -> Ascii.equalsIgnoreCase("banner", Strings.nullToEmpty(script.getId())))
+    return port.scripts().stream()
+        .filter(script -> Ascii.equalsIgnoreCase("banner", Strings.nullToEmpty(script.id())))
         .findFirst();
   }
 
-  private static Optional<Host> getHostFromNmapRun(Nmaprun nmaprun) {
-    return nmaprun
-        .getTargetOrTaskbeginOrTaskprogressOrTaskendOrPrescriptOrPostscriptOrHostOrOutput()
-        .stream()
-        .filter(el -> el instanceof Host)
-        .findFirst()
-        .map(Host.class::cast);
+  private static Optional<Host> getHostFromNmapRun(NmapRun nmapRun) {
+    return nmapRun.hosts().stream().findFirst();
   }
 
   private static Optional<Address> getAddressFromHost(Host host) {
-    return host
-        .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
-        .stream()
-        .filter(el -> el instanceof Address)
-        .findFirst()
-        .map(Address.class::cast);
+    return host.addresses().stream().findFirst();
   }
 
   private static Optional<Hostname> getHostnameFromHost(Host host) {
-    return host
-        .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
-        .stream()
-        .filter(el -> el instanceof Hostname)
-        .findFirst()
-        .map(Hostname.class::cast);
+    return host.hostnames().stream()
+        .flatMap(hostnames -> hostnames.hostnames().stream())
+        .findFirst();
   }
 
   private static Optional<Ports> getPortsFromHost(Host host) {
-    return host
-        .getStatusOrAddressOrHostnamesOrSmurfOrPortsOrOsOrDistanceOrUptimeOrTcpsequenceOrIpidsequenceOrTcptssequenceOrHostscriptOrTraceOrTimes()
-        .stream()
-        .filter(el -> el instanceof Ports)
-        .findFirst()
-        .map(Ports.class::cast);
+    return host.ports().stream().findFirst();
   }
 
   private static boolean isPortOpen(Port port) {
-    return port.getState().getState().equals("open");
+    return Ascii.equalsIgnoreCase("open", Strings.nullToEmpty(port.state().state()));
   }
 
   private static Optional<Software> getSoftwareFromPort(Port port) {
-    return Optional.ofNullable(port.getService())
-        .map(Service::getProduct)
+    return Optional.ofNullable(port.service())
+        .map(service -> Strings.emptyToNull(service.product()))
         .map(product -> Software.newBuilder().setName(product).build());
   }
 
   private static Optional<VersionSet> getSoftwareVersionSetFromPort(Port port) {
-    return Optional.ofNullable(port.getService())
-        .map(Service::getVersion)
+    return Optional.ofNullable(port.service())
+        .map(service -> Strings.emptyToNull(service.version()))
         .map(
             version ->
                 VersionSet.newBuilder()
@@ -259,15 +245,15 @@ public final class NmapPortScanner implements PortScanner {
   }
 
   private static int getPortNumberFromPort(Port port) {
-    return Integer.parseInt(port.getPortid());
+    return Integer.parseInt(port.portId());
   }
 
   private static TransportProtocol getTransportProtocolFromPort(Port port) {
-    return TransportProtocol.valueOf(Ascii.toUpperCase(port.getProtocol()));
+    return TransportProtocol.valueOf(Ascii.toUpperCase(port.protocol()));
   }
 
   private static Optional<String> getServiceNameFromPort(Port port) {
-    return Optional.ofNullable(port.getService()).map(Service::getName);
+    return Optional.ofNullable(port.service()).map(service -> Strings.emptyToNull(service.name()));
   }
 
   private static void logIdentifiedNetworkService(NetworkService networkService) {

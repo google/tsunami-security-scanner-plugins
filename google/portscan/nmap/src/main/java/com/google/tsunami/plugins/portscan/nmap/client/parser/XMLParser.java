@@ -15,11 +15,13 @@
  */
 package com.google.tsunami.plugins.portscan.nmap.client.parser;
 
-import com.google.tsunami.plugins.portscan.nmap.client.data.xml.Nmaprun;
+import com.google.tsunami.plugins.portscan.nmap.client.result.NmapRun;
+import java.io.IOException;
 import java.io.InputStream;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import org.xml.sax.SAXException;
 
 /** Parser for nmap XML report. */
 public class XMLParser {
@@ -27,16 +29,22 @@ public class XMLParser {
   /**
    * Parses nmap's XML output and return an NmapRun object with all the scan info.
    *
-   * <p>NmapRun is generated from nmap's DTD and is maintained by nmap. The DTD is located at <a
-   * href="https://nmap.org/book/nmap-dtd.html">link</a>.
-   *
    * @param stream Input stream with XML report.
    * @return NmapRun root object.
    */
-  public static Nmaprun parse(InputStream stream) throws JAXBException {
-    JAXBContext context = JAXBContext.newInstance(Nmaprun.class);
-    Unmarshaller unmarshaller = context.createUnmarshaller();
-    return (Nmaprun) unmarshaller.unmarshal(stream);
+  public static NmapRun parse(InputStream stream)
+      throws ParserConfigurationException, SAXException, IOException {
+    SAXParser parser = createParser();
+    NmapResultHandler resultHandler = new NmapResultHandler();
+    parser.parse(stream, resultHandler);
+    return resultHandler.getNmapRun();
+  }
+
+  private static SAXParser createParser() throws ParserConfigurationException, SAXException {
+    SAXParserFactory factory = SAXParserFactory.newInstance();
+    factory.setValidating(false);
+    factory.setXIncludeAware(false);
+    return factory.newSAXParser();
   }
 
   private XMLParser() {}
