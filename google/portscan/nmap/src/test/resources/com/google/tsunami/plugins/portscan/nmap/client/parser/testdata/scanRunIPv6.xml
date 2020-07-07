@@ -45,11 +45,14 @@
       </table>
     </script>
   </postscript>
-  <host starttime="1573478646" endtime="1573478879">
+  <host starttime="1573478646" endtime="1573478879" comment="host comment">
     <status state="up" reason="user-set" reason_ttl="0"/>
     <address addr="2001:4860:4860::8888" addrtype="ipv6"/>
     <hostnames>
+      <hostname name="hostname" type="user"/>
+      <hostname name="hostname2" type="PTR"/>
     </hostnames>
+    <smurf responses="responses"/>
     <ports>
       <extraports state="filtered" count="998">
         <extrareasons reason="no-responses" count="996"/>
@@ -199,6 +202,19 @@
       <osfingerprint
           fingerprint="OS:SCAN(V=7.70%E=6%D=11/11%OT=53%CT=%CU=%PV=N%G=Y%TM=5DC961DF%P=x86_64-pc-&#xa;OS:linux-gnu)S1(P=680e273800280678XX{32}0035df34e969dccf0cd7a383a012ffff6c&#xa;OS:6b0000020405500402080a980575fcff{4}01030308%ST=0.064371%RT=0.223644)S2(&#xa;OS:P=6808d80300280678XX{32}0035df35c70623350cd7a384a012ffff5c3600000204055&#xa;OS:00402080a0293f79fff{4}01030308%ST=0.164363%RT=0.223694)S3(P=680ceb31002&#xa;OS:80678XX{32}0035df3603e612510cd7a385a012ffff218a0000020405500101080aaca2&#xa;OS:5f40ff{4}01030308%ST=0.264372%RT=0.427673)S4(P=6800802700280678XX{32}00&#xa;OS:35df37c98360ba0cd7a386a012ffff40480000020405500402080a85ee502cff{4}0103&#xa;OS:0308%ST=0.364361%RT=0.427704)S5(P=680e966c00280678XX{32}0035df388901b31&#xa;OS:00cd7a387a012ffff41ed0000020405500402080a65655d3aff{4}01030308%ST=0.464&#xa;OS:366%RT=0.631714)S6(P=680522fb00240678XX{32}0035df390970d4bb0cd7a3889012&#xa;OS:ffffb37c0000020405500402080a65655d9eff{4}%ST=0.564376%RT=0.631745)TECN(&#xa;OS:P=68002fae00200678XX{32}0035df3a93c3071f0cd7a3898012ffffccc900000204055&#xa;OS:00101040201030308%ST=0.731324%RT=0.835654)T4(P=6803741a00140678XX{32}00&#xa;OS:35df3d5bfd6d7500{4}500400008f130000%ST=0.87892%RT=1.04367)EXTRA(FL=1234&#xa;OS:5)&#xa;"/>
     </os>
+    <distance value="distance value"/>
+    <uptime seconds="1" lastboot="2"/>
+    <tcpsequence index="0" difficulty="difficulty" values="values"/>
+    <ipidsequence class="class" values="values"/>
+    <tcptssequence class="class" values="values"/>
+    <hostscript>
+      <script id="hostscript script id" output="hostscript script output">
+        <elem key="hostscript script elem key">elem value</elem>
+      </script>
+    </hostscript>
+    <trace proto="proto" port="port">
+      <hop ttl="ttl" rtt="rtt" ipaddr="ipaddr" host="host"/>
+    </trace>
     <times srtt="1112" rttvar="450" to="100000"/>
   </host>
   <output type="test output type">output value</output>
