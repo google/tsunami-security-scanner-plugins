@@ -314,27 +314,27 @@ public final class NmapResultHandler extends DefaultHandler {
         enterState(State.IN_NMAP_RUN, State.IN_TASK_BEGIN);
         taskBeginBuilder =
             TaskBegin.builder()
-                .setTask(attributes.getValue("task"))
-                .setTime(attributes.getValue("time"))
-                .setExtraInfo(attributes.getValue("extrainfo"));
+                .setTask(attributes.getValue("task", ""))
+                .setTime(attributes.getValue("time", ""))
+                .setExtraInfo(attributes.getValue("extrainfo", ""));
         break;
       case TASK_PROGRESS_ELEM:
         enterState(State.IN_NMAP_RUN, State.IN_TASK_PROGRESS);
         taskProgressBuilder =
             TaskProgress.builder()
-                .setTask(attributes.getValue("task"))
-                .setTime(attributes.getValue("time"))
-                .setPercent(attributes.getValue("percent"))
-                .setRemaining(attributes.getValue("remaining"))
-                .setEtc(attributes.getValue("etc"));
+                .setTask(attributes.getValue("task", ""))
+                .setTime(attributes.getValue("time", ""))
+                .setPercent(attributes.getValue("percent", ""))
+                .setRemaining(attributes.getValue("remaining", ""))
+                .setEtc(attributes.getValue("etc", ""));
         break;
       case TASK_END_ELEM:
         enterState(State.IN_NMAP_RUN, State.IN_TASK_END);
         taskEndBuilder =
             TaskEnd.builder()
-                .setTask(attributes.getValue("task"))
-                .setTime(attributes.getValue("time"))
-                .setExtraInfo(attributes.getValue("extrainfo"));
+                .setTask(attributes.getValue("task", ""))
+                .setTime(attributes.getValue("time", ""))
+                .setExtraInfo(attributes.getValue("extrainfo", ""));
         break;
       case PRE_SCRIPT_ELEM:
         enterState(State.IN_NMAP_RUN, State.IN_PRE_SCRIPT);
@@ -461,7 +461,7 @@ public final class NmapResultHandler extends DefaultHandler {
         enterState(State.IN_HOST, State.IN_UPTIME);
         uptimeBuilder =
             Uptime.builder()
-                .setSeconds(attributes.getValue("seconds"))
+                .setSeconds(attributes.getValue("seconds", ""))
                 .setLastBoot(attributes.getValue("lastboot", ""));
         break;
       case TCP_SEQUENCE_ELEM:
