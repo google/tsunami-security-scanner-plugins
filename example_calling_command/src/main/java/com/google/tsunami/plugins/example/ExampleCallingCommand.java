@@ -16,6 +16,7 @@
 package com.google.tsunami.plugins.example;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Strings;
@@ -107,11 +108,11 @@ public final class ExampleCallingCommand implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                    // Check individual NetworkService whether it is vulnerable.
-                    .filter(this::isServiceVulnerable)
-                    // Build DetectionReport message for vulnerable services.
-                    .map(networkService -> buildDetectionReport(targetInfo, networkService))
-                ::iterator)
+                // Check individual NetworkService whether it is vulnerable.
+                .filter(this::isServiceVulnerable)
+                // Build DetectionReport message for vulnerable services.
+                .map(networkService -> buildDetectionReport(targetInfo, networkService))
+                .collect(toImmutableList()))
         .build();
   }
 
