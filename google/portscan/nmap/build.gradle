@@ -52,6 +52,7 @@ ext {
     floggerVersion = '0.5.1'
     guavaVersion = '28.2-jre'
     guiceVersion = '4.2.3'
+    jcommanderVersion = '1.48'
     javaxInjectVersion = '1'
     okhttpVersion = '3.12.0'
     protobufVersion = '3.11.4'
@@ -76,6 +77,7 @@ dependencies {
     implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
     implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
     implementation "javax.inject:javax.inject:${javaxInjectVersion}"
+    implementation "com.beust:jcommander:${jcommanderVersion}"
     implementation "org.mockito:mockito-core:${mockitoVersion}"
     annotationProcessor "com.google.auto.value:auto-value:${autoValueVersion}"
 

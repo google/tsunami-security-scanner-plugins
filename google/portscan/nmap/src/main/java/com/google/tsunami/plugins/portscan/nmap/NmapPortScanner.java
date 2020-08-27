@@ -24,6 +24,7 @@ import com.google.common.base.Strings;
 import com.google.common.flogger.GoogleLogger;
 import com.google.tsunami.common.command.CommandExecutionThreadPool;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
+import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.PortScanner;
 import com.google.tsunami.plugin.annotations.PluginInfo;
@@ -38,16 +39,19 @@ import com.google.tsunami.plugins.portscan.nmap.client.result.NmapRun;
 import com.google.tsunami.plugins.portscan.nmap.client.result.Port;
 import com.google.tsunami.plugins.portscan.nmap.client.result.Ports;
 import com.google.tsunami.plugins.portscan.nmap.client.result.Script;
+import com.google.tsunami.plugins.portscan.nmap.option.NmapPortScannerCliOptions;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.PortScanningReport;
 import com.google.tsunami.proto.ScanTarget;
+import com.google.tsunami.proto.ServiceContext;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Version;
 import com.google.tsunami.proto.Version.VersionType;
 import com.google.tsunami.proto.VersionSet;
+import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -71,6 +75,7 @@ public final class NmapPortScanner implements PortScanner {
   private final NmapClient nmapClient;
   private final Executor commandExecutor;
   private final NmapPortScannerConfigs configs;
+  private final NmapPortScannerCliOptions cliOptions;
 
   private ScanTarget scanTarget;
 
@@ -78,10 +83,12 @@ public final class NmapPortScanner implements PortScanner {
   NmapPortScanner(
       NmapClient nmapClient,
       @CommandExecutionThreadPool Executor commandExecutor,
-      NmapPortScannerConfigs configs) {
+      NmapPortScannerConfigs configs,
+      NmapPortScannerCliOptions cliOptions) {
     this.nmapClient = checkNotNull(nmapClient);
     this.commandExecutor = checkNotNull(commandExecutor);
     this.configs = checkNotNull(configs);
+    this.cliOptions = checkNotNull(cliOptions);
   }
 
   @Override
@@ -124,9 +131,12 @@ public final class NmapPortScanner implements PortScanner {
       return nmapClient;
     }
 
+    String portTargets =
+        (cliOptions.portRangesTarget != null) ? cliOptions.portRangesTarget : configs.portTargets;
+
     Splitter.on(",")
         .omitEmptyStrings()
-        .split(configs.portTargets)
+        .split(portTargets)
         .forEach(
             portTarget -> {
               if (portTarget.contains("-")) {
@@ -153,9 +163,21 @@ public final class NmapPortScanner implements PortScanner {
                     .filter(NmapPortScanner::isPortOpen)
                     .forEach(
                         port -> {
-                          NetworkService networkService = buildNetworkService(host.get(), port);
-                          logIdentifiedNetworkService(networkService);
-                          portScanningReportBuilder.addNetworkServices(networkService);
+                          if (cliOptions.rootPathsTarget != null
+                              && NetworkServiceUtils.isWebService(getServiceNameFromPort(port))) {
+                            cliOptions.rootPathsTarget.forEach(
+                                rootPath -> {
+                                  NetworkService networkService =
+                                      buildNetworkService(host.get(), port, rootPath);
+                                  logIdentifiedNetworkService(networkService);
+                                  portScanningReportBuilder.addNetworkServices(networkService);
+                                });
+                          } else {
+                            NetworkService networkService =
+                                buildNetworkService(host.get(), port, null);
+                            logIdentifiedNetworkService(networkService);
+                            portScanningReportBuilder.addNetworkServices(networkService);
+                          }
                         }));
     return portScanningReportBuilder.build();
   }
@@ -181,13 +203,19 @@ public final class NmapPortScanner implements PortScanner {
     }
   }
 
-  private NetworkService buildNetworkService(Host host, Port port) {
+  private NetworkService buildNetworkService(Host host, Port port, String rootPath) {
     NetworkService.Builder networkServiceBuilder =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
                 NetworkEndpointUtils.forNetworkEndpointAndPort(
                     buildNetworkEndpointFromHost(host), getPortNumberFromPort(port)))
             .setTransportProtocol(getTransportProtocolFromPort(port));
+
+    if (rootPath != null) {
+      networkServiceBuilder.setServiceContext(
+          ServiceContext.newBuilder()
+              .setWebServiceContext(WebServiceContext.newBuilder().setApplicationRoot(rootPath)));
+    }
 
     getServiceNameFromPort(port).ifPresent(networkServiceBuilder::setServiceName);
     getSoftwareFromPort(port).ifPresent(networkServiceBuilder::setSoftware);
