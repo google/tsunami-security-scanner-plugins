@@ -163,18 +163,18 @@ public final class NmapPortScanner implements PortScanner {
                     .filter(NmapPortScanner::isPortOpen)
                     .forEach(
                         port -> {
+                          NetworkService networkService =
+                              buildNetworkService(host.get(), port, null);
                           if (cliOptions.rootPathsTarget != null
-                              && NetworkServiceUtils.isWebService(getServiceNameFromPort(port))) {
+                              && NetworkServiceUtils.isWebService(networkService)) {
                             cliOptions.rootPathsTarget.forEach(
                                 rootPath -> {
-                                  NetworkService networkService =
+                                  NetworkService webService =
                                       buildNetworkService(host.get(), port, rootPath);
-                                  logIdentifiedNetworkService(networkService);
-                                  portScanningReportBuilder.addNetworkServices(networkService);
+                                  logIdentifiedNetworkService(webService);
+                                  portScanningReportBuilder.addNetworkServices(webService);
                                 });
                           } else {
-                            NetworkService networkService =
-                                buildNetworkService(host.get(), port, null);
                             logIdentifiedNetworkService(networkService);
                             portScanningReportBuilder.addNetworkServices(networkService);
                           }
