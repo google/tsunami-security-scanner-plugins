@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'Tsunami PortScanner plugin using nmap.'
+description = 'Tsunami VulnDetector plugin for CVE-2020-3452.'
 group = 'com.google.tsunami'
 version = '0.0.1-SNAPSHOT'
 
@@ -46,14 +46,11 @@ java {
     }
 }
 
-
 ext {
-    autoValueVersion = '1.7'
     floggerVersion = '0.5.1'
     guavaVersion = '28.2-jre'
-    guiceVersion = '4.2.3'
-    jcommanderVersion = '1.48'
     javaxInjectVersion = '1'
+    jsoupVersion = '1.9.2'
     okhttpVersion = '3.12.0'
     protobufVersion = '3.11.4'
     tsunamiVersion = '0.0.1'
@@ -64,12 +61,10 @@ ext {
 }
 
 dependencies {
-    implementation "com.google.auto.value:auto-value-annotations:${autoValueVersion}"
     implementation "com.google.flogger:flogger:${floggerVersion}"
     implementation "com.google.flogger:google-extensions:${floggerVersion}"
     implementation "com.google.flogger:flogger-system-backend:${floggerVersion}"
     implementation "com.google.guava:guava:${guavaVersion}"
-    implementation "com.google.inject:guice:${guiceVersion}"
     implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
     implementation "com.google.protobuf:protobuf-javalite:${protobufVersion}"
     implementation "com.google.protobuf:protobuf-java-util:${protobufVersion}"
@@ -77,13 +72,12 @@ dependencies {
     implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
     implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
     implementation "javax.inject:javax.inject:${javaxInjectVersion}"
-    implementation "com.beust:jcommander:${jcommanderVersion}"
-    implementation "org.mockito:mockito-core:${mockitoVersion}"
-    annotationProcessor "com.google.auto.value:auto-value:${autoValueVersion}"
+    implementation "org.jsoup:jsoup:${jsoupVersion}"
 
     testImplementation "com.google.truth:truth:${truthVersion}"
     testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
     testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"
+    testImplementation "com.squareup.okhttp3:mockwebserver:${okhttpVersion}"
     testImplementation "junit:junit:${junitVersion}"
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"
 }

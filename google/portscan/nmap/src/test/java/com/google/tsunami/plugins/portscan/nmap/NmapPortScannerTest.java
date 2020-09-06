@@ -31,6 +31,7 @@ import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.plugins.portscan.nmap.client.NmapClient;
 import com.google.tsunami.plugins.portscan.nmap.client.parser.XMLParser;
 import com.google.tsunami.plugins.portscan.nmap.client.testing.SpyNmapClientModule;
+import com.google.tsunami.plugins.portscan.nmap.option.NmapPortScannerCliOptions;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.PortScanningReport;
@@ -39,6 +40,7 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import javax.inject.Inject;
@@ -62,6 +64,7 @@ public class NmapPortScannerTest {
   @Inject private NmapPortScanner portScanner;
 
   private final NmapPortScannerConfigs configs = new NmapPortScannerConfigs();
+  private final NmapPortScannerCliOptions cliOptions = new NmapPortScannerCliOptions();
 
   @Before
   public void setUp() throws IOException {
@@ -74,6 +77,7 @@ public class NmapPortScannerTest {
               @Override
               protected void configure() {
                 bind(NmapPortScannerConfigs.class).toInstance(configs);
+                bind(NmapPortScannerCliOptions.class).toInstance(cliOptions);
                 bind(Executor.class)
                     .annotatedWith(CommandExecutionThreadPool.class)
                     .toInstance(MoreExecutors.directExecutor());
@@ -162,5 +166,93 @@ public class NmapPortScannerTest {
                 ScanTarget.newBuilder()
                     .setNetworkEndpoint(NetworkEndpointUtils.forIp("127.0.0.1"))
                     .build()));
+  }
+
+  @Test
+  public void run_cliArgsHavePorts_overwriteConfigPorts()
+      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
+          SAXException {
+    configs.portTargets = "80,8080,15000-16000";
+    cliOptions.portRangesTarget = "80,10000-11000";
+    doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
+        .when(nmapClient)
+        .run(any());
+
+    portScanner.scan(
+        ScanTarget.newBuilder()
+            .setNetworkEndpoint(NetworkEndpointUtils.forIp("127.0.0.1"))
+            .build());
+
+    ArgumentCaptor<Integer> portTargetCaptor = ArgumentCaptor.forClass(Integer.class);
+    ArgumentCaptor<Integer> rangeStartCaptor = ArgumentCaptor.forClass(Integer.class);
+    ArgumentCaptor<Integer> rangeEndCaptor = ArgumentCaptor.forClass(Integer.class);
+    verify(nmapClient, atLeastOnce()).onPort(portTargetCaptor.capture());
+    verify(nmapClient, atLeastOnce())
+        .onPortRange(rangeStartCaptor.capture(), rangeEndCaptor.capture());
+    assertThat(portTargetCaptor.getAllValues()).containsExactly(80);
+    assertThat(rangeStartCaptor.getAllValues()).containsExactly(10000);
+    assertThat(rangeEndCaptor.getAllValues()).containsExactly(11000);
+  }
+
+  @Test
+  public void run_cliArgsHaveRootPaths_createSeparateNetworkServiceForEachPath()
+      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
+          SAXException {
+    configs.portTargets = "80";
+    cliOptions.rootPathsTarget = Arrays.asList("/root1", "/root2");
+    doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostHttp.xml")))
+        .when(nmapClient)
+        .run(any());
+
+    portScanner.scan(
+        ScanTarget.newBuilder()
+            .setNetworkEndpoint(NetworkEndpointUtils.forIp("127.0.0.1"))
+            .build());
+    NetworkEndpoint networkEndpoint = NetworkEndpointUtils.forIp("127.0.0.1");
+    PortScanningReport result =
+        portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build());
+    assertThat(result.getNetworkServicesCount()).isEqualTo(2);
+    assertThat(
+            result
+                .getNetworkServices(0)
+                .getServiceContext()
+                .getWebServiceContext()
+                .getApplicationRoot())
+        .isEqualTo("/root1");
+    assertThat(
+            result
+                .getNetworkServices(1)
+                .getServiceContext()
+                .getWebServiceContext()
+                .getApplicationRoot())
+        .isEqualTo("/root2");
+  }
+
+  @Test
+  public void run_cliArgsHaveRootPaths_dontIncludePathIfNotWebService()
+      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
+          SAXException {
+    configs.portTargets = "22";
+    cliOptions.rootPathsTarget = Arrays.asList("/root1", "/root2");
+    doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
+        .when(nmapClient)
+        .run(any());
+
+    portScanner.scan(
+        ScanTarget.newBuilder()
+            .setNetworkEndpoint(NetworkEndpointUtils.forIp("127.0.0.1"))
+            .build());
+    NetworkEndpoint networkEndpoint = NetworkEndpointUtils.forIp("127.0.0.1");
+    PortScanningReport result =
+        portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build());
+    // There should only be a single service identified even though two root paths were specified.
+    assertThat(result.getNetworkServicesCount()).isEqualTo(1);
+    assertThat(
+            result
+                .getNetworkServices(0)
+                .getServiceContext()
+                .getWebServiceContext()
+                .getApplicationRoot())
+        .isEmpty();
   }
 }

@@ -16,6 +16,7 @@
 package com.google.tsunami.plugins.example;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
@@ -84,11 +85,11 @@ public final class ExampleVulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                    // Check individual NetworkService whether it is vulnerable.
-                    .filter(unused -> isServiceVulnerable())
-                    // Build DetectionReport message for vulnerable services.
-                    .map(networkService -> buildDetectionReport(targetInfo, networkService))
-                ::iterator)
+                // Check individual NetworkService whether it is vulnerable.
+                .filter(unused -> isServiceVulnerable())
+                // Build DetectionReport message for vulnerable services.
+                .map(networkService -> buildDetectionReport(targetInfo, networkService))
+                .collect(toImmutableList()))
         .build();
   }
 
