@@ -31,6 +31,12 @@ public final class PortRangeValidator implements IParameterValidator {
     int second;
     String[] range = value.split("-", -1);
     try {
+      if (range.length != 0
+          && (range[0].startsWith("T:")
+              || range[0].startsWith("U:")
+              || range[0].startsWith("S:"))) {
+        range[0] = range[0].substring(2);
+      }
       if (range.length == 1) {
         first = Integer.parseInt(range[0]);
         second = first;

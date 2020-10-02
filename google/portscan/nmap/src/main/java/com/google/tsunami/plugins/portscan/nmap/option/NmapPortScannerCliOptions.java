@@ -32,7 +32,9 @@ public final class NmapPortScannerCliOptions implements CliOption {
 
   @Parameter(
       names = "--port-ranges-target",
-      description = "A list of port ranges to scan on the scanning target.",
+      description =
+          "A list of port ranges to scan on the scanning target. Specify the protocol to use by"
+              + " prepending 'T:' (TCP), 'U:' (UDP) or 'S:' (SCTP).",
       validateWith = PortRangeValidator.class)
   // Splitting and conversion is done by the NmapPortScanner itself.
   public String portRangesTarget;

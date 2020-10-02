@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.portscan.nmap.client.data;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
+import com.google.tsunami.proto.TransportProtocol;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -28,18 +29,30 @@ public class SinglePortTest {
 
   @Test
   public void getStringRepresentation_withValidValues_returnsCorrectString() {
-    SinglePort targetPort = SinglePort.create(65535);
+    SinglePort targetPort =
+        SinglePort.create(65535, TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED);
 
     assertThat(targetPort.getCommandLineRepresentation()).isEqualTo("65535");
   }
 
   @Test
+  public void getStringRepresentation_withProtocol_returnsCorrectString() {
+    SinglePort targetPort = SinglePort.create(65535, TransportProtocol.UDP);
+
+    assertThat(targetPort.getCommandLineRepresentation()).isEqualTo("U:65535");
+  }
+
+  @Test
   public void create_whenNegativePortValues_throwsException() {
-    assertThrows(IllegalArgumentException.class, () -> SinglePort.create(-1));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> SinglePort.create(-1, TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED));
   }
 
   @Test
   public void create_whenInvalidPortValue_throwsException() {
-    assertThrows(IllegalArgumentException.class, () -> SinglePort.create(99999999));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> SinglePort.create(99999999, TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED));
   }
 }

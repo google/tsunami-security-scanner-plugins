@@ -18,20 +18,28 @@ package com.google.tsunami.plugins.portscan.nmap.client.data;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
+import com.google.tsunami.proto.TransportProtocol;
 
 /** A single port. */
 @AutoValue
 public abstract class SinglePort implements IPortTarget {
   abstract int port();
 
-  public static SinglePort create(int port) {
+  abstract TransportProtocol protocol();
+
+  public static SinglePort create(int port, TransportProtocol protocol) {
     checkArgument(0 <= port, "Expected 0 <= %s", port);
     checkArgument(port <= MAX_PORT_NUMBER, "Expected %s <= %s", port, MAX_PORT_NUMBER);
-    return new AutoValue_SinglePort(port);
+    return new AutoValue_SinglePort(port, protocol);
   }
 
   @Override
   public String getCommandLineRepresentation() {
-    return Integer.toString(port());
+    return String.format("%s%d", IPortTarget.protocolCliString(protocol()), port());
+  }
+
+  @Override
+  public boolean isProtocolSpecified() {
+    return protocol() != TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED;
   }
 }

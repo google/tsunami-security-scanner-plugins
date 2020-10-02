@@ -30,6 +30,7 @@ import com.google.tsunami.plugins.portscan.nmap.client.NmapClient.HostDiscoveryT
 import com.google.tsunami.plugins.portscan.nmap.client.NmapClient.ScanTechnique;
 import com.google.tsunami.plugins.portscan.nmap.client.NmapClient.TimingTemplate;
 import com.google.tsunami.plugins.portscan.nmap.client.result.NmapRun;
+import com.google.tsunami.proto.TransportProtocol;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -144,7 +145,7 @@ public class NmapClientTest {
     client
         .withTargetNetworkEndpoint(NetworkEndpointUtils.forIp("1.1.1.1"))
         .withServiceAndVersionDetection()
-        .onPort(80);
+        .onPort(80, TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED);
 
     assertThat(client.buildRunCommandArgs())
         .containsExactly(
@@ -162,7 +163,7 @@ public class NmapClientTest {
     client
         .withTargetNetworkEndpoint(NetworkEndpointUtils.forIp("1.1.1.1"))
         .withServiceAndVersionDetection()
-        .onPortRange(0, 1024);
+        .onPortRange(0, 1024, TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED);
 
     assertThat(client.buildRunCommandArgs())
         .containsExactly(
@@ -180,15 +181,35 @@ public class NmapClientTest {
     client
         .withTargetNetworkEndpoint(NetworkEndpointUtils.forIp("1.1.1.1"))
         .withServiceAndVersionDetection()
-        .onPortRange(0, 1024)
-        .onPort(8080)
-        .onPort(8081);
+        .onPortRange(0, 1024, TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED)
+        .onPort(8080, TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED)
+        .onPort(8081, TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED);
 
     assertThat(client.buildRunCommandArgs())
         .containsExactly(
             nmapFile.getAbsolutePath(),
             "-p",
             "0-1024,8080,8081",
+            "-sV",
+            "1.1.1.1",
+            "-oX",
+            report.getAbsolutePath());
+  }
+
+  @Test
+  public void buildRunCommandArgs_whenPortsHaveDifferentProtocols_returnsCorrectCommandLine() {
+    client
+        .withTargetNetworkEndpoint(NetworkEndpointUtils.forIp("1.1.1.1"))
+        .withServiceAndVersionDetection()
+        .onPortRange(0, 1024, TransportProtocol.TCP)
+        .onPort(8080, TransportProtocol.UDP)
+        .onPort(8081, TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED);
+
+    assertThat(client.buildRunCommandArgs())
+        .containsExactly(
+            nmapFile.getAbsolutePath(),
+            "-p",
+            "8081,T:0-1024,U:8080",
             "-sV",
             "1.1.1.1",
             "-oX",

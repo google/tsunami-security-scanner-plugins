@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.portscan.nmap.client.data;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
+import com.google.tsunami.proto.TransportProtocol;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -28,23 +29,37 @@ public class PortRangeTest {
 
   @Test
   public void getStringRepresentation_withValidValues_returnsCorrectString() {
-    PortRange targetPort = PortRange.create(0, 65535);
+    PortRange targetPort =
+        PortRange.create(0, 65535, TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED);
 
     assertThat(targetPort.getCommandLineRepresentation()).isEqualTo("0-65535");
   }
 
   @Test
+  public void getStringRepresentation_withProtocol_returnsCorrectString() {
+    PortRange targetPort = PortRange.create(0, 65535, TransportProtocol.TCP);
+
+    assertThat(targetPort.getCommandLineRepresentation()).isEqualTo("T:0-65535");
+  }
+
+  @Test
   public void create_whenNegativePortValues_throwsException() {
-    assertThrows(IllegalArgumentException.class, () -> PortRange.create(-1, 65535));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> PortRange.create(-1, 65535, TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED));
   }
 
   @Test
   public void create_whenOutOfOrderPortValues_throwsException() {
-    assertThrows(IllegalArgumentException.class, () -> PortRange.create(65535, 0));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> PortRange.create(65535, 0, TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED));
   }
 
   @Test
   public void create_whenInvalidPortValue_throwsException() {
-    assertThrows(IllegalArgumentException.class, () -> PortRange.create(0, 99999999));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> PortRange.create(0, 99999999, TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED));
   }
 }

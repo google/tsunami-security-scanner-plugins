@@ -129,7 +129,7 @@ public class NmapPortScannerTest {
   public void run_configHasPortTargets_scansAllTargets()
       throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
           SAXException {
-    configs.portTargets = "80,8080,15000-16000";
+    configs.portTargets = "80,8080,T:15000-16000";
     doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
         .when(nmapClient)
         .run(any());
@@ -140,14 +140,27 @@ public class NmapPortScannerTest {
             .build());
 
     ArgumentCaptor<Integer> portTargetCaptor = ArgumentCaptor.forClass(Integer.class);
+    ArgumentCaptor<TransportProtocol> singlePortProtocolCaptor =
+        ArgumentCaptor.forClass(TransportProtocol.class);
     ArgumentCaptor<Integer> rangeStartCaptor = ArgumentCaptor.forClass(Integer.class);
     ArgumentCaptor<Integer> rangeEndCaptor = ArgumentCaptor.forClass(Integer.class);
-    verify(nmapClient, atLeastOnce()).onPort(portTargetCaptor.capture());
+    ArgumentCaptor<TransportProtocol> portRangeProtocolCaptor =
+        ArgumentCaptor.forClass(TransportProtocol.class);
     verify(nmapClient, atLeastOnce())
-        .onPortRange(rangeStartCaptor.capture(), rangeEndCaptor.capture());
+        .onPort(portTargetCaptor.capture(), singlePortProtocolCaptor.capture());
+    verify(nmapClient, atLeastOnce())
+        .onPortRange(
+            rangeStartCaptor.capture(),
+            rangeEndCaptor.capture(),
+            portRangeProtocolCaptor.capture());
     assertThat(portTargetCaptor.getAllValues()).containsExactly(80, 8080);
+    assertThat(singlePortProtocolCaptor.getAllValues())
+        .containsExactly(
+            TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED,
+            TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED);
     assertThat(rangeStartCaptor.getAllValues()).containsExactly(15000);
     assertThat(rangeEndCaptor.getAllValues()).containsExactly(16000);
+    assertThat(portRangeProtocolCaptor.getAllValues()).containsExactly(TransportProtocol.TCP);
   }
 
   @Test
@@ -172,8 +185,8 @@ public class NmapPortScannerTest {
   public void run_cliArgsHavePorts_overwriteConfigPorts()
       throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
           SAXException {
-    configs.portTargets = "80,8080,15000-16000";
-    cliOptions.portRangesTarget = "80,10000-11000";
+    configs.portTargets = "80,8080,T:15000-16000";
+    cliOptions.portRangesTarget = "80,U:10000-11000";
     doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
         .when(nmapClient)
         .run(any());
@@ -184,14 +197,25 @@ public class NmapPortScannerTest {
             .build());
 
     ArgumentCaptor<Integer> portTargetCaptor = ArgumentCaptor.forClass(Integer.class);
+    ArgumentCaptor<TransportProtocol> singlePortProtocolCaptor =
+        ArgumentCaptor.forClass(TransportProtocol.class);
     ArgumentCaptor<Integer> rangeStartCaptor = ArgumentCaptor.forClass(Integer.class);
     ArgumentCaptor<Integer> rangeEndCaptor = ArgumentCaptor.forClass(Integer.class);
-    verify(nmapClient, atLeastOnce()).onPort(portTargetCaptor.capture());
+    ArgumentCaptor<TransportProtocol> portRangeProtocolCaptor =
+        ArgumentCaptor.forClass(TransportProtocol.class);
     verify(nmapClient, atLeastOnce())
-        .onPortRange(rangeStartCaptor.capture(), rangeEndCaptor.capture());
+        .onPort(portTargetCaptor.capture(), singlePortProtocolCaptor.capture());
+    verify(nmapClient, atLeastOnce())
+        .onPortRange(
+            rangeStartCaptor.capture(),
+            rangeEndCaptor.capture(),
+            portRangeProtocolCaptor.capture());
     assertThat(portTargetCaptor.getAllValues()).containsExactly(80);
+    assertThat(singlePortProtocolCaptor.getAllValues())
+        .containsExactly(TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED);
     assertThat(rangeStartCaptor.getAllValues()).containsExactly(10000);
     assertThat(rangeEndCaptor.getAllValues()).containsExactly(11000);
+    assertThat(portRangeProtocolCaptor.getAllValues()).containsExactly(TransportProtocol.UDP);
   }
 
   @Test

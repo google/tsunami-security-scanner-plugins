@@ -139,12 +139,30 @@ public final class NmapPortScanner implements PortScanner {
         .split(portTargets)
         .forEach(
             portTarget -> {
+              TransportProtocol protocol = TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED;
+              if (portTarget.length() >= 2 && portTarget.charAt(1) == ':') {
+                switch (portTarget.substring(0, 2)) {
+                  case "T:":
+                    protocol = TransportProtocol.TCP;
+                    break;
+                  case "U:":
+                    protocol = TransportProtocol.UDP;
+                    break;
+                  case "S:":
+                    protocol = TransportProtocol.SCTP;
+                    break;
+                  default: // fall out
+                }
+                portTarget = portTarget.substring(2);
+              }
               if (portTarget.contains("-")) {
                 List<String> rangeSegments = Splitter.on("-").splitToList(portTarget);
                 nmapClient.onPortRange(
-                    Integer.parseInt(rangeSegments.get(0)), Integer.parseInt(rangeSegments.get(1)));
+                    Integer.parseInt(rangeSegments.get(0)),
+                    Integer.parseInt(rangeSegments.get(1)),
+                    protocol);
               } else {
-                nmapClient.onPort(Integer.parseInt(portTarget));
+                nmapClient.onPort(Integer.parseInt(portTarget), protocol);
               }
             });
     return nmapClient;

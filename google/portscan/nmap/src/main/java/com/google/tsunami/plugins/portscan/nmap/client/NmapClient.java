@@ -31,6 +31,7 @@ import com.google.tsunami.plugins.portscan.nmap.client.data.SinglePort;
 import com.google.tsunami.plugins.portscan.nmap.client.parser.XMLParser;
 import com.google.tsunami.plugins.portscan.nmap.client.result.NmapRun;
 import com.google.tsunami.proto.NetworkEndpoint;
+import com.google.tsunami.proto.TransportProtocol;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -42,6 +43,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
@@ -273,8 +275,16 @@ public class NmapClient {
     if (!targetPorts.isEmpty()) {
       runCommandArgs.add("-p");
       runCommandArgs.add(
-          targetPorts.stream()
-              .map(IPortTarget::getCommandLineRepresentation)
+          Stream.concat(
+                  // According to https://nmap.org/book/man-port-specification.html, once a protocol
+                  // is specified, nmap will use the same protocol for all subsequent ports, so we
+                  // add the ports with no specific protocols first.
+                  targetPorts.stream()
+                      .filter(port -> !port.isProtocolSpecified())
+                      .map(IPortTarget::getCommandLineRepresentation),
+                  targetPorts.stream()
+                      .filter(IPortTarget::isProtocolSpecified)
+                      .map(IPortTarget::getCommandLineRepresentation))
               .collect(joining(",")));
     }
 
@@ -423,8 +433,8 @@ public class NmapClient {
    *
    * @param port Port number.
    */
-  public NmapClient onPort(int port) {
-    this.targetPorts.add(SinglePort.create(port));
+  public NmapClient onPort(int port, TransportProtocol protocol) {
+    this.targetPorts.add(SinglePort.create(port, protocol));
     return this;
   }
 
@@ -435,8 +445,8 @@ public class NmapClient {
    * @param startPort Start port.
    * @param endPort End port.
    */
-  public NmapClient onPortRange(int startPort, int endPort) {
-    this.targetPorts.add(PortRange.create(startPort, endPort));
+  public NmapClient onPortRange(int startPort, int endPort, TransportProtocol protocol) {
+    this.targetPorts.add(PortRange.create(startPort, endPort, protocol));
     return this;
   }
 

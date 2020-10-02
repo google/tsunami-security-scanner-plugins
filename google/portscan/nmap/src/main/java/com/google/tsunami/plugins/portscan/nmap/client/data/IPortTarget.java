@@ -15,6 +15,8 @@
  */
 package com.google.tsunami.plugins.portscan.nmap.client.data;
 
+import com.google.tsunami.proto.TransportProtocol;
+
 /**
  * A target port for the nmap client.
  *
@@ -23,7 +25,22 @@ package com.google.tsunami.plugins.portscan.nmap.client.data;
  */
 public interface IPortTarget {
 
+  public static String protocolCliString(TransportProtocol protocol) {
+    switch (protocol) {
+      case TCP:
+        return "T:";
+      case UDP:
+        return "U:";
+      case SCTP:
+        return "S:";
+      default:
+        return "";
+    }
+  }
+
   int MAX_PORT_NUMBER = 65535;
+
+  boolean isProtocolSpecified();
 
   String getCommandLineRepresentation();
 }

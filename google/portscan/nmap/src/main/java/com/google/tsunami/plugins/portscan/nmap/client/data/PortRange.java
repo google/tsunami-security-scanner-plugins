@@ -18,23 +18,33 @@ package com.google.tsunami.plugins.portscan.nmap.client.data;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
+import com.google.tsunami.proto.TransportProtocol;
 
 /** A range of ports for nmap. */
 @AutoValue
 public abstract class PortRange implements IPortTarget {
   abstract int startPort();
+
   abstract int endPort();
 
-  public static PortRange create(int startPort, int endPort) {
+  abstract TransportProtocol protocol();
+
+  public static PortRange create(int startPort, int endPort, TransportProtocol protocol) {
     // Ports in the range of 0-65535. The following checks verifies that 0 <= start < end <= 65535
     checkArgument(startPort < endPort, "Expected %s < %s", startPort, endPort);
     checkArgument(0 <= startPort, "Expected 0 <= %s", startPort);
     checkArgument(endPort <= MAX_PORT_NUMBER, "Expected %s <= %s", endPort, MAX_PORT_NUMBER);
-    return new AutoValue_PortRange(startPort, endPort);
+    return new AutoValue_PortRange(startPort, endPort, protocol);
   }
 
   @Override
   public String getCommandLineRepresentation() {
-    return String.format("%d-%d", startPort(), endPort());
+    return String.format(
+        "%s%d-%d", IPortTarget.protocolCliString(protocol()), startPort(), endPort());
+  }
+
+  @Override
+  public boolean isProtocolSpecified() {
+    return protocol() != TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED;
   }
 }
