@@ -186,7 +186,7 @@ public class NmapPortScannerTest {
       throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
           SAXException {
     configs.portTargets = "80,8080,T:15000-16000";
-    cliOptions.portRangesTarget = "80,U:10000-11000";
+    cliOptions.portRangesTarget = "80-80,U:10000-11000";
     doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
         .when(nmapClient)
         .run(any());

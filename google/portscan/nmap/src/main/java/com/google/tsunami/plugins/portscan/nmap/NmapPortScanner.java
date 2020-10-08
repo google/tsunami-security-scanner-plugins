@@ -157,10 +157,13 @@ public final class NmapPortScanner implements PortScanner {
               }
               if (portTarget.contains("-")) {
                 List<String> rangeSegments = Splitter.on("-").splitToList(portTarget);
-                nmapClient.onPortRange(
-                    Integer.parseInt(rangeSegments.get(0)),
-                    Integer.parseInt(rangeSegments.get(1)),
-                    protocol);
+                int firstPort = Integer.parseInt(rangeSegments.get(0));
+                int lastPort = Integer.parseInt(rangeSegments.get(1));
+                if (firstPort == lastPort) {
+                  nmapClient.onPort(firstPort, protocol);
+                } else {
+                  nmapClient.onPortRange(firstPort, lastPort, protocol);
+                }
               } else {
                 nmapClient.onPort(Integer.parseInt(portTarget), protocol);
               }
