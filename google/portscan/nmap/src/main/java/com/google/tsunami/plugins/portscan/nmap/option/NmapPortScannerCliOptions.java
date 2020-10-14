@@ -16,7 +16,6 @@
 package com.google.tsunami.plugins.portscan.nmap.option;
 
 import com.beust.jcommander.Parameter;
-import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 import com.google.tsunami.common.cli.CliOption;
 import com.google.tsunami.plugins.portscan.nmap.option.validator.PortRangeValidator;
@@ -40,14 +39,5 @@ public final class NmapPortScannerCliOptions implements CliOption {
   public String portRangesTarget;
 
   @Override
-  public void validate() {
-    boolean multiplePorts =
-        portRangesTarget != null
-            && (portRangesTarget.contains(",") || portRangesTarget.contains("-"));
-    boolean multipleRootPaths = rootPathsTarget != null && rootPathsTarget.size() > 1;
-    if (multiplePorts && multipleRootPaths) {
-      throw new ParameterException(
-          String.format("Cannot scan multiple ports and multiple root paths at the same time"));
-    }
-  }
+  public void validate() {}
 }
