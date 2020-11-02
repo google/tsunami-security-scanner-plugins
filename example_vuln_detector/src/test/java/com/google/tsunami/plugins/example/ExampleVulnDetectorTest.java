@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.cve.cve_2017_5638;
+package com.google.tsunami.plugins.example;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 
