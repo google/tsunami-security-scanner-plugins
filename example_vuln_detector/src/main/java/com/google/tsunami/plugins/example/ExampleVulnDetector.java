@@ -98,7 +98,7 @@ public final class ExampleVulnDetector implements VulnDetector {
     return true;
   }
 
-  // This builds the DetectionReport message for a specifc vulnerable network service.
+  // This builds the DetectionReport message for a specific vulnerable network service.
   private DetectionReport buildDetectionReport(
       TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
     return DetectionReport.newBuilder()
