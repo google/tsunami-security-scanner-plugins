@@ -182,6 +182,30 @@ public class NmapPortScannerTest {
   }
 
   @Test
+  public void run_cliArgsHavePorts_ignoresConfigPorts()
+      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
+          SAXException {
+    cliOptions.portRangesTarget = "80";
+    doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
+        .when(nmapClient)
+        .run(any());
+
+    portScanner.scan(
+        ScanTarget.newBuilder()
+            .setNetworkEndpoint(NetworkEndpointUtils.forIp("127.0.0.1"))
+            .build());
+
+    ArgumentCaptor<Integer> portTargetCaptor = ArgumentCaptor.forClass(Integer.class);
+    ArgumentCaptor<TransportProtocol> singlePortProtocolCaptor =
+        ArgumentCaptor.forClass(TransportProtocol.class);
+    verify(nmapClient, atLeastOnce())
+        .onPort(portTargetCaptor.capture(), singlePortProtocolCaptor.capture());
+    assertThat(portTargetCaptor.getAllValues()).containsExactly(80);
+    assertThat(singlePortProtocolCaptor.getAllValues())
+        .containsExactly(TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED);
+  }
+
+  @Test
   public void run_cliArgsHavePorts_overwriteConfigPorts()
       throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
           SAXException {

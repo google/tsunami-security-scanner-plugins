@@ -127,7 +127,8 @@ public final class NmapPortScanner implements PortScanner {
   }
 
   private NmapClient setPortTargets(NmapClient nmapClient) {
-    if (Strings.isNullOrEmpty(configs.portTargets)) {
+    if (Strings.isNullOrEmpty(configs.portTargets)
+        && Strings.isNullOrEmpty(cliOptions.portRangesTarget)) {
       return nmapClient;
     }
 
