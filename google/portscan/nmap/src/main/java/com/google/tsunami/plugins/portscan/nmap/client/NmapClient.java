@@ -337,16 +337,9 @@ public class NmapClient {
         return networkEndpoint.getIpAddress().getAddress();
       case HOSTNAME:
         return networkEndpoint.getHostname().getName();
-      case IP_PORT:
-      case HOSTNAME_PORT:
-      case UNRECOGNIZED:
-      case TYPE_UNSPECIFIED:
+      default:
         throw new AssertionError("Invalid NetworkEndpoint type for Nmap.");
     }
-
-    throw new AssertionError(
-        String.format(
-            "Should never happen. Unchecked NetworkEndpoint type: %s", networkEndpoint.getType()));
   }
 
   /**
