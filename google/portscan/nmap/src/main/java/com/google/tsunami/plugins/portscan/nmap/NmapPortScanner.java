@@ -216,10 +216,20 @@ public final class NmapPortScanner implements PortScanner {
   private NetworkEndpoint buildNetworkEndpointFromHost(Host host) {
     Optional<Address> address = getAddressFromHost(host);
     Optional<Hostname> hostname = getHostnameFromHost(host);
-    if (address.isPresent()) {
+    String hostnameStr = null;
+    if (hostname.isPresent()) {
+      hostnameStr = hostname.get().name();
+    } else if (NetworkEndpointUtils.hasHostname(scanTarget.getNetworkEndpoint())) {
+      // Use the specified hostname if there wasn't returned by the nmap scan. This will be used in
+      // HTTP requests even if it doesn't resolve to the same IP as the one scanned.
+      hostnameStr = scanTarget.getNetworkEndpoint().getHostname().getName();
+    }
+    if (address.isPresent() && hostnameStr != null) {
+      return NetworkEndpointUtils.forIpAndHostname(address.get().addr(), hostnameStr);
+    } else if (address.isPresent()) {
       return NetworkEndpointUtils.forIp(address.get().addr());
-    } else if (hostname.isPresent()) {
-      return NetworkEndpointUtils.forHostname(hostname.get().name());
+    } else if (hostnameStr != null) {
+      return NetworkEndpointUtils.forHostname(hostnameStr);
     } else {
       return scanTarget.getNetworkEndpoint();
     }
@@ -338,6 +348,10 @@ public final class NmapPortScanner implements PortScanner {
         return networkEndpoint.getIpAddress().getAddress();
       case HOSTNAME:
         return networkEndpoint.getHostname().getName();
+      case IP_HOSTNAME:
+        return networkEndpoint.getIpAddress().getAddress()
+            + " / "
+            + networkEndpoint.getHostname().getName();
       default:
         throw new AssertionError(
             String.format(

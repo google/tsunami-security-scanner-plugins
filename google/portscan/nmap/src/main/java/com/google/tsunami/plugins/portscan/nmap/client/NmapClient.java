@@ -334,6 +334,7 @@ public class NmapClient {
   private static String networkEndpointToCliRepresentation(NetworkEndpoint networkEndpoint) {
     switch (networkEndpoint.getType()) {
       case IP:
+      case IP_HOSTNAME:
         return networkEndpoint.getIpAddress().getAddress();
       case HOSTNAME:
         return networkEndpoint.getHostname().getName();

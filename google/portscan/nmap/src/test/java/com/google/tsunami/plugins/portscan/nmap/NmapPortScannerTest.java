@@ -30,6 +30,7 @@ import com.google.tsunami.common.command.CommandExecutionThreadPool;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.plugins.portscan.nmap.client.NmapClient;
 import com.google.tsunami.plugins.portscan.nmap.client.parser.XMLParser;
+import com.google.tsunami.plugins.portscan.nmap.client.result.NmapRun;
 import com.google.tsunami.plugins.portscan.nmap.client.testing.SpyNmapClientModule;
 import com.google.tsunami.plugins.portscan.nmap.option.NmapPortScannerCliOptions;
 import com.google.tsunami.proto.NetworkEndpoint;
@@ -41,7 +42,6 @@ import com.google.tsunami.proto.TransportProtocol;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import javax.inject.Inject;
 import javax.xml.parsers.ParserConfigurationException;
@@ -87,12 +87,43 @@ public class NmapPortScannerTest {
   }
 
   @Test
-  public void run_whenNmapRunHasOpenPorts_returnsMatchingService()
-      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
-          SAXException {
-    doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
-        .when(nmapClient)
-        .run(any());
+  public void run_whenNmapRunHasOpenPorts_returnsMatchingService() throws Exception {
+    doReturn(loadNmapRun("testdata/localhostSsh.xml")).when(nmapClient).run(any());
+    NetworkEndpoint networkEndpoint =
+        NetworkEndpointUtils.forIpAndHostname("127.0.0.1", "localhost");
+    assertThat(
+            portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
+        .isEqualTo(
+            PortScanningReport.newBuilder()
+                .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint))
+                .addNetworkServices(
+                    NetworkService.newBuilder()
+                        .setNetworkEndpoint(
+                            NetworkEndpointUtils.forIpHostnameAndPort("127.0.0.1", "localhost", 22))
+                        .setTransportProtocol(TransportProtocol.TCP)
+                        .setServiceName("ssh")
+                        .addBanner("SSH-2.0-OpenSSH_7.9 MDI-2.0"))
+                .build());
+  }
+
+  @Test
+  public void run_whenNmapRunReportsClosedPort_returnsEmptyServices() throws Exception {
+    doReturn(loadNmapRun("testdata/closedTelnet.xml")).when(nmapClient).run(any());
+    NetworkEndpoint networkEndpoint =
+        NetworkEndpointUtils.forIpAndHostname("127.0.0.1", "localhost");
+
+    assertThat(
+            portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
+        .isEqualTo(
+            PortScanningReport.newBuilder()
+                .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint))
+                .build());
+  }
+
+  @Test
+  public void run_whenNmapRunHasOpenPortsAndIpOnly_returnsMatchingServiceWithIpOnly()
+      throws Exception {
+    doReturn(loadNmapRun("testdata/localhostHttpIpOnly.xml")).when(nmapClient).run(any());
     NetworkEndpoint networkEndpoint = NetworkEndpointUtils.forIp("127.0.0.1");
     assertThat(
             portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
@@ -101,38 +132,35 @@ public class NmapPortScannerTest {
                 .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint))
                 .addNetworkServices(
                     NetworkService.newBuilder()
-                        .setNetworkEndpoint(NetworkEndpointUtils.forIpAndPort("127.0.0.1", 22))
+                        .setNetworkEndpoint(NetworkEndpointUtils.forIpAndPort("127.0.0.1", 80))
                         .setTransportProtocol(TransportProtocol.TCP)
-                        .setServiceName("ssh")
-                        .addBanner("SSH-2.0-OpenSSH_7.9 MDI-2.0"))
+                        .setServiceName("http"))
                 .build());
   }
 
   @Test
-  public void run_whenNmapRunReportsClosedPort_returnsEmptyServices()
-      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
-          SAXException {
-    doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/closedTelnet.xml")))
-        .when(nmapClient)
-        .run(any());
-    NetworkEndpoint networkEndpoint = NetworkEndpointUtils.forIp("127.0.0.1");
-
+  public void run_whenNmapRunHasOpenPortsAndHostnameOnly_returnsMatchingServiceWithHostnameOnly()
+      throws Exception {
+    doReturn(loadNmapRun("testdata/localhostHttpHostnameOnly.xml")).when(nmapClient).run(any());
+    NetworkEndpoint networkEndpoint = NetworkEndpointUtils.forHostname("localhost");
     assertThat(
             portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
         .isEqualTo(
             PortScanningReport.newBuilder()
                 .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint))
+                .addNetworkServices(
+                    NetworkService.newBuilder()
+                        .setNetworkEndpoint(
+                            NetworkEndpointUtils.forHostnameAndPort("localhost", 80))
+                        .setTransportProtocol(TransportProtocol.TCP)
+                        .setServiceName("http"))
                 .build());
   }
 
   @Test
-  public void run_configHasPortTargets_scansAllTargets()
-      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
-          SAXException {
+  public void run_configHasPortTargets_scansAllTargets() throws Exception {
     configs.portTargets = "80,8080,T:15000-16000";
-    doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
-        .when(nmapClient)
-        .run(any());
+    doReturn(loadNmapRun("testdata/localhostSsh.xml")).when(nmapClient).run(any());
 
     portScanner.scan(
         ScanTarget.newBuilder()
@@ -164,13 +192,9 @@ public class NmapPortScannerTest {
   }
 
   @Test
-  public void run_configHasInvalidPorts_throwsException()
-      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
-          SAXException {
+  public void run_configHasInvalidPorts_throwsException() throws Exception {
     configs.portTargets = "80,8080,abcd";
-    doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
-        .when(nmapClient)
-        .run(any());
+    doReturn(loadNmapRun("testdata/localhostSsh.xml")).when(nmapClient).run(any());
 
     assertThrows(
         NumberFormatException.class,
@@ -182,13 +206,9 @@ public class NmapPortScannerTest {
   }
 
   @Test
-  public void run_cliArgsHavePorts_ignoresConfigPorts()
-      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
-          SAXException {
+  public void run_cliArgsHavePorts_ignoresConfigPorts() throws Exception {
     cliOptions.portRangesTarget = "80";
-    doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
-        .when(nmapClient)
-        .run(any());
+    doReturn(loadNmapRun("testdata/localhostSsh.xml")).when(nmapClient).run(any());
 
     portScanner.scan(
         ScanTarget.newBuilder()
@@ -206,14 +226,10 @@ public class NmapPortScannerTest {
   }
 
   @Test
-  public void run_cliArgsHavePorts_overwriteConfigPorts()
-      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
-          SAXException {
+  public void run_cliArgsHavePorts_overwriteConfigPorts() throws Exception {
     configs.portTargets = "80,8080,T:15000-16000";
     cliOptions.portRangesTarget = "80-80,U:10000-11000";
-    doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
-        .when(nmapClient)
-        .run(any());
+    doReturn(loadNmapRun("testdata/localhostSsh.xml")).when(nmapClient).run(any());
 
     portScanner.scan(
         ScanTarget.newBuilder()
@@ -243,14 +259,10 @@ public class NmapPortScannerTest {
   }
 
   @Test
-  public void run_cliArgsHaveRootPaths_createSeparateNetworkServiceForEachPath()
-      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
-          SAXException {
+  public void run_cliArgsHaveRootPaths_createSeparateNetworkServiceForEachPath() throws Exception {
     configs.portTargets = "80";
     cliOptions.rootPathsTarget = Arrays.asList("/root1", "/root2");
-    doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostHttp.xml")))
-        .when(nmapClient)
-        .run(any());
+    doReturn(loadNmapRun("testdata/localhostHttp.xml")).when(nmapClient).run(any());
 
     portScanner.scan(
         ScanTarget.newBuilder()
@@ -277,14 +289,10 @@ public class NmapPortScannerTest {
   }
 
   @Test
-  public void run_cliArgsHaveRootPaths_dontIncludePathIfNotWebService()
-      throws InterruptedException, ExecutionException, IOException, ParserConfigurationException,
-          SAXException {
+  public void run_cliArgsHaveRootPaths_dontIncludePathIfNotWebService() throws Exception {
     configs.portTargets = "22";
     cliOptions.rootPathsTarget = Arrays.asList("/root1", "/root2");
-    doReturn(XMLParser.parse(getClass().getResourceAsStream("testdata/localhostSsh.xml")))
-        .when(nmapClient)
-        .run(any());
+    doReturn(loadNmapRun("testdata/localhostSsh.xml")).when(nmapClient).run(any());
 
     portScanner.scan(
         ScanTarget.newBuilder()
@@ -302,5 +310,10 @@ public class NmapPortScannerTest {
                 .getWebServiceContext()
                 .getApplicationRoot())
         .isEmpty();
+  }
+
+  private NmapRun loadNmapRun(String path)
+      throws ParserConfigurationException, SAXException, IOException {
+    return XMLParser.parse(getClass().getResourceAsStream(path));
   }
 }
