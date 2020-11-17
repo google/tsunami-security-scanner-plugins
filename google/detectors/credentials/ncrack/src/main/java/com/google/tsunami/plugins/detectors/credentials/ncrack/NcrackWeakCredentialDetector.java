@@ -238,7 +238,8 @@ public final class NcrackWeakCredentialDetector implements VulnDetector {
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "wp-login.php";
     try {
       // This is a blocking call.
-      HttpResponse response = httpClient.send(get(wordPressLoginUrl).withEmptyHeaders().build());
+      HttpResponse response =
+          httpClient.send(get(wordPressLoginUrl).withEmptyHeaders().build(), networkService);
       return response.status().isSuccess()
           && response
               .bodyString()

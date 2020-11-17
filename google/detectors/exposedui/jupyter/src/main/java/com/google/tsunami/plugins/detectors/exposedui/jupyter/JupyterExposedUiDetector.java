@@ -84,7 +84,8 @@ public final class JupyterExposedUiDetector implements VulnDetector {
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "terminals/1";
     try {
       // This is a blocking call.
-      HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build());
+      HttpResponse response =
+          httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
       return response.status().isSuccess()
           // TODO(b/147455413): checking Jupyter Notebook string is not needed once we have plugin
           // matching logic.

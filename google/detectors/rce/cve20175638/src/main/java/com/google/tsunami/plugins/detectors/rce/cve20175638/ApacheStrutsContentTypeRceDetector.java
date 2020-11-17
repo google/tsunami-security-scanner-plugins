@@ -112,7 +112,8 @@ public final class ApacheStrutsContentTypeRceDetector implements VulnDetector {
       HttpHeaders headers = HttpHeaders.builder()
           .addHeader(CONTENT_TYPE, payload)
           .build();
-      HttpResponse response = httpClient.send(get(targetUri).setHeaders(headers).build());
+      HttpResponse response =
+          httpClient.send(get(targetUri).setHeaders(headers).build(), networkService);
       // If the server is vulnerable our header will be appended to the response.
       Optional<String> headerValue = response.headers().get(DETECTOR_HEADER_NAME);
 

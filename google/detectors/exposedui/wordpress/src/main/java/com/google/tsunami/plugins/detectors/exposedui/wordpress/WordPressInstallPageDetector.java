@@ -95,7 +95,8 @@ public final class WordPressInstallPageDetector implements VulnDetector {
             + "wp-admin/install.php?step=1";
     try {
       // This is a blocking call.
-      HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build());
+      HttpResponse response =
+          httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
       return response.status().isSuccess()
           // TODO(b/147455416): checking WordPress string is not needed once we have plugin
           // matching logic.

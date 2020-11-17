@@ -85,7 +85,8 @@ public final class CVE20203452Detector implements VulnDetector {
             + "/browser_inc.lua&default-language&lang=../";
     try {
       // This is a blocking call.
-      HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build());
+      HttpResponse response =
+          httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
       return response.status().isSuccess()
           && response
               .bodyString()

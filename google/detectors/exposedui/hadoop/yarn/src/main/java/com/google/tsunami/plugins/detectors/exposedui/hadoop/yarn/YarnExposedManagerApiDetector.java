@@ -98,7 +98,8 @@ public final class YarnExposedManagerApiDetector implements VulnDetector {
     String clusterInfoUrl =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "cluster/cluster";
     try {
-      HttpResponse response = httpClient.send(get(clusterInfoUrl).withEmptyHeaders().build());
+      HttpResponse response =
+          httpClient.send(get(clusterInfoUrl).withEmptyHeaders().build(), networkService);
       return response.status().isSuccess()
           && response
               .bodyString()
@@ -121,7 +122,8 @@ public final class YarnExposedManagerApiDetector implements VulnDetector {
             + "ws/v1/cluster/apps/new-application";
     logger.atInfo().log("Trying creating a new application on target '%s'", targetUri);
     try {
-      HttpResponse response = httpClient.send(post(targetUri).withEmptyHeaders().build());
+      HttpResponse response =
+          httpClient.send(post(targetUri).withEmptyHeaders().build(), networkService);
       return response.status().isSuccess()
           && response
               .bodyJson()

@@ -96,7 +96,8 @@ public final class JenkinsExposedUiDetector implements VulnDetector {
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "view/all/newJob";
     try {
       // This is a blocking call.
-      HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build());
+      HttpResponse response =
+          httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
       return response.status().isSuccess()
           // TODO(b/149479388): checking Jenkins string is not needed once we have plugin
           // matching logic.
