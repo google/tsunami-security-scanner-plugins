@@ -28,8 +28,8 @@ import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClie
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TargetService;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TimingTemplate;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.data.NcrackRun;
-import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.tester.CredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.provider.TestCredential;
 import com.google.tsunami.proto.NetworkService;
 import java.io.IOException;
 import java.util.List;

@@ -16,7 +16,7 @@
 package com.google.tsunami.plugins.detectors.credentials.ncrack.tester;
 
 import com.google.common.collect.ImmutableList;
-import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.TestCredential;
+import com.google.tsunami.plugins.detectors.credentials.provider.TestCredential;
 import com.google.tsunami.proto.NetworkService;
 import java.util.List;
 
