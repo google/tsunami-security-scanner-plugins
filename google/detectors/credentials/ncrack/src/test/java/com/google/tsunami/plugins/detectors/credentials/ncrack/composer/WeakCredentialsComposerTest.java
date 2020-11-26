@@ -25,9 +25,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.CredentialProvider;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.tester.CredentialTester;
-import com.google.tsunami.plugins.detectors.credentials.provider.CredentialProvider;
-import com.google.tsunami.plugins.detectors.credentials.provider.TestCredential;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.TransportProtocol;
 import java.util.Optional;

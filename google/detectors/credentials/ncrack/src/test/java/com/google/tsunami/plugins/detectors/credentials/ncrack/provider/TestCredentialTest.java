@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.credentials.provider;
+package com.google.tsunami.plugins.detectors.credentials.ncrack.provider;
 
 import static com.google.common.truth.Truth.assertThat;
 

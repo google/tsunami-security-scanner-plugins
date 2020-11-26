@@ -13,23 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.credentials.provider;
+package com.google.tsunami.plugins.detectors.credentials.ncrack.provider;
 
-import com.google.auto.value.AutoValue;
-import com.google.errorprone.annotations.Immutable;
-import java.util.Optional;
+import java.util.Iterator;
 
-/** Pair of username and password. */
-@AutoValue
-@Immutable
-public abstract class TestCredential {
+/**
+ * Credential providers are responsible for the generation of test credentials using an {@link
+ * Iterator<TestCredential>}. Credentials are provided using a bulk mode to suit all tester use
+ * cases.
+ *
+ * <p>For examples of provider implementations, check the provider folder.
+ */
+public abstract class CredentialProvider {
 
-  public abstract String username();
+  public abstract String name();
 
-  public abstract Optional<String> password();
+  public abstract String description();
 
-  public static TestCredential create(String username, Optional<String> password) {
-    // We do not check for empty strings as they might be valid attempts.
-    return new AutoValue_TestCredential(username, password);
-  }
+  public abstract Iterator<TestCredential> generateTestCredentials();
 }

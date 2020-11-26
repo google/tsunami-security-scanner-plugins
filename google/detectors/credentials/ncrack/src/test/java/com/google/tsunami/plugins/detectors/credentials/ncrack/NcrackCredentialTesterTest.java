@@ -24,7 +24,7 @@ import com.google.tsunami.common.command.CommandExecutor;
 import com.google.tsunami.common.command.CommandExecutorFactory;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TargetService;
-import com.google.tsunami.plugins.detectors.credentials.provider.TestCredential;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.TestCredential;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TransportProtocol;
