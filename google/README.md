@@ -1,5 +1,7 @@
 # Google Tsunami Plugins
 
+![google-plugins-build](https://github.com/google/tsunami-security-scanner-plugins/workflows/google-plugins-build/badge.svg)
+
 This directory contains all Tsunami plugins published by Google.
 
 ## Currently released plugins

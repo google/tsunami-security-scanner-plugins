@@ -1,5 +1,7 @@
 # Google Tsunami Plugins
 
+![govtech-plugins-build](https://github.com/google/tsunami-security-scanner-plugins/workflows/govtech-plugins-build/badge.svg)
+
 This directory contains all Tsunami plugins published by GovTech.
 
 ## Currently released plugins
