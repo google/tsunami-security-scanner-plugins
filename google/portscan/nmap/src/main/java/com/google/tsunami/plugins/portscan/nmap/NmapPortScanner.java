@@ -313,7 +313,15 @@ public final class NmapPortScanner implements PortScanner {
   }
 
   private static Optional<String> getServiceNameFromPort(Port port) {
-    return Optional.ofNullable(port.service()).map(service -> Strings.emptyToNull(service.name()));
+    return Optional.ofNullable(port.service()).map(service -> {
+      if (Strings.isNullOrEmpty(service.name())) {
+        return null;
+      } else if (Strings.isNullOrEmpty(service.tunnel())) {
+        return service.name();
+      } else {
+        return service.tunnel() + "/" + service.name();
+      }
+    });
   }
 
   private static void logIdentifiedNetworkService(NetworkService networkService) {

@@ -121,6 +121,24 @@ public class NmapPortScannerTest {
   }
 
   @Test
+  public void run_whenNmapRunHasHttpWithSslTunnel_returnsExpectedServiceName()
+      throws Exception {
+    doReturn(loadNmapRun("testdata/localhostHttpSslTunnel.xml")).when(nmapClient).run(any());
+    NetworkEndpoint networkEndpoint = NetworkEndpointUtils.forIp("127.0.0.1");
+    assertThat(
+        portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
+        .isEqualTo(
+            PortScanningReport.newBuilder()
+                .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint))
+                .addNetworkServices(
+                    NetworkService.newBuilder()
+                        .setNetworkEndpoint(NetworkEndpointUtils.forIpAndPort("127.0.0.1", 443))
+                        .setTransportProtocol(TransportProtocol.TCP)
+                        .setServiceName("ssl/http"))
+                .build());
+  }
+
+  @Test
   public void run_whenNmapRunHasOpenPortsAndIpOnly_returnsMatchingServiceWithIpOnly()
       throws Exception {
     doReturn(loadNmapRun("testdata/localhostHttpIpOnly.xml")).when(nmapClient).run(any());
