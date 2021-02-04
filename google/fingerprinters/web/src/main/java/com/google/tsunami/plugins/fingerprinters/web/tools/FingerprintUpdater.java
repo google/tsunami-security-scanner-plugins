@@ -297,11 +297,16 @@ public final class FingerprintUpdater {
     }
 
     Map<String, ContentHash> newContentHashes =
-        Maps.uniqueIndex(existingFingerprints.getContentHashesList(), ContentHash::getContentPath);
+        Maps.newHashMap(
+            Maps.uniqueIndex(
+                existingFingerprints.getContentHashesList(), ContentHash::getContentPath));
     Map<Hash, HashVersion> newHashVersions =
-        Maps.uniqueIndex(existingFingerprints.getHashVersionsList(), HashVersion::getHash);
+        Maps.newHashMap(
+            Maps.uniqueIndex(existingFingerprints.getHashVersionsList(), HashVersion::getHash));
     Map<String, PathVersion> newPathVersions =
-        Maps.uniqueIndex(existingFingerprints.getPathVersionsList(), PathVersion::getContentPath);
+        Maps.newHashMap(
+            Maps.uniqueIndex(
+                existingFingerprints.getPathVersionsList(), PathVersion::getContentPath));
     for (String filePath : fileHashes.keySet()) {
       Hash fileHash = fileHashes.get(filePath);
 
