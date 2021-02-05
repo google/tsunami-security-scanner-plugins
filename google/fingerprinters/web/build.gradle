@@ -1,5 +1,7 @@
 plugins {
+    id 'application'
     id 'java-library'
+    id 'com.google.protobuf' version "0.8.14"
 }
 
 description = 'Tsunami web application fingerprinter.'
@@ -18,13 +20,17 @@ java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 
-    jar.manifest {
-        attributes('Implementation-Title': name,
-                'Implementation-Version': version,
-                'Built-By': System.getProperty('user.name'),
-                'Built-JDK': System.getProperty('java.version'),
-                'Source-Compatibility': sourceCompatibility,
-                'Target-Compatibility': targetCompatibility)
+    jar {
+        manifest {
+            attributes('Implementation-Title': name,
+                    'Implementation-Version': version,
+                    'Built-By': System.getProperty('user.name'),
+                    'Built-JDK': System.getProperty('java.version'),
+                    'Source-Compatibility': sourceCompatibility,
+                    'Target-Compatibility': targetCompatibility)
+        }
+
+        exclude 'com/google/tsunami/plugins/fingerprinters/web/tools/**/*'
     }
 
     javadoc.options {
@@ -52,15 +58,30 @@ ext {
     floggerVersion = '0.5.1'
     guavaVersion = '28.2-jre'
     guiceVersion = '4.2.3'
-    jcommanderVersion = '1.48'
     javaxInjectVersion = '1'
+    jcommanderVersion = '1.48'
+    jsoupVersion = '1.9.2'
     okhttpVersion = '3.12.0'
     protobufVersion = '3.11.4'
-    tsunamiVersion = '0.0.2'
+    tsunamiVersion = '0.0.3'
 
     junitVersion = '4.13'
     mockitoVersion = '2.28.2'
     truthVersion = '1.0.1'
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${protobufVersion}"
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs 'build/generated/source/proto/main/java'
+        }
+    }
 }
 
 dependencies {
@@ -70,6 +91,7 @@ dependencies {
     implementation "com.google.flogger:flogger-system-backend:${floggerVersion}"
     implementation "com.google.guava:guava:${guavaVersion}"
     implementation "com.google.inject:guice:${guiceVersion}"
+    implementation "org.jsoup:jsoup:${jsoupVersion}"
     implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
     implementation "com.google.protobuf:protobuf-javalite:${protobufVersion}"
     implementation "com.google.protobuf:protobuf-java-util:${protobufVersion}"
@@ -86,4 +108,20 @@ dependencies {
     testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"
     testImplementation "junit:junit:${junitVersion}"
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "com.squareup.okhttp3:mockwebserver:${okhttpVersion}"
+    testAnnotationProcessor "com.google.auto.value:auto-value:${autoValueVersion}"
+}
+
+startScripts.enabled = false
+
+task fingerprintUpdater(type: CreateStartScripts) {
+    mainClassName = 'com.google.tsunami.plugins.fingerprinters.web.tools.FingerprintUpdater'
+    applicationName = 'fingerprint-updater'
+    outputDir = new File(project.buildDir, 'tmp')
+    classpath = startScripts.classpath
+}
+
+applicationDistribution.into('bin') {
+    from(fingerprintUpdater)
+    fileMode = 0755
 }
