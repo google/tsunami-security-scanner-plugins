@@ -1,0 +1,17 @@
+{
+  "name" : "aabbccddeeff",
+  "cluster_name" : "docker-cluster",
+  "cluster_uuid" : "abc",
+  "version" : {
+    "number" : "7.9.3",
+    "build_flavor" : "default",
+    "build_type" : "docker",
+    "build_hash" : "aabbcc",
+    "build_date" : "2020-10-16T10:36:16.141335Z",
+    "build_snapshot" : false,
+    "lucene_version" : "8.6.2",
+    "minimum_wire_compatibility_version" : "6.8.0",
+    "minimum_index_compatibility_version" : "6.0.0-beta1"
+  },
+  "tagline" : "You Know, for Search"
+}
