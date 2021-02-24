@@ -28,7 +28,7 @@ import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
-import com.google.tsunami.plugin.annotation.ForServiceName;
+import com.google.tsunami.plugin.annotations.ForServiceName;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
