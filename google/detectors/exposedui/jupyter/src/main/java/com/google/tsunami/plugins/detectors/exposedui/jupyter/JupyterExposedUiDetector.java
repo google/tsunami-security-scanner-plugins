@@ -28,6 +28,7 @@ import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
+import com.google.tsunami.plugin.annotations.ForServiceName;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
@@ -53,6 +54,8 @@ import javax.inject.Inject;
             + " the hosting VM at risk of RCE.",
     author = "Tsunami Team (tsunami-dev@google.com)",
     bootstrapModule = JupyterExposedUiDetectorBootstrapModule.class)
+
+@ForServiceName({"http","https"})
 public final class JupyterExposedUiDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
