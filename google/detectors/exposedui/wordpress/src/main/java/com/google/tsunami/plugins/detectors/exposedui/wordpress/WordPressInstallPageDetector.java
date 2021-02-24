@@ -57,7 +57,7 @@ import org.jsoup.select.Elements;
     author = "Tsunami Team (tsunami-dev@google.com)",
     bootstrapModule = WordPressInstallPageDetectorBootstrapModule.class)
     
-@ForServiceName({"http","https"})
+@ForServiceName({"http", "https"})
 public final class WordPressInstallPageDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 

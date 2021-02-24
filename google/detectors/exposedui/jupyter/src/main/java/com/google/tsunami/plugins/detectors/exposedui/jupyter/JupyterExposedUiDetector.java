@@ -55,7 +55,7 @@ import javax.inject.Inject;
     author = "Tsunami Team (tsunami-dev@google.com)",
     bootstrapModule = JupyterExposedUiDetectorBootstrapModule.class)
 
-@ForServiceName({"http","https"})
+@ForServiceName({"http", "https"})
 public final class JupyterExposedUiDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
