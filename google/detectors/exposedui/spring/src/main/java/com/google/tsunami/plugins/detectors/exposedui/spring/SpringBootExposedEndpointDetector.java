@@ -108,7 +108,7 @@ public final class SpringBootExposedEndpointDetector implements VulnDetector {
       EndpointProbingResult probingResult = probeHeapdumpEndpoint(heapDumpUrl, networkService);
       if (probingResult.isVulnerable()) {
         logger.atInfo().log(
-            "Identified exposed Spring Boot heapdump endpoint at '%s'.", heapDumpUrl.toString());
+            "Identified exposed Spring Boot heapdump endpoint at '%s'.", heapDumpUrl);
         return probingResult;
       }
     }
@@ -166,8 +166,7 @@ public final class SpringBootExposedEndpointDetector implements VulnDetector {
           .setVulnerableEndpointResponse(response)
           .build();
     } catch (IOException e) {
-      logger.atWarning().withCause(e).log(
-          "Unable to query endpoint: '%s'.", endpointUrl.toString());
+      logger.atWarning().withCause(e).log("Unable to query endpoint: '%s'.", endpointUrl);
       return EndpointProbingResult.invulnerableForNetworkService(networkService);
     }
   }

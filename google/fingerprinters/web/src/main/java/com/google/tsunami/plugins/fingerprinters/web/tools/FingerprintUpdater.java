@@ -363,7 +363,7 @@ public final class FingerprintUpdater {
 
   private void dumpToFile(Fingerprints data) throws IOException {
     Path resultPath = buildResultFilePath();
-    logger.atInfo().log("Write data file to %s.", resultPath.toString());
+    logger.atInfo().log("Write data file to %s.", resultPath);
     if (Files.getFileExtension(resultPath.toString()).equals("json")) {
       Files.asCharSink(resultPath.toFile(), UTF_8).write(JsonFormat.printer().print(data));
     } else {
