@@ -50,6 +50,7 @@ import com.google.tsunami.proto.ServiceContext;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Version;
+import com.google.tsunami.proto.Version.VersionType;
 import com.google.tsunami.proto.VersionSet;
 import com.google.tsunami.proto.WebServiceContext;
 import java.util.Collection;
@@ -202,7 +203,12 @@ public final class WebServiceFingerprinterTest {
         VersionSet.newBuilder()
             .addAllVersions(
                 versions.stream()
-                    .map(version -> Version.newBuilder().setFullVersionString(version).build())
+                    .map(
+                        version ->
+                            Version.newBuilder()
+                                .setType(VersionType.NORMAL)
+                                .setFullVersionString(version)
+                                .build())
                     .collect(toImmutableList()))
             .build();
     return networkService.toBuilder()

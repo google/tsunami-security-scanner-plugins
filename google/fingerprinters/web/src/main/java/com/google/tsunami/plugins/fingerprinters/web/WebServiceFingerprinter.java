@@ -43,6 +43,7 @@ import com.google.tsunami.proto.ServiceContext;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Version;
+import com.google.tsunami.proto.Version.VersionType;
 import com.google.tsunami.proto.VersionSet;
 import com.google.tsunami.proto.WebServiceContext;
 import java.util.Collection;
@@ -161,6 +162,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
                     .map(
                         version ->
                             Version.newBuilder()
+                                .setType(VersionType.NORMAL)
                                 .setFullVersionString(version.getFullName())
                                 .build())
                     .collect(toImmutableList()))
