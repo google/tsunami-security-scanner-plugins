@@ -63,9 +63,6 @@ public final class JoomlaCve20158562DetectorTest {
 
   @Before
   public void setUp() {
-    Guice.createInjector(
-            new FakeUtcClockModule(fakeUtcClock), new JoomlaCve20158562DetectorBootstrapModule())
-        .injectMembers(this);
     mockWebServer = new MockWebServer();
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),

@@ -38,6 +38,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
+import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.Crawler;
 import com.google.tsunami.plugins.fingerprinters.web.data.FingerprintData;
 import com.google.tsunami.plugins.fingerprinters.web.detection.VersionDetector;
@@ -75,6 +76,7 @@ public final class WebServiceFingerprinterTest {
               protected void configure() {
                 bind(Crawler.class).toInstance(fakeCrawler);
                 install(new FactoryModuleBuilder().build(VersionDetector.Factory.class));
+                install(new HttpClientModule.Builder().build());
               }
 
               @Provides
