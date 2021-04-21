@@ -38,7 +38,7 @@ final class CrawlConfigUtils {
   }
 
   static boolean isCrawlTargetInScope(CrawlConfig crawlConfig, CrawlTarget crawlTarget) {
-    return crawlConfig.getScopesList().stream()
+    return !crawlConfig.getShouldEnforceScopeCheck() || crawlConfig.getScopesList().stream()
         .anyMatch(scope -> ScopeUtils.isInScope(scope, crawlTarget.getUrl()));
   }
 }

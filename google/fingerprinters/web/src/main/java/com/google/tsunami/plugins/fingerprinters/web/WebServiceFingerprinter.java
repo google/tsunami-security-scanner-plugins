@@ -70,17 +70,20 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
   private final Crawler crawler;
   private final SoftwareDetector softwareDetector;
   private final VersionDetector.Factory versionDetectorFactory;
+  private final WebServiceFingerprinterConfigs configs;
 
   @Inject
   WebServiceFingerprinter(
       FingerprintRegistry fingerprintRegistry,
       Crawler crawler,
       SoftwareDetector softwareDetector,
-      VersionDetector.Factory versionDetectorFactory) {
+      VersionDetector.Factory versionDetectorFactory,
+      WebServiceFingerprinterConfigs configs) {
     this.fingerprintRegistry = checkNotNull(fingerprintRegistry);
     this.crawler = checkNotNull(crawler);
     this.softwareDetector = checkNotNull(softwareDetector);
     this.versionDetectorFactory = checkNotNull(versionDetectorFactory);
+    this.configs = checkNotNull(configs);
   }
 
   @Override
@@ -88,7 +91,8 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
     String startingUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     logger.atInfo().log("WebServiceFingerprinter start fingerprinting '%s'.", startingUrl);
 
-    ImmutableSet<CrawlResult> crawlResults = crawlNetworkService(startingUrl, networkService);
+    ImmutableSet<CrawlResult> crawlResults =
+        crawlNetworkService(startingUrl, networkService, configs.shouldEnforceCrawlingScopeCheck());
     logger.atInfo().log(
         "WebServiceFingerprinter discovered %d different files on '%s'.",
         crawlResults.size(), NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
@@ -179,10 +183,11 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
   }
 
   private ImmutableSet<CrawlResult> crawlNetworkService(
-      String seedingUrl, NetworkService networkService) {
+      String seedingUrl, NetworkService networkService, boolean shouldEnforceScopeCheck) {
     CrawlConfig crawlConfig =
         CrawlConfig.newBuilder()
             .addScopes(ScopeUtils.fromUrl(seedingUrl))
+            .setShouldEnforceScopeCheck(shouldEnforceScopeCheck)
             .addSeedingUrls(seedingUrl)
             .setMaxDepth(3)
             .setNetworkService(networkService)

@@ -59,11 +59,31 @@ public final class CrawlConfigUtilsTest {
   }
 
   @Test
-  public void isCrawlTargetInScope_whenTargetInScope_returnsTrue() {
+  public void isCrawlTargetInScope_whenScopeEnforcementDisabled_alwaysReturnsTrue() {
+    CrawlConfig crawlConfig =
+        CrawlConfig.newBuilder()
+            .addScopes(Scope.newBuilder().setDomain("localhost:8080").setPath("/in-scope"))
+            .setShouldEnforceScopeCheck(false)
+            .build();
+    assertThat(
+        CrawlConfigUtils.isCrawlTargetInScope(
+            crawlConfig,
+            CrawlTarget.newBuilder().setUrl("http://localhost:8080/in-scope/index.html").build()))
+        .isTrue();
+    assertThat(
+        CrawlConfigUtils.isCrawlTargetInScope(
+            crawlConfig,
+            CrawlTarget.newBuilder().setUrl("http://localhost:8080/not-in-scope/index.html").build()))
+        .isTrue();
+  }
+
+  @Test
+  public void isCrawlTargetInScope_whenEnforcingScopeCheckAndTargetInScope_returnsTrue() {
     CrawlConfig crawlConfig =
         CrawlConfig.newBuilder()
             .addScopes(Scope.newBuilder().setDomain("localhost:8080").setPath("/path"))
             .addScopes(Scope.newBuilder().setDomain("localhost:8080").setPath("/more/path"))
+            .setShouldEnforceScopeCheck(true)
             .build();
 
     assertThat(
@@ -79,11 +99,12 @@ public final class CrawlConfigUtilsTest {
   }
 
   @Test
-  public void isCrawlTargetInScope_whenTargetNotInScope_returnsFalse() {
+  public void isCrawlTargetInScope_whenEnforcingScopeCheckAndTargetNotInScope_returnsFalse() {
     CrawlConfig crawlConfig =
         CrawlConfig.newBuilder()
             .addScopes(Scope.newBuilder().setDomain("localhost:8080").setPath("/path"))
             .addScopes(Scope.newBuilder().setDomain("localhost:8080").setPath("/more/path"))
+            .setShouldEnforceScopeCheck(true)
             .build();
 
     assertThat(
