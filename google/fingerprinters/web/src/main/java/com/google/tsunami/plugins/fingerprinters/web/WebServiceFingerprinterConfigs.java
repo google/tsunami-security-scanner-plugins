@@ -25,6 +25,8 @@ import javax.inject.Inject;
 
 /** Configuration options for {@link WebServiceFingerprinter}. */
 public final class WebServiceFingerprinterConfigs {
+  private static final int DEFAULT_MAX_FAILED_SIFTING_REQUEST = 20;
+  private static final int DEFAULT_MAX_ALLOWED_SIFTING_REQUEST = 100;
 
   private final WebServiceFingerprinterCliOptions cliOptions;
   private final WebServiceFingerprinterConfigProperties configProperties;
@@ -48,6 +50,26 @@ public final class WebServiceFingerprinterConfigs {
     }
   }
 
+  public int getMaxAllowedSiftingRequest() {
+    if (cliOptions.maxAllowedSiftingRequest != null) {
+      return cliOptions.maxAllowedSiftingRequest;
+    } else if (configProperties.maxAllowedSiftingRequest != null) {
+      return configProperties.maxAllowedSiftingRequest;
+    } else {
+      return DEFAULT_MAX_ALLOWED_SIFTING_REQUEST;
+    }
+  }
+
+  public int getMaxFailedSiftingRequests() {
+    if (cliOptions.maxFailedSiftingRequest != null) {
+      return cliOptions.maxFailedSiftingRequest;
+    } else if (configProperties.maxFailedSiftingRequest != null) {
+      return configProperties.maxFailedSiftingRequest;
+    } else {
+      return DEFAULT_MAX_FAILED_SIFTING_REQUEST;
+    }
+  }
+
   @Parameters(separators = "=")
   static final class WebServiceFingerprinterCliOptions implements CliOption {
 
@@ -61,6 +83,26 @@ public final class WebServiceFingerprinterConfigs {
         arity = 1)
     Boolean enforceCrawlingScopeCheck;
 
+    @Parameter(
+        names = "--web-service-fingerprinter-max-allowed-sifting-request",
+        description =
+            "The maximum number of allowed HTTP requests for the version sifting logic. The"
+                + " WebServiceFingerprinter's version detection logic narrows down the version"
+                + " scope of the scan target by sending additional probes to un-crawled web"
+                + " resources on the target. This flag controls the maximum number of probes it"
+                + " can send to the target.")
+    Integer maxAllowedSiftingRequest;
+
+    @Parameter(
+        names = "--web-service-fingerprinter-max-failed-sifting-request",
+        description =
+            "The maximum number of allowed HTTP requests that can fail for the version sifting"
+                + " logic. The WebServiceFingerprinter's version detection logic narrows down the"
+                + " version scope of the scan target by sending additional probes to un-crawled"
+                + " web resources on the target. This flag controls the maximum number of failed"
+                + " probes.")
+    Integer maxFailedSiftingRequest;
+
     @Override
     public void validate() {}
   }
@@ -69,9 +111,22 @@ public final class WebServiceFingerprinterConfigs {
   static final class WebServiceFingerprinterConfigProperties {
 
     /**
-     * Configuration options for the {@code --web-service-fingerprinter-enforce-crawling-spoc-check}
-     * CLI flag. See the CLI flag's description for more details.
+     * Configuration options for the {@code
+     * --web-service-fingerprinter-enforce-crawling-scope-check} CLI flag. See the CLI flag's
+     * description for more details.
      */
     Boolean enforceCrawlingScopeCheck;
+
+    /**
+     * Configuration options for the {@code --web-service-fingerprinter-max-allowed-sifting-request}
+     * CLI flag. See the CLI flag's description for more details.
+     */
+    Integer maxAllowedSiftingRequest;
+
+    /**
+     * Configuration options for the {@code --web-service-fingerprinter-max-failed-sifting-request}
+     * CLI flag. See the CLI flag's description for more details.
+     */
+    Integer maxFailedSiftingRequest;
   }
 }

@@ -62,9 +62,6 @@ import javax.inject.Inject;
 public final class WebServiceFingerprinter implements ServiceFingerprinter {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-  // TODO(b/154006875): make this configurable.
-  private static final int MAX_ALLOWED_FAILED_REQUESTS = 20;
-  private static final int MAX_ALLOWED_HTTP_REQUEST = 100;
 
   private final FingerprintRegistry fingerprintRegistry;
   private final Crawler crawler;
@@ -146,8 +143,8 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
               networkService,
               fingerprintData.get(),
               software,
-              MAX_ALLOWED_FAILED_REQUESTS,
-              MAX_ALLOWED_HTTP_REQUEST);
+              configs.getMaxFailedSiftingRequests(),
+              configs.getMaxAllowedSiftingRequest());
       versionsBySoftwareBuilder.put(software, versionDetector.detectVersions());
     }
     return versionsBySoftwareBuilder.build();
