@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.rce.cisco_smi;
+package com.google.tsunami.plugins.detectors.rce.ciscosmi;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.google.common.net.HostAndPort;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.net.HostAndPort;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.time.UtcClock;
@@ -36,15 +36,12 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.net.Socket;
 import java.time.Clock;
 import java.time.Instant;
-import javax.inject.Inject;
-import java.net.Socket;
 import java.util.Arrays;
+import javax.inject.Inject;
 import javax.net.SocketFactory;
-
 
 /** A {@link VulnDetector} that detects vulnerable Cisco Smart Install protocol */
 @ForServiceName({"smart-install"})
@@ -52,8 +49,7 @@ import javax.net.SocketFactory;
     type = PluginType.VULN_DETECTION,
     name = "Cisco_SMI",
     version = "0.1",
-    description =
-        "This detector checks for Cisco Smart Install client protocol.",
+    description = "This detector checks for Cisco Smart Install client protocol.",
     author = "Adrien Schildknecht (vulnscan@fb.com)",
     bootstrapModule = CiscoSMIDetectorBootstrapModule.class)
 public final class CiscoSMIDetector implements VulnDetector {
@@ -84,32 +80,32 @@ public final class CiscoSMIDetector implements VulnDetector {
     byte[] actualResponse = new byte[24];
     // See https://github.com/Cisco-Talos/smi_check for more info about the payload
     byte[] request = {
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-        0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08,
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+      0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x08,
+      0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
     };
     byte[] expectedResponse = {
-        0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x08,
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x08,
+      0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
     };
     HostAndPort hp = NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
 
     try {
-        Socket socket = socketFactory.createSocket(hp.getHost(), hp.getPort());
-        socket.setSoTimeout(2000);
-        socket.getOutputStream().write(request);
-        socket.getInputStream().read(actualResponse, 0, actualResponse.length);
-        socket.close();
+      Socket socket = socketFactory.createSocket(hp.getHost(), hp.getPort());
+      socket.setSoTimeout(2000);
+      socket.getOutputStream().write(request);
+      socket.getInputStream().read(actualResponse, 0, actualResponse.length);
+      socket.close();
     } catch (Exception e) {
-        logger.atWarning().withCause(e).log("Unable to communicate with '%s'.", hp.toString());
-        return false;
+      logger.atWarning().withCause(e).log("Unable to communicate with '%s'.", hp.toString());
+      return false;
     }
 
     if (Arrays.equals(actualResponse, expectedResponse)) {
-        return true;
+      return true;
     } else if (actualResponse.length < 1) {
-        logger.atInfo().log("SMI is enabled but not vulnerable");
+      logger.atInfo().log("SMI is enabled but not vulnerable");
     }
     return false;
   }
@@ -125,11 +121,13 @@ public final class CiscoSMIDetector implements VulnDetector {
             Vulnerability.newBuilder()
                 .setMainId(
                     VulnerabilityId.newBuilder()
-                        .setPublisher("Cisco")
-                        .setValue("cisco-sa-20170214-smi"))
+                        .setPublisher("CISCO")
+                        .setValue("CISCO_SA_20170214_SMI"))
                 .setSeverity(Severity.HIGH)
                 .setTitle("Cisco Smart Install Protocol Misuse")
-                .setDescription("Cisco Smart Install feature should not be exposed as it enables attackers to perform administrative tasks on the device or remotely execute code"))
+                .setDescription(
+                    "Cisco Smart Install feature should not be exposed as it enables attackers to"
+                        + " perform administrative tasks on the device or remotely execute code"))
         .build();
   }
 }

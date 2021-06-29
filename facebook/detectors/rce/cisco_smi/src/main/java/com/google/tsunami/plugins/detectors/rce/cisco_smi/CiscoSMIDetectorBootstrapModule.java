@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.rce.cisco_smi;
+package com.google.tsunami.plugins.detectors.rce.ciscosmi;
 
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.tsunami.plugin.PluginBootstrapModule;
@@ -25,7 +25,8 @@ public final class CiscoSMIDetectorBootstrapModule extends PluginBootstrapModule
   @Override
   protected void configurePlugin() {
     OptionalBinder.newOptionalBinder(binder(), SocketFactory.class)
-        .setDefault().toInstance(SocketFactory.getDefault());
+        .setDefault()
+        .toInstance(SocketFactory.getDefault());
     registerPlugin(CiscoSMIDetector.class);
   }
 }
