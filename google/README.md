@@ -44,6 +44,16 @@ This directory contains all Tsunami plugins published by Google.
 *   [Tomcat Ghostcat (CVE-2020-1938) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/rce/tomcat/ghostcat)
 *   [vBulletin Pre-Auth RCE (CVE-2019-16759) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/rce/vbulletin/cve201916759)
 
+## Planned Detectors
+
+*  Exposed unauthenticated [Adminer](https://www.adminer.org/) server.
+*  Exposed [Hashicorp Consul](https://www.consul.io/) API with enabled script checks.
+*  Exposed [Docker](https://www.docker.com/) daemon API.
+*  Exposed unauthenticated [Drupal](https://www.drupal.org/) installation page.
+*  Exposed unauthenticated [GoCD](https://www.gocd.org/) server.
+*  Exposed unauthenticated [Kubernetes](https://kubernetes.io/) master server.
+*  Exposed unauthenticated [phpMyAdmin](https://www.phpmyadmin.net/) server.
+
 ## Build all plugins
 
 Use the following command to build all Google released plugins:
