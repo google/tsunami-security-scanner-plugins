@@ -1,4 +1,4 @@
-# Apache Flink CVE-2021-35464 Detector
+# ForgeRock AM/OpenAM CVE-2021-35464 Detector
 
 This plugin detects an pre-auth remote code execution vulnerability in OpenAM that
 can be used for executing remote arbitrary code.
