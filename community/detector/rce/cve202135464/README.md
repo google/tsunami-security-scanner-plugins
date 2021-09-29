@@ -1,13 +1,12 @@
-# Apache Flink CVE-2020-17519 Detector
+# Apache Flink CVE-2021-35464 Detector
 
-This plugin detects a directory traversal vulnerability in Apache Flink that
-can be used for unauthorized reads on files on the filesystem, to the extent
-permitted for the JobManager process.
+This plugin detects an pre-auth remote code execution vulnerability in OpenAM that
+can be used for executing remote arbitrary code.
 
 More information on the vulnerability:
 
-* [CVE-2020-17519](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-17519)
-* https://nvd.nist.gov/vuln/detail/CVE-2020-17519
+* [CVE-2021-35464](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-35464)
+* https://nvd.nist.gov/vuln/detail/CVE-2021-35464
 
 ## Build jar file for this plugin
 
