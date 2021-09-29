@@ -108,9 +108,9 @@ public final class Cve202135464Detector implements VulnDetector {
       if (httpResponse.status().code() != 200) {
         return false;
       }
-	  //TODO: also check for content-length to be 970
-	  //return (httpResponse.status().code() == 200) && (httpResponse.headers("Content-Length") == 970);
-	  return (httpResponse.status().code() == 200);
+      //TODO: also check for content-length to be 970
+      //return (httpResponse.status().code() == 200) && (httpResponse.headers("Content-Length") == 970);
+      return (httpResponse.status().code() == 200);
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
       return false;
@@ -138,8 +138,8 @@ public final class Cve202135464Detector implements VulnDetector {
                         + "parameter on multiple pages. The exploitation does not require "
                         + "authentication, and remote code execution can be triggered by "
                         + "sending a single crafted /ccversion/* request to the server. "
-						+ "The vulnerability exists due to the usage of Sun ONE Application "	
-						+ "Framework (JATO) found in versions of Java 8 or earlier. The issue "
+                        + "The vulnerability exists due to the usage of Sun ONE Application "    
+                        + "Framework (JATO) found in versions of Java 8 or earlier. The issue "
                         + "was fixed in commit a267913b97002228c2df45f849151e9c373bc47f from "
                         + "OpenIdentityPlatform/OpenAM:master."))
         .build();

@@ -111,14 +111,14 @@ public final class Cve202135464DetectorTest {
                                 .setPublisher("0xtavi")
                                 .setValue("CVE_2021_35464"))
                         .setSeverity(Severity.CRITICAL)
-						.setTitle("Pre-auth RCE in OpenAM 14.6.3/ForgeRock AM 7.0 (CVE-2021-35464)")
-						.setDescription("OpenAM server before 14.6.3 and ForgeRock AM server before 7.0 have "
+                        .setTitle("Pre-auth RCE in OpenAM 14.6.3/ForgeRock AM 7.0 (CVE-2021-35464)")
+                        .setDescription("OpenAM server before 14.6.3 and ForgeRock AM server before 7.0 have "
                         + "a Java deserialization vulnerability in the jato.pageSession "
                         + "parameter on multiple pages. The exploitation does not require "
                         + "authentication, and remote code execution can be triggered by "
                         + "sending a single crafted /ccversion/* request to the server. "
-						+ "The vulnerability exists due to the usage of Sun ONE Application "
-						+ "Framework (JATO) found in versions of Java 8 or earlier. The issue "
+                        + "The vulnerability exists due to the usage of Sun ONE Application "
+                        + "Framework (JATO) found in versions of Java 8 or earlier. The issue "
                         + "was fixed in commit a267913b97002228c2df45f849151e9c373bc47f from "
                         + "OpenIdentityPlatform/OpenAM:master."))
                 .build());
