@@ -137,7 +137,7 @@ public final class CVE202121234VulnDetector implements VulnDetector {
 						Vulnerability.newBuilder()
 								.setMainId(
 										VulnerabilityId.newBuilder()
-												.setPublisher("hh-hunter")
+												.setPublisher("TSUNAMI_COMMUNITY")
 												.setValue("CVE_2021_21234"))
 								.setSeverity(Severity.HIGH)
 								.setTitle("CVE-2021-21234")
