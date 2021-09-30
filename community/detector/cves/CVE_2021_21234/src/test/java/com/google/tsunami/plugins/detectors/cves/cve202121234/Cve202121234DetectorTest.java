@@ -42,10 +42,6 @@ import org.junit.runners.JUnit4;
 /**
  * Unit tests for {@link CVE202121234VulnDetector}.
  */
-
-/**
- * Unit tests for {@link CVE202121234VulnDetector}.
- */
 @RunWith(JUnit4.class)
 public final class Cve202121234DetectorTest {
 
@@ -53,7 +49,7 @@ public final class Cve202121234DetectorTest {
 			FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
 	@Inject
-	private com.google.tsunami.plugins.detectors.fileread.cve202121234.CVE202121234VulnDetector detector;
+	private CVE202121234VulnDetector detector;
 
 	private MockWebServer mockWebServer;
 
@@ -62,7 +58,7 @@ public final class Cve202121234DetectorTest {
 		mockWebServer = new MockWebServer();
 		Guice.createInjector(
 				new FakeUtcClockModule(fakeUtcClock),
-				new com.google.tsunami.plugins.detectors.fileread.cve202121234.CVE202121234DetectorBootstrapModule(),
+				new CVE202121234DetectorBootstrapModule(),
 				new HttpClientModule.Builder().build())
 				.injectMembers(this);
 	}
@@ -74,7 +70,7 @@ public final class Cve202121234DetectorTest {
 
 	@Test
 	public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-		mockWebResponse(com.google.tsunami.plugins.detectors.fileread.cve202121234.CVE202121234VulnDetector.DETECTION_STRINGS[0]);
+		mockWebResponse(CVE202121234VulnDetector.DETECTION_STRINGS[0]);
 		NetworkService service =
 				NetworkService.newBuilder()
 						.setNetworkEndpoint(
