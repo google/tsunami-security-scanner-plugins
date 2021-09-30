@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.fileread.cve202121234;
+package com.google.tsunami.plugins.detectors.cves.cve202121234;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
@@ -28,6 +28,6 @@ public final class CVE202121234DetectorBootstrapModule extends PluginBootstrapMo
 		// your plugin should be implemented here.
 
 		// registerPlugin method is required in order for the Tsunami scanner to identify your plugin.
-		registerPlugin(com.google.tsunami.plugins.detectors.fileread.cve202121234.CVE202121234VulnDetector.class);
+		registerPlugin(com.google.tsunami.plugins.detectors.cves.cve202121234.CVE202121234VulnDetector.class);
 	}
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.fileread.cve202121234;
+package com.google.tsunami.plugins.detectors.cves.cve202121234;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
@@ -53,7 +53,7 @@ public final class Cve202121234DetectorTest {
 			FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
 	@Inject
-	private CVE202121234VulnDetector detector;
+	private com.google.tsunami.plugins.detectors.fileread.cve202121234.CVE202121234VulnDetector detector;
 
 	private MockWebServer mockWebServer;
 
@@ -62,7 +62,7 @@ public final class Cve202121234DetectorTest {
 		mockWebServer = new MockWebServer();
 		Guice.createInjector(
 				new FakeUtcClockModule(fakeUtcClock),
-				new CVE202121234DetectorBootstrapModule(),
+				new com.google.tsunami.plugins.detectors.fileread.cve202121234.CVE202121234DetectorBootstrapModule(),
 				new HttpClientModule.Builder().build())
 				.injectMembers(this);
 	}
@@ -74,7 +74,7 @@ public final class Cve202121234DetectorTest {
 
 	@Test
 	public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-		mockWebResponse(CVE202121234VulnDetector.DETECTION_STRINGS[0]);
+		mockWebResponse(com.google.tsunami.plugins.detectors.fileread.cve202121234.CVE202121234VulnDetector.DETECTION_STRINGS[0]);
 		NetworkService service =
 				NetworkService.newBuilder()
 						.setNetworkEndpoint(
