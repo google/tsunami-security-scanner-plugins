@@ -109,8 +109,10 @@ public final class Cve202135464Detector implements VulnDetector {
         return false;
       }
       //TODO: also check for content-length to be 970
-      //return (httpResponse.status().code() == 200) && (httpResponse.headers("Content-Length") == 970);
-      return (httpResponse.status().code() == 200);
+      return (httpResponse.status().code() == 200) &&
+         (httpResponse.headers().get("Content-Length").get() == "970");
+      //logger.atInfo().log("httpResponse: %s", httpResponse);
+      //return (httpResponse.status().code() == 200);
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
       return false;
@@ -128,7 +130,7 @@ public final class Cve202135464Detector implements VulnDetector {
             Vulnerability.newBuilder()
                 .setMainId(
                     VulnerabilityId.newBuilder()
-                        .setPublisher("0xtavi")
+                        .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2021_35464"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Pre-auth RCE in OpenAM 14.6.3/ForgeRock AM 7.0 (CVE-2021-35464)")
