@@ -126,7 +126,7 @@ public final class CVE202121985VulnDetector implements VulnDetector {
 										VulnerabilityId.newBuilder()
 												.setPublisher("TSUNAMI_COMMUNITY")
 												.setValue("CVE_2021_21985"))
-								.setSeverity(Severity.HIGH)
+								.setSeverity(Severity.CRITICAL)
 								.setTitle("CVE-2021-21985")
 								.setDescription("VMware vCenter Server Virtual SAN Health Check Remote Code Execution")
 								.addAdditionalDetails(
