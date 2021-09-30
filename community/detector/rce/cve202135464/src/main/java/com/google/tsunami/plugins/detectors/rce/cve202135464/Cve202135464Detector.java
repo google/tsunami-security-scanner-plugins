@@ -49,25 +49,14 @@ import javax.inject.Inject;
     type = PluginType.VULN_DETECTION,
     name = "Forgerock AM/OpenAM CVE-2021-35464 Detector",
     version = "0.1",
-    description = "Plugin detects an unauthenticated java deserialization remote code execution vulnerability in"
-        + "OpenAM before 14.6.3 and ForgeRock AM before 7.0 (CVE-2021-35464).",
+    description = "Plugin detects an unauthenticated java deserialization remote code execution"
+        + "vulnerability in OpenAM before 14.6.3 and ForgeRock AM before 7.0 (CVE-2021-35464).",
     author = "0xtavi",
     bootstrapModule = Cve202135464DetectorBootstrapModule.class)
 public final class Cve202135464Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String QUERY_STRING = "openam/oauth2/..;/ccversion/Version";
 
-  private static final class LogResponse {
-    public LogObject[] logs;
-
-    LogResponse() {
-    }
-
-    private static class LogObject {
-      public String name;
-      public int size;
-    }
-  }
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -135,15 +124,19 @@ public final class Cve202135464Detector implements VulnDetector {
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Pre-auth RCE in OpenAM 14.6.3/ForgeRock AM 7.0 (CVE-2021-35464)")
                 .setDescription(
-                    "OpenAM server before 14.6.3 and ForgeRock AM server before 7.0 have "
-                        + "a Java deserialization vulnerability in the jato.pageSession "
-                        + "parameter on multiple pages. The exploitation does not require "
-                        + "authentication, and remote code execution can be triggered by "
-                        + "sending a single crafted /ccversion/* request to the server. "
-                        + "The vulnerability exists due to the usage of Sun ONE Application "    
-                        + "Framework (JATO) found in versions of Java 8 or earlier. The issue "
-                        + "was fixed in commit a267913b97002228c2df45f849151e9c373bc47f from "
-                        + "OpenIdentityPlatform/OpenAM:master."))
+                    "OpenAM server before 14.6.3 and ForgeRock AM server before 7.0 have"
+                        + "a Java deserialization vulnerability in the jato.pageSession"
+                        + "parameter on multiple pages. The exploitation does not require"
+                        + "authentication, and remote code execution can be triggered by"
+                        + "sending a single crafted /ccversion/* request to the server."
+                        + "The vulnerability exists due to the usage of Sun ONE Application"
+                        + "Framework (JATO) found in versions of Java 8 or earlier. The issue"
+                        + "was fixed in commit a267913b97002228c2df45f849151e9c373bc47f from"
+                        + "OpenIdentityPlatform/OpenAM:master.")
+                .setRecommendation(
+                    "Block access to the ccversion endpoint using a reverse proxy or"
+                        + "other method like disabling VersionServlet mapping in web.xml."
+                        + "Update OpenAM to version 14.6.4 and ForgeRockAM to version 7.1"))
         .build();
   }
 }
