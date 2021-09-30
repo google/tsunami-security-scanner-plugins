@@ -43,6 +43,7 @@ import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
 
 @PluginInfo(
@@ -63,7 +64,11 @@ public final class CVE202121234VulnDetector implements VulnDetector {
 			"manage/log/view?filename=/windows/win.ini&base=../../../../../../../../../../",
 			"log/view?filename=/windows/win.ini&base=../../../../../../../../../../"};
 
-	public static final String[] DETECTION_STRINGS = new String[]{"root:[x*]:0:0:", "16-bit app support"};
+	public static final String WIN_DETECTION_STRING = "16-bit app support";
+
+	public static final String LINUX_DETECTION_STRING = "root:.*:0:0:";
+
+	private static final Pattern LINUX_DETECTION_STRING_PATTERN = Pattern.compile(LINUX_DETECTION_STRING);
 
 
 	private final HttpClient httpClient;
@@ -109,10 +114,12 @@ public final class CVE202121234VulnDetector implements VulnDetector {
 				}
 
 				if (httpResponse.status().code() == 200) {
-					for (String detectionString : DETECTION_STRINGS) {
-						if (httpResponse.bodyString().get().contains(detectionString)) {
-							return true;
-						}
+					if (httpResponse.bodyString().get().contains(WIN_DETECTION_STRING)) {
+						return true;
+					}
+
+					if (LINUX_DETECTION_STRING_PATTERN.matcher(httpResponse.bodyString().get()).find()) {
+						return true;
 					}
 				}
 
