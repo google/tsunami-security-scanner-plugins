@@ -93,16 +93,13 @@ public final class CVE202121985VulnDetector implements VulnDetector {
 	}
 
 	private boolean isServiceVulnerable(NetworkService networkService) {
-		String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) +
-				"/ui/h5-vsan/rest/proxy/service/com.vmware.vsan.client.services.capability.VsanCapabilityProvider/getClusterCapabilityData";
+		String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + CHECK_VUL_PATH;
 		try {
 			HttpHeaders headers = HttpHeaders.builder().addHeader("Content-Type", "application/json").build();
 			HttpResponse httpResponse = this.httpClient.send(
 					HttpRequest.post(targetUri).
 							setHeaders(headers).
-							setRequestBody(ByteString.copyFromUtf8(
-									"{`\"methodInput`\":[{`\"type`\":`\"ClusterComputeResource`\"," +
-											"`\"value`\": null,`\"serverGuid`\": null}]}")).build(),
+							setRequestBody(ByteString.copyFromUtf8(CHECK_VUL_DATA)).build(),
 					networkService);
 			if (httpResponse.status().code() != 200) {
 				return false;
