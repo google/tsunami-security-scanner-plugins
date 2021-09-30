@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.rce.cve202121985;
+package com.google.tsunami.plugins.detectors.cves.cve202121985;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
@@ -99,7 +99,7 @@ public final class Cve202121985DetectorTest {
 										Vulnerability.newBuilder()
 												.setMainId(
 														VulnerabilityId.newBuilder()
-																.setPublisher("hh-hunter")
+																.setPublisher("TSUNAMI_COMMUNITY")
 																.setValue("CVE_2021_21985"))
 												.setSeverity(Severity.HIGH)
 												.setTitle("CVE-2021-21985")
