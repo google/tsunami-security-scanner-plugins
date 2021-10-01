@@ -51,7 +51,7 @@ import javax.inject.Inject;
 		type = PluginType.VULN_DETECTION,
 		name = "CVE-2021-21985",
 		version = "0.1",
-		description = "Spring Boot Actuator Logview Arbitrary file reading",
+		description = "VMware vCenter Server Virtual SAN Health Check Remote Code Execution",
 		author = "hh-hunter",
 		bootstrapModule = CVE202121985DetectorBootstrapModule.class)
 
@@ -80,7 +80,7 @@ public final class CVE202121985VulnDetector implements VulnDetector {
 	@Override
 	public DetectionReportList detect(
 			TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
-		logger.atInfo().log("CVE-2021-21234 starts detecting.");
+		logger.atInfo().log("CVE-2021-21985 starts detecting.");
 
 		return DetectionReportList.newBuilder()
 				.addAllDetectionReports(
