@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'Tsunami example VulnDetector plugin.'
+description = 'Tsunami CVE-2021-3129 VulnDetector plugin.'
 group = 'com.google.tsunami'
 version = '0.0.1-SNAPSHOT'
 
