@@ -57,7 +57,6 @@ public final class Cve202135464Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String QUERY_STRING = "openam/oauth2/..;/ccversion/Version";
 
-
   private final Clock utcClock;
   private final HttpClient httpClient;
 
@@ -72,14 +71,22 @@ public final class Cve202135464Detector implements VulnDetector {
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Cve202135464Detector starts detecting.");
 
-    return DetectionReportList.newBuilder()
-        .addAllDetectionReports(
-            matchedServices.stream()
-                .filter(NetworkServiceUtils::isWebService)
-                .filter(this::isServiceVulnerable)
-                .map(networkService -> buildDetectionReport(targetInfo, networkService))
-                .collect(toImmutableList()))
-        .build();
+    DetectionReportList detectionReports =
+        DetectionReportList.newBuilder()
+            .addAllDetectionReports(
+                matchedServices.stream()
+                    .filter(NetworkServiceUtils::isWebService)
+                    .filter(this::isServiceVulnerable)
+                    .map(networkService -> buildDetectionReport(targetInfo, networkService))
+                    .collect(toImmutableList()))
+            .build();
+
+    logger.atInfo().log(
+        "Cve202135464Detector finished, detected '%d' vulns.",
+        detectionReports.getDetectionReportsCount());
+    logger.atInfo().log(detectionReports.getDetectionReportsList().toString());
+    return detectionReports;
+
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
@@ -97,11 +104,11 @@ public final class Cve202135464Detector implements VulnDetector {
       if (httpResponse.status().code() != 200) {
         return false;
       }
-      //TODO: also check for content-length to be 970
-      return (httpResponse.status().code() == 200) &&
-         (httpResponse.headers().get("Content-Length").get() == "970");
-      //logger.atInfo().log("httpResponse: %s", httpResponse);
-      //return (httpResponse.status().code() == 200);
+      String foundContentLength = httpResponse.headers().get("Content-Length").get();
+      int expectedContentLength = 970;
+      return (httpResponse.status().code() == 200) && 
+          (Integer.parseInt(foundContentLength) == expectedContentLength);
+
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
       return false;
