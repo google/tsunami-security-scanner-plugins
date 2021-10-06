@@ -3,7 +3,6 @@ package com.google.tsunami.plugins.detectors.rce.cve202125646;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
-import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
@@ -36,7 +35,8 @@ import java.util.Optional;
     type = PluginType.VULN_DETECTION,
     name = "ApacheHttpServerCVE202141773VulnDetector",
     version = "1.0",
-    description = "This detector checks for Apache HTTP Server 2.4.49 Path traversal and disclosure vulnerability.",
+    description = "This detector checks for Apache HTTP Server 2.4.49 Path traversal and "
+        + "disclosure vulnerability.",
     author = "threedr3am (qiaoer1320@gmail.com)",
     bootstrapModule = ApacheHttpServerCVE202141773VulnDetectorBootstrapModule.class
 )
@@ -99,8 +99,13 @@ public class ApacheHttpServerCVE202141773VulnDetector implements VulnDetector {
                 .setSeverity(Severity.HIGH)
                 .setTitle("Apache HTTP Server 2.4.49 Path traversal and disclosure vulnerability")
                 .setDescription(
-                    "A flaw was found in a change made to path normalization in Apache HTTP Server 2.4.49. An attacker could use a path traversal attack to map URLs to files outside the expected document root."
-                        + "If files outside of the document root are not protected by \"require all denied\" these requests can succeed. Additionally this flaw could leak the source of interpreted files like CGI scripts."
+                    "A flaw was found in a change made to path normalization in Apache HTTP Server "
+                        + "2.4.49. An attacker could use a path traversal attack to map URLs to "
+                        + "files outside the expected document root."
+                        + "If files outside of the document root "
+                        + "are not protected by \"require all denied\" these requests can succeed. "
+                        + "Additionally this flaw could leak the source of interpreted files "
+                        + "like CGI scripts."
                         + "This issue is known to be exploited in the wild."
                         + "This issue only affects Apache 2.4.49 and not earlier versions."
                         + "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-41773 "
