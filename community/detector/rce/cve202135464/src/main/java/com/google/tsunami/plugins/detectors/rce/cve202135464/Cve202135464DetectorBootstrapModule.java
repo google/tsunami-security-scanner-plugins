@@ -15,7 +15,12 @@
  */
 package com.google.tsunami.plugins.detectors.rce.cve202135464;
 
+import com.google.common.base.Ticker;
+import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import javax.inject.Qualifier;
 
 /** A Guice module that bootstraps the {@link Cve202135464Detector}. */
 public final class Cve202135464DetectorBootstrapModule extends PluginBootstrapModule {
@@ -23,5 +28,15 @@ public final class Cve202135464DetectorBootstrapModule extends PluginBootstrapMo
   @Override
   protected void configurePlugin() {
     registerPlugin(Cve202135464Detector.class);
+  }
+
+  @Qualifier
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface StopwatchTicker {}
+
+  @Provides
+  @StopwatchTicker
+  Ticker provideTicker() {
+    return Ticker.systemTicker();
   }
 }

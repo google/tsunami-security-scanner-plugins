@@ -19,8 +19,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 
+import com.google.common.base.Charsets;
+import com.google.common.base.Stopwatch;
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.io.Resources;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -29,6 +33,7 @@ import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.plugins.detectors.rce.cve202135464.Cve202135464DetectorBootstrapModule.StopwatchTicker;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -41,35 +46,52 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
+// import okhttp3.OkHttpClient;
+// import okhttp3.Request;
+// import okhttp3.Response;
 
-/**
- * A {@link VulnDetector} plugin that detects CVE-2021-35464.
- */
+/** A {@link VulnDetector} plugin that detects CVE-2021-35464. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "Forgerock AM/OpenAM CVE-2021-35464 Detector",
     version = "0.1",
-    description = "Plugin detects an unauthenticated java deserialization remote code execution"
-        + "vulnerability in OpenAM before 14.6.3 and ForgeRock AM before 7.0 (CVE-2021-35464).",
+    description =
+        "Plugin detects an unauthenticated java deserialization remote code execution"
+            + "vulnerability in OpenAM before 14.6.3 and ForgeRock AM before 7.0 (CVE-2021-35464).",
     author = "0xtavi",
     bootstrapModule = Cve202135464DetectorBootstrapModule.class)
 public final class Cve202135464Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-  private static final String QUERY_STRING = "openam/oauth2/..;/ccversion/Version";
+  private static final String QUERY_STRING =
+      "openam/oauth2/..;/ccversion/Version?jato.pageSession=";
+  private static final long PAYLOAD_SLEEP_DURATION_SECONDS = 5;
 
   private final Clock utcClock;
   private final HttpClient httpClient;
+  private final Ticker ticker;
+
+  private String serializedBase64RCEPayload = null;
 
   @Inject
-  Cve202135464Detector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  Cve202135464Detector(
+      @UtcClock Clock utcClock, @StopwatchTicker Ticker ticker, HttpClient httpClient) {
     this.utcClock = checkNotNull(utcClock);
-    this.httpClient = checkNotNull(httpClient);
+    this.ticker = ticker;
+    this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
+    try {
+      this.serializedBase64RCEPayload =
+          Resources.toString(Resources.getResource(this.getClass(), "payload.b64"), Charsets.UTF_8);
+    } catch (IOException e) {
+      logger.atSevere().withCause(e).log(
+          "Should never happen. Couldn't load payload resource file.");
+    }
   }
 
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Cve202135464Detector starts detecting.");
+    checkNotNull(serializedBase64RCEPayload);
 
     DetectionReportList detectionReports =
         DetectionReportList.newBuilder()
@@ -84,31 +106,33 @@ public final class Cve202135464Detector implements VulnDetector {
     logger.atInfo().log(
         "Cve202135464Detector finished, detected '%d' vulns.",
         detectionReports.getDetectionReportsCount());
-    logger.atInfo().log(detectionReports.getDetectionReportsList().toString());
     return detectionReports;
-
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
-        + QUERY_STRING;
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + QUERY_STRING;
 
+    Stopwatch stopwatch = Stopwatch.createStarted(ticker);
     try {
       HttpResponse httpResponse =
           httpClient.send(
-              get(targetUri)
-                  .withEmptyHeaders()
-                  .build(),
+              get(targetUri + serializedBase64RCEPayload).withEmptyHeaders().build(),
               networkService);
+      stopwatch.stop();
 
-      if (httpResponse.status().code() != 200) {
+      if (httpResponse.status().code() != 302) {
         return false;
       }
-      String foundContentLength = httpResponse.headers().get("Content-Length").get();
-      int expectedContentLength = 970;
-      return (httpResponse.status().code() == 200) && 
-          (Integer.parseInt(foundContentLength) == expectedContentLength);
 
+      long stageSeconds = stopwatch.elapsed().getSeconds();
+      // logger.atInfo().log("stageSeconds = '%d'", stageSeconds);
+      // logger.atInfo().log("PAYLOAD_SLEEP_DURATION_SECONDS = '%d'",
+      // PAYLOAD_SLEEP_DURATION_SECONDS);
+      if (stageSeconds >= PAYLOAD_SLEEP_DURATION_SECONDS) {
+        return true;
+      }
+      return false;
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
       return false;
@@ -147,4 +171,3 @@ public final class Cve202135464Detector implements VulnDetector {
         .build();
   }
 }
-
