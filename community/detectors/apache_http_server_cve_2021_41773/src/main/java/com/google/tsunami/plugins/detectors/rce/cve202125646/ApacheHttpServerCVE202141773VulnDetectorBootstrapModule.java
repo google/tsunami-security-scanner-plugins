@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.rce.cve_2021_25646;
+package com.google.tsunami.plugins.detectors.rce.cve202125646;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
 /**
- * A {@link PluginBootstrapModule} for {@link ApacheHttpServerVulnDetector}.
+ * A {@link PluginBootstrapModule} for {@link ApacheHttpServerCVE202141773VulnDetector}.
  */
-public final class ApacheHttpServerVulnDetectorBootstrapModule extends PluginBootstrapModule {
+public final class ApacheHttpServerCVE202141773VulnDetectorBootstrapModule extends
+    PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    registerPlugin(ApacheHttpServerVulnDetector.class);
+    registerPlugin(ApacheHttpServerCVE202141773VulnDetector.class);
   }
 }

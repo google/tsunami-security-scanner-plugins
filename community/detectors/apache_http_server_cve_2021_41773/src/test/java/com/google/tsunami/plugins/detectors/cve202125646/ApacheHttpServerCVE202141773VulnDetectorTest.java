@@ -1,4 +1,4 @@
-package com.google.tsunami.plugins.detectors.nacos.auth_bypass_lte140;
+package com.google.tsunami.plugins.detectors.cve202125646;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
@@ -11,7 +11,7 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
-import com.google.tsunami.plugins.detectors.rce.cve_2021_25646.ApacheHttpServerVulnDetector;
+import com.google.tsunami.plugins.detectors.rce.cve202125646.ApacheHttpServerCVE202141773VulnDetector;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
@@ -27,13 +27,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ApacheHttpServerVulnDetectorTest {
+public class ApacheHttpServerCVE202141773VulnDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
   @Inject
-  private ApacheHttpServerVulnDetector detector;
+  private ApacheHttpServerCVE202141773VulnDetector detector;
 
   private MockWebServer mockWebServer;
 
@@ -55,7 +55,7 @@ public class ApacheHttpServerVulnDetectorTest {
   }
 
   @Test
-  public void testPathTraversalAndDisclosure()
+  public void detect_whenVulnerable_returnsVulnerability()
       throws IOException {
     createInjector();
     mockWebServer.setDispatcher(new VulnerableEndpointDispatcher());
@@ -71,14 +71,13 @@ public class ApacheHttpServerVulnDetectorTest {
 
     TargetInfo targetInfo = buildTargetInfo(forHostname(mockWebServer.getHostName()));
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
-
     assertThat(detectionReports.getDetectionReportsList()).containsExactly(
         detector.buildDetectionReport(targetInfo, httpServices.get(0)));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
   }
 
   @Test
-  public void testNoPathTraversalAndDisclosure()
+  public void detect_whenNoVulnerable_returnsVulnerability()
       throws IOException {
     createInjector();
     mockWebServer.setDispatcher(new SafeEndpointDispatcher());
@@ -94,13 +93,12 @@ public class ApacheHttpServerVulnDetectorTest {
 
     TargetInfo targetInfo = buildTargetInfo(forHostname(mockWebServer.getHostName()));
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
-
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
     assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
   }
 
 
-  static final class VulnerableEndpointDispatcher extends Dispatcher {
+  private static final class VulnerableEndpointDispatcher extends Dispatcher {
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
@@ -109,7 +107,7 @@ public class ApacheHttpServerVulnDetectorTest {
     }
   }
 
-  static final class SafeEndpointDispatcher extends Dispatcher {
+  private static final class SafeEndpointDispatcher extends Dispatcher {
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
