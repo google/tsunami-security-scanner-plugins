@@ -17,6 +17,8 @@ package com.google.tsunami.plugins.detectors.rce.cve20213129;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -36,18 +38,16 @@ import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.time.Instant;
+import java.io.IOException;
 import javax.inject.Inject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.junit.After;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import java.io.IOException;
-import org.junit.After;
 
 /** Unit tests for {@link Cve20213129VulnDetector}. */
 @RunWith(JUnit4.class)

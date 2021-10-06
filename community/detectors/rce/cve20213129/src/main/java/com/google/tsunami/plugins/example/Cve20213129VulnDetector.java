@@ -17,8 +17,13 @@ package com.google.tsunami.plugins.detectors.rce.cve20213129;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.google.tsunami.common.net.http.HttpRequest.post;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.tsunami.common.net.http.HttpHeaders;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -38,15 +43,10 @@ import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.AdditionalDetail;
-
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import com.google.tsunami.common.net.http.HttpHeaders;
-import static com.google.tsunami.common.net.http.HttpRequest.post;
-import com.google.protobuf.ByteString;
 
 @PluginInfo(type = PluginType.VULN_DETECTION, name = "Cve20213129VulnDetector", version = "0.1",
 		description = "This plugin detects Laravel (Version <= 8.4.2) running in debug mode, while "
