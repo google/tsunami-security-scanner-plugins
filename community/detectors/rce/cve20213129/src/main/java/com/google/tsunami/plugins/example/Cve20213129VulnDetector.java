@@ -17,17 +17,19 @@ package com.google.tsunami.plugins.detectors.rce.cve20213129;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.net.HttpHeaders.ACCEPT;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.tsunami.common.net.http.HttpHeaders;
+import com.google.common.net.MediaType;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -53,7 +55,7 @@ import javax.inject.Inject;
 				+ "using Ignition (Version <= v2.5.1). "
 				+ "Such instances are vulnerable to an unauthenticated remote code execution vulnerability (CVE-2021-3129), "
 				+ "due to unsafe user input handling.",
-		author = "TSUNAMI_COMMUNITY",
+		author = "Timo Mueller (work@mtimo.de)",
 		bootstrapModule = Cve20213129VulnDetectorBootstrapModule.class)
 
 @ForServiceName({"http", "https"})
@@ -78,22 +80,18 @@ public final class Cve20213129VulnDetector implements VulnDetector {
 	public DetectionReportList detect(TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
 		logger.atInfo().log("Cve20213129VulnDetector starts detecting.");
 
-		// An example implementation for a VulnDetector.
 		return DetectionReportList.newBuilder().addAllDetectionReports(matchedServices.stream()
 				.filter(NetworkServiceUtils::isWebService).filter(this::isServiceVulnerable)
 				.map(networkService -> buildDetectionReport(targetInfo, networkService)).collect(toImmutableList()))
 				.build();
 	}
 
-	// Checks whether a given network service is vulnerable. Real detection logic
-	// implemented here.
-	private boolean isServiceVulnerable(NetworkService networkService) {
-		{
+	private boolean isServiceVulnerable(NetworkService networkService) {	
 			String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + QUERY_PATH;
 			try {
-				HttpResponse httpResponse = httpClient.send(post(targetUri).setHeaders(HttpHeaders.builder()
-						.addHeader(CONTENT_TYPE, "application/json")
-						.addHeader("Accept", "application/json").build())
+				HttpResponse httpResponse = httpClient.send(HttpRequest.post(targetUri).setHeaders(HttpHeaders.builder()
+						.addHeader(CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
+						.addHeader(ACCEPT, MediaType.JSON_UTF_8.toString()).build())
 						.setRequestBody(ByteString.copyFromUtf8(QUERY_PAYLOAD))
 						.build(), networkService);
 
@@ -103,7 +101,6 @@ public final class Cve20213129VulnDetector implements VulnDetector {
 				logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
 				return false;
 			}
-		}
 	}
 
 	private DetectionReport buildDetectionReport(TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
