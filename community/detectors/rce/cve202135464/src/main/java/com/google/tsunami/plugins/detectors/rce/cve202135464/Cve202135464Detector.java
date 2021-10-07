@@ -46,9 +46,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
-// import okhttp3.OkHttpClient;
-// import okhttp3.Request;
-// import okhttp3.Response;
+
 
 /** A {@link VulnDetector} plugin that detects CVE-2021-35464. */
 @PluginInfo(
@@ -126,16 +124,12 @@ public final class Cve202135464Detector implements VulnDetector {
       }
 
       long stageSeconds = stopwatch.elapsed().getSeconds();
-      // logger.atInfo().log("stageSeconds = '%d'", stageSeconds);
-      // logger.atInfo().log("PAYLOAD_SLEEP_DURATION_SECONDS = '%d'",
-      // PAYLOAD_SLEEP_DURATION_SECONDS);
       if (stageSeconds >= PAYLOAD_SLEEP_DURATION_SECONDS) {
         return true;
       }
       return false;
     } catch (IOException e) {
-      logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
-      return false;
+      throw new AssertionError("Couldn't load payload resource file for Cve202135464Detector", e);
     }
   }
 
