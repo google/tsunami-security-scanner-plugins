@@ -26,10 +26,13 @@ import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link ApacheHttpServerCVE202141773VulnDetector}.
  */
+@RunWith(JUnit4.class)
 public final class ApacheHttpServerCVE202141773VulnDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
@@ -80,7 +83,7 @@ public final class ApacheHttpServerCVE202141773VulnDetectorTest {
   }
 
   @Test
-  public void detect_whenNoVulnerable_returnsVulnerability()
+  public void detect_whenNoVulnerable_returnsNoFinding()
       throws IOException {
     createInjector();
     mockWebServer.setDispatcher(new SafeEndpointDispatcher());
