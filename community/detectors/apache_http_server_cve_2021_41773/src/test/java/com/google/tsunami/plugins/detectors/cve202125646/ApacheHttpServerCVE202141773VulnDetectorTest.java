@@ -100,7 +100,7 @@ public final class ApacheHttpServerCVE202141773VulnDetectorTest {
     TargetInfo targetInfo = buildTargetInfo(forHostname(mockWebServer.getHostName()));
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
+    assertThat(mockWebServer.getRequestCount()).isGreaterThan(1);
   }
 
 
@@ -109,7 +109,6 @@ public final class ApacheHttpServerCVE202141773VulnDetectorTest {
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
       return new MockResponse().setResponseCode(HttpStatus.OK.code())
-          .addHeader("Server", "Apache/2.4.49 (Unix)")
           .setBody("root:x:0:0:root:/root:/bin/bash\n"
               + "bin:x:1:1:bin:/bin:/sbin/nologin\n"
               + "daemon:x:2:2:daemon:/sbin:/sbin/nologin");
@@ -120,10 +119,8 @@ public final class ApacheHttpServerCVE202141773VulnDetectorTest {
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
-      if (recordedRequest.getPath().startsWith("/cgi-bin/.%2e")) {
-        return new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code())
-            .addHeader("Server", "Apache/2.4.49 (Unix)")
-            .setBody("You don't have permission to access this resource.");
+      if (recordedRequest.getPath().startsWith("/cgi-bin/")) {
+        return new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code());
       }
       return new MockResponse().setResponseCode(HttpStatus.OK.code());
     }

