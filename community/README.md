@@ -1,5 +1,7 @@
 # Tsunami Plugins by Community Members
 
+![community-plugins-build](https://github.com/google/tsunami-security-scanner-plugins/workflows/community-plugins-build/badge.svg)
+
 This directory contains plugins contributed by community members.
 
 ## Currently released plugins
