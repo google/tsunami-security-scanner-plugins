@@ -1,4 +1,4 @@
-package com.google.tsunami.plugins.detectors.cve202125646;
+package com.google.tsunami.plugins.detectors.rce.cve202125646;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
@@ -10,7 +10,6 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
-import com.google.tsunami.plugins.detectors.rce.cve202125646.ApacheHttpServerCVE202141773VulnDetector;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
@@ -26,20 +25,17 @@ import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for {@link ApacheHttpServerCVE202141773VulnDetector}.
+ * Unit tests for {@link ApacheDruidPreAuthRCECVE202125646VulnDetector}.
  */
-@RunWith(JUnit4.class)
-public final class ApacheHttpServerCVE202141773VulnDetectorTest {
+public final class ApacheDruidPreAuthRCECVE202125646VulnDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
   @Inject
-  private ApacheHttpServerCVE202141773VulnDetector detector;
+  private ApacheDruidPreAuthRCECVE202125646VulnDetector detector;
 
   private MockWebServer mockWebServer;
 
@@ -79,7 +75,7 @@ public final class ApacheHttpServerCVE202141773VulnDetectorTest {
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
     assertThat(detectionReports.getDetectionReportsList()).containsExactly(
         detector.buildDetectionReport(targetInfo, httpServices.get(0)));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
   }
 
   @Test
@@ -103,16 +99,22 @@ public final class ApacheHttpServerCVE202141773VulnDetectorTest {
     assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
   }
 
-
   private static final class VulnerableEndpointDispatcher extends Dispatcher {
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
-      return new MockResponse().setResponseCode(HttpStatus.OK.code())
-          .addHeader("Server", "Apache/2.4.49 (Unix)")
-          .setBody("root:x:0:0:root:/root:/bin/bash\n"
-              + "bin:x:1:1:bin:/bin:/sbin/nologin\n"
-              + "daemon:x:2:2:daemon:/sbin:/sbin/nologin");
+      if (recordedRequest.getPath().startsWith("/druid/indexer/v1/sampler")) {
+        if (recordedRequest.getUtf8Body()
+            .contains("java.lang.Runtime.getRuntime().exec('error_cmd')")) {
+          return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(
+              "{\"error\":\"Failed to sample data: Wrapped java.io.IOException: Cannot run program "
+                  + "\\\"error_cmd\\\": error=2, No such file or directory (script#1)\"}");
+        } else {
+          return new MockResponse().setResponseCode(HttpStatus.OK.code())
+              .setBody("{\"numRowsRead\":0,\"numRowsIndexed\":0,\"data\":[]}");
+        }
+      }
+      return new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code());
     }
   }
 
@@ -120,12 +122,7 @@ public final class ApacheHttpServerCVE202141773VulnDetectorTest {
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
-      if (recordedRequest.getPath().startsWith("/cgi-bin/.%2e")) {
-        return new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code())
-            .addHeader("Server", "Apache/2.4.49 (Unix)")
-            .setBody("You don't have permission to access this resource.");
-      }
-      return new MockResponse().setResponseCode(HttpStatus.OK.code());
+      return new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code());
     }
   }
 

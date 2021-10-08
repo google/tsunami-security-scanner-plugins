@@ -18,13 +18,13 @@ package com.google.tsunami.plugins.detectors.rce.cve202125646;
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
 /**
- * A {@link PluginBootstrapModule} for {@link ApacheHttpServerCVE202141773VulnDetector}.
+ * A {@link PluginBootstrapModule} for {@link ApacheDruidPreAuthRCECVE202125646VulnDetector}.
  */
-public final class ApacheHttpServerCVE202141773VulnDetectorBootstrapModule extends
+public final class ApacheDruidPreAuthRCECVE202125646VulnDetectorBootstrapModule extends
     PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    registerPlugin(ApacheHttpServerCVE202141773VulnDetector.class);
+    registerPlugin(ApacheDruidPreAuthRCECVE202125646VulnDetector.class);
   }
 }
