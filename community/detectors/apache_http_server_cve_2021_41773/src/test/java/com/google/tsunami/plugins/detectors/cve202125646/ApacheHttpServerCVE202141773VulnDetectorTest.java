@@ -6,16 +6,24 @@ import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAnd
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
+import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugins.detectors.rce.cve202125646.ApacheHttpServerCVE202141773VulnDetector;
+import com.google.tsunami.proto.AdditionalDetail;
+import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -77,8 +85,54 @@ public final class ApacheHttpServerCVE202141773VulnDetectorTest {
 
     TargetInfo targetInfo = buildTargetInfo(forHostname(mockWebServer.getHostName()));
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
-    assertThat(detectionReports.getDetectionReportsList()).containsExactly(
-        detector.buildDetectionReport(targetInfo, httpServices.get(0)));
+    assertThat(detectionReports.getDetectionReportsList())
+        .containsExactly(
+            DetectionReport.newBuilder()
+                .setTargetInfo(targetInfo)
+                .setNetworkService(httpServices.get(0))
+                .setDetectionTimestamp(
+                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                .setVulnerability(
+                    Vulnerability.newBuilder()
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("TSUNAMI_COMMUNITY")
+                                .setValue("CVE_2021_41773"))
+                        .setSeverity(Severity.HIGH)
+                        .setTitle(
+                            "Apache HTTP Server 2.4.49 Path traversal and disclosure vulnerability")
+                        .setDescription(
+                            "A flaw was found in a change made to path normalization in Apache HTTP"
+                                + " Server 2.4.49. An attacker could use a path traversal attack to"
+                                + " map URLs to files outside the expected document root. If files"
+                                + " outside of the document root are not protected by \"require all"
+                                + " denied\" these requests can succeed. Additionally this flaw"
+                                + " could leak the source of interpreted files like CGI scripts."
+                                + " This issue is known to be exploited in the wild. This issue"
+                                + " affects Apache 2.4.49 and 2.4.50 but not earlier versions."
+                                + " https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-41773"
+                                + " https://httpd.apache.org/security/vulnerabilities_24.html")
+                        .setRecommendation("Update to 2.4.51 release.")
+                        .addAdditionalDetails(
+                            AdditionalDetail.newBuilder()
+                                .setTextData(
+                                    TextData.newBuilder()
+                                        .setText(
+                                            "Vulnerable target:\n"
+                                                + mockWebServer.url("/")
+                                                + "admin/%2e%2e/%2e%2e"
+                                                + "/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e"
+                                                + "/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd\n"
+                                                + "\n"
+                                                + "Response:\n"
+                                                + "200 Ok\n"
+                                                + "Content-Length: 104\n"
+                                                + "\n"
+                                                + "root:x:0:0:root:/root:/bin/bash\n"
+                                                + "bin:x:1:1:bin:/bin:/sbin/nologin\n"
+                                                + "daemon:x:2:2:daemon:/sbin:/sbin/nologin"))))
+                .build());
     assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
   }
 
