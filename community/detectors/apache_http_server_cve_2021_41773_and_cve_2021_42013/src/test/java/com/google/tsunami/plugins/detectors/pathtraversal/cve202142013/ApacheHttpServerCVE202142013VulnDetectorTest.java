@@ -1,4 +1,4 @@
-package com.google.tsunami.plugins.detectors.cve202125646;
+package com.google.tsunami.plugins.detectors.pathtraversal.cve202142013;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
@@ -10,7 +10,6 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
-import com.google.tsunami.plugins.detectors.rce.cve202125646.ApacheHttpServerCVE202141773VulnDetector;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
@@ -30,16 +29,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for {@link ApacheHttpServerCVE202141773VulnDetector}.
+ * Unit tests for {@link ApacheHttpServerCVE202142013VulnDetector}.
  */
 @RunWith(JUnit4.class)
-public final class ApacheHttpServerCVE202141773VulnDetectorTest {
+public final class ApacheHttpServerCVE202142013VulnDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
   @Inject
-  private ApacheHttpServerCVE202141773VulnDetector detector;
+  private ApacheHttpServerCVE202142013VulnDetector detector;
 
   private MockWebServer mockWebServer;
 
