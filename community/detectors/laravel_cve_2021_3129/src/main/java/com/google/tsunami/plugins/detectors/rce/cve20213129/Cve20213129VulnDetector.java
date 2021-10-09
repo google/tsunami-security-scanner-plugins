@@ -59,9 +59,9 @@ import javax.inject.Inject;
             + " code execution vulnerability (CVE-2021-3129), due to unsafe user input handling.",
     author = "Timo Mueller (work@mtimo.de)",
     bootstrapModule = Cve20213129VulnDetectorBootstrapModule.class)
+
 @ForWebService
 public final class Cve20213129VulnDetector implements VulnDetector {
-
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String QUERY_PATH = "_ignition/execute-solution";
   private static final String QUERY_PAYLOAD =
