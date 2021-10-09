@@ -48,6 +48,7 @@ import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
 
+/** A {@link VulnDetector} that detects the CVE-2021-3129 vulnerability. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "Cve20213129VulnDetector",

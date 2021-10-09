@@ -17,6 +17,7 @@ package com.google.tsunami.plugins.detectors.rce.cve20213129;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
+/** A {@link PluginBootstrapModule} for {@link Cve20213129VulnDetector}. */
 public final class Cve20213129VulnDetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
