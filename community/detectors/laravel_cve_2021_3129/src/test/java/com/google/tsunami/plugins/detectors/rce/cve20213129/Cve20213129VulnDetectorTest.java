@@ -115,9 +115,9 @@ public final class Cve20213129VulnDetectorTest {
                         .setMainId(
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE-2021-3129"))
+                                .setValue("CVE_2021_3129"))
                         .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2021-3129: Laravel debug mode, unauthenticated RCE")
+                        .setTitle("CVE-2021-3129: Unauthenticated RCE in Laravel using Debug Mode")
                         .setDescription(
                             "Ignition before 2.5.2, as used in Laravel, allows unauthenticated"
                                 + " remote attackers to execute arbitrary code because of insecure"
