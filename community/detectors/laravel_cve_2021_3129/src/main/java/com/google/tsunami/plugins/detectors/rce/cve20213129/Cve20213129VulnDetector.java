@@ -33,7 +33,7 @@ import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
-import com.google.tsunami.plugin.annotations.ForServiceName;
+import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
@@ -58,7 +58,7 @@ import javax.inject.Inject;
             + " code execution vulnerability (CVE-2021-3129), due to unsafe user input handling.",
     author = "Timo Mueller (work@mtimo.de)",
     bootstrapModule = Cve20213129VulnDetectorBootstrapModule.class)
-@ForServiceName({"http", "https"})
+@ForWebService
 public final class Cve20213129VulnDetector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
