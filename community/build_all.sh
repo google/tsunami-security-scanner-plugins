@@ -18,11 +18,14 @@ set -eu
 SCRIPT_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 GENERATED_PLUGINS_PATH="${SCRIPT_PATH}/build/plugins"
 mkdir -p "${GENERATED_PLUGINS_PATH}"
+GENERATED_PYTHON_PATH="${SCRIPT_PATH}/build/python"
+mkdir -p "${GENERATED_PYTHON_PATH}"
 
 # For each community plugin, build the jar file and copy it to build/plugins
 # folder.
 for plugin_dir in $(find "${SCRIPT_PATH}" -name 'gradlew' -print0 | xargs -0 -n1 dirname | sort -u); do
   plugin_name="${plugin_dir##*"${SCRIPT_PATH}/"}"
+  printf "${plugin_dir}"
   printf "\nBuilding ${plugin_name}...\n"
 
   pushd "${plugin_dir}" >/dev/null
@@ -32,4 +35,14 @@ for plugin_dir in $(find "${SCRIPT_PATH}" -name 'gradlew' -print0 | xargs -0 -n1
 
   popd >/dev/null
 done
+
+# For each community plugin, copy python files to /script/py/
+
+for plugin_dir in $(find "${SCRIPT_PATH}" -name '*.py' -print0 | xargs -0 -n1 dirname | sort -u); do
+  mkdir -p "${GENERATED_PYTHON_PATH}/$(basename ${plugin_dir})"
+  cp $plugin_dir/*.py "${GENERATED_PYTHON_PATH}/$(basename ${plugin_dir})/"
+done
+
+
+
 
