@@ -34,7 +34,7 @@ class ApacheAirflowCVE202138540Detector(object):
         """
         session, csrf_token = self.get_session_csrf()
         # For Active Scanning - content = '{"str_key": "str_value}'
-        content = '{"hi":"hello"}'
+        content = '{}'
         bytes_content = io.BytesIO(bytes(content, encoding='utf-8'))
         response = requests.post(self.target_url, data={"csrf_token": csrf_token}, files={'file': bytes_content},
                                  cookies={'session': session}, allow_redirects=False)
