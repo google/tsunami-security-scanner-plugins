@@ -1,0 +1,1 @@
+{"eauth": "auto", "client": "wheel_async", "fun": "pillar_roots.write", "data": "test", "path": "%s"}

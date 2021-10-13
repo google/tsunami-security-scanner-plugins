@@ -121,8 +121,8 @@ public final class SaltStackCVE202125281VulnDetectorTest {
                     VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2021_25281"))
                 .setSeverity(Severity.HIGH)
-                .setTitle(
-                    "SaltStack Salt-API Unauthenticated Remote Command Execution vulnerability")
+                .setTitle("SaltStack Salt-API Unauthenticated Remote Command Execution "
+                        + "vulnerability (CVE-2021-25281)")
                 .setDescription(
                     "The SaltAPI does not honor eauth credentials for the wheel_async client. "
                         + "Thus, an attacker can remotely run any wheel modules on the master."
