@@ -67,8 +67,7 @@ public class SaltStackCVE202125281VulnDetector implements VulnDetector {
       payloadFormatString = Resources.toString(
           Resources.getResource(this.getClass(), "payloadFormatString.json"), UTF_8);
     } catch (IOException e) {
-      logger.atSevere().withCause(e).log(
-          "Should never happen. Couldn't load payload resource file");
+      throw new AssertionError("Couldn't load payload resource file.", e);
     }
     this.payloadFormatString = payloadFormatString;
   }
