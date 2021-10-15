@@ -75,7 +75,11 @@ public final class Cve20213129VulnDetectorTest {
 
   @Test
   public void detect_vulnerableToCve20213129_returnsVulnerability() throws InterruptedException {
-    enqueueMockVulnerableResponse();
+    MockResponse mockResponse =
+        new MockResponse()
+            .setResponseCode(500)
+            .setBody("file_get_contents(phar://Tsunami_iDontExist");
+    mockWebServer.enqueue(mockResponse);
 
     NetworkService service =
         NetworkService.newBuilder()
@@ -134,7 +138,8 @@ public final class Cve20213129VulnDetectorTest {
   @Test
   public void detect_notVulnerable_returnsNoVulnerability()
       throws IOException, InterruptedException {
-    enqueueMockNotVulnerableResponse();
+    MockResponse mockResponse = new MockResponse().setResponseCode(500).setBody("");
+    mockWebServer.enqueue(mockResponse);
 
     NetworkService service =
         NetworkService.newBuilder()
@@ -155,18 +160,5 @@ public final class Cve20213129VulnDetectorTest {
     assertThat(detectionReportRequest.getPath()).endsWith("_ignition/execute-solution");
 
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-  }
-
-  private void enqueueMockVulnerableResponse() {
-    MockResponse mockResponse =
-        new MockResponse()
-            .setResponseCode(500)
-            .setBody("file_get_contents(phar://Tsunami_iDontExist");
-    mockWebServer.enqueue(mockResponse);
-  }
-
-  private void enqueueMockNotVulnerableResponse() {
-    MockResponse mockResponse = new MockResponse().setResponseCode(500).setBody("");
-    mockWebServer.enqueue(mockResponse);
   }
 }
