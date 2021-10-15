@@ -111,7 +111,6 @@ public final class Cve20213129VulnDetector implements VulnDetector {
                   .build(),
               networkService);
       return httpResponse.bodyString().orElseGet(() -> "").contains(DETECTION_STRING);
-
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
       return false;

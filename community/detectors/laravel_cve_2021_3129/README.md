@@ -15,4 +15,4 @@ Using `gradlew`:
 ./gradlew jar
 ```
 
-Tsunami identifiable jar file is located at `build/libs` directory.
+A Tsunami identifiable jar file is located in the `build/libs` directory.
