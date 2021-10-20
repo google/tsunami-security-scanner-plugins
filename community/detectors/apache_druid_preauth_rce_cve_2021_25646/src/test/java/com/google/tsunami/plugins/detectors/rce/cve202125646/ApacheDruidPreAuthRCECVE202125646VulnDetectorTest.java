@@ -75,7 +75,7 @@ public final class ApacheDruidPreAuthRCECVE202125646VulnDetectorTest {
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
     assertThat(detectionReports.getDetectionReportsList()).containsExactly(
         detector.buildDetectionReport(targetInfo, httpServices.get(0)));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
   }
 
   @Test
@@ -103,18 +103,8 @@ public final class ApacheDruidPreAuthRCECVE202125646VulnDetectorTest {
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
-      if (recordedRequest.getPath().startsWith("/druid/indexer/v1/sampler")) {
-        if (recordedRequest.getUtf8Body()
-            .contains("java.lang.Runtime.getRuntime().exec('error_cmd')")) {
-          return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(
-              "{\"error\":\"Failed to sample data: Wrapped java.io.IOException: Cannot run program "
-                  + "\\\"error_cmd\\\": error=2, No such file or directory (script#1)\"}");
-        } else {
-          return new MockResponse().setResponseCode(HttpStatus.OK.code())
-              .setBody("{\"numRowsRead\":0,\"numRowsIndexed\":0,\"data\":[]}");
-        }
-      }
-      return new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code());
+      return new MockResponse().setResponseCode(HttpStatus.OK.code())
+          .setBody("{\"numRowsRead\":0,\"numRowsIndexed\":0,\"data\":[]}");
     }
   }
 
@@ -122,7 +112,8 @@ public final class ApacheDruidPreAuthRCECVE202125646VulnDetectorTest {
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
-      return new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code());
+      return new MockResponse().setResponseCode(HttpStatus.OK.code())
+          .setBody("{\"error\":\"Failed to sample data: JavaScript is disabled\"}");
     }
   }
 
