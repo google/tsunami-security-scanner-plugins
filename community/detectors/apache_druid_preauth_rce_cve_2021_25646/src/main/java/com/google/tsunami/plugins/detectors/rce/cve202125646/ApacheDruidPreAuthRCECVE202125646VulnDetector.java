@@ -95,7 +95,7 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
           networkService);
       if (response.status() == HttpStatus.OK && response.bodyString().isPresent()) {
         String responseBody = response.bodyString().get();
-        if (responseBody.equals("{\"error\":\"Failed to sample data: JavaScript is disabled\"}")) {
+        if (responseBody.contains("JavaScript is disabled")) {
           return false;
         }
         if (responseBody.equals("{\"numRowsRead\":0,\"numRowsIndexed\":0,\"data\":[]}")) {
