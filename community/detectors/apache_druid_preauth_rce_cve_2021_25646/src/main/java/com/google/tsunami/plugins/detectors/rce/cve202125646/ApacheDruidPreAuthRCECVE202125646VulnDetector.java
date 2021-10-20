@@ -2,6 +2,7 @@ package com.google.tsunami.plugins.detectors.rce.cve202125646;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -53,6 +54,7 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
   private final HttpClient httpClient;
 
   private final String payloadString;
+  private static final String CHECK_VUL_PATH = "druid/indexer/v1/sampler";
 
   @Inject
   ApacheDruidPreAuthRCECVE202125646VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
@@ -74,11 +76,17 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(NetworkServiceUtils::isWebService)
+                .filter(this::isWebServiceOrUnknownService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
+  }
+
+  private boolean isWebServiceOrUnknownService(NetworkService networkService) {
+    return networkService.getServiceName().isEmpty()
+        || NetworkServiceUtils.isWebService(networkService)
+        || NetworkServiceUtils.getServiceName(networkService).equals("unknown");
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
@@ -87,8 +95,7 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
         .build();
 
     ByteString requestBody = ByteString.copyFromUtf8(payloadString);
-    String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
-        + "druid/indexer/v1/sampler";
+    String targetUri = buildTargetUrl(networkService);
     try {
       HttpResponse response = httpClient.send(
           post(targetUri).setHeaders(httpHeaders).setRequestBody(requestBody).build(),
@@ -106,6 +113,21 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
     }
     return false;
+  }
+
+  private static String buildTargetUrl(NetworkService networkService) {
+    StringBuilder targetUrlBuilder = new StringBuilder();
+    if (NetworkServiceUtils.isWebService(networkService)) {
+      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
+    } else {
+      // Assume the service uses HTTP protocol when the scanner cannot identify the actual service.
+      targetUrlBuilder
+          .append("http://")
+          .append(toUriAuthority(networkService.getNetworkEndpoint()))
+          .append("/");
+    }
+    targetUrlBuilder.append(CHECK_VUL_PATH);
+    return targetUrlBuilder.toString();
   }
 
   public DetectionReport buildDetectionReport(
