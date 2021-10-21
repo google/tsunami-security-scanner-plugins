@@ -47,6 +47,7 @@ import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
 
 /**
@@ -65,6 +66,7 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String CHECK_VUL_PATH = "druid/indexer/v1/sampler";
+  private static final Pattern VULNERABILITY_RESPONSE_PATTERN = Pattern.compile("root:[x*]:0:0:");
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -116,7 +118,7 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
           networkService);
       if (response.status() == HttpStatus.OK && response.bodyString().isPresent()) {
         String responseBody = response.bodyString().get();
-        if (responseBody.equals("{\"numRowsRead\":0,\"numRowsIndexed\":0,\"data\":[]}")) {
+        if (VULNERABILITY_RESPONSE_PATTERN.matcher(responseBody).find()) {
           return true;
         }
       }

@@ -119,7 +119,14 @@ public final class ApacheDruidPreAuthRCECVE202125646VulnDetectorTest {
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
       return new MockResponse().setResponseCode(HttpStatus.OK.code())
-          .setBody("{\"numRowsRead\":0,\"numRowsIndexed\":0,\"data\":[]}");
+          .setBody("{\"numRowsRead\":4,\"numRowsIndexed\":4,\"data\":[{\"input\":{\"timestamp\":"
+              + "\"1622212345709\",\"kadkand\":\"root:x:0:0:root:/root:/sbin/nologin\\nnobody:x:"
+              + "65534:65534:nobody:/nonexistent:/sbin/nologin\\nnonroot:x:65532:65532:nonroot:/"
+              + "home/nonroot:/sbin/nologin\\ndruid:x:1000:1000::/opt/druid:/bin/sh\\n\"},\"pars"
+              + "ed\":{\"__time\":1622212345709,\"kadkand\":\"root:x:0:0:root:/root:/sbin/nologi"
+              + "n\\nnobody:x:65534:65534:nobody:/nonexistent:/sbin/nologin\\nnonroot:x:65532:65"
+              + "532:nonroot:/home/nonroot:/sbin/nologin\\ndruid:x:1000:1000::/opt/druid:/bin/sh"
+              + "\\n\"}}]}");
     }
   }
 

