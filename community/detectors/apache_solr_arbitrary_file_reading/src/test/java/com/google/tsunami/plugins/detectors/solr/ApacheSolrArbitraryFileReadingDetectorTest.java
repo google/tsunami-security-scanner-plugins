@@ -131,7 +131,7 @@ public final class ApacheSolrArbitraryFileReadingDetectorTest {
                         .setDescription("Apache Solr is an open source search server. When Apache "
                             + "Solr does not enable authentication, an attacker can directly craft"
                             + " a request to enable a specific configuration, and eventually cause"
-                            + " SSRF or arbitrary file reading.")
+                            + " arbitrary file reading or SSRF.")
                         .setRecommendation("enable authentication")
                 ).build());
   }
