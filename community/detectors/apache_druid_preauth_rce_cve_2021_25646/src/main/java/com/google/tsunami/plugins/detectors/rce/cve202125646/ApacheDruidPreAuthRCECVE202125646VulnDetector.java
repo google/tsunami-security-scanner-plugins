@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.google.tsunami.plugins.detectors.rce.cve202125646;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -49,12 +64,11 @@ import javax.inject.Inject;
 public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+  private static final String CHECK_VUL_PATH = "druid/indexer/v1/sampler";
 
   private final Clock utcClock;
   private final HttpClient httpClient;
-
   private final String payloadString;
-  private static final String CHECK_VUL_PATH = "druid/indexer/v1/sampler";
 
   @Inject
   ApacheDruidPreAuthRCECVE202125646VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
@@ -102,9 +116,6 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
           networkService);
       if (response.status() == HttpStatus.OK && response.bodyString().isPresent()) {
         String responseBody = response.bodyString().get();
-        if (responseBody.contains("JavaScript is disabled")) {
-          return false;
-        }
         if (responseBody.equals("{\"numRowsRead\":0,\"numRowsIndexed\":0,\"data\":[]}")) {
           return true;
         }
