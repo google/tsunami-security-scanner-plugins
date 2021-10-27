@@ -62,7 +62,8 @@ import javax.inject.Inject;
 public final class ApacheSolrArbitraryFileReadingDetector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-  private static final Pattern VULNERABILITY_RESPONSE_PATTERN = Pattern.compile("root:[x*]:0:0:");
+  private static final Pattern VULNERABILITY_RESPONSE_PATTERN = Pattern.compile("(root:[x*]:0:0:)|"
+      + "(\\(Permission denied\\))|(\\(No such file or directory\\))");
 
   private final Clock utcClock;
   private final HttpClient httpClient;

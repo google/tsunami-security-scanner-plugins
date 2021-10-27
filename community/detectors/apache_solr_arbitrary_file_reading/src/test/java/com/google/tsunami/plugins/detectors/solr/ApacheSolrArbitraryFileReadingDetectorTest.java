@@ -131,7 +131,109 @@ public final class ApacheSolrArbitraryFileReadingDetectorTest {
                         .setDescription("Apache Solr is an open source search server. When Apache "
                             + "Solr does not enable authentication, an attacker can directly craft"
                             + " a request to enable a specific configuration, and eventually cause"
-                            + " arbitrary file reading or SSRF.")
+                            + " SSRF or arbitrary file reading.")
+                        .setRecommendation("enable authentication")
+                ).build());
+  }
+
+  @Test
+  public void detect_whenSolrIsVulnerableWithPermissionDenied_reportsVuln() {
+    mockWebServer.enqueue(
+        new MockResponse().setResponseCode(200).setBody("{\"status\": {\"test\": {}}}"));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    mockWebServer.enqueue(
+        new MockResponse().setResponseCode(200).setBody("{\n"
+            + "  \"responseHeader\":{\n"
+            + "    \"status\":500,\n"
+            + "    \"QTime\":37,\n"
+            + "    \"handler\":\"org.apache.solr.handler.DumpRequestHandler\",\n"
+            + "    \"params\":{\n"
+            + "      \"param\":\"ContentStreams\",\n"
+            + "      \"stream.url\":\"file:///etc/shadow\"}},\n"
+            + "  \"params\":{\n"
+            + "    \"stream.url\":\"file:///etc/shadow\",\n"
+            + "    \"echoHandler\":\"true\",\n"
+            + "    \"param\":\"ContentStreams\",\n"
+            + "    \"echoParams\":\"explicit\"},\n"
+            + "  \"error\":{\n"
+            + "    \"msg\":\"/etc/shadow (Permission denied)\",\n"
+            + "    \"trace\":\"...Exception: /etc/shadow (Permission denied)...\",\n"
+            + "    \"code\":500}}"));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    mockWebServer.url("/");
+
+    DetectionReportList detectionReports =
+        detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(solrService));
+
+    assertThat(detectionReports.getDetectionReportsList())
+        .containsExactly(
+            DetectionReport.newBuilder()
+                .setTargetInfo(TargetInfo.getDefaultInstance())
+                .setNetworkService(solrService)
+                .setDetectionTimestamp(
+                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                .setVulnerability(
+                    Vulnerability.newBuilder()
+                        .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
+                            .setValue("APACHE_SOLR_UNPROTECTED_SERVER"))
+                        .setSeverity(Severity.HIGH)
+                        .setTitle("Apache Solr RemoteStreaming Arbitrary File Reading")
+                        .setDescription("Apache Solr is an open source search server. When Apache "
+                            + "Solr does not enable authentication, an attacker can directly craft"
+                            + " a request to enable a specific configuration, and eventually cause"
+                            + " SSRF or arbitrary file reading.")
+                        .setRecommendation("enable authentication")
+                ).build());
+  }
+
+  @Test
+  public void detect_whenSolrIsVulnerableWithFileNotFound_reportsVuln() {
+    mockWebServer.enqueue(
+        new MockResponse().setResponseCode(200).setBody("{\"status\": {\"test\": {}}}"));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    mockWebServer.enqueue(
+        new MockResponse().setResponseCode(200).setBody("{\n"
+            + "  \"responseHeader\":{\n"
+            + "    \"status\":500,\n"
+            + "    \"QTime\":6,\n"
+            + "    \"handler\":\"org.apache.solr.handler.DumpRequestHandler\",\n"
+            + "    \"params\":{\n"
+            + "      \"param\":\"ContentStreams\",\n"
+            + "      \"stream.url\":\"file:///etc/shadow1\"}},\n"
+            + "  \"params\":{\n"
+            + "    \"stream.url\":\"file:///etc/shadow1\",\n"
+            + "    \"echoHandler\":\"true\",\n"
+            + "    \"param\":\"ContentStreams\",\n"
+            + "    \"echoParams\":\"explicit\"},\n"
+            + "  \"error\":{\n"
+            + "    \"msg\":\"/etc/shadow1 (No such file or directory)\",\n"
+            + "    \"trace\":\"...Exception: /etc/shadow1 (No such file or directory)...\",\n"
+            + "    \"code\":500}}"));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    mockWebServer.url("/");
+
+    DetectionReportList detectionReports =
+        detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(solrService));
+
+    assertThat(detectionReports.getDetectionReportsList())
+        .containsExactly(
+            DetectionReport.newBuilder()
+                .setTargetInfo(TargetInfo.getDefaultInstance())
+                .setNetworkService(solrService)
+                .setDetectionTimestamp(
+                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                .setVulnerability(
+                    Vulnerability.newBuilder()
+                        .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
+                            .setValue("APACHE_SOLR_UNPROTECTED_SERVER"))
+                        .setSeverity(Severity.HIGH)
+                        .setTitle("Apache Solr RemoteStreaming Arbitrary File Reading")
+                        .setDescription("Apache Solr is an open source search server. When Apache "
+                            + "Solr does not enable authentication, an attacker can directly craft"
+                            + " a request to enable a specific configuration, and eventually cause"
+                            + " SSRF or arbitrary file reading.")
                         .setRecommendation("enable authentication")
                 ).build());
   }
