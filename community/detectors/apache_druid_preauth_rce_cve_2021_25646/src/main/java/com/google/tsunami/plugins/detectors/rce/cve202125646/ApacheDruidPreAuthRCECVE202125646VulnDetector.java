@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String CHECK_VUL_PATH = "druid/indexer/v1/sampler";
-  private static final Pattern VULNERABILITY_RESPONSE_PATTERN = Pattern.compile("root:[x*]:0:0:");
+  private static final Pattern VULNERABILITY_RESPONSE_PATTERN = Pattern.compile("uid=.+?gid=.+?groups=.+?");
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -155,7 +155,7 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2021_25646"))
-                .setSeverity(Severity.CRITICAL)
+                .setSeverity(Severity.HIGH)
                 .setTitle("Apache Druid Pre-Auth RCE vulnerability (CVE-2021-25646)")
                 .setDescription(
                     "Apache Druid includes the ability to execute user-provided JavaScript code "

