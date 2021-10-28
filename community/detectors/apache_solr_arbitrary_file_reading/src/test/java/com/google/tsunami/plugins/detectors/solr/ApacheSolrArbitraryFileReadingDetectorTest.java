@@ -125,7 +125,7 @@ public final class ApacheSolrArbitraryFileReadingDetectorTest {
                 .setVulnerability(
                     Vulnerability.newBuilder()
                         .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("APACHE_SOLR_UNPROTECTED_SERVER"))
+                            .setValue("APACHE_SOLR_REMOTE_STREAMING_FILE_READING"))
                         .setSeverity(Severity.HIGH)
                         .setTitle("Apache Solr RemoteStreaming Arbitrary File Reading")
                         .setDescription("Apache Solr is an open source search server. When Apache "
@@ -176,7 +176,7 @@ public final class ApacheSolrArbitraryFileReadingDetectorTest {
                 .setVulnerability(
                     Vulnerability.newBuilder()
                         .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("APACHE_SOLR_UNPROTECTED_SERVER"))
+                            .setValue("APACHE_SOLR_REMOTE_STREAMING_FILE_READING"))
                         .setSeverity(Severity.HIGH)
                         .setTitle("Apache Solr RemoteStreaming Arbitrary File Reading")
                         .setDescription("Apache Solr is an open source search server. When Apache "
@@ -227,7 +227,7 @@ public final class ApacheSolrArbitraryFileReadingDetectorTest {
                 .setVulnerability(
                     Vulnerability.newBuilder()
                         .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("APACHE_SOLR_UNPROTECTED_SERVER"))
+                            .setValue("APACHE_SOLR_REMOTE_STREAMING_FILE_READING"))
                         .setSeverity(Severity.HIGH)
                         .setTitle("Apache Solr RemoteStreaming Arbitrary File Reading")
                         .setDescription("Apache Solr is an open source search server. When Apache "
