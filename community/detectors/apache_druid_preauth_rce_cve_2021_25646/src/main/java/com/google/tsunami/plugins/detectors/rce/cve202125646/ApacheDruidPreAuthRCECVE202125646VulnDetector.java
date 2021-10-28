@@ -66,7 +66,8 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String CHECK_VUL_PATH = "druid/indexer/v1/sampler";
-  private static final Pattern VULNERABILITY_RESPONSE_PATTERN = Pattern.compile("uid=.+?gid=.+?groups=.+?");
+  private static final Pattern VULNERABILITY_RESPONSE_PATTERN = Pattern.compile(
+      "uid=.+?gid=.+?groups=.+?");
 
   private final Clock utcClock;
   private final HttpClient httpClient;
