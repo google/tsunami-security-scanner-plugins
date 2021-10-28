@@ -17,3 +17,4 @@ This directory contains plugins contributed by community members.
 #### Remote Code Execution
 *   [Unauthenticated RCE in Laravel <= 8.4.2 using Debug Mode (CVE-2021-3129) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/laravel_cve_2021_3129)
 *   [Apache Druid Pre-Auth RCE vulnerability (CVE-2021-25646) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/apache_druid_preauth_rce_cve_2021_25646)
+*   [Forgerock AM/OpenAM RCE (CVE-2021-35464) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/rce/cve202135464)
