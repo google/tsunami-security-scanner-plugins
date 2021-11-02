@@ -19,12 +19,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 
+import com.google.common.base.Ascii;
 import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.io.Resources;
+import com.google.common.net.HttpHeaders;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -120,6 +122,11 @@ public final class Cve202135464Detector implements VulnDetector {
       stopwatch.stop();
 
       if (httpResponse.status().code() != 302) {
+        return false;
+      }
+
+      if (!Ascii.toLowerCase(httpResponse.headers().get(HttpHeaders.LOCATION).orElse(""))
+          .contains("/openam/base/aminvalidurl")) {
         return false;
       }
 

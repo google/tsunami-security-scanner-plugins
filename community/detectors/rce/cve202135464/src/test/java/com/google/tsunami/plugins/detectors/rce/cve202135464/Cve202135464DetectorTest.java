@@ -23,6 +23,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
+import com.google.common.net.HttpHeaders;
 import com.google.common.testing.FakeTicker;
 import com.google.inject.Guice;
 import com.google.inject.testing.fieldbinder.Bind;
@@ -150,9 +151,25 @@ public final class Cve202135464DetectorTest {
   }
 
   @Test
+  public void detect_withUnexpectedRedirectUrl_returnsEmpty() throws Exception {
+    timedDispatcher.enqueueResponse(
+        new MockResponse()
+            .setHeader(HttpHeaders.LOCATION, mockWebServer.url("/openam/config/options.htm"))
+            .setBodyDelay(5, SECONDS)
+            .setResponseCode(302));
+    DetectionReportList reports = detector.detect(targetInfo, networkServices);
+    assertThat(reports).isEqualToDefaultInstance();
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
   public void detect_withSleepRCE_returnsDetection() throws Exception {
     timedDispatcher.enqueueResponse(
-        new MockResponse().setBodyDelay(5, SECONDS).setResponseCode(302));
+        new MockResponse()
+            .setHeader(HttpHeaders.LOCATION, mockWebServer.url("/openam/base/AMInvalidURL"))
+            .setBodyDelay(5, SECONDS)
+            .setResponseCode(302));
     String expectedPath = "/openam/oauth2/..;/ccversion/Version";
     DetectionReport expectedReport = getExpectedDetectionReport(networkServices.get(0), targetInfo);
     DetectionReportList reports = detector.detect(targetInfo, networkServices);
