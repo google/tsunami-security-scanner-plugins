@@ -25,8 +25,11 @@ public abstract class Port {
   public abstract String protocol();
   public abstract String portId();
   public abstract State state();
-  @Nullable public abstract Owner owner();
-  @Nullable public abstract Service service();
+
+  public abstract @Nullable Owner owner();
+
+  public abstract @Nullable Service service();
+
   public abstract ImmutableList<Script> scripts();
 
   public abstract Builder toBuilder();
