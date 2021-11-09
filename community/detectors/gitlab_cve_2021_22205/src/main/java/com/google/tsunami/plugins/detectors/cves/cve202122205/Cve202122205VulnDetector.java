@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.cves.cve202122205;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.google.common.net.HttpHeaders.COOKIE;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
@@ -47,6 +48,10 @@ import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
@@ -67,6 +72,7 @@ import org.apache.commons.codec.binary.Hex;
 public final class Cve202122205VulnDetector implements VulnDetector {
 
   @VisibleForTesting static final String DETECTION_STRING = "Failed to process image";
+  @VisibleForTesting static final String SET_COOKIE = "Set-Cookie";
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION =
@@ -77,6 +83,7 @@ public final class Cve202122205VulnDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String USER_SIGN_PATH = "users/sign_in";
   private static final String VUL_PATH = "uploads/user";
+  private static final String CSRF_TOKEN = "csrf_token";
   private static final Pattern CSRF_TOKEN_PATTERN =
       Pattern.compile("csrf-token\" content=\"(.*?)\" />\\n\\n<meta");
   private static final String POST_DATA =
@@ -129,7 +136,7 @@ public final class Cve202122205VulnDetector implements VulnDetector {
     return targetUrlBuilder.toString();
   }
 
-  private static String buildTargetVulUrl(NetworkService networkService) {
+  private static String buildTargetVulnerabilityUrl(NetworkService networkService) {
     StringBuilder targetUrlBuilder = new StringBuilder();
     if (NetworkServiceUtils.isWebService(networkService)) {
       targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
@@ -158,56 +165,66 @@ public final class Cve202122205VulnDetector implements VulnDetector {
         .build();
   }
 
-  private String getCsrfToken(NetworkService networkService) {
+  private String clearCookie(String cookie) {
+    return cookie.split("path=/;")[0];
+  }
+
+  private Map<String, String> getCsrfTokenAndCookie(NetworkService networkService) {
     String targetUserSignUrl = buildTargetUserSignUrl(networkService);
-    String csrfToken = null;
+    HashMap<String, String> result = new HashMap<>();
     try {
       HttpResponse httpResponse =
           httpClient.send(get(targetUserSignUrl).withEmptyHeaders().build(), networkService);
       if (httpResponse.status().code() == 200) {
+        String cookie = httpResponse.headers().get(SET_COOKIE).get();
         Matcher csrfTokenMatcher = CSRF_TOKEN_PATTERN.matcher(httpResponse.bodyString().get());
-        if (csrfTokenMatcher.find()) {
-          csrfToken = csrfTokenMatcher.group(1);
+        if (csrfTokenMatcher.find() && !cookie.isEmpty()) {
+          result.put(CSRF_TOKEN, csrfTokenMatcher.group(1));
+          StringBuilder cookies = new StringBuilder();
+          Iterator<String> headerCookies =
+              httpResponse.headers().getAll(SET_COOKIE).stream().iterator();
+          while (headerCookies.hasNext()) {
+            cookies.append(clearCookie(headerCookies.next()));
+          }
+          result.put(COOKIE, cookies.toString());
         }
       }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
       return null;
     }
-    return csrfToken;
+    return result;
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String targetVulUrl = buildTargetVulUrl(networkService);
-    String csrfToken = getCsrfToken(networkService);
-    if (csrfToken == null) {
+    String targetVulnerabilityUrl = buildTargetVulnerabilityUrl(networkService);
+    Map<String, String> preInfo = getCsrfTokenAndCookie(networkService);
+    if (Objects.requireNonNull(preInfo).isEmpty()) {
       logger.atWarning().log("Get %s csrf_token failed", networkService);
       return false;
     }
     try {
       byte[] payload = Hex.decodeHex(POST_DATA);
-
       HttpResponse httpResponse =
           httpClient.send(
-              post(targetVulUrl)
+              post(targetVulnerabilityUrl)
                   .setHeaders(
                       HttpHeaders.builder()
                           .addHeader(
                               CONTENT_TYPE,
                               "multipart/form-data; boundary=----WebKitFormBoundaryIMv3"
                                   + "mxRg59TkFSX5")
-                          .addHeader("X-CSRF-Token", csrfToken)
+                          .addHeader("X-CSRF-Token", preInfo.get(CSRF_TOKEN), false)
                           .addHeader(USER_AGENT, "TSUNAMI_SCANNER")
+                          .addHeader(COOKIE, preInfo.get(COOKIE))
                           .build())
                   .setRequestBody(ByteString.copyFrom(payload))
                   .build(),
               networkService);
-
-      if (httpResponse.status().code() == 200
+      if (httpResponse.status().code() == 422
           && httpResponse.bodyString().get().contains(DETECTION_STRING)) {
         return true;
       }
-
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
       return false;

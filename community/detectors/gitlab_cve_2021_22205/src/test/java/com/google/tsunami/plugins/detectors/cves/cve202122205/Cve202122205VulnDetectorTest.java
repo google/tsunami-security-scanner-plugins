@@ -140,8 +140,17 @@ public final class Cve202122205VulnDetectorTest {
   }
 
   private void mockWebResponse(String body) throws IOException {
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(CSRF_TEMPLATE));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(body));
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setResponseCode(200)
+            .setHeader(
+                Cve202122205VulnDetector.SET_COOKIE,
+                "experimentation_subject_id=1; _gitlab_session=2;")
+            .setBody(CSRF_TEMPLATE));
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setResponseCode(422)
+            .setBody(body));
     mockWebServer.start();
   }
 }
