@@ -86,6 +86,13 @@ public final class Cve202122205VulnDetector implements VulnDetector {
   private static final String CSRF_TOKEN = "csrf_token";
   private static final Pattern CSRF_TOKEN_PATTERN =
       Pattern.compile("csrf-token\" content=\"(.*?)\" />\\n\\n<meta");
+  /**
+   * The detailed principle of Poc generation for the vulnerability can be found in the following
+   * article devcraft.io/2021/05/04/exiftool-arbitrary-code-execution-cve-2021-22204.html
+   * https://github.com/mr-r3bot/Gitlab-CVE-2021-22205 I generated a Poc locally, executed the
+   * command TSUNAMI_SCANNER (placeholder), and then converted the PoC to hexadecimal. When sending
+   * data, I only need to convert the hexadecimal code to a string.
+   */
   private static final String POST_DATA =
       "0D0A2D2D2D2D2D2D5765624B6974466F726D426F756E64617279494D76336D7852673539546B465358350D0A436F"
           + "6E74656E742D446973706F736974696F6E3A20666F726D2D646174613B206E616D653D2266696C65223B20"
@@ -107,6 +114,7 @@ public final class Cve202122205VulnDetector implements VulnDetector {
           + "20202020202020202020202020202020202020202020202020202020202020202020202020202020202020"
           + "20202020202020202020202020202020202020202020202020202020202020202020200A0D0A2D2D2D2D2D"
           + "2D5765624B6974466F726D426F756E64617279494D76336D7852673539546B465358352D2D0D0A";
+
   private final HttpClient httpClient;
   private final Clock utcClock;
 

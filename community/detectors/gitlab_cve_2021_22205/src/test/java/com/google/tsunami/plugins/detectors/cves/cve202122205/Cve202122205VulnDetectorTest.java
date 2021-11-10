@@ -50,15 +50,15 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class Cve202122205VulnDetectorTest {
 
+  private static final String CSRF_TEMPLATE =
+      "<meta name=\"csrf-token\" content=\"test_csrf_token\" />\n\n<meta";
+
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
   @Inject private Cve202122205VulnDetector detector;
 
   private MockWebServer mockWebServer;
-
-  private final String CSRF_TEMPLATE =
-      "<meta name=\"csrf-token\" content=\"test_csrf_token\" />\n\n<meta";
 
   @Before
   public void setUp() {
@@ -147,10 +147,7 @@ public final class Cve202122205VulnDetectorTest {
                 Cve202122205VulnDetector.SET_COOKIE,
                 "experimentation_subject_id=1; _gitlab_session=2;")
             .setBody(CSRF_TEMPLATE));
-    mockWebServer.enqueue(
-        new MockResponse()
-            .setResponseCode(422)
-            .setBody(body));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(422).setBody(body));
     mockWebServer.start();
   }
 }
