@@ -907,7 +907,8 @@ public final class NmapResultHandler extends DefaultHandler {
   @AutoValue
   abstract static class SaxHandlerState {
     abstract State state();
-    @Nullable abstract StringBuilder textValueBuilder();
+
+    abstract @Nullable StringBuilder textValueBuilder();
 
     static SaxHandlerState create(State state, @Nullable StringBuilder textValueBuilder) {
       return new AutoValue_NmapResultHandler_SaxHandlerState(state, textValueBuilder);
