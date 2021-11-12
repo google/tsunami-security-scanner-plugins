@@ -60,7 +60,7 @@ public final class AtlassianConfluencePreAuthOGNLInjectionDetector implements Vu
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final int number = 10086;
-  private static final String payload = String.format("Google\\u0027%%2b"
+  private static final String payload = String.format("queryString=Google\\u0027%%2b"
       + "#{%d*%d}%%2b\\u0027Tsunami", number, number);
   private static final String pattern = String.format("Google{%d=null}Tsunami", number * number);
 
