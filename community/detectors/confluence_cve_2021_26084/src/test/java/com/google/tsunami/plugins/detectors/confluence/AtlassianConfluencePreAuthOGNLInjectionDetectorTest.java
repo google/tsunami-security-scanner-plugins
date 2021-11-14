@@ -82,7 +82,7 @@ public final class AtlassianConfluencePreAuthOGNLInjectionDetectorTest {
   @Test
   public void detect_whenConfluenceIsVulnerable_reportsVuln() {
     mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody("Google{101727396=null}Tsunami"));
+        new MockResponse().setResponseCode(403).setBody("Google{101727396=null}Tsunami"));
     mockWebServer.url("/");
 
     DetectionReportList detectionReports =
@@ -111,7 +111,7 @@ public final class AtlassianConfluencePreAuthOGNLInjectionDetectorTest {
 
   @Test
   public void detect_whenConfluenceIsNotVulnerable_doesNotReportVuln() {
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200).
+    mockWebServer.enqueue(new MockResponse().setResponseCode(403).
         setBody("\\u0027+#{333*333}+\\u0027"));
     mockWebServer.url("/");
 

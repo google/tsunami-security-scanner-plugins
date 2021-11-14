@@ -102,7 +102,7 @@ public final class AtlassianConfluencePreAuthOGNLInjectionDetector implements Vu
                   .setRequestBody(ByteString.copyFrom(payload, "utf-8"))
                   .build(),
               networkService);
-      if (response.status() == HttpStatus.OK && response.bodyString().isPresent()) {
+      if (response.status() == HttpStatus.FORBIDDEN && response.bodyString().isPresent()) {
         if (response.bodyString().get().contains(pattern)) {
           return true;
         }
