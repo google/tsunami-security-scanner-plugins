@@ -46,10 +46,13 @@ import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link GoCDArbitraryFileReadingDetector}.
  */
+@RunWith(JUnit4.class)
 public final class GoCDArbitraryFileReadingDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
