@@ -46,16 +46,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for {@link AtlassianConfluencePreAuthOGNLInjectionDetector}.
+ * Unit tests for {@link AtlassianConfluencePreAuthOgnlInjectionDetector}.
  */
 @RunWith(JUnit4.class)
-public final class AtlassianConfluencePreAuthOGNLInjectionDetectorTest {
+public final class AtlassianConfluencePreAuthOgnlInjectionDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
   @Inject
-  private  AtlassianConfluencePreAuthOGNLInjectionDetector detector;
+  private AtlassianConfluencePreAuthOgnlInjectionDetector detector;
 
   private MockWebServer mockWebServer;
   private NetworkService confluenceService;
@@ -75,7 +75,7 @@ public final class AtlassianConfluencePreAuthOGNLInjectionDetectorTest {
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
-            new AtlassianConfluencePreAuthOGNLInjectionDetectorBootstrapModule())
+            new AtlassianConfluencePreAuthOgnlInjectionDetectorBootstrapModule())
         .injectMembers(this);
   }
 

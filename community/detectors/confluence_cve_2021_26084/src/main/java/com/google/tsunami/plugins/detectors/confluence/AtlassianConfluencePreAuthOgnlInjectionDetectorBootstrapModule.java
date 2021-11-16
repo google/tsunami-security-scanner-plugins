@@ -18,13 +18,13 @@ package com.google.tsunami.plugins.detectors.confluence;
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
 /**
- * A {@link PluginBootstrapModule} for {@link AtlassianConfluencePreAuthOGNLInjectionDetector}
+ * A {@link PluginBootstrapModule} for {@link AtlassianConfluencePreAuthOgnlInjectionDetector}
  */
-public final class AtlassianConfluencePreAuthOGNLInjectionDetectorBootstrapModule extends
+public final class AtlassianConfluencePreAuthOgnlInjectionDetectorBootstrapModule extends
     PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    registerPlugin(AtlassianConfluencePreAuthOGNLInjectionDetector.class);
+    registerPlugin(AtlassianConfluencePreAuthOgnlInjectionDetector.class);
   }
 }

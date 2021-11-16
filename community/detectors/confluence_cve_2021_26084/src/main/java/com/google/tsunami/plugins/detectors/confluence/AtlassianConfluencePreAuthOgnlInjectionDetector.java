@@ -50,25 +50,25 @@ import javax.inject.Inject;
  */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "AtlassianConfluencePreAuthOGNLInjectionDetector",
+    name = "AtlassianConfluencePreAuthOgnlInjectionDetector",
     version = "0.1",
     description = "This detector checks for unprotected  Atlassian Confluence Pre-Auth OGNL "
         + "Injection.",
     author = "C4o (syttcasd@gmail.com)",
-    bootstrapModule = AtlassianConfluencePreAuthOGNLInjectionDetectorBootstrapModule.class)
-public final class AtlassianConfluencePreAuthOGNLInjectionDetector implements VulnDetector {
+    bootstrapModule = AtlassianConfluencePreAuthOgnlInjectionDetectorBootstrapModule.class)
+public final class AtlassianConfluencePreAuthOgnlInjectionDetector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-  private static final int number = 10086;
+  private static final int NUMBER = 10086;
   private static final String payload = String.format("queryString=Google\\u0027%%2b"
-      + "#{%d*%d}%%2b\\u0027Tsunami", number, number);
-  private static final String pattern = String.format("Google{%d=null}Tsunami", number * number);
+      + "#{%d*%d}%%2b\\u0027Tsunami", NUMBER, NUMBER);
+  private static final String pattern = String.format("Google{%d=null}Tsunami", NUMBER * NUMBER);
 
   private final Clock utcClock;
   private final HttpClient httpClient;
 
   @Inject
-  AtlassianConfluencePreAuthOGNLInjectionDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  AtlassianConfluencePreAuthOgnlInjectionDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
   }
