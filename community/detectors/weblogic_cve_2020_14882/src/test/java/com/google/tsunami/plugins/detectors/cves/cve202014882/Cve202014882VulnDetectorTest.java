@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package com.google.tsunami.plugins.detectors.cves.cve202014882;
 
+import static com.google.common.net.HttpHeaders.COOKIE;
+import static com.google.common.net.HttpHeaders.SET_COOKIE;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
@@ -38,6 +40,7 @@ import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
+import okhttp3.Headers.Builder;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.After;
@@ -75,10 +78,12 @@ public class Cve202014882VulnDetectorTest {
   }
 
   @Test
-  public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-
-    mockWebResponse(Cve202014882VulnDetector.DETECTION_STRING);
-
+  public void detect_whenVulnerable_returnsVulnerability()
+      throws IOException {
+    mockWebServer.start();
+    mockWebResponse(302, SET_COOKIE, Cve202014882VulnDetector.DETECTION_COOKIE, "hello");
+    mockWebResponse(200, COOKIE, Cve202014882VulnDetector.DETECTION_COOKIE,
+        Cve202014882VulnDetector.DETECTION_STRING);
     NetworkService service =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
@@ -91,9 +96,7 @@ public class Cve202014882VulnDetectorTest {
         TargetInfo.newBuilder()
             .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
             .build();
-
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
-
     assertThat(detectionReports.getDetectionReportsList())
         .containsExactly(
             DetectionReport.newBuilder()
@@ -123,7 +126,8 @@ public class Cve202014882VulnDetectorTest {
 
   @Test
   public void detect_whenNotVulnerable_returnsNoVulnerability() throws IOException {
-    mockWebResponse("Hello World");
+    mockWebServer.start();
+    mockWebResponse(200, SET_COOKIE, "test val", "Hello World");
     ImmutableList<NetworkService> httpServices =
         ImmutableList.of(
             NetworkService.newBuilder()
@@ -136,14 +140,15 @@ public class Cve202014882VulnDetectorTest {
         TargetInfo.newBuilder()
             .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
             .build();
-
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
-
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
 
-  private void mockWebResponse(String body) throws IOException {
-    mockWebServer.start();
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(body));
+  private void mockWebResponse(int responseCode, String cookieKey, String cookieValue,
+      String body) {
+    Builder builder = new Builder();
+    builder.add(cookieKey, cookieValue);
+    mockWebServer.enqueue(
+        new MockResponse().setResponseCode(responseCode).setHeaders(builder.build()).setBody(body));
   }
 }

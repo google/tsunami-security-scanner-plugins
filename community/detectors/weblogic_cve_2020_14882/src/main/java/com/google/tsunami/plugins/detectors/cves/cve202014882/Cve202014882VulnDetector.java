@@ -1,8 +1,24 @@
+/*
+ * Copyright 2021 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.google.tsunami.plugins.detectors.cves.cve202014882;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.COOKIE;
+import static com.google.common.net.HttpHeaders.SET_COOKIE;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -49,6 +65,8 @@ public class Cve202014882VulnDetector implements VulnDetector {
 
   @VisibleForTesting
   static final String DETECTION_STRING = "/console/jsp/common/warnuserlockheld.jsp";
+  @VisibleForTesting
+  static final String DETECTION_COOKIE = "ADMINCONSOLESESSION";
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String CHECK_VUL_PATH = "console/css/%252e%252e%252fconsole.portal?_nfpb=true&_pageLabel=HomePage1";
   private final HttpClient httpClient;
@@ -70,7 +88,6 @@ public class Cve202014882VulnDetector implements VulnDetector {
   public DetectionReportList detect(TargetInfo targetInfo,
       ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Cve202014882VulnDetector starts detecting.");
-
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream().filter(Cve202014882VulnDetector::isWebServiceOrUnknownService)
@@ -83,26 +100,22 @@ public class Cve202014882VulnDetector implements VulnDetector {
   private boolean isServiceVulnerable(NetworkService networkService) {
     String targetUri =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + CHECK_VUL_PATH;
-
     try {
       HttpResponse httpResponse =
           httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
-
-      //Solve the WebLogic http 302 redirection problem
-      Optional<String> cookie = httpResponse.headers().get("Set-Cookie");
-      if (httpResponse.status().code() == 302 && !cookie.get().isEmpty() && cookie.get()
-          .contains("ADMINCONSOLESESSION")) {
+      //Solve the WebLogic http 302 redirection problem.
+      Optional<String> cookie = httpResponse.headers().get(SET_COOKIE);
+      if (httpResponse.status().code() == 302 && cookie.isPresent() && cookie.get()
+          .contains(DETECTION_COOKIE)) {
         httpResponse =
             httpClient.send(get(targetUri).withEmptyHeaders()
                     .setHeaders(HttpHeaders.builder().addHeader(COOKIE, cookie.get()).build()).build(),
                 networkService);
       }
-
-      if (httpResponse.status().code() == 200
+      if (httpResponse.status().code() == 200 && httpResponse.bodyString().isPresent()
           && httpResponse.bodyString().get().contains(DETECTION_STRING)) {
         return true;
       }
-
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
       return false;
