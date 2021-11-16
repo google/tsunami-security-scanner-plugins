@@ -40,10 +40,13 @@ import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link ApacheDruidPreAuthRCECVE202125646VulnDetector}.
  */
+@RunWith(JUnit4.class)
 public final class ApacheDruidPreAuthRCECVE202125646VulnDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
