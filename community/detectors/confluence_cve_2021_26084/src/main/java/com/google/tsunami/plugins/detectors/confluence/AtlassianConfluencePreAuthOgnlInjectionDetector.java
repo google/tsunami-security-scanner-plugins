@@ -60,9 +60,9 @@ public final class AtlassianConfluencePreAuthOgnlInjectionDetector implements Vu
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final int NUMBER = 10086;
-  private static final String payload = String.format("queryString=Google\\u0027%%2b"
+  private static final String PAYLOAD = String.format("queryString=Google\\u0027%%2b"
       + "#{%d*%d}%%2b\\u0027Tsunami", NUMBER, NUMBER);
-  private static final String pattern = String.format("Google{%d=null}Tsunami", NUMBER * NUMBER);
+  private static final String PATTERN = String.format("Google{%d=null}Tsunami", NUMBER * NUMBER);
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -99,11 +99,11 @@ public final class AtlassianConfluencePreAuthOgnlInjectionDetector implements Vu
                               "application/x-www-form-urlencoded")
                           .addHeader("User-Agent", "TSUNAMI_SCANNER")
                           .build())
-                  .setRequestBody(ByteString.copyFrom(payload, "utf-8"))
+                  .setRequestBody(ByteString.copyFrom(PAYLOAD, "utf-8"))
                   .build(),
               networkService);
       if (response.status() == HttpStatus.FORBIDDEN && response.bodyString().isPresent()) {
-        if (response.bodyString().get().contains(pattern)) {
+        if (response.bodyString().get().contains(PATTERN)) {
           return true;
         }
       }
