@@ -47,28 +47,29 @@ import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Inject;
 
-/**
- * A {@link VulnDetector} that detects the CVE-2020-14882 vulnerability.
- */
+/** A {@link VulnDetector} that detects the CVE-2020-14882 vulnerability. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "Cve202014882VulnDetector",
     version = "0.1",
     description =
-        "Vulnerability in the Oracle WebLogic Server product of Oracle Fusion Middleware (component: Console). "
-            + "Supported versions that are affected are 10.3.6.0.0, 12.1.3.0.0, 12.2.1.3.0, 12.2.1.4.0 and 14.1.1.0.0. "
-            + "Easily exploitable vulnerability allows unauthenticated attacker with network access via HTTP to compromise "
-            + "Oracle WebLogic Server. Successful attacks of this vulnerability can result in takeover of Oracle WebLogic Server",
+        "Vulnerability in the Oracle WebLogic Server product of Oracle Fusion Middleware"
+            + " (component: Console). Supported versions that are affected are 10.3.6.0.0,"
+            + " 12.1.3.0.0, 12.2.1.3.0, 12.2.1.4.0 and 14.1.1.0.0. Easily exploitable vulnerability"
+            + " allows unauthenticated attacker with network access via HTTP to compromise Oracle"
+            + " WebLogic Server. Successful attacks of this vulnerability can result in takeover of"
+            + " Oracle WebLogic Server",
     author = "thiscodecc",
     bootstrapModule = Cve202014882DetectorBootstrapModule.class)
 public class Cve202014882VulnDetector implements VulnDetector {
 
   @VisibleForTesting
   static final String DETECTION_STRING = "/console/jsp/common/warnuserlockheld.jsp";
-  @VisibleForTesting
-  static final String DETECTION_COOKIE = "ADMINCONSOLESESSION";
+
+  @VisibleForTesting static final String DETECTION_COOKIE = "ADMINCONSOLESESSION";
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-  private static final String CHECK_VUL_PATH = "console/css/%252e%252e%252fconsole.portal?_nfpb=true&_pageLabel=HomePage1";
+  private static final String CHECK_VUL_PATH =
+      "console/css/%252e%252e%252fconsole.portal?_nfpb=true&_pageLabel=HomePage1";
   private final HttpClient httpClient;
   private final Clock utcClock;
 
@@ -85,12 +86,13 @@ public class Cve202014882VulnDetector implements VulnDetector {
   }
 
   @Override
-  public DetectionReportList detect(TargetInfo targetInfo,
-      ImmutableList<NetworkService> matchedServices) {
+  public DetectionReportList detect(
+      TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Cve202014882VulnDetector starts detecting.");
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
-            matchedServices.stream().filter(Cve202014882VulnDetector::isWebServiceOrUnknownService)
+            matchedServices.stream()
+                .filter(Cve202014882VulnDetector::isWebServiceOrUnknownService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
@@ -103,16 +105,21 @@ public class Cve202014882VulnDetector implements VulnDetector {
     try {
       HttpResponse httpResponse =
           httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
-      //Solve the WebLogic http 302 redirection problem.
+      // Solve the WebLogic http 302 redirection problem.
       Optional<String> cookie = httpResponse.headers().get(SET_COOKIE);
-      if (httpResponse.status().code() == 302 && cookie.isPresent() && cookie.get()
-          .contains(DETECTION_COOKIE)) {
+      if (httpResponse.status().code() == 302
+          && cookie.isPresent()
+          && cookie.get().contains(DETECTION_COOKIE)) {
         httpResponse =
-            httpClient.send(get(targetUri).withEmptyHeaders()
-                    .setHeaders(HttpHeaders.builder().addHeader(COOKIE, cookie.get()).build()).build(),
+            httpClient.send(
+                get(targetUri)
+                    .withEmptyHeaders()
+                    .setHeaders(HttpHeaders.builder().addHeader(COOKIE, cookie.get()).build())
+                    .build(),
                 networkService);
       }
-      if (httpResponse.status().code() == 200 && httpResponse.bodyString().isPresent()
+      if (httpResponse.status().code() == 200
+          && httpResponse.bodyString().isPresent()
           && httpResponse.bodyString().get().contains(DETECTION_STRING)) {
         return true;
       }
@@ -139,14 +146,15 @@ public class Cve202014882VulnDetector implements VulnDetector {
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2020-14882: Weblogic management console permission bypass")
                 .setDescription(
-                    "Vulnerability in the Oracle WebLogic Server product of Oracle Fusion Middleware (component: Console). "
-                        + "Supported versions that are affected are 10.3.6.0.0, 12.1.3.0.0, 12.2.1.3.0, 12.2.1.4.0 and 14.1.1.0.0. "
-                        + "Easily exploitable vulnerability allows unauthenticated attacker with network access via HTTP to "
-                        + "compromise Oracle WebLogic Server. Successful attacks of this vulnerability can result in takeover of "
-                        + "Oracle WebLogic Server")
+                    "Vulnerability in the Oracle WebLogic Server product of Oracle Fusion"
+                        + " Middleware (component: Console). Supported versions that are affected"
+                        + " are 10.3.6.0.0, 12.1.3.0.0, 12.2.1.3.0, 12.2.1.4.0 and 14.1.1.0.0."
+                        + " Easily exploitable vulnerability allows unauthenticated attacker with"
+                        + " network access via HTTP to compromise Oracle WebLogic Server."
+                        + " Successful attacks of this vulnerability can result in takeover of"
+                        + " Oracle WebLogic Server")
                 .setRecommendation(
                     "Go to the oracle official website to download the latest weblogic patch."))
         .build();
   }
-
 }

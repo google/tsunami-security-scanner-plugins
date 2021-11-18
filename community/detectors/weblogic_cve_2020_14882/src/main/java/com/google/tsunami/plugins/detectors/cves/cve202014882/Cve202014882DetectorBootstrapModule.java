@@ -17,9 +17,7 @@ package com.google.tsunami.plugins.detectors.cves.cve202014882;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-/**
- * An CVE-2020-14882 Guice module that bootstraps the {@link Cve202014882VulnDetector}.
- */
+/** An CVE-2020-14882 Guice module that bootstraps the {@link Cve202014882VulnDetector}. */
 public class Cve202014882DetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override

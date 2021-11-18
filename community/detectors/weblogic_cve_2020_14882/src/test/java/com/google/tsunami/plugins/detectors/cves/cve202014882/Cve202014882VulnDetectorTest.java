@@ -49,17 +49,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for {@link Cve202014882VulnDetector}.
- */
+/** Unit tests for {@link Cve202014882VulnDetector}. */
 @RunWith(JUnit4.class)
 public class Cve202014882VulnDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
-  @Inject
-  private Cve202014882VulnDetector detector;
+  @Inject private Cve202014882VulnDetector detector;
   private MockWebServer mockWebServer;
 
   @Before
@@ -78,11 +75,13 @@ public class Cve202014882VulnDetectorTest {
   }
 
   @Test
-  public void detect_whenVulnerable_returnsVulnerability()
-      throws IOException {
+  public void detect_whenVulnerable_returnsVulnerability() throws IOException {
     mockWebServer.start();
     mockWebResponse(302, SET_COOKIE, Cve202014882VulnDetector.DETECTION_COOKIE, "hello");
-    mockWebResponse(200, COOKIE, Cve202014882VulnDetector.DETECTION_COOKIE,
+    mockWebResponse(
+        200,
+        COOKIE,
+        Cve202014882VulnDetector.DETECTION_COOKIE,
         Cve202014882VulnDetector.DETECTION_STRING);
     NetworkService service =
         NetworkService.newBuilder()
@@ -114,13 +113,16 @@ public class Cve202014882VulnDetectorTest {
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("CVE-2020-14882: Weblogic management console permission bypass")
                         .setDescription(
-                            "Vulnerability in the Oracle WebLogic Server product of Oracle Fusion Middleware (component: Console). "
-                                + "Supported versions that are affected are 10.3.6.0.0, 12.1.3.0.0, 12.2.1.3.0, 12.2.1.4.0 and 14.1.1.0.0. "
-                                + "Easily exploitable vulnerability allows unauthenticated attacker with network access via HTTP to "
-                                + "compromise Oracle WebLogic Server. Successful attacks of this vulnerability can result in takeover of "
-                                + "Oracle WebLogic Server")
+                            "Vulnerability in the Oracle WebLogic Server product of Oracle Fusion"
+                                + " Middleware (component: Console). Supported versions that are"
+                                + " affected are 10.3.6.0.0, 12.1.3.0.0, 12.2.1.3.0, 12.2.1.4.0 and"
+                                + " 14.1.1.0.0. Easily exploitable vulnerability allows"
+                                + " unauthenticated attacker with network access via HTTP to"
+                                + " compromise Oracle WebLogic Server. Successful attacks of this"
+                                + " vulnerability can result in takeover of Oracle WebLogic Server")
                         .setRecommendation(
-                            "Go to the oracle official website to download the latest weblogic patch."))
+                            "Go to the oracle official website to download the latest weblogic"
+                                + " patch."))
                 .build());
   }
 
@@ -144,8 +146,8 @@ public class Cve202014882VulnDetectorTest {
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
 
-  private void mockWebResponse(int responseCode, String cookieKey, String cookieValue,
-      String body) {
+  private void mockWebResponse(
+      int responseCode, String cookieKey, String cookieValue, String body) {
     Builder builder = new Builder();
     builder.add(cookieKey, cookieValue);
     mockWebServer.enqueue(
