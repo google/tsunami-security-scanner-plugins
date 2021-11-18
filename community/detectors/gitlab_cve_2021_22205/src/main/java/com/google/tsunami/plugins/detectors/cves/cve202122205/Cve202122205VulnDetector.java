@@ -15,8 +15,17 @@
  */
 package com.google.tsunami.plugins.detectors.cves.cve202122205;
 
-import com.google.common.base.Strings;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.google.common.net.HttpHeaders.COOKIE;
+import static com.google.common.net.HttpHeaders.USER_AGENT;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
+import static com.google.tsunami.common.net.http.HttpRequest.get;
+import static com.google.tsunami.common.net.http.HttpRequest.post;
+
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.io.BaseEncoding;
@@ -30,23 +39,21 @@ import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
-import com.google.tsunami.proto.*;
-
-import javax.inject.Inject;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.net.HttpHeaders.*;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
-import static com.google.tsunami.common.net.http.HttpRequest.get;
-import static com.google.tsunami.common.net.http.HttpRequest.post;
+import javax.inject.Inject;
 
 /** A {@link VulnDetector} that detects the CVE-2021-22205 vulnerability. */
 @PluginInfo(
@@ -57,16 +64,6 @@ import static com.google.tsunami.common.net.http.HttpRequest.post;
     author = "hh-hunter",
     bootstrapModule = Cve202122205DetectorBootstrapModule.class)
 public final class Cve202122205VulnDetector implements VulnDetector {
-
-  @VisibleForTesting static final String DETECTION_STRING = "Failed to process image";
-  @VisibleForTesting static final String SET_COOKIE = "Set-Cookie";
-
-  @VisibleForTesting
-  static final String VULN_DESCRIPTION =
-      "An issue has been discovered in GitLab CE/EE affecting all versions starting from 11.9. "
-          + "GitLab was not properly validating image files that were passed to a file parser which"
-          + " resulted in a remote command execution.";
-
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String USER_SIGN_PATH = "users/sign_in";
   private static final String VUL_PATH = "uploads/user";
@@ -93,6 +90,15 @@ public final class Cve202122205VulnDetector implements VulnDetector {
           + "290A0D0A2D2D2D2D2D2D5765624B6974466F726D426F756E64617279494D76336D7852673539546B465358"
           + "352D2D0D0A";
 
+  @VisibleForTesting static final String DETECTION_STRING = "Failed to process image";
+  @VisibleForTesting static final String SET_COOKIE = "Set-Cookie";
+
+  @VisibleForTesting
+  static final String VULN_DESCRIPTION =
+      "An issue has been discovered in GitLab CE/EE affecting all versions starting from 11.9. "
+          + "GitLab was not properly validating image files that were passed to a file parser which"
+          + " resulted in a remote command execution.";
+
   private final HttpClient httpClient;
   private final Clock utcClock;
 
@@ -103,24 +109,23 @@ public final class Cve202122205VulnDetector implements VulnDetector {
   }
 
   private static final class Cve202122205VulnVo {
-    private String CsrfToken;
-
-    private String Cookie;
+    private String csrfToken;
+    private String cookie;
 
     public String getCsrfToken() {
-      return CsrfToken;
+      return csrfToken;
     }
 
     public void setCsrfToken(String csrfToken) {
-      CsrfToken = csrfToken;
+      this.csrfToken = csrfToken;
     }
 
     public String getCookie() {
-      return Cookie;
+      return cookie;
     }
 
     public void setCookie(String cookie) {
-      Cookie = cookie;
+      this.cookie = cookie;
     }
   }
 
