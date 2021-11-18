@@ -15,7 +15,7 @@
  */
 package com.google.tsunami.plugins.detectors.cves.cve202122205;
 
-import com.google.api.client.util.Strings;
+import com.google.common.base.Strings;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
@@ -102,6 +102,28 @@ public final class Cve202122205VulnDetector implements VulnDetector {
     this.utcClock = checkNotNull(utcClock);
   }
 
+  private static final class Cve202122205VulnVo {
+    private String CsrfToken;
+
+    private String Cookie;
+
+    public String getCsrfToken() {
+      return CsrfToken;
+    }
+
+    public void setCsrfToken(String csrfToken) {
+      CsrfToken = csrfToken;
+    }
+
+    public String getCookie() {
+      return Cookie;
+    }
+
+    public void setCookie(String cookie) {
+      Cookie = cookie;
+    }
+  }
+
   private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
     return networkService.getServiceName().isEmpty()
         || NetworkServiceUtils.isWebService(networkService)
@@ -162,7 +184,6 @@ public final class Cve202122205VulnDetector implements VulnDetector {
       }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
-      return null;
     }
     return result;
   }
@@ -171,12 +192,11 @@ public final class Cve202122205VulnDetector implements VulnDetector {
     String targetVulnerabilityUrl = buildTarget(networkService).append(VUL_PATH).toString();
     try {
       Cve202122205VulnVo info = getCsrfTokenAndCookie(networkService);
-      assert info != null;
       if (Strings.isNullOrEmpty(info.getCookie()) && Strings.isNullOrEmpty(info.getCsrfToken())) {
         logger.atWarning().log("Get %s Csrf Token and Cookie failed", networkService);
         return false;
       }
-      byte[] payload = BaseEncoding.base16().decode(POST_DATA.toUpperCase(Locale.ROOT));
+      byte[] payload = BaseEncoding.base16().decode(POST_DATA);
       HttpResponse httpResponse =
           httpClient.send(
               post(targetVulnerabilityUrl)
