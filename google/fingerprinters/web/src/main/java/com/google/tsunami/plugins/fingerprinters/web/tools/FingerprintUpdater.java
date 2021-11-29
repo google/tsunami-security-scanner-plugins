@@ -48,6 +48,7 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.plugins.fingerprinters.web.common.FingerprintUtils;
+import com.google.tsunami.plugins.fingerprinters.web.common.WebConstant;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.Crawler;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.ScopeUtils;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.SimpleCrawlerModule;
@@ -67,10 +68,7 @@ import io.github.classgraph.ScanResult;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
@@ -90,9 +88,7 @@ public final class FingerprintUpdater {
           Pattern.compile("(?:static|adjuncts)/\\w{8}/(.*)"));
 
   // Files with one of these extensions are not useful for static fingerprinting.
-  private static final ImmutableSet<String> IGNORED_EXTENTIONS =
-      ImmutableSet.of(
-          "php", "inc", "py", "rb", "pl", "java", "lua", "go", "asp", "aspx", "jsp", "cgi", "sql");
+  private static final ImmutableSet<String> IGNORED_EXTENTIONS = WebConstant.IGNORED_EXTENTIONS;
 
   // Folders with one of these names are unlikely to be served to visitors.
   private static final ImmutableSet<String> IGNORED_FOLDERS =
@@ -393,6 +389,7 @@ public final class FingerprintUpdater {
   }
 
   public static void main(String[] args) {
+    Arrays.stream(args).forEach(System.out::println);
     try (ScanResult scanResult =
         new ClassGraph()
             .enableAllInfo()

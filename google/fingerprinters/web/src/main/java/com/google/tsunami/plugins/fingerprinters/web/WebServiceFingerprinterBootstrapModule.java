@@ -34,8 +34,8 @@ public final class WebServiceFingerprinterBootstrapModule extends PluginBootstra
   @Override
   protected void configurePlugin() {
     install(new SimpleCrawlerModule(/*maxActiveThreads=*/ 8));
-    install(new ResourceFingerprintLoaderModule());
-    install(new FactoryModuleBuilder().build(VersionDetector.Factory.class));
+    //install(new ResourceFingerprintLoaderModule());
+    //install(new FactoryModuleBuilder().build(VersionDetector.Factory.class));
 
     registerPlugin(WebServiceFingerprinter.class);
   }

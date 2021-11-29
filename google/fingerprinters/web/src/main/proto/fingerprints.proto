@@ -37,6 +37,16 @@ message Fingerprints {
   repeated PathVersion path_versions = 4;
 }
 
+
+//---------- 新开始 -----------
+message PathHashVersions{
+  string content_path = 1;
+  Hash hash = 2;
+  repeated Version versions = 3;
+}
+// ----------结束---------
+
+
 message SoftwareIdentity {
   // Name of the software. Required.
   string software = 1;
@@ -81,3 +91,4 @@ message Version {
   // Human readable version string.
   string full_name = 1;
 }
+
