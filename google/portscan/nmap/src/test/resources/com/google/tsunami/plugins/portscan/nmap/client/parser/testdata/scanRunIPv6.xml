@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.70 scan initiated Mon Nov 11 14:24:06 2019 as: nmap -n -sS -Pn -O -&#45;version-intensity 9 -sC -sV -6 -oX /tmp/ipv6.xml 2001:4860:4860::8888 -->
+<nmaprun scanner="nmap"
+    args="nmap -n -sS -Pn -O -&#45;version-intensity 9 -sC -sV -6 -oX /tmp/ipv6.xml 2001:4860:4860::8888"
+    start="1573478646" startstr="Mon Nov 11 14:24:06 2019" version="7.70"
+    xmloutputversion="1.04">
+  <scaninfo type="syn" protocol="tcp" numservices="1000" services="1,2,3,80,2725"/>
+  <verbose level="0"/>
+  <debugging level="0"/>
+  <target specification="test specification" status="skipped" reason="invalid"/>
+  <taskbegin task="test task" time="123456789" extrainfo="test extrainfo"/>
+  <taskprogress task="test task" time="123456789" percent="90" remaining="10"
+      etc="123"/>
+  <taskend task="test task" time="123456789" extrainfo="test extrainfo"/>
+  <prescript>
+    <script id="test prescript script1 id" output="test prescript script1 output">
+      <elem key="test prescript script1 elem key">
+        test prescript script1 elem value
+      </elem>
+    </script>
+    <script id="test prescript script2 id" output="test prescript script2 output">
+      <elem key="test prescript script2 elem1 key">
+        test prescript script2 elem1 value
+      </elem>
+      <elem key="test prescript script2 elem2 key">
+        test prescript script2 elem2 value
+      </elem>
+    </script>
+  </prescript>
+  <postscript>
+    <script id="test postscript script id" output="test postscript script output">
+      <table key="test postscript table key">
+        <elem key="test postscript table elem key">
+          test postscript table elem value
+        </elem>
+      </table>
+      <table key="test postscript nest outer table key">
+        <table key="test postscript nest inner table key">
+          <elem key="test postscript nest table elem key">
+            test postscript table elem value
+          </elem>
+        </table>
+      </table>
+    </script>
+  </postscript>
+  <host starttime="1573478646" endtime="1573478879" comment="host comment">
+    <status state="up" reason="user-set" reason_ttl="0"/>
+    <address addr="2001:4860:4860::8888" addrtype="ipv6"/>
+    <hostnames>
+      <hostname name="hostname" type="user"/>
+      <hostname name="hostname2" type="PTR"/>
+    </hostnames>
+    <smurf responses="responses"/>
+    <ports>
+      <extraports state="filtered" count="998">
+        <extrareasons reason="no-responses" count="996"/>
+        <extrareasons reason="admin-prohibiteds" count="2"/>
+      </extraports>
+      <port protocol="tcp" portid="53">
+        <state state="open" reason="syn-ack" reason_ttl="120"/>
+        <service name="tcpwrapped" method="probed" conf="8"/>
+      </port>
+      <port protocol="tcp" portid="443">
+        <state state="open" reason="syn-ack" reason_ttl="120"/>
+        <service name="https" product="sffe"
+            servicefp="servicefp" tunnel="ssl" method="probed" conf="10"/>
+        <script id="http-title" output="Error 400 (Bad Request)!!1">
+          <elem key="title">Error 400 (Bad Request)!!1</elem>
+        </script>
+      </port>
+    </ports>
+    <os>
+      <portused state="open" proto="tcp" portid="53"/>
+      <osmatch name="name" accuracy="accuracy" line="line">
+        <osclass vendor="vendor0" osgen="osgen0" type="type0"
+            accuracy="accuracy0" osfamily="osfamily0">
+          <cpe>cpe0</cpe>
+        </osclass>
+        <osclass vendor="vendor1" osgen="osgen1" type="type1"
+            accuracy="accuracy1" osfamily="osfamily1">
+          <cpe>cpe1</cpe>
+        </osclass>
+      </osmatch>
+      <osfingerprint fingerprint="fingerprint"/>
+    </os>
+    <distance value="distance value"/>
+    <uptime seconds="1" lastboot="2"/>
+    <tcpsequence index="0" difficulty="difficulty" values="values"/>
+    <ipidsequence class="class" values="values"/>
+    <tcptssequence class="class" values="values"/>
+    <hostscript>
+      <script id="hostscript script id" output="hostscript script output">
+        <elem key="hostscript script elem key">elem value</elem>
+      </script>
+    </hostscript>
+    <trace proto="proto" port="port">
+      <hop ttl="ttl" rtt="rtt" ipaddr="ipaddr" host="host"/>
+    </trace>
+    <times srtt="1112" rttvar="450" to="100000"/>
+  </host>
+  <output type="test output type">output value</output>
+  <runstats>
+    <finished time="1573478879" timestr="Mon Nov 11 14:27:59 2019"
+        elapsed="232.81"
+        summary="Nmap done at Mon Nov 11 14:27:59 2019; 1 IP address (1 host up) scanned in 232.81 seconds"
+        exit="success"/>
+    <hosts up="1" down="0" total="1"/>
+  </runstats>
+</nmaprun>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.80 scan initiated Tue Jan 21 16:09:39 2020 as: nmap -n -sS -sV -Pn -O -p 23 -&#45;script=banner -oX /tmp/o.xml localhost -->
+<nmaprun scanner="nmap" args="nmap -n -sS -sV -Pn -O -p 23 -&#45;script=banner -oX /tmp/o.xml localhost" start="1579619379" startstr="Tue Jan 21 16:09:39 2020" version="7.80" xmloutputversion="1.04">
+  <scaninfo type="syn" protocol="tcp" numservices="1" services="23"/>
+  <verbose level="0"/>
+  <debugging level="0"/>
+  <host starttime="1579619379" endtime="1579619381"><status state="up" reason="user-set" reason_ttl="0"/>
+    <address addr="127.0.0.1" addrtype="ipv4"/>
+    <hostnames>
+      <hostname name="localhost" type="user"/>
+    </hostnames>
+    <ports><port protocol="tcp" portid="23"><state state="closed" reason="reset" reason_ttl="64"/><service name="telnet" method="table" conf="3"/></port>
+    </ports>
+    <os><portused state="closed" proto="tcp" portid="23"/>
+      <portused state="closed" proto="udp" portid="33264"/>
+    </os>
+    <distance value="0"/>
+    <times srtt="65" rttvar="676" to="100000"/>
+  </host>
+  <runstats><finished time="1579619381" timestr="Tue Jan 21 16:09:41 2020" elapsed="2.34" summary="Nmap done at Tue Jan 21 16:09:41 2020; 1 IP address (1 host up) scanned in 2.34 seconds" exit="success"/><hosts up="1" down="0" total="1"/>
+  </runstats>
+</nmaprun>
