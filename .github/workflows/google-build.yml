@@ -1,0 +1,33 @@
+name: google-plugins-build
+
+on:
+  push:
+    paths:
+      - 'google/**'
+  pull_request:
+    paths:
+      - 'google/**'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+        java: [ 8, 11 ]
+    runs-on: ${{ matrix.os }}
+    name: 'Build Google plugins on ${{ matrix.os }} using Java ${{ matrix.java }}'
+    steps:
+      - name: 'Check out repository'
+        uses: actions/checkout@v2
+      - name: 'Set up JDK ${{ matrix.java }}'
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.java }}
+      - name: 'Cache Gradle resources'
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+      - name: 'Build Google plugins'
+        run: ./google/build_all.sh

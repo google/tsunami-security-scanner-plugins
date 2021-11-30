@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.80 scan initiated Tue Jan 21 13:27:43 2020 as: nmap -n -sS -sV -Pn -O -p 22 -&#45;script=banner -oX /tmp/o.xml localhost -->
+<nmaprun scanner="nmap" args="nmap -n -sS -sV -Pn -O -p 22 -&#45;script=banner -oX /tmp/o.xml localhost" start="1579609663" startstr="Tue Jan 21 13:27:43 2020" version="7.80" xmloutputversion="1.04">
+<scaninfo type="syn" protocol="tcp" numservices="1" services="22"/>
+<verbose level="0"/>
+<debugging level="0"/>
+<host starttime="1579609663" endtime="1579609675"><status state="up" reason="user-set" reason_ttl="0"/>
+<address addr="127.0.0.1" addrtype="ipv4"/>
+<hostnames>
+<hostname name="localhost" type="user"/>
+</hostnames>
+<ports><port protocol="tcp" portid="22"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="ssh" extrainfo="protocol 2.0" servicefp="SF-Port22-TCP:V=7.80%I=7%D=1/21%Time=5E26EE46%P=x86_64-pc-linux-gnu%r(NULL,23,&quot;SSH-2\.0-OpenSSH_7\.9\x20MDI-2\.0\r\n&quot;);" method="probed" conf="10"/><script id="banner" output="SSH-2.0-OpenSSH_7.9 MDI-2.0"/><script id="fingerprint-strings" output="&#xa;  NULL: &#xa;    SSH-2.0-OpenSSH_7.9 MDI-2.0"><elem key="NULL">&#xa;    SSH-2.0-OpenSSH_7.9 MDI-2.0</elem>
+</script></port>
+</ports>
+<os><portused state="open" proto="tcp" portid="22"/>
+<portused state="closed" proto="udp" portid="35070"/>
+<osmatch name="ASUS RT-N56U WAP (Linux 3.4)" accuracy="98" line="8344">
+<osclass type="WAP" vendor="Asus" osfamily="embedded" accuracy="98"><cpe>cpe:/h:asus:rt-n56u</cpe></osclass>
+<osclass type="WAP" vendor="Linux" osfamily="Linux" osgen="3.X" accuracy="98"><cpe>cpe:/o:linux:linux_kernel:3.4</cpe></osclass>
+</osmatch>
+<osmatch name="Linux 3.1" accuracy="98" line="62708">
+<osclass type="general purpose" vendor="Linux" osfamily="Linux" osgen="3.X" accuracy="98"><cpe>cpe:/o:linux:linux_kernel:3.1</cpe></osclass>
+</osmatch>
+<osmatch name="Linux 3.16" accuracy="98" line="63962">
+<osclass type="general purpose" vendor="Linux" osfamily="Linux" osgen="3.X" accuracy="98"><cpe>cpe:/o:linux:linux_kernel:3.16</cpe></osclass>
+</osmatch>
+<osmatch name="Linux 3.2" accuracy="98" line="64455">
+<osclass type="general purpose" vendor="Linux" osfamily="Linux" osgen="3.X" accuracy="98"><cpe>cpe:/o:linux:linux_kernel:3.2</cpe></osclass>
+</osmatch>
+<osmatch name="AXIS 210A or 211 Network Camera (Linux 2.6.17)" accuracy="98" line="61606">
+<osclass type="webcam" vendor="Linux" osfamily="Linux" osgen="2.6.X" accuracy="98"><cpe>cpe:/o:linux:linux_kernel:2.6.17</cpe></osclass>
+<osclass type="webcam" vendor="AXIS" osfamily="embedded" accuracy="98"><cpe>cpe:/h:axis:210a_network_camera</cpe><cpe>cpe:/h:axis:211_network_camera</cpe></osclass>
+</osmatch>
+<osmatch name="Linux 3.8" accuracy="95" line="66022">
+<osclass type="general purpose" vendor="Linux" osfamily="Linux" osgen="3.X" accuracy="95"><cpe>cpe:/o:linux:linux_kernel:3.8</cpe></osclass>
+</osmatch>
+<osmatch name="Linux 2.4.26 (Slackware 10.0.0)" accuracy="93" line="45456">
+<osclass type="general purpose" vendor="Linux" osfamily="Linux" osgen="2.4.X" accuracy="93"><cpe>cpe:/o:linux:linux_kernel:2.4.26</cpe></osclass>
+</osmatch>
+<osmatch name="Asus RT-AC66U router (Linux 2.6)" accuracy="92" line="8205">
+<osclass type="broadband router" vendor="Asus" osfamily="embedded" accuracy="92"><cpe>cpe:/h:asus:rt-ac66u</cpe></osclass>
+<osclass type="broadband router" vendor="Linux" osfamily="Linux" osgen="2.6.X" accuracy="92"><cpe>cpe:/o:linux:linux_kernel:2.6</cpe></osclass>
+</osmatch>
+<osmatch name="Asus RT-N10 router or AXIS 211A Network Camera (Linux 2.6)" accuracy="92" line="47244">
+<osclass type="general purpose" vendor="Linux" osfamily="Linux" osgen="2.6.X" accuracy="92"><cpe>cpe:/o:linux:linux_kernel:2.6</cpe></osclass>
+<osclass type="WAP" vendor="Asus" osfamily="embedded" accuracy="92"><cpe>cpe:/h:asus:rt-n10</cpe></osclass>
+<osclass type="webcam" vendor="AXIS" osfamily="embedded" accuracy="92"><cpe>cpe:/h:axis:211_network_camera</cpe></osclass>
+</osmatch>
+<osmatch name="Linux 2.6.18" accuracy="92" line="49288">
+<osclass type="general purpose" vendor="Linux" osfamily="Linux" osgen="2.6.X" accuracy="92"><cpe>cpe:/o:linux:linux_kernel:2.6.18</cpe></osclass>
+</osmatch>
+</os>
+<uptime seconds="1216213" lastboot="Tue Jan  7 11:37:42 2020"/>
+<distance value="0"/>
+<times srtt="68" rttvar="96" to="100000"/>
+</host>
+<runstats><finished time="1579609675" timestr="Tue Jan 21 13:27:55 2020" elapsed="11.78" summary="Nmap done at Tue Jan 21 13:27:55 2020; 1 IP address (1 host up) scanned in 11.78 seconds" exit="success"/><hosts up="1" down="0" total="1"/>
+</runstats>
+</nmaprun>

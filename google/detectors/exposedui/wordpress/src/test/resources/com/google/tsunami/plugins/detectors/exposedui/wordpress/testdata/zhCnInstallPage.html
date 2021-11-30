@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-CN" xml:lang="zh-CN">
+  <head>
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>WordPress &rsaquo; 安装</title>
+    <link rel='stylesheet' id='dashicons-css'  href='http://localhost/wp-includes/css/dashicons.min.css?ver=5.3.2' type='text/css' media='all' />
+    <link rel='stylesheet' id='buttons-css'  href='http://localhost/wp-includes/css/buttons.min.css?ver=5.3.2' type='text/css' media='all' />
+    <link rel='stylesheet' id='forms-css'  href='http://localhost/wp-admin/css/forms.min.css?ver=5.3.2' type='text/css' media='all' />
+    <link rel='stylesheet' id='l10n-css'  href='http://localhost/wp-admin/css/l10n.min.css?ver=5.3.2' type='text/css' media='all' />
+    <link rel='stylesheet' id='install-css'  href='http://localhost/wp-admin/css/install.min.css?ver=5.3.2' type='text/css' media='all' />
+  </head>
+  <body class="wp-core-ui">
+    <p id="logo"><a href="https://cn.wordpress.org/">WordPress</a></p>
+
+    <h1>欢迎</h1>
+    <p>欢迎使用著名的WordPress五分钟安装程序！请简单地填写下面的表格，来开始使用这个世界上最具扩展性、最强大的个人信息发布平台。</p>
+
+    <h2>需要信息</h2>
+    <p>您需要填写一些基本信息。无需担心填错，这些信息以后可以再次修改。</p>
+
+    <form id="setup" method="post" action="install.php?step=2" novalidate="novalidate">
+      <table class="form-table" role="presentation">
+        <tr>
+          <th scope="row"><label for="weblog_title">站点标题</label></th>
+          <td><input name="weblog_title" type="text" id="weblog_title" size="25" value="" /></td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="user_login">用户名</label></th>
+          <td>
+            <input name="user_name" type="text" id="user_login" size="25" value="" />
+            <p>用户名只能含有字母、数字、空格、下划线、连字符、句号和“@”符号。</p>
+          </td>
+        </tr>
+        <tr class="form-field form-required user-pass1-wrap">
+          <th scope="row">
+            <label for="pass1">密码</label>
+          </th>
+          <td>
+            <div class="wp-pwd">
+              <input type="password" name="admin_password" id="pass1" class="regular-text" autocomplete="off" data-reveal="1" data-pw="^@mJxmlD9QhY@XBeOn" aria-describedby="pass-strength-result" />
+              <button type="button" class="button wp-hide-pw hide-if-no-js" data-start-masked="0" data-toggle="0" aria-label="隐藏密码">
+                <span class="dashicons dashicons-hidden"></span>
+                <span class="text">隐藏</span>
+              </button>
+              <div id="pass-strength-result" aria-live="polite"></div>
+            </div>
+            <p><span class="description important hide-if-no-js">
+              <strong>重要：</strong>
+              您将需要此密码来登录，请将其保存在安全的位置。</span></p>
+          </td>
+        </tr>
+        <tr class="form-field form-required user-pass2-wrap hide-if-js">
+          <th scope="row">
+            <label for="pass2">重复密码<span class="description">（必填）</span>
+            </label>
+          </th>
+          <td>
+            <input name="admin_password2" type="password" id="pass2" autocomplete="off" />
+          </td>
+        </tr>
+        <tr class="pw-weak">
+          <th scope="row">确认密码</th>
+          <td>
+            <label>
+              <input type="checkbox" name="pw_weak" class="pw-checkbox" />
+              确认使用弱密码</label>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="admin_email">您的电子邮件</label></th>
+          <td><input name="admin_email" type="email" id="admin_email" size="25" value="" />
+            <p>请仔细检查电子邮件地址后再继续。</p></td>
+        </tr>
+        <tr>
+          <th scope="row">对搜索引擎的可见性</th>
+          <td>
+            <fieldset>
+              <legend class="screen-reader-text"><span>对搜索引擎的可见性 </span></legend>
+              <label for="blog_public"><input name="blog_public" type="checkbox" id="blog_public" value="0"  />
+                建议搜索引擎不索引本站点</label>
+              <p class="description">搜索引擎将本着自觉自愿的原则对待WordPress提出的请求。并不是所有搜索引擎都会遵守这类请求。</p>
+            </fieldset>
+          </td>
+        </tr>
+      </table>
+      <p class="step"><input type="submit" name="Submit" id="submit" class="button button-large" value="安装WordPress"  /></p>
+      <input type="hidden" name="language" value="zh_CN" />
+    </form>
+    <script type="text/javascript">var t = document.getElementById('weblog_title'); if (t){ t.focus(); }</script>
+    <script type='text/javascript' src='http://localhost/wp-includes/js/jquery/jquery.js?ver=1.12.4-wp'></script>
+    <script type='text/javascript' src='http://localhost/wp-includes/js/jquery/jquery-migrate.min.js?ver=1.4.1'></script>
+    <script type='text/javascript'>
+/* <![CDATA[ */
+var _zxcvbnSettings = {"src":"http:\/\/localhost\/wp-includes\/js\/zxcvbn.min.js"};
+/* ]]> */
+    </script>
+    <script type='text/javascript' src='http://localhost/wp-includes/js/zxcvbn-async.min.js?ver=1.0'></script>
+    <script type='text/javascript'>
+/* <![CDATA[ */
+var pwsL10n = {"unknown":"\u5bc6\u7801\u5f3a\u5ea6\u672a\u77e5","short":"\u975e\u5e38\u5f31","bad":"\u5f31","good":"\u4e2d\u7b49","strong":"\u5f3a","mismatch":"\u4e0d\u5339\u914d"};
+/* ]]> */
+    </script>
+    <script type='text/javascript' src='http://localhost/wp-admin/js/password-strength-meter.min.js?ver=5.3.2'></script>
+    <script type='text/javascript' src='http://localhost/wp-includes/js/underscore.min.js?ver=1.8.3'></script>
+    <script type='text/javascript'>
+/* <![CDATA[ */
+var _wpUtilSettings = {"ajax":{"url":"\/wp-admin\/admin-ajax.php"}};
+/* ]]> */
+    </script>
+    <script type='text/javascript' src='http://localhost/wp-includes/js/wp-util.min.js?ver=5.3.2'></script>
+    <script type='text/javascript'>
+/* <![CDATA[ */
+var userProfileL10n = {"warn":"\u60a8\u7684\u65b0\u5bc6\u7801\u672a\u88ab\u4fdd\u5b58\u3002","warnWeak":"\u786e\u8ba4\u4f7f\u7528\u5f31\u5bc6\u7801","show":"\u663e\u793a","hide":"\u9690\u85cf","cancel":"\u53d6\u6d88","ariaShow":"\u663e\u793a\u5bc6\u7801","ariaHide":"\u9690\u85cf\u5bc6\u7801"};
+/* ]]> */
+    </script>
+    <script type='text/javascript' src='http://localhost/wp-admin/js/user-profile.min.js?ver=5.3.2'></script>
+    <script type="text/javascript">
+jQuery( function( $ ) {
+$( '.hide-if-no-js' ).removeClass( 'hide-if-no-js' );
+} );
+    </script>
+  </body>
+</html>

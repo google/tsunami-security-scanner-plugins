@@ -1,0 +1,8 @@
+{
+  "application-id":"application_1404198295326_0003",
+  "maximum-resource-capability":
+  {
+    "memory":8192,
+    "vCores":32
+  }
+}

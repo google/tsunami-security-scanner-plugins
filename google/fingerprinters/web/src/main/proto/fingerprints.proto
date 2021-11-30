@@ -1,0 +1,83 @@
+/*
+ * Copyright 2020 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+syntax = "proto3";
+
+package tsunami.plugins.fingerprinters.web.proto;
+
+option java_multiple_files = true;
+option java_outer_classname = "WebFingerprintsProtos";
+option java_package = "com.google.tsunami.plugins.fingerprinters.web.proto";
+
+// The fingerprints data for a specific software.
+message Fingerprints {
+  // The identity of the software.
+  SoftwareIdentity software_identity = 1;
+
+  // A list of web contents served by the application and their corresponding
+  // content hashes.
+  repeated ContentHash content_hashes = 2;
+
+  // A list of web content hashes and their corresponding application versions.
+  repeated HashVersion hash_versions = 3;
+
+  // A list of web content paths and their corresponding application versions.
+  repeated PathVersion path_versions = 4;
+}
+
+message SoftwareIdentity {
+  // Name of the software. Required.
+  string software = 1;
+
+  // Name of the plugin for the software. Optional.
+  string plugin = 2;
+}
+
+// The hash data for a single web content served by the application.
+message ContentHash {
+  // The path to the content. Required.
+  string content_path = 1;
+
+  // All the potential hashes for that content.
+  repeated Hash hashes = 2;
+}
+
+// The version information for a single web content hash.
+message HashVersion {
+  // The hash of a web content.
+  Hash hash = 1;
+
+  // All the potential application versions for that content.
+  repeated Version versions = 2;
+}
+
+// The version information for a single web content path.
+message PathVersion {
+  // The path to the content.
+  string content_path = 1;
+
+  // All the potential application versions for that content path.
+  repeated Version versions = 2;
+}
+
+message Hash {
+  // The hex representation of a hash value.
+  string hex_string = 1;
+}
+
+message Version {
+  // Human readable version string.
+  string full_name = 1;
+}
