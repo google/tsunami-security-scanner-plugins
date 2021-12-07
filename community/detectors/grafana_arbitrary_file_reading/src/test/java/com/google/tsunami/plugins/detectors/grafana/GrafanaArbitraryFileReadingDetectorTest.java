@@ -107,7 +107,7 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
                     Vulnerability.newBuilder()
                         .setMainId(
                             VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("GRAFANA_ARBITRARY_FILE_READING"))
+                                .setValue("CVE_2021_43798"))
                         .setSeverity(Severity.HIGH)
                         .setTitle("Grafana Pre-Auth Arbitrary File Reading vulnerability")
                         .setDescription(
@@ -115,9 +115,7 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
                                 + "accessed without authentication. This endpoint has a directory "
                                 + "traversal vulnerability, and any user can read any file on the "
                                 + "server without authentication, causing information leakage.")
-                        .setRecommendation("The application should be deployed on the internal "
-                            + "network as much as possible, do not open the endpoint to the "
-                            + "external network, or use the Nginx gateway for reverse proxy.")
+                        .setRecommendation("Update to 8.3.1 version or later.")
                         .addAdditionalDetails(
                             AdditionalDetail.newBuilder()
                                 .setTextData(
