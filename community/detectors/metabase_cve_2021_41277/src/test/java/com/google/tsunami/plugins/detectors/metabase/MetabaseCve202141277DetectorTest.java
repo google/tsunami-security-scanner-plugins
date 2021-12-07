@@ -129,12 +129,13 @@ public final class MetabaseCve202141277DetectorTest {
                             .setValue("Metabase CVE-2021-41277 Local File Inclusion Vulnerability"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("CVE_2021_41277")
-                        .setDescription("Metabase is an open source data analytics platform. In affected "
-                            + "versions a security issue has been discovered with the custom GeoJSON map "
-                            + "(`admin->settings->maps->custom maps->add a map`) support and potential "
-                            + "local file inclusion (including environment variables). URLs were not "
-                            + "validated prior to being loaded. This issue is fixed in a new maintenance "
-                            + "release (0.40.5 and 1.40.5), and any subsequent release after that.")
+                        .setDescription("Metabase is an open source data analytics platform. In "
+                            + "affected versions a security issue has been discovered with the "
+                            + "custom GeoJSON map (`admin->settings->maps->custom maps->add a "
+                            + "map`) support and potential local file inclusion (including "
+                            + "environment variables). URLs were not validated prior to being "
+                            + "loaded. This issue is fixed in a new maintenance release (0.40.5 "
+                            + "and 1.40.5), and any subsequent release after that.")
                         .setRecommendation("upgrade to latest version")
                 ).build()
         );
