@@ -11,7 +11,7 @@ This directory contains plugins contributed by community members.
 #### Path Traversal
 *   [Apache HTTP Server Path traversal and disclosure (CVE-2021-41773) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/apache_http_server_cve_2021_41773)
 *   [Apache Solr RemoteStreaming Arbitrary File Reading Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/apache_solr_arbitrary_file_reading)
-*   [MetaBase Local_File_Inclusion Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/metabase_cve_2021_41277)
+*   [Metabase CVE-2021-41277 LFI (Local File Inclusion) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/metabase_cve_2021_41277)
 
 #### Authentication Bypass
 *   [CVE-2021-29441 Nacos < 1.4.1 Authentication Bypass](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/nacos_cve_2021_29441)

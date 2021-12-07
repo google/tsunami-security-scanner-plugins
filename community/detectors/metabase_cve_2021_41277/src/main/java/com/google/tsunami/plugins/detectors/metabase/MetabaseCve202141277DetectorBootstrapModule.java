@@ -18,13 +18,13 @@ package com.google.tsunami.plugins.detectors.metabase;
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
 /**
- * A {@link PluginBootstrapModule} for {@link MetaBaseCVE202141277Detector}
+ * A {@link PluginBootstrapModule} for {@link MetabaseCve202141277Detector}
  */
-public final class MetaBaseCVE202141277DetectorBootstrapModule extends
+public final class MetabaseCve202141277DetectorBootstrapModule extends
     PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    registerPlugin(MetaBaseCVE202141277Detector.class);
+    registerPlugin(MetabaseCve202141277Detector.class);
   }
 }

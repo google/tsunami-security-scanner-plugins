@@ -49,12 +49,12 @@ import javax.inject.Inject;
  */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "MetaBaseCVE202141277Detector",
+    name = "MetabaseCve202141277Detector",
     version = "0.1",
     description = "This detector checks for MetaBase Local File Inclusion(CVE-2021-41277).",
     author = "C4o (syttcasd@gmail.com)",
-    bootstrapModule = MetaBaseCVE202141277DetectorBootstrapModule.class)
-public final class MetaBaseCVE202141277Detector implements VulnDetector {
+    bootstrapModule = MetabaseCve202141277DetectorBootstrapModule.class)
+public final class MetabaseCve202141277Detector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final Pattern VULNERABILITY_RESPONSE_PATTERN = Pattern.compile("(root:[x*]:0:0:)");
@@ -63,7 +63,7 @@ public final class MetaBaseCVE202141277Detector implements VulnDetector {
   private final HttpClient httpClient;
 
   @Inject
-  MetaBaseCVE202141277Detector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  MetabaseCve202141277Detector(@UtcClock Clock utcClock, HttpClient httpClient) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
   }
@@ -108,9 +108,9 @@ public final class MetaBaseCVE202141277Detector implements VulnDetector {
         .setVulnerability(
             Vulnerability.newBuilder()
                 .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                    .setValue("MetaBase_CVE_2021_41277_Local_File_Inclusion"))
+                    .setValue("Metabase CVE-2021-41277 Local File Inclusion Vulnerability"))
                 .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2021-41277")
+                .setTitle("CVE_2021_41277")
                 .setDescription("Metabase is an open source data analytics platform. In affected "
                     + "versions a security issue has been discovered with the custom GeoJSON map "
                     + "(`admin->settings->maps->custom maps->add a map`) support and potential "
