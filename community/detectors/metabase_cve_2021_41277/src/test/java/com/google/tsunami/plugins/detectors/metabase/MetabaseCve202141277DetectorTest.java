@@ -46,16 +46,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for {@link MetaBaseCVE202141277Detector}.
+ * Unit tests for {@link MetabaseCve202141277Detector}.
  */
 @RunWith(JUnit4.class)
-public final class MetaBaseCVE202141277DetectorTest {
+public final class MetabaseCve202141277DetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
   @Inject
-  private MetaBaseCVE202141277Detector detector;
+  private MetabaseCve202141277Detector detector;
 
   private MockWebServer mockWebServer;
   private NetworkService testService;
@@ -68,14 +68,14 @@ public final class MetaBaseCVE202141277DetectorTest {
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
             .setTransportProtocol(TransportProtocol.TCP)
-            .setSoftware(Software.newBuilder().setName("Apache Solr"))
+            .setSoftware(Software.newBuilder().setName("MetaBase"))
             .setServiceName("http")
             .build();
 
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
-            new MetaBaseCVE202141277DetectorBootstrapModule())
+            new MetabaseCve202141277DetectorBootstrapModule())
         .injectMembers(this);
   }
 
@@ -126,9 +126,9 @@ public final class MetaBaseCVE202141277DetectorTest {
                 .setVulnerability(
                     Vulnerability.newBuilder()
                         .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("MetaBase_CVE_2021_41277_Local_File_Inclusion"))
+                            .setValue("Metabase CVE-2021-41277 Local File Inclusion Vulnerability"))
                         .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2021-41277")
+                        .setTitle("CVE_2021_41277")
                         .setDescription("Metabase is an open source data analytics platform. In affected "
                             + "versions a security issue has been discovered with the custom GeoJSON map "
                             + "(`admin->settings->maps->custom maps->add a map`) support and potential "
