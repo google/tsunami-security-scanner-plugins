@@ -346,7 +346,7 @@ public final class NmapPortScanner implements PortScanner {
     if (!networkService.getBannerList().isEmpty()) {
       logMessageBuilder.append(", banner ").append(networkService.getBanner(0));
     }
-    logger.atInfo().log(logMessageBuilder.toString());
+    logger.atInfo().log("%s", logMessageBuilder);
   }
 
   private static String loggableScanTarget(ScanTarget scanTarget) {
