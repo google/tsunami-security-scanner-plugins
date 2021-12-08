@@ -123,7 +123,7 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
                                         .setText(
                                             "Vulnerable target:\n"
                                                 + mockWebServer.url("/")
-                                                + "public/plugins/grafana-clock-panel/..%2F..%2F.."
+                                                + "public/plugins/annolist/..%2F..%2F.."
                                                 + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
                                                 + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
                                                 + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
@@ -158,7 +158,7 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
     DetectionReportList detectionReports = detector.detect(TargetInfo.getDefaultInstance(),
         ImmutableList.of(grafanaService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(42);
   }
 
   private static final class VulnerableEndpointDispatcher extends Dispatcher {
