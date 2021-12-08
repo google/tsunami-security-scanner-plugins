@@ -126,9 +126,9 @@ public final class MetabaseCve202141277DetectorTest {
                 .setVulnerability(
                     Vulnerability.newBuilder()
                         .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("Metabase CVE-2021-41277 Local File Inclusion Vulnerability"))
+                            .setValue("CVE_2021_41277"))
                         .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE_2021_41277")
+                        .setTitle("Metabase CVE-2021-41277 Local File Inclusion Vulnerability")
                         .setDescription("Metabase is an open source data analytics platform. In "
                             + "affected versions a security issue has been discovered with the "
                             + "custom GeoJSON map (`admin->settings->maps->custom maps->add a "
