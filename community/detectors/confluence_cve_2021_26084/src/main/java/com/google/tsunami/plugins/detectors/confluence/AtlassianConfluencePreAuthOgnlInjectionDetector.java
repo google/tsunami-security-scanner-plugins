@@ -45,15 +45,13 @@ import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
 
-/**
- * A {@link VulnDetector} that detects unprotected Atlassian Confluence Pre-Auth OGNL Injection
- */
+/** A {@link VulnDetector} that detects unprotected Atlassian Confluence Pre-Auth OGNL Injection. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "AtlassianConfluencePreAuthOgnlInjectionDetector",
     version = "0.1",
-    description = "This detector checks for unprotected  Atlassian Confluence Pre-Auth OGNL "
-        + "Injection.",
+    description =
+        "This detector checks for unprotected  Atlassian Confluence Pre-Auth OGNL Injection.",
     author = "C4o (syttcasd@gmail.com)",
     bootstrapModule = AtlassianConfluencePreAuthOgnlInjectionDetectorBootstrapModule.class)
 public final class AtlassianConfluencePreAuthOgnlInjectionDetector implements VulnDetector {
