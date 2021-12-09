@@ -133,7 +133,8 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
                                                 + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
                                                 + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
                                                 + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
-                                                + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2Fetc%2Fpasswd\n\n"
+                                                + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
+                                                + "%2F..%2F..%2F..%2Fetc%2Fpasswd\n\n"
                                                 + "Response:\n"
                                                 + "200 Ok\n"
                                                 + "Content-Length: 259\n\n"
@@ -143,7 +144,8 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
                                                 + "adm:x:3:4:adm:/var/adm:/sbin/nologin\n"
                                                 + "lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin\n"
                                                 + "sync:x:5:0:sync:/sbin:/bin/sync\n"
-                                                + "shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown\n"))))
+                                                + "shutdown:x:6:0:shutdown:/sbin:"
+                                                + "/sbin/shutdown\n"))))
                 .build());
     assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
   }
