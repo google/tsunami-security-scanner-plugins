@@ -50,17 +50,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for {@link GrafanaArbitraryFileReadingDetector}.
- */
+/** Unit tests for {@link GrafanaArbitraryFileReadingDetector}. */
 @RunWith(JUnit4.class)
 public final class GrafanaArbitraryFileReadingDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
-  @Inject
-  private GrafanaArbitraryFileReadingDetector detector;
+  @Inject private GrafanaArbitraryFileReadingDetector detector;
 
   private MockWebServer mockWebServer;
   private NetworkService grafanaService;
@@ -93,8 +90,8 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
   public void detect_whenVulnerable_returnsVulnerability() {
     mockWebServer.setDispatcher(new VulnerableEndpointDispatcher());
 
-    DetectionReportList detectionReports = detector.detect(TargetInfo.getDefaultInstance(),
-        ImmutableList.of(grafanaService));
+    DetectionReportList detectionReports =
+        detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(grafanaService));
     assertThat(detectionReports.getDetectionReportsList())
         .containsExactly(
             DetectionReport.newBuilder()
@@ -106,10 +103,13 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
                 .setVulnerability(
                     Vulnerability.newBuilder()
                         .setMainId(
-                            VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE_2021_43798"))
                         .setSeverity(Severity.HIGH)
-                        .setTitle("Grafana Pre-Auth Arbitrary File Reading vulnerability (CVE_2021_43798)")
+                        .setTitle(
+                            "Grafana Pre-Auth Arbitrary File Reading vulnerability"
+                                + " (CVE_2021_43798)")
                         .setDescription(
                             "In Grafana 8.0.0 to 8.3.0, there is an endpoint that can be "
                                 + "accessed without authentication. This endpoint has a directory "
@@ -133,8 +133,7 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
                                                 + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
                                                 + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
                                                 + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
-                                                + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
-                                                + "%2F..%2F..%2F..%2Fetc%2Fpasswd\n\n"
+                                                + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2Fetc%2Fpasswd\n\n"
                                                 + "Response:\n"
                                                 + "200 Ok\n"
                                                 + "Content-Length: 259\n\n"
@@ -144,9 +143,7 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
                                                 + "adm:x:3:4:adm:/var/adm:/sbin/nologin\n"
                                                 + "lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin\n"
                                                 + "sync:x:5:0:sync:/sbin:/bin/sync\n"
-                                                + "shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown\n"
-                                        )))
-                )
+                                                + "shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown\n"))))
                 .build());
     assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
   }
@@ -155,8 +152,8 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
   public void detect_whenNoVulnerable_returnsNoFinding() {
     mockWebServer.setDispatcher(new SafeEndpointDispatcher());
 
-    DetectionReportList detectionReports = detector.detect(TargetInfo.getDefaultInstance(),
-        ImmutableList.of(grafanaService));
+    DetectionReportList detectionReports =
+        detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(grafanaService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
     assertThat(mockWebServer.getRequestCount()).isEqualTo(42);
   }
@@ -165,14 +162,16 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
-      return new MockResponse().setResponseCode(HttpStatus.OK.code())
-          .setBody("root:x:0:0:root:/root:/bin/ash\n"
-              + "bin:x:1:1:bin:/bin:/sbin/nologin\n"
-              + "daemon:x:2:2:daemon:/sbin:/sbin/nologin\n"
-              + "adm:x:3:4:adm:/var/adm:/sbin/nologin\n"
-              + "lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin\n"
-              + "sync:x:5:0:sync:/sbin:/bin/sync\n"
-              + "shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown\n");
+      return new MockResponse()
+          .setResponseCode(HttpStatus.OK.code())
+          .setBody(
+              "root:x:0:0:root:/root:/bin/ash\n"
+                  + "bin:x:1:1:bin:/bin:/sbin/nologin\n"
+                  + "daemon:x:2:2:daemon:/sbin:/sbin/nologin\n"
+                  + "adm:x:3:4:adm:/var/adm:/sbin/nologin\n"
+                  + "lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin\n"
+                  + "sync:x:5:0:sync:/sbin:/bin/sync\n"
+                  + "shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown\n");
     }
   }
 
