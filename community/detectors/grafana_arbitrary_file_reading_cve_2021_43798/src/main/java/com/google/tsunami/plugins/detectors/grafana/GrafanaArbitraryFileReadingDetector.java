@@ -57,7 +57,8 @@ import javax.inject.Inject;
     type = PluginType.VULN_DETECTION,
     name = "GrafanaArbitraryFileReadingDetector",
     version = "1.0",
-    description = "This detector checks for Grafana Pre-Auth Arbitrary File Reading vulnerability.",
+    description = "This detector checks for Grafana Pre-Auth Arbitrary File Reading vulnerability "
+        + "(CVE_2021_43798).",
     author = "threedr3am (qiaoer1320@gmail.com)",
     bootstrapModule = GrafanaArbitraryFileReadingDetectorBootstrapModule.class
 )
@@ -196,7 +197,7 @@ public class GrafanaArbitraryFileReadingDetector implements VulnDetector {
                     VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2021_43798"))
                 .setSeverity(Severity.HIGH)
-                .setTitle("Grafana Pre-Auth Arbitrary File Reading vulnerability")
+                .setTitle("Grafana Pre-Auth Arbitrary File Reading vulnerability (CVE_2021_43798)")
                 .setDescription(
                     "In Grafana 8.0.0 to 8.3.0, there is an endpoint that can be accessed "
                         + "without authentication. This endpoint has a directory traversal "

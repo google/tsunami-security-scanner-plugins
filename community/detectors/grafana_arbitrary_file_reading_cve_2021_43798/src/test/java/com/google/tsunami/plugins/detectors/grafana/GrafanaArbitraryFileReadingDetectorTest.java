@@ -109,7 +109,7 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
                             VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE_2021_43798"))
                         .setSeverity(Severity.HIGH)
-                        .setTitle("Grafana Pre-Auth Arbitrary File Reading vulnerability")
+                        .setTitle("Grafana Pre-Auth Arbitrary File Reading vulnerability (CVE_2021_43798)")
                         .setDescription(
                             "In Grafana 8.0.0 to 8.3.0, there is an endpoint that can be "
                                 + "accessed without authentication. This endpoint has a directory "
