@@ -85,12 +85,7 @@ public final class Cve202144228VuLnDetectorTest {
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
     detector.initOOBDomain();
-    System.out.println("OOB_DOMAIN:" + OOB_DOMAIN);
-    try {
-      InetAddress.getByName(OOB_DOMAIN);
-    } catch (UnknownHostException e) {
-      e.printStackTrace();
-    }
+    InetAddress.getByName(OOB_DOMAIN);
     mockWebServer.setDispatcher(new VulnerabilityEndpointDispatcher());
     mockWebServer.start();
     NetworkService service =

