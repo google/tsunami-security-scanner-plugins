@@ -73,7 +73,7 @@ dependencies {
     implementation "com.google.protobuf:protobuf-javalite:${protobufVersion}"
     implementation "com.google.protobuf:protobuf-java-util:${protobufVersion}"
     implementation "org.jsoup:jsoup:${jsoupVersion}"
-    implementation 'org.bouncycastle:bcprov-jdk15on:${bouncycastleVersion}'
+    implementation "org.bouncycastle:bcprov-jdk15on:${bouncycastleVersion}"
 
 
     testImplementation "junit:junit:${junitVersion}"
