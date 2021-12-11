@@ -3,7 +3,7 @@ plugins {
     id 'com.google.protobuf' version "0.8.14"
 }
 
-description = 'Tsunami CVE-2021-29441 VulnDetector plugin.'
+description = 'Tsunami CVE-2021-44228 VulnDetector plugin.'
 group 'com.google.tsunami'
 version '0.0.1-SNAPSHOT'
 
