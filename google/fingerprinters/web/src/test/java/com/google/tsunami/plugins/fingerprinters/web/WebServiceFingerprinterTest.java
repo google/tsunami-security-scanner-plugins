@@ -193,6 +193,10 @@ public final class WebServiceFingerprinterTest {
         NetworkService.newBuilder()
             .setNetworkEndpoint(forIp("127.0.0.1"))
             .setServiceName("http")
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(WebServiceContext.getDefaultInstance())
+                    .build())
             .build();
 
     FingerprintingReport fingerprintingReport =
