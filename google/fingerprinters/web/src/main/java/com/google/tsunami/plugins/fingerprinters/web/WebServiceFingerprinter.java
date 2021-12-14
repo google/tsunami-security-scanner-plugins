@@ -119,7 +119,8 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
               versionsBySoftware.entrySet().stream()
                   .map(
                       entry ->
-                          addWebServiceContext(networkService, entry.getKey(), entry.getValue()))
+                          addWebServiceContext(
+                              networkService, entry.getKey(), entry.getValue(), crawlResults))
                   .collect(toImmutableList()))
           .build();
     }
@@ -153,7 +154,8 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
   private static NetworkService addWebServiceContext(
       NetworkService networkService,
       DetectedSoftware detectedSoftware,
-      DetectedVersion detectedVersion) {
+      DetectedVersion detectedVersion,
+      ImmutableSet<CrawlResult> crawlResults) {
     Software software =
         Software.newBuilder().setName(detectedSoftware.softwareIdentity().getSoftware()).build();
     VersionSet versionSet =
@@ -173,6 +175,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
             .setApplicationRoot(detectedSoftware.rootPath())
             .setSoftware(software)
             .setVersionSet(versionSet)
+            .addAllCrawlResults(crawlResults)
             .build();
     return networkService.toBuilder()
         .setServiceContext(ServiceContext.newBuilder().setWebServiceContext(webServiceContext))

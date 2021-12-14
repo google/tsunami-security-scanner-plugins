@@ -105,6 +105,7 @@ public final class WebServiceFingerprinterTest {
         fingerprinter.fingerprint(TargetInfo.getDefaultInstance(), networkService);
 
     assertThat(fingerprintingReport)
+        .comparingExpectedFieldsOnly()
         .isEqualTo(
             FingerprintingReport.newBuilder()
                 .addNetworkServices(
@@ -140,6 +141,7 @@ public final class WebServiceFingerprinterTest {
         fingerprinter.fingerprint(TargetInfo.getDefaultInstance(), networkService);
 
     assertThat(fingerprintingReport)
+        .comparingExpectedFieldsOnly()
         .isEqualTo(
             FingerprintingReport.newBuilder()
                 .addNetworkServices(
@@ -166,6 +168,7 @@ public final class WebServiceFingerprinterTest {
 
     assertThat(fingerprintingReport)
         .ignoringRepeatedFieldOrder()
+        .comparingExpectedFieldsOnly()
         .isEqualTo(
             FingerprintingReport.newBuilder()
                 .addNetworkServices(
@@ -198,6 +201,7 @@ public final class WebServiceFingerprinterTest {
     assertThat(fingerprintingReport)
         .isEqualTo(FingerprintingReport.newBuilder().addNetworkServices(networkService).build());
   }
+  // TODO(b/210549664): add tests for crawl results.
 
   private static NetworkService addServiceContext(
       NetworkService networkService, String appRoot, String appName, Collection<String> versions) {
