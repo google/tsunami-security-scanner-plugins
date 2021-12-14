@@ -30,6 +30,7 @@ import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.proto.CrawlConfig;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
+import com.google.tsunami.proto.NetworkService;
 import java.util.Optional;
 import java.util.concurrent.RecursiveAction;
 import java.util.stream.Stream;
@@ -88,7 +89,11 @@ final class SimpleCrawlAction extends RecursiveAction {
                 // This is a new CrawlTarget, performs the crawl and spawn new actions for the links
                 // extracted from the crawl response.
                 HttpResponse httpResponse =
-                    httpClient.send(buildHttpRequest(crawlTarget), crawlConfig.getNetworkService());
+                    httpClient.send(
+                        buildHttpRequest(crawlTarget),
+                        NetworkService.newBuilder()
+                            .setNetworkEndpoint(crawlConfig.getNetworkEndpoint())
+                            .build());
                 logger.atInfo().log(
                     "SimpleCrawlAction visited target '%s' with method '%s' at depth '%d',"
                         + " response code: %d.",

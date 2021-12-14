@@ -61,6 +61,7 @@ import com.google.tsunami.plugins.fingerprinters.web.proto.Version;
 import com.google.tsunami.proto.CrawlConfig;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
+import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
@@ -101,13 +102,11 @@ public final class FingerprintUpdater {
   private final Options options;
   private final HttpClient httpClient;
   private final Crawler crawler;
-  private final NetworkService fakeNetworkService;
 
   @Inject
   public FingerprintUpdater(Options options, HttpClient httpClient, Crawler crawler) {
     this.options = checkNotNull(options);
     this.httpClient = checkNotNull(httpClient);
-    this.fakeNetworkService = NetworkService.getDefaultInstance();
     this.crawler = checkNotNull(crawler);
   }
 
@@ -188,7 +187,7 @@ public final class FingerprintUpdater {
             .addAllSeedingUrls(seedingUrls)
             .setMaxDepth(options.maxCrawlDepth)
             .addScopes(ScopeUtils.fromUrl(options.remoteUrl))
-            .setNetworkService(fakeNetworkService)
+            .setNetworkEndpoint(NetworkEndpoint.getDefaultInstance())
             .build();
     return crawler.crawl(crawlConfig).stream()
         .filter(crawlResult -> HttpStatus.fromCode(crawlResult.getResponseCode()).isSuccess())
@@ -235,7 +234,7 @@ public final class FingerprintUpdater {
       HttpUrl url =
           HttpUrl.parse(options.remoteUrl).newBuilder().addPathSegments(staticFile).build();
       HttpResponse response =
-          httpClient.send(get(url).withEmptyHeaders().build(), fakeNetworkService);
+          httpClient.send(get(url).withEmptyHeaders().build(), NetworkService.getDefaultInstance());
       if (!response.status().isSuccess()) {
         logger.atWarning().log("(Ignored) status %s for file '%s'", response.status(), staticFile);
         return Optional.empty();

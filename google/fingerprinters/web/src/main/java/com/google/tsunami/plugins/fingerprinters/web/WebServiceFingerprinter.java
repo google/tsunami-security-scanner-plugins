@@ -187,7 +187,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
             .setShouldEnforceScopeCheck(shouldEnforceScopeCheck)
             .addSeedingUrls(seedingUrl)
             .setMaxDepth(3)
-            .setNetworkService(networkService)
+            .setNetworkEndpoint(networkService.getNetworkEndpoint())
             .build();
     return crawler.crawl(crawlConfig);
   }
