@@ -15,17 +15,25 @@
  */
 package com.google.tsunami.plugins.fingerprinters.web.crawl;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.net.HttpHeaders.CONTENT_LOCATION;
 import static com.google.common.net.HttpHeaders.LINK;
 import static com.google.common.net.HttpHeaders.LOCATION;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.joining;
 
 import com.google.common.base.Ascii;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.flogger.GoogleLogger;
+import com.google.protobuf.ByteString;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpMethod;
 import com.google.tsunami.proto.CrawlTarget;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,6 +45,7 @@ import org.jsoup.nodes.FormElement;
 
 /** Static utility methods pertaining to {@link CrawlTarget} proto buffer. */
 public final class CrawlTargetUtils {
+  private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final ImmutableSet<String> LINK_ATTRIBUTES =
       ImmutableSet.of(
           // HTML 4 link attributes.
@@ -124,22 +133,88 @@ public final class CrawlTargetUtils {
       for (Element matchingElement : document.select(String.format("[%s]:not(base)", linkAttr))) {
         // Ignore empty links from the HTML document.
         String linkAttrValue = matchingElement.attr(linkAttr);
-        if (Strings.isNullOrEmpty(linkAttrValue)) {
+        if (isNullOrEmpty(linkAttrValue)) {
           continue;
         }
 
         Optional.ofNullable(effectiveBaseUrl.resolve(linkAttrValue))
             .ifPresent(
-                httpUrl ->
+                httpUrl -> {
+                  HttpMethod method = getHttpMethodForLink(matchingElement);
+                  if (!(matchingElement instanceof FormElement)) {
                     crawlTargetsBuilder.add(
                         CrawlTarget.newBuilder()
-                            .setHttpMethod(getHttpMethodForLink(matchingElement).toString())
+                            .setHttpMethod(method.toString())
                             .setUrl(httpUrl.toString())
-                            .build()));
+                            .build());
+                    return;
+                  }
+
+                  Map<String, String> parameters = getFormParameters((FormElement) matchingElement);
+                  switch (method) {
+                    case GET:
+                      // Append form data into get url queries.
+                      HttpUrl.Builder newUrlBuilder = httpUrl.newBuilder();
+                      parameters.forEach(newUrlBuilder::addQueryParameter);
+                      crawlTargetsBuilder.add(
+                          CrawlTarget.newBuilder()
+                              .setHttpMethod(method.toString())
+                              .setUrl(newUrlBuilder.build().toString())
+                              .build());
+                      break;
+                    case POST:
+                      // Set form data as POST body.
+                      String formData =
+                          parameters.entrySet().stream()
+                              .map(
+                                  entry ->
+                                      urlEncode(entry.getKey()) + "=" + urlEncode(entry.getValue()))
+                              .collect(joining("&"));
+                      crawlTargetsBuilder.add(
+                          CrawlTarget.newBuilder()
+                              .setHttpMethod(method.toString())
+                              .setUrl(httpUrl.toString())
+                              .setHttpRequestBody(ByteString.copyFrom(formData, UTF_8))
+                              .build());
+                      break;
+                    default:
+                      logger.atWarning().log(
+                          "Unsupported form method '%s'. Forms can only have GET and POST"
+                              + " methods.",
+                          method);
+                  }
+                });
       }
     }
 
     return crawlTargetsBuilder.build();
+  }
+
+  private static Map<String, String> getFormParameters(FormElement form) {
+    Map<String, String> parameters = new HashMap<>();
+    for (Element element : form.elements()) {
+      if (!element.tag().isFormSubmittable()) {
+        continue;
+      }
+
+      String name = element.attr("name");
+      if (name.length() == 0 || parameters.containsKey(name)) {
+        continue;
+      }
+
+      if (Ascii.equalsIgnoreCase(element.tagName(), "select")) {
+        // For a select element, set its value to the first available option, or a predefined value
+        // if no options found.
+        Element option = element.select("option").first();
+        parameters.put(name, option == null || isNullOrEmpty(option.val()) ? "test" : option.val());
+      } else {
+        // For other input types and text areas, set their values from the elements
+        // themselves, or a predefined value if there is no value available.
+        String value = element.val();
+        parameters.put(name, isNullOrEmpty(value) ? "test" : value);
+      }
+    }
+    return parameters;
   }
 
   private static HttpUrl effectiveHtmlBaseUrl(Document document, HttpUrl fallbackUrl) {
@@ -147,7 +222,7 @@ public final class CrawlTargetUtils {
         Optional.ofNullable(document.select("base[href]").first())
             .flatMap(element -> Optional.ofNullable(HttpUrl.parse(element.attr("href"))));
 
-    if (baseHref.isPresent() && !Strings.isNullOrEmpty(baseHref.get().host())) {
+    if (baseHref.isPresent() && !isNullOrEmpty(baseHref.get().host())) {
       return baseHref.get();
     }
 
@@ -160,6 +235,14 @@ public final class CrawlTargetUtils {
       return HttpMethod.POST;
     } else {
       return HttpMethod.GET;
+    }
+  }
+
+  private static String urlEncode(String value) {
+    try {
+      return URLEncoder.encode(value, UTF_8.toString());
+    } catch (UnsupportedEncodingException e) {
+      throw new AssertionError("Should never happen. Unsupported encoding.", e);
     }
   }
 }
