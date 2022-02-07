@@ -60,7 +60,7 @@ public final class NcrackCredentialTesterTest {
     CommandExecutorFactory.setInstance(mock(CommandExecutor.class, Mockito.RETURNS_MOCKS));
     File ncrackFile = tempFolder.newFile("ncrack");
     report = tempFolder.newFile("report");
-    client = new NcrackClient(ncrackFile.getAbsolutePath(), report);
+    client = new NcrackClient(ncrackFile.getAbsolutePath(), report, null);
     tester = new NcrackCredentialTester(() -> client, Executors.newCachedThreadPool());
   }
 

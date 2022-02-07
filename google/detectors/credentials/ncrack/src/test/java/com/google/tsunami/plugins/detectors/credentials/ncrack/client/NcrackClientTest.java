@@ -65,14 +65,14 @@ public class NcrackClientTest {
     CommandExecutorFactory.setInstance(commandExecutor);
     ncrackFile = tempFolder.newFile("ncrack");
     report = tempFolder.newFile("report");
-    client = new NcrackClient(ncrackFile.getAbsolutePath(), report);
+    client = new NcrackClient(ncrackFile.getAbsolutePath(), report, null);
   }
 
   @Test
   public void newClient_whenNcrackClientDoesNotExist_throwsException() throws IOException {
     assertThrows(
         IllegalArgumentException.class,
-        () -> new NcrackClient("fileNotExist", tempFolder.newFile("fakeReport")));
+        () -> new NcrackClient("fileNotExist", tempFolder.newFile("fakeReport"), null));
   }
 
   @Test

@@ -24,6 +24,7 @@ import com.google.common.collect.Multimap;
 import com.google.tsunami.common.command.CommandExecutor;
 import com.google.tsunami.common.command.CommandExecutorFactory;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
+import com.google.tsunami.common.cli.CliOption;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.data.NcrackRun;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.parser.NormalParser;
 import com.google.tsunami.proto.NetworkEndpoint;
@@ -39,6 +40,8 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import javax.inject.Inject;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
 
 /**
  * Client for the open-source ncrack tool. Ncrack is a network authentication tool with a high-speed
@@ -160,10 +163,21 @@ public class NcrackClient {
   private ImmutableList<String> passwordList;
   private TargetService targetService;
 
+  private final NcrackClientCliOptions clioptions;
+
+  @Parameters(separators = "=")
+  public static class NcrackClientCliOptions implements CliOption {
+    @Parameter(names = "--ncrack-max-time", description = "Maximum time for a single ncrack run. Example: --ncrack-max-time=3h")
+    private String maxTime;
+
+    @Override
+    public void validate() {}
+  }
+
   /** Constructor using ncrack runtime path. */
   @Inject
-  public NcrackClient(@NcrackBinaryPath String ncrackBinaryPath) throws IOException {
-    this(ncrackBinaryPath, File.createTempFile("ncrack", ".report"));
+  public NcrackClient(@NcrackBinaryPath String ncrackBinaryPath, NcrackClientCliOptions options) throws IOException {
+    this(ncrackBinaryPath, File.createTempFile("ncrack", ".report"), options);
   }
 
   /**
@@ -172,11 +186,12 @@ public class NcrackClient {
    * @param ncrackBinaryPath Path to the ncrack binary.
    * @param report File to write Ncrack output to.
    */
-  public NcrackClient(String ncrackBinaryPath, File report) {
+  public NcrackClient(String ncrackBinaryPath, File report, NcrackClientCliOptions options) {
     checkArgument(
         Files.exists(Paths.get(ncrackBinaryPath)), "Binary %s do not exist", ncrackBinaryPath);
     this.ncrackBinaryPath = ncrackBinaryPath;
     this.reportFile = report;
+    this.clioptions = options;
   }
 
   /**
@@ -213,6 +228,14 @@ public class NcrackClient {
     return passwordList;
   }
 
+  public String getMaxTime() {
+    if (clioptions != null && clioptions.maxTime != null) {
+      return clioptions.maxTime;
+    } else {
+      return "";
+    }
+  }
+
   public ArrayList<String> buildRunCommandArgs() {
     ArrayList<String> runCommandArgs = Lists.newArrayList();
     runCommandArgs.add(ncrackBinaryPath);
@@ -232,6 +255,9 @@ public class NcrackClient {
     }
     for (NetworkEndpoint networkEndpoint : networkEndpoints) {
       runCommandArgs.add(buildServiceCommandValue(networkEndpoint));
+    }
+    if (getMaxTime().length() > 0) {
+        runCommandArgs.add("-g to=" + getMaxTime());
     }
     runCommandArgs.add("-oN");
     runCommandArgs.add(reportFile.getAbsolutePath());
