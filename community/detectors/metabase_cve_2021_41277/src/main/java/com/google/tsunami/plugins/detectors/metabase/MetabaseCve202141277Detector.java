@@ -83,7 +83,7 @@ public final class MetabaseCve202141277Detector implements VulnDetector {
 
   private boolean isServiceVulnerable(NetworkService networkService) {
     String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
-        + "/api/geojson?url=file:////etc/passwd";
+        + "api/geojson?url=file:///etc/passwd";
     try {
       HttpResponse response =
           httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
