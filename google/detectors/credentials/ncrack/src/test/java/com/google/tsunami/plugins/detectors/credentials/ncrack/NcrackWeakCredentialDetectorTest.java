@@ -158,6 +158,7 @@ public final class NcrackWeakCredentialDetectorTest {
                         .setDescription(
                             "Well known or weak credentials are detected for 'http' service on"
                                 + " port '80'.")
+                        .setCvssV3("7.5")
                         .addAdditionalDetails(
                             AdditionalDetail.newBuilder()
                                 .setDescription("Identified credential")
@@ -211,6 +212,7 @@ public final class NcrackWeakCredentialDetectorTest {
                         .setDescription(
                             "Well known or weak credentials are detected for 'http' service on"
                                 + " port '80'.")
+                        .setCvssV3("7.5")
                         .addAdditionalDetails(
                             AdditionalDetail.newBuilder()
                                 .setDescription("Identified credential")
@@ -240,6 +242,7 @@ public final class NcrackWeakCredentialDetectorTest {
                         .setDescription(
                             "Well known or weak credentials are detected for 'http' service on"
                                 + " port '80'.")
+                        .setCvssV3("7.5")
                         .addAdditionalDetails(
                             AdditionalDetail.newBuilder()
                                 .setDescription("Identified credential")
