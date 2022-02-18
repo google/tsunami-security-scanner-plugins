@@ -163,7 +163,7 @@ public final class NcrackWeakCredentialDetector implements VulnDetector {
                             .setValue(buildVulnerabilityId(networkService)))
                     .setSeverity(DEFAULT_SEVERITY)
                     .setTitle(buildTitle(networkService))
-                    // TODO(b/145315535): determine CVSS score.
+                    .setCvssV3("7.5") // CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
                     .setDescription(buildDescription(networkService))
                     .addAdditionalDetails(buildCredentialDetail(testCredential)))
             .build());
