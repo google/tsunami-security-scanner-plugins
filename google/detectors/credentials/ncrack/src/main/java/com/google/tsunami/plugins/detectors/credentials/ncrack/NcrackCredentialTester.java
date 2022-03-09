@@ -48,6 +48,7 @@ final class NcrackCredentialTester extends CredentialTester {
   private static final ImmutableMap<String, TargetService> SERVICE_MAP =
       ImmutableMap.<String, TargetService>builder()
           // Missing from TargetService: JOOMLA, HTTP, OWA
+          .put("cassandra", TargetService.CASSANDRA)
           .put("ssh", TargetService.SSH)
           .put("ms-wtb-server", TargetService.RDP)
           .put("ftp", TargetService.FTP)
