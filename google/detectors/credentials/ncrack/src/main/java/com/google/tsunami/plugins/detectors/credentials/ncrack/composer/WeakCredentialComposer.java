@@ -65,7 +65,7 @@ public final class WeakCredentialComposer {
     }
 
     Iterator<List<TestCredential>> credentialPartitions =
-        Iterators.partition(provider.generateTestCredentials(), this.batchSize);
+        Iterators.partition(provider.generateTestCredentials(networkService), this.batchSize);
 
     return Streams.stream(credentialPartitions)
         .map(batchCredentials -> tester.testValidCredentials(networkService, batchCredentials))

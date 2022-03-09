@@ -84,7 +84,8 @@ public final class NcrackWeakCredentialDetectorTest {
 
     // thenReturn method will always return the same instance of iterator, which will be exhausted
     // by previous testers, hence we are using thenAnswer method.
-    when(provider.generateTestCredentials()).thenAnswer(invocation -> TEST_CREDENTIALS.iterator());
+    when(provider.generateTestCredentials(any()))
+        .thenAnswer(invocation -> TEST_CREDENTIALS.iterator());
     when(tester1.canAccept(any())).thenReturn(true);
     when(tester2.canAccept(any())).thenReturn(true);
     when(tester3.canAccept(any())).thenReturn(true);
