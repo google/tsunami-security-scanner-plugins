@@ -15,7 +15,6 @@
  */
 package com.google.tsunami.plugins.detectors.credentials.ncrack.provider;
 
-import com.google.tsunami.proto.NetworkService;
 import java.util.Iterator;
 
 /**
@@ -31,5 +30,5 @@ public abstract class CredentialProvider {
 
   public abstract String description();
 
-  public abstract Iterator<TestCredential> generateTestCredentials(NetworkService networkService);
+  public abstract Iterator<TestCredential> generateTestCredentials();
 }

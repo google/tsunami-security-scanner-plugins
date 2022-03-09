@@ -54,7 +54,7 @@ public final class WeakCredentialsComposerTest {
   public void setupComposer() {
     provider = mock(CredentialProvider.class);
     tester = mock(CredentialTester.class);
-    when(provider.generateTestCredentials(any())).thenReturn(TEST_CREDENTIALS.iterator());
+    when(provider.generateTestCredentials()).thenReturn(TEST_CREDENTIALS.iterator());
     when(tester.testValidCredentials(any(), any()))
         .thenReturn(ImmutableList.of(TestCredential.create("username1", Optional.of("password1"))))
         .thenReturn(ImmutableList.of());
@@ -73,7 +73,7 @@ public final class WeakCredentialsComposerTest {
             .build());
 
     verify(tester, never()).testValidCredentials(any(), any());
-    verify(provider, never()).generateTestCredentials(NetworkService.getDefaultInstance());
+    verify(provider, never()).generateTestCredentials();
   }
 
   @Test
