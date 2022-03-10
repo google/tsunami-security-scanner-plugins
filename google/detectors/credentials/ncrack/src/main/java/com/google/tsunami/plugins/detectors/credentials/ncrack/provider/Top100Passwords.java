@@ -45,6 +45,7 @@ public final class Top100Passwords extends CredentialProvider {
           "info",
           "adm",
           "mysql",
+          "postgres",
           "user",
           "administrator",
           "oracle",
