@@ -22,7 +22,6 @@ import static org.mockito.Mockito.mock;
 import com.google.common.collect.ImmutableList;
 import com.google.tsunami.common.command.CommandExecutor;
 import com.google.tsunami.common.command.CommandExecutorFactory;
-import com.google.tsunami.common.cli.CliOption;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.NcrackClientCliOptions;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TargetService;

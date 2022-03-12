@@ -29,8 +29,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.tsunami.common.command.CommandExecutor;
 import com.google.tsunami.common.command.CommandExecutorFactory;
-import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TargetService;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.NcrackClientCliOptions;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TargetService;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TimingTemplate;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.data.DiscoveredCredential;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.data.NcrackRun;
@@ -383,7 +383,6 @@ public class NcrackClientTest {
         .withTimingTemplate(TimingTemplate.INSANE)
         .usingUsernameList(ImmutableList.of("root", "admin"))
         .usingPasswordList(ImmutableList.of("toor", "password"));
-
 
     assertThat(client.buildRunCommandArgs())
         .containsExactly(
