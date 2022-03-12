@@ -30,6 +30,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.tsunami.common.command.CommandExecutor;
 import com.google.tsunami.common.command.CommandExecutorFactory;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TargetService;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.NcrackClientCliOptions;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TimingTemplate;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.data.DiscoveredCredential;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.data.NcrackRun;
@@ -57,6 +58,8 @@ public class NcrackClientTest {
   private File ncrackFile;
   private File report;
   private NcrackClient client;
+  private NcrackClientCliOptions clioptions;
+
   @Mock CommandExecutor commandExecutor;
 
   @Before
@@ -65,7 +68,8 @@ public class NcrackClientTest {
     CommandExecutorFactory.setInstance(commandExecutor);
     ncrackFile = tempFolder.newFile("ncrack");
     report = tempFolder.newFile("report");
-    client = new NcrackClient(ncrackFile.getAbsolutePath(), report, null);
+    clioptions = new NcrackClientCliOptions();
+    client = new NcrackClient(ncrackFile.getAbsolutePath(), report, clioptions);
   }
 
   @Test
@@ -367,5 +371,31 @@ public class NcrackClientTest {
         .usingPasswordList(ImmutableList.of("toor", "password"));
 
     assertThat(client.getPasswordList()).containsExactly("toor", "password");
+  }
+
+  @Test
+  public void buildRunCommandArgs_withNCrackMaxTime_containsParameter() {
+    clioptions = new NcrackClientCliOptions();
+    client = new NcrackClient(ncrackFile.getAbsolutePath(), report, clioptions.withMaxTime("15m"));
+    client
+        .withNetworkEndpoint(forIp("1.1.1.1"))
+        .onTargetService(TargetService.SSH)
+        .withTimingTemplate(TimingTemplate.INSANE)
+        .usingUsernameList(ImmutableList.of("root", "admin"))
+        .usingPasswordList(ImmutableList.of("toor", "password"));
+
+
+    assertThat(client.buildRunCommandArgs())
+        .containsExactly(
+            ncrackFile.getAbsolutePath(),
+            "--user",
+            "root,admin",
+            "--pass",
+            "toor,password",
+            "-T5",
+            "ssh://1.1.1.1",
+            "-g to=15m",
+            "-oN",
+            report.getAbsolutePath());
   }
 }

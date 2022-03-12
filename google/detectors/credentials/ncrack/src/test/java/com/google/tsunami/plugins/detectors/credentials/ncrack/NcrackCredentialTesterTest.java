@@ -22,7 +22,9 @@ import static org.mockito.Mockito.mock;
 import com.google.common.collect.ImmutableList;
 import com.google.tsunami.common.command.CommandExecutor;
 import com.google.tsunami.common.command.CommandExecutorFactory;
+import com.google.tsunami.common.cli.CliOption;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.NcrackClientCliOptions;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TargetService;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.TestCredential;
 import com.google.tsunami.proto.NetworkService;
@@ -54,13 +56,15 @@ public final class NcrackCredentialTesterTest {
   private File report;
   private NcrackClient client;
   private NcrackCredentialTester tester;
+  private NcrackClientCliOptions clioptions;
 
   @Before
   public void setupNcrackCredentialTest() throws IOException {
     CommandExecutorFactory.setInstance(mock(CommandExecutor.class, Mockito.RETURNS_MOCKS));
     File ncrackFile = tempFolder.newFile("ncrack");
     report = tempFolder.newFile("report");
-    client = new NcrackClient(ncrackFile.getAbsolutePath(), report, null);
+    clioptions = new NcrackClientCliOptions();
+    client = new NcrackClient(ncrackFile.getAbsolutePath(), report, clioptions);
     tester = new NcrackCredentialTester(() -> client, Executors.newCachedThreadPool());
   }
 
