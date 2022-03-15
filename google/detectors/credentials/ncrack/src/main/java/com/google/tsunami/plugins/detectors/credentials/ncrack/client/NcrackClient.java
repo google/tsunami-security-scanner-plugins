@@ -164,6 +164,7 @@ public class NcrackClient {
   private ImmutableList<String> passwordList;
   private TargetService targetService;
 
+  /** NcrackClientCliOptions provides configuration options for {@link NcrackClient}. */
   @Parameters(separators = "=")
   public static class NcrackClientCliOptions implements CliOption {
     @Parameter(
@@ -175,7 +176,7 @@ public class NcrackClient {
     public void validate() {}
 
     /**
-     * Sets the max time (passed via command line).
+     * Sets the maximum time for a single ncrack run.
      *
      * @param maxtime String to specify time in nmap timing format.
      */
