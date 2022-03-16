@@ -18,9 +18,11 @@ package com.google.tsunami.plugins.detectors.credentials.ncrack;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Provides;
+import com.google.inject.multibindings.Multibinder;
 import com.google.tsunami.plugin.PluginBootstrapModule;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackBinaryPath;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.CredentialProvider;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.DefaultCredentials;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.Top100Passwords;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.tester.CredentialTester;
 import java.io.FileNotFoundException;
@@ -35,16 +37,19 @@ public final class NcrackWeakCredentialDetectorBootstrapModule extends PluginBoo
 
   @Override
   protected void configurePlugin() {
-    // TODO(b/145315535): Make credential provider binding configurable.
-    bind(CredentialProvider.class).to(Top100Passwords.class);
     bind(CredentialTester.class).to(NcrackCredentialTester.class);
+
+    Multibinder<CredentialProvider> credentialProviderBinder =
+        Multibinder.newSetBinder(binder(), CredentialProvider.class);
+    credentialProviderBinder.addBinding().to(Top100Passwords.class);
+    credentialProviderBinder.addBinding().to(DefaultCredentials.class);
 
     registerPlugin(NcrackWeakCredentialDetector.class);
   }
 
   @Provides
   @NcrackBinaryPath
-  public String provideNcrackBinaryPath(NcrackWeakCredentialDetectorConfigs configs)
+  String provideNcrackBinaryPath(NcrackWeakCredentialDetectorConfigs configs)
       throws FileNotFoundException {
     if (!Strings.isNullOrEmpty(configs.ncrackBinaryPath)) {
       if (Files.exists(Paths.get(configs.ncrackBinaryPath))) {

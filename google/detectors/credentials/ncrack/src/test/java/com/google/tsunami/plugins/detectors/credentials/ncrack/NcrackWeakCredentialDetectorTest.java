@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@ package com.google.tsunami.plugins.detectors.credentials.ncrack;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forIp;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forIpAndPort;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -47,56 +47,187 @@ import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
+import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 /** Tests for {@link NcrackWeakCredentialDetector}. */
 @RunWith(JUnit4.class)
 public final class NcrackWeakCredentialDetectorTest {
+  @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
   private static final Instant FAKE_NOW = Instant.parse("2020-01-01T00:00:00.00Z");
-  private static final ImmutableList<TestCredential> TEST_CREDENTIALS =
+  private static final ImmutableList<TestCredential> TEST_CREDENTIALS1 =
+      ImmutableList.of(
+          TestCredential.create("username1", Optional.of("password1")),
+          TestCredential.create("username2", Optional.of("password2")));
+  private static final ImmutableList<TestCredential> TEST_CREDENTIALS2 =
       ImmutableList.of(
           TestCredential.create("username1", Optional.of("password1")),
           TestCredential.create("username2", Optional.of("password2")),
           TestCredential.create("username3", Optional.of("password3")));
 
-  private CredentialTester tester1;
-  private CredentialTester tester2;
-  private CredentialTester tester3;
+  @Mock private CredentialProvider provider1;
+  @Mock private CredentialProvider provider2;
+  @Mock private CredentialTester tester1;
+  @Mock private CredentialTester tester2;
+  @Mock private CredentialTester tester3;
   private NcrackWeakCredentialDetector plugin;
   private FakeUtcClock fakeUtcClock;
+  private final MockWebServer mockWebServer = new MockWebServer();
   @Inject private HttpClient httpClient;
 
-  @Before
-  public void setupPlugin() {
-    CredentialProvider provider = mock(CredentialProvider.class);
-    tester1 = mock(CredentialTester.class);
-    tester2 = mock(CredentialTester.class);
-    tester3 = mock(CredentialTester.class);
+  @Captor private ArgumentCaptor<List<TestCredential>> listCaptor1;
+  @Captor private ArgumentCaptor<List<TestCredential>> listCaptor2;
+  @Captor private ArgumentCaptor<List<TestCredential>> listCaptor3;
 
+  @Before
+  public void setupPlugin() throws IOException {
     // thenReturn method will always return the same instance of iterator, which will be exhausted
     // by previous testers, hence we are using thenAnswer method.
-    when(provider.generateTestCredentials(any()))
-        .thenAnswer(invocation -> TEST_CREDENTIALS.iterator());
+    when(provider1.generateTestCredentials(any()))
+        .thenAnswer(invocation -> TEST_CREDENTIALS1.iterator());
+    when(provider2.generateTestCredentials(any()))
+        .thenAnswer(invocation -> TEST_CREDENTIALS2.iterator());
     when(tester1.canAccept(any())).thenReturn(true);
     when(tester2.canAccept(any())).thenReturn(true);
     when(tester3.canAccept(any())).thenReturn(true);
 
+    // for debug logs
+    when(provider1.name()).thenReturn("provider1");
+    when(provider2.name()).thenReturn("provider2");
+    when(tester1.name()).thenReturn("tester1");
+    when(tester2.name()).thenReturn("tester2");
+    when(tester3.name()).thenReturn("tester3");
+
     fakeUtcClock = FakeUtcClock.create().setNow(FAKE_NOW);
+
+    Dispatcher dispatcher =
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) throws InterruptedException {
+
+            if (request.getPath().equals("/wp-login.php")) {
+              return new MockResponse()
+                  .setResponseCode(HttpStatus.OK.code())
+                  .setBody(
+                      "<a href=\"https://wordpress.org/\">Powered by WordPress</a><form"
+                          + " name=\"loginform\" id=\"loginform\""
+                          + " action=\"http://fakehost/wp-login.php\" method=\"post\"></form>");
+            }
+
+            return new MockResponse().setResponseCode(404);
+          }
+        };
+    mockWebServer.setDispatcher(dispatcher);
+    mockWebServer.start();
 
     Guice.createInjector(new HttpClientModule.Builder().build()).injectMembers(this);
 
     plugin =
         new NcrackWeakCredentialDetector(
-            provider, ImmutableList.of(tester1, tester2, tester3), fakeUtcClock, httpClient);
+            ImmutableSet.of(provider1, provider2),
+            ImmutableList.of(tester1, tester2, tester3),
+            fakeUtcClock,
+            httpClient);
+  }
+
+  @After
+  public void tearDown() throws IOException {
+    mockWebServer.shutdown();
+  }
+
+  private DetectionReportList runDetectOnMockWebServer() {
+    return plugin.detect(
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .build(),
+        ImmutableList.of(
+            NetworkService.newBuilder()
+                .setNetworkEndpoint(
+                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+                .setTransportProtocol(TransportProtocol.TCP)
+                .setServiceName("http")
+                .build()));
+  }
+
+  private DetectionReport.Builder generateDetectionReport(
+      AdditionalDetail.Builder additionalDetailBuilder) {
+    return DetectionReport.newBuilder()
+        .setTargetInfo(
+            TargetInfo.newBuilder()
+                .addNetworkEndpoints(
+                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort())))
+        .setNetworkService(
+            NetworkService.newBuilder()
+                .setNetworkEndpoint(
+                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+                .setTransportProtocol(TransportProtocol.TCP)
+                .setServiceName("http")
+                .setSoftware(Software.newBuilder().setName("WordPress"))
+                .build())
+        .setDetectionTimestamp(Timestamps.fromMillis(FAKE_NOW.toEpochMilli()))
+        .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+        .setVulnerability(
+            Vulnerability.newBuilder()
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("GOOGLE")
+                        .setValue("WEAK_CREDENTIALS_FOR_WORDPRESS"))
+                .setSeverity(Severity.CRITICAL)
+                .setTitle("Weak 'wordpress' service credential")
+                .setCvssV3("7.5")
+                .setDescription(
+                    String.format(
+                        "Well known or weak credentials are detected for 'wordpress' service on"
+                            + " port '%s'.",
+                        mockWebServer.getPort()))
+                .addAdditionalDetails(additionalDetailBuilder));
+  }
+
+  @Test
+  public void detect_utilizesAllCredentialProviders() {
+    when(tester1.testValidCredentials(any(), any())).thenReturn(ImmutableList.of());
+    when(tester2.testValidCredentials(any(), any())).thenReturn(ImmutableList.of());
+    when(tester3.testValidCredentials(any(), any())).thenReturn(ImmutableList.of());
+
+    runDetectOnMockWebServer();
+
+    // 3 testers so generate credentials 3 times
+    verify(provider1, times(3)).generateTestCredentials(any());
+    verify(provider2, times(3)).generateTestCredentials(any());
+  }
+
+  @Test
+  public void detect_onlyTestsUniqueCredentials() {
+    when(tester1.testValidCredentials(any(), any())).thenReturn(ImmutableList.of());
+    when(tester2.testValidCredentials(any(), any())).thenReturn(ImmutableList.of());
+    when(tester3.testValidCredentials(any(), any())).thenReturn(ImmutableList.of());
+
+    runDetectOnMockWebServer();
+
+    verify(tester1).testValidCredentials(any(), listCaptor1.capture());
+    assertThat(listCaptor1.getValue()).hasSize(3);
+    verify(tester2).testValidCredentials(any(), listCaptor2.capture());
+    assertThat(listCaptor2.getValue()).hasSize(3);
+    verify(tester3).testValidCredentials(any(), listCaptor3.capture());
+    assertThat(listCaptor3.getValue()).hasSize(3);
   }
 
   @Test
@@ -105,15 +236,7 @@ public final class NcrackWeakCredentialDetectorTest {
     when(tester2.testValidCredentials(any(), any())).thenReturn(ImmutableList.of());
     when(tester3.testValidCredentials(any(), any())).thenReturn(ImmutableList.of());
 
-    DetectionReportList detectionReports =
-        plugin.detect(
-            TargetInfo.newBuilder().addNetworkEndpoints(forIp("1.1.1.1")).build(),
-            ImmutableList.of(
-                NetworkService.newBuilder()
-                    .setNetworkEndpoint(forIpAndPort("1.1.1.1", 80))
-                    .setTransportProtocol(TransportProtocol.TCP)
-                    .setServiceName("http")
-                    .build()));
+    DetectionReportList detectionReports = runDetectOnMockWebServer();
 
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
@@ -126,47 +249,17 @@ public final class NcrackWeakCredentialDetectorTest {
     when(tester2.testValidCredentials(any(), any())).thenReturn(ImmutableList.of());
     when(tester3.testValidCredentials(any(), any())).thenReturn(ImmutableList.of());
 
-    DetectionReportList detectionReports =
-        plugin.detect(
-            TargetInfo.newBuilder().addNetworkEndpoints(forIp("1.1.1.1")).build(),
-            ImmutableList.of(
-                NetworkService.newBuilder()
-                    .setNetworkEndpoint(forIpAndPort("1.1.1.1", 80))
-                    .setTransportProtocol(TransportProtocol.TCP)
-                    .setServiceName("http")
-                    .build()));
+    DetectionReportList detectionReports = runDetectOnMockWebServer();
 
     assertThat(detectionReports.getDetectionReportsList())
         .containsExactly(
-            DetectionReport.newBuilder()
-                .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(forIp("1.1.1.1")))
-                .setNetworkService(
-                    NetworkService.newBuilder()
-                        .setNetworkEndpoint(forIpAndPort("1.1.1.1", 80))
-                        .setTransportProtocol(TransportProtocol.TCP)
-                        .setServiceName("http")
-                        .build())
-                .setDetectionTimestamp(Timestamps.fromMillis(FAKE_NOW.toEpochMilli()))
-                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("WEAK_CREDENTIALS_FOR_HTTP"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Weak 'http' service credential")
-                        .setDescription(
-                            "Well known or weak credentials are detected for 'http' service on"
-                                + " port '80'.")
-                        .setCvssV3("7.5")
-                        .addAdditionalDetails(
-                            AdditionalDetail.newBuilder()
-                                .setDescription("Identified credential")
-                                .setCredential(
-                                    Credential.newBuilder()
-                                        .setUsername("username1")
-                                        .setPassword("password1"))))
+            generateDetectionReport(
+                    AdditionalDetail.newBuilder()
+                        .setDescription("Identified credential")
+                        .setCredential(
+                            Credential.newBuilder()
+                                .setUsername("username1")
+                                .setPassword("password1")))
                 .build());
   }
 
@@ -180,93 +273,30 @@ public final class NcrackWeakCredentialDetectorTest {
         .thenReturn(ImmutableList.of());
     when(tester3.testValidCredentials(any(), any())).thenReturn(ImmutableList.of());
 
-    DetectionReportList detectionReports =
-        plugin.detect(
-            TargetInfo.newBuilder().addNetworkEndpoints(forIp("1.1.1.1")).build(),
-            ImmutableList.of(
-                NetworkService.newBuilder()
-                    .setNetworkEndpoint(forIpAndPort("1.1.1.1", 80))
-                    .setTransportProtocol(TransportProtocol.TCP)
-                    .setServiceName("http")
-                    .build()));
+    DetectionReportList detectionReports = runDetectOnMockWebServer();
 
     assertThat(detectionReports.getDetectionReportsList())
         .containsExactly(
-            DetectionReport.newBuilder()
-                .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(forIp("1.1.1.1")))
-                .setNetworkService(
-                    NetworkService.newBuilder()
-                        .setNetworkEndpoint(forIpAndPort("1.1.1.1", 80))
-                        .setTransportProtocol(TransportProtocol.TCP)
-                        .setServiceName("http")
-                        .build())
-                .setDetectionTimestamp(Timestamps.fromMillis(FAKE_NOW.toEpochMilli()))
-                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("WEAK_CREDENTIALS_FOR_HTTP"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Weak 'http' service credential")
-                        .setDescription(
-                            "Well known or weak credentials are detected for 'http' service on"
-                                + " port '80'.")
-                        .setCvssV3("7.5")
-                        .addAdditionalDetails(
-                            AdditionalDetail.newBuilder()
-                                .setDescription("Identified credential")
-                                .setCredential(
-                                    Credential.newBuilder()
-                                        .setUsername("username1")
-                                        .setPassword("password1"))))
+            generateDetectionReport(
+                    AdditionalDetail.newBuilder()
+                        .setDescription("Identified credential")
+                        .setCredential(
+                            Credential.newBuilder()
+                                .setUsername("username1")
+                                .setPassword("password1")))
                 .build(),
-            DetectionReport.newBuilder()
-                .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(forIp("1.1.1.1")))
-                .setNetworkService(
-                    NetworkService.newBuilder()
-                        .setNetworkEndpoint(forIpAndPort("1.1.1.1", 80))
-                        .setTransportProtocol(TransportProtocol.TCP)
-                        .setServiceName("http")
-                        .build())
-                .setDetectionTimestamp(Timestamps.fromMillis(FAKE_NOW.toEpochMilli()))
-                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("WEAK_CREDENTIALS_FOR_HTTP"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Weak 'http' service credential")
-                        .setDescription(
-                            "Well known or weak credentials are detected for 'http' service on"
-                                + " port '80'.")
-                        .setCvssV3("7.5")
-                        .addAdditionalDetails(
-                            AdditionalDetail.newBuilder()
-                                .setDescription("Identified credential")
-                                .setCredential(
-                                    Credential.newBuilder()
-                                        .setUsername("username2")
-                                        .setPassword("password2"))))
+            generateDetectionReport(
+                    AdditionalDetail.newBuilder()
+                        .setDescription("Identified credential")
+                        .setCredential(
+                            Credential.newBuilder()
+                                .setUsername("username2")
+                                .setPassword("password2")))
                 .build());
   }
 
   @Test
-  public void run_whenNetworkServiceIsWordPress_performsFingerprintingAndTestWordPress()
-      throws IOException {
-    MockWebServer mockWebServer = new MockWebServer();
-    mockWebServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setBody(
-                "<a href=\"https://wordpress.org/\">Powered by WordPress</a><form"
-                    + " name=\"loginform\" id=\"loginform\""
-                    + " action=\"http://fakehost/wp-login.php\" method=\"post\"></form>"));
-    mockWebServer.start();
-    mockWebServer.url("/wp-login.php");
+  public void run_whenNetworkServiceIsWordPress_performsFingerprintingAndTestWordPress() {
 
     ArgumentCaptor<NetworkService> networkServiceCaptor =
         ArgumentCaptor.forClass(NetworkService.class);
@@ -284,13 +314,10 @@ public final class NcrackWeakCredentialDetectorTest {
             .setTransportProtocol(TransportProtocol.TCP)
             .setServiceName("http")
             .build();
-    plugin.detect(
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(
-                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .build(),
-        ImmutableList.of(inputService));
 
+    runDetectOnMockWebServer();
+
+    // 3 distinct credentials so 3 calls to testValidCredentials
     assertThat(networkServiceCaptor.getAllValues())
         .containsExactly(
             NetworkService.newBuilder(inputService)
