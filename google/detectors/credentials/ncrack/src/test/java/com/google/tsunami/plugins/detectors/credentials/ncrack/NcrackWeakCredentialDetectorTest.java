@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.credentials.ncrack;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -107,13 +108,6 @@ public final class NcrackWeakCredentialDetectorTest {
     when(tester1.canAccept(any())).thenReturn(true);
     when(tester2.canAccept(any())).thenReturn(true);
     when(tester3.canAccept(any())).thenReturn(true);
-
-    // for debug logs
-    when(provider1.name()).thenReturn("provider1");
-    when(provider2.name()).thenReturn("provider2");
-    when(tester1.name()).thenReturn("tester1");
-    when(tester2.name()).thenReturn("tester2");
-    when(tester3.name()).thenReturn("tester3");
 
     fakeUtcClock = FakeUtcClock.create().setNow(FAKE_NOW);
 
@@ -329,5 +323,29 @@ public final class NcrackWeakCredentialDetectorTest {
             NetworkService.newBuilder(inputService)
                 .setSoftware(Software.newBuilder().setName("WordPress"))
                 .build());
+  }
+
+@Test
+  public void detect_onPostgresService_returnsEmptyList() {
+
+    DetectionReportList detectionReports =
+        plugin.detect(
+            TargetInfo.newBuilder()
+                .addNetworkEndpoints(
+                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+                .build(),
+            ImmutableList.of(
+                NetworkService.newBuilder()
+                    .setNetworkEndpoint(
+                        forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+                    .setTransportProtocol(TransportProtocol.TCP)
+                    .setServiceName("postgresql")
+                    .build()));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+    // Assert postgres is filtered out beffore any testers see it
+    verify(tester1, never()).canAccept(any());
+    verify(tester2, never()).canAccept(any());
+    verify(tester3, never()).canAccept(any());
   }
 }

@@ -114,6 +114,12 @@ public final class NcrackWeakCredentialDetector implements VulnDetector {
     DetectionReportList.Builder detectionReportsBuilder = DetectionReportList.newBuilder();
 
     doSimpleWebServiceDetection(matchedServices).stream()
+        // Disable scanner on postgresql due to
+        // https://github.com/nmap/ncrack/issues/49#issuecomment-1064651415
+        // We could also do this in NcrackCredentialTester but this is more visible.
+        .filter(
+            networkService ->
+                !NetworkServiceUtils.getServiceName(networkService).equals("postgresql"))
         .filter(
             networkService -> testers.stream().anyMatch(tester -> tester.canAccept(networkService)))
         .forEach(
