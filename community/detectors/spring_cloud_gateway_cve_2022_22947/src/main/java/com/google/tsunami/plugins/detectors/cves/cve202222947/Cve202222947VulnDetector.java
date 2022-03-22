@@ -21,6 +21,7 @@ import static com.google.common.net.HttpHeaders.ACCEPT;
 import static com.google.common.net.HttpHeaders.ACCEPT_ENCODING;
 import static com.google.common.net.HttpHeaders.ACCEPT_LANGUAGE;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.data.NetworkServiceUtils.buildWebApplicationRootUrl;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
@@ -77,7 +78,7 @@ public final class Cve202222947VulnDetector implements VulnDetector {
           + "JodHRwOi8vdGVzdC5jb20ifQ==";
 
   @VisibleForTesting static final String CHECK_VULN_FLAG = "TSUNAMI_VULN_FLAG";
-  private static final String USER_AGENT = "TSUNAMI_SCANNER";
+  private static final String TSUNAMI_SCANNER_USER_AGENT = "TSUNAMI_SCANNER";
   private static final String PLACEHOLDER = "ROUTER_TSUNAMI";
 
   @VisibleForTesting
@@ -141,7 +142,7 @@ public final class Cve202222947VulnDetector implements VulnDetector {
                 .setHeaders(
                     HttpHeaders.builder()
                         .addHeader(CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
-                        .addHeader(USER_AGENT, USER_AGENT)
+                        .addHeader(USER_AGENT, TSUNAMI_SCANNER_USER_AGENT)
                         .addHeader(ACCEPT_LANGUAGE, "en")
                         .addHeader(ACCEPT_ENCODING, "gzip, deflate")
                         .addHeader(ACCEPT, "*/*")
@@ -161,7 +162,7 @@ public final class Cve202222947VulnDetector implements VulnDetector {
             .setHeaders(
                 HttpHeaders.builder()
                     .addHeader(CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
-                    .addHeader(USER_AGENT, USER_AGENT)
+                    .addHeader(USER_AGENT, TSUNAMI_SCANNER_USER_AGENT)
                     .build())
             .build(),
         networkService);
@@ -174,7 +175,7 @@ public final class Cve202222947VulnDetector implements VulnDetector {
                 .setHeaders(
                     HttpHeaders.builder()
                         .addHeader(CONTENT_TYPE, MediaType.FORM_DATA.toString())
-                        .addHeader(USER_AGENT, USER_AGENT)
+                        .addHeader(USER_AGENT, TSUNAMI_SCANNER_USER_AGENT)
                         .build())
                 .build(),
             networkService);
@@ -185,7 +186,8 @@ public final class Cve202222947VulnDetector implements VulnDetector {
   private void deleteRoutes(String url, NetworkService networkService) throws IOException {
     httpClient.send(
         HttpRequest.delete(url)
-            .setHeaders(HttpHeaders.builder().addHeader(USER_AGENT, USER_AGENT).build())
+            .setHeaders(
+                HttpHeaders.builder().addHeader(USER_AGENT, TSUNAMI_SCANNER_USER_AGENT).build())
             .build(),
         networkService);
   }
