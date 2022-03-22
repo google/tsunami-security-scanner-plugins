@@ -119,19 +119,15 @@ public final class ExampleVulnDetectorWithPayload implements VulnDetector {
                 PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
             .setExecutionEnvironment(
                 PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
-            .setUseCallbackServer(true)
             .build();
 
     // Pass in the config to get the actual payload from the generator.
-    // By default, the generator will still try to return a payload even if a callback server
-    // payload is requested but no callback server is configured. To disable this behavior and
-    // instead error out, set PayloadGeneratorConfigs.throwErrorIfCallbackServerUnconfigured to
-    // true.
+    // If the Tsunami callback server is configured, the generator will always try to return a
+    // callback-enabled payload.
     Payload payload = this.payloadGenerator.generate(config);
 
     // Your detector should always handle getting a payload that doesn't use the callback server
-    // even if PayloadGeneratorConfigs.throwErrorIfCallbackServerUnconfigured = true to guard
-    // against instances which don't use this setting.
+    // since not all Tsunami instances will have the callback server configured.
     if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
       return false;
     }
