@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Google LLC
+ * Copyright 2020 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.spring;
+package com.google.tsunami.plugins.detectors.spring.crawl;
 
-import com.google.tsunami.plugin.PluginBootstrapModule;
-import com.google.tsunami.plugins.detectors.spring.crawl.SimpleCrawlerModule;
-
-/**
- * A {@link PluginBootstrapModule} for {@link SpringCve202222965Detector}
- */
-public final class SpringCve202222965DetectorBootstrapModule extends
-    PluginBootstrapModule {
-
-  @Override
-  protected void configurePlugin() {
-    install(new SimpleCrawlerModule(/*maxActiveThreads=*/ 8));
-    registerPlugin(SpringCve202222965Detector.class);
+/** Exception used to signal when the crawler failed to crawl a web application. */
+public final class CrawlerException extends RuntimeException {
+  public CrawlerException(String message, Throwable cause) {
+    super(message, cause);
   }
 }

