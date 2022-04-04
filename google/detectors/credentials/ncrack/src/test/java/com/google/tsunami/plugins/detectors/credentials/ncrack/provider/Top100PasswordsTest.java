@@ -40,7 +40,7 @@ public final class Top100PasswordsTest {
 
   @Test
   public void defaultConstruct_always_doNotRunOutOfMemoryOrThrows() {
-    new Top100Passwords();
+    var unused = new Top100Passwords();
   }
 
   @Test
