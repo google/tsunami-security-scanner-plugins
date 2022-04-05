@@ -21,9 +21,7 @@ import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -33,14 +31,7 @@ import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
-import com.google.tsunami.plugins.detectors.spring.crawl.Crawler;
-import com.google.tsunami.plugins.detectors.spring.crawl.SimpleCrawler;
-
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
-import com.google.tsunami.proto.CrawlConfig;
 import com.google.tsunami.proto.CrawlResult;
-
-
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -52,13 +43,9 @@ import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Set;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 
-/**
- * A {@link VulnDetector} that detects Spring Framework RCE(CVE-2022-22965)
- */
+/** A {@link VulnDetector} that detects Spring Framework RCE(CVE-2022-22965) */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "SpringCve202222965Detector",
@@ -76,14 +63,11 @@ public final class SpringCve202222965Detector implements VulnDetector {
 
   private final Clock utcClock;
   private final HttpClient httpClient;
-  private final SimpleCrawler simpleCrawler;
 
   @Inject
-  SpringCve202222965Detector(@UtcClock Clock utcClock, HttpClient httpClient, Crawler crawler,
-      SimpleCrawler simpleCrawler) {
+  SpringCve202222965Detector(@UtcClock Clock utcClock, HttpClient httpClient) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
-    this.simpleCrawler = checkNotNull(simpleCrawler);
   }
 
   @Override
@@ -99,49 +83,16 @@ public final class SpringCve202222965Detector implements VulnDetector {
         .build();
   }
 
-  private static String buildTargetUrl(NetworkService networkService, String nextUri) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      // Assume the service uses HTTP protocol when the scanner cannot identify the actual service.
-      targetUrlBuilder
-          .append("http://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    targetUrlBuilder.append(nextUri);
-    return targetUrlBuilder.toString();
-  }
-
-  private static final ImmutableSet<String> PATHS = ImmutableSet.of(
-//      "/login.html",
-//      "/login",
-//      "/logout",
-//      "/success",
-//      "/fail",
-//      "/error",
-//      "/index",
-//      "/",
-      "/index.html"
-      );
-
   private boolean isServiceVulnerable(NetworkService networkService) {
-    Set<String> crawlTargets = PATHS.stream()
-        .map(path -> buildTargetUrl(networkService, path)).collect(Collectors.toSet());
-    CrawlConfig crawlConfig = CrawlConfig.newBuilder()
-        .setMaxDepth(1)
-        .addAllSeedingUrls(crawlTargets).build();
-    ListenableFuture<ImmutableSet<CrawlResult>> crawlResultsFuture =
-        simpleCrawler.crawlAsync(crawlConfig);
-    ImmutableSet<CrawlResult> crawlResults = null;
-    try {
-      crawlResults = crawlResultsFuture.get();
-    } catch (Exception e) {
-      logger.atWarning().withCause(e).log("Unable to crawl.");
+    if (proofOfConcept(
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService), "GET", networkService)) {
+      return true;
+    }
+    if (networkService.getServiceContext().getWebServiceContext().getCrawlResultsCount() == 0) {
       return false;
     }
-    for (CrawlResult crawlResult : crawlResults) {
+    for (CrawlResult crawlResult :
+        networkService.getServiceContext().getWebServiceContext().getCrawlResultsList()) {
       String targetUri = crawlResult.getCrawlTarget().getUrl();
       String httpMethod = crawlResult.getCrawlTarget().getHttpMethod();
       if (proofOfConcept(targetUri, httpMethod, networkService)) {
@@ -151,35 +102,31 @@ public final class SpringCve202222965Detector implements VulnDetector {
     return false;
   }
 
-  private boolean proofOfConcept(String targetUri,
-      String httpMethod, NetworkService networkService) {
+  private boolean proofOfConcept(
+      String targetUri, String httpMethod, NetworkService networkService) {
     HttpResponse firstPoCResponse;
     HttpResponse secondPoCResponse;
     try {
       switch (httpMethod) {
         case "GET":
-          firstPoCResponse = httpClient.send(get(targetUri+"?"+VULNERABILITY_PAYLOAD_STRING_1)
-                  .withEmptyHeaders()
-                  .build(),
-              networkService
-          );
-          secondPoCResponse = httpClient.send(get(targetUri+"?"+VULNERABILITY_PAYLOAD_STRING_2)
-                  .withEmptyHeaders()
-                  .build(),
-              networkService
-          );
+          firstPoCResponse =
+              httpClient.send(
+                  get(targetUri + "?" + VULNERABILITY_PAYLOAD_STRING_1).withEmptyHeaders().build(),
+                  networkService);
+          secondPoCResponse =
+              httpClient.send(
+                  get(targetUri + "?" + VULNERABILITY_PAYLOAD_STRING_2).withEmptyHeaders().build(),
+                  networkService);
           break;
         case "POST":
-          firstPoCResponse = httpClient.send(post(targetUri+"?"+VULNERABILITY_PAYLOAD_STRING_1)
-                  .withEmptyHeaders()
-                  .build(),
-              networkService
-          );
-          secondPoCResponse = httpClient.send(post(targetUri+"?"+VULNERABILITY_PAYLOAD_STRING_2)
-                  .withEmptyHeaders()
-                  .build(),
-              networkService
-          );
+          firstPoCResponse =
+              httpClient.send(
+                  post(targetUri + "?" + VULNERABILITY_PAYLOAD_STRING_1).withEmptyHeaders().build(),
+                  networkService);
+          secondPoCResponse =
+              httpClient.send(
+                  post(targetUri + "?" + VULNERABILITY_PAYLOAD_STRING_2).withEmptyHeaders().build(),
+                  networkService);
           break;
         default:
           logger.atWarning().log("Unable to query '%s'.", targetUri);
@@ -204,17 +151,25 @@ public final class SpringCve202222965Detector implements VulnDetector {
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
             Vulnerability.newBuilder()
-                .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                    .setValue("CVE_2022_22965"))
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("TSUNAMI_COMMUNITY")
+                        .setValue("CVE_2022_22965"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Spring Framework RCE CVE-2022-22965")
-                .setDescription("A Spring MVC or Spring WebFlux application running on JDK"
-                    + " 9+ may be vulnerable to remote code execution (RCE) via data "
-                    + "binding. The specific exploit requires the application to run on "
-                    + "Tomcat as a WAR deployment. If the application is deployed as a "
-                    + "Spring Boot executable jar, i.e. the default, it is not vulnerable "
-                    + "to the exploit. However, the nature of the vulnerability is more "
-                    + "general, and there may be other ways to exploit it.")
-        ).build();
+                .setDescription(
+                    "A Spring MVC or Spring WebFlux application running on JDK"
+                        + " 9+ may be vulnerable to remote code execution (RCE) via data "
+                        + "binding. The specific exploit requires the application to run "
+                        + "on Tomcat as a WAR deployment. If the application is deployed "
+                        + "as a Spring Boot executable jar, i.e. the default, it is not "
+                        + "vulnerable to the exploit. However, the nature of the "
+                        + "vulnerability is more general, and there may be other ways to "
+                        + "exploit it.")
+                .setRecommendation(
+                    "Users of affected versions should apply the following mitigation: "
+                        + "5.3.x users should upgrade to 5.3.18+, 5.2.x users should "
+                        + "upgrade to 5.2.20+."))
+        .build();
   }
 }

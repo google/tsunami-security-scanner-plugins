@@ -16,7 +16,6 @@
 package com.google.tsunami.plugins.detectors.spring;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
-import com.google.tsunami.plugins.detectors.spring.crawl.SimpleCrawlerModule;
 
 /**
  * A {@link PluginBootstrapModule} for {@link SpringCve202222965Detector}
@@ -26,7 +25,6 @@ public final class SpringCve202222965DetectorBootstrapModule extends
 
   @Override
   protected void configurePlugin() {
-    install(new SimpleCrawlerModule(/*maxActiveThreads=*/ 8));
     registerPlugin(SpringCve202222965Detector.class);
   }
 }

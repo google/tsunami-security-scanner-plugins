@@ -23,12 +23,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
-import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
@@ -36,120 +36,139 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-import java.text.SimpleDateFormat;
+import java.io.IOException;
 import java.time.Instant;
-import java.util.Date;
 import javax.inject.Inject;
+import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for {@link SpringCve202222965Detector}.
- */
+/** Unit tests for {@link SpringCve202222965Detector}. */
 @RunWith(JUnit4.class)
 public final class SpringCve202222965DetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
-  @Inject
-  private SpringCve202222965Detector detector;
+  @Inject private SpringCve202222965Detector detector;
 
   private MockWebServer mockWebServer;
-  private NetworkService testService;
-
-  private static final String VULNERABILITY_PAYLOAD_STRING_1 =
-      "class.module.classLoader.DefaultAssertionStatus=1";
-  private static final String VULNERABILITY_PAYLOAD_STRING_2 =
-      "class.module.classLoader.DefaultAssertionStatus=2";
 
   @Before
   public void setUp() {
     mockWebServer = new MockWebServer();
-    testService =
+    Guice.createInjector(
+            new FakeUtcClockModule(fakeUtcClock),
+            new SpringCve202222965DetectorBootstrapModule(),
+            new HttpClientModule.Builder().build())
+        .injectMembers(this);
+  }
+
+  @After
+  public void tearDown() throws IOException {
+    mockWebServer.shutdown();
+  }
+
+  @Test
+  public void detect_whenVulnerable_returnsVulnerability() throws IOException {
+    mockWebServer.setDispatcher(new VulnerabilityEndpointDispatcher());
+    mockWebServer.start();
+    NetworkService service =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
             .setTransportProtocol(TransportProtocol.TCP)
-            .setSoftware(Software.newBuilder().setName("Spring"))
+            .setSoftware(Software.newBuilder().setName("http"))
             .setServiceName("http")
             .build();
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
+            .build();
 
-    Guice.createInjector(
-            new FakeUtcClockModule(fakeUtcClock),
-            new HttpClientModule.Builder().build(),
-            new SpringCve202222965DetectorBootstrapModule())
-        .injectMembers(this);
-  }
-
-  @Test
-  public void detect_whenIsVulnerable_reportsVuln() {
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody("<p>Spring CVE-2022-22965 Test Page</p>\n"
-            + "<a href=\"http://127.0.0.1:8081/\">vulnerable site</a>"));
-    mockWebServer.url("index.html");
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody(""));
-    mockWebServer.url("?"+VULNERABILITY_PAYLOAD_STRING_1);
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(400).setBody(""));
-    mockWebServer.url("?"+VULNERABILITY_PAYLOAD_STRING_2);
-
-    DetectionReportList detectionReports =
-        detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(testService));
+    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
 
     assertThat(detectionReports.getDetectionReportsList())
         .containsExactly(
             DetectionReport.newBuilder()
-                .setTargetInfo(TargetInfo.getDefaultInstance())
-                .setNetworkService(testService)
+                .setTargetInfo(targetInfo)
+                .setNetworkService(service)
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
                     Vulnerability.newBuilder()
-                        .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("CVE_2022_22965"))
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("TSUNAMI_COMMUNITY")
+                                .setValue("CVE_2022_22965"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Spring Framework RCE CVE-2022-22965")
-                        .setDescription("A Spring MVC or Spring WebFlux application running on JDK"
-                            + " 9+ may be vulnerable to remote code execution (RCE) via data "
-                            + "binding. The specific exploit requires the application to run on "
-                            + "Tomcat as a WAR deployment. If the application is deployed as a "
-                            + "Spring Boot executable jar, i.e. the default, it is not vulnerable "
-                            + "to the exploit. However, the nature of the vulnerability is more "
-                            + "general, and there may be other ways to exploit it.")
-                ).build()
-        );
+                        .setDescription(
+                            "A Spring MVC or Spring WebFlux application running on JDK"
+                                + " 9+ may be vulnerable to remote code execution (RCE) via data "
+                                + "binding. The specific exploit requires the application to run "
+                                + "on Tomcat as a WAR deployment. If the application is deployed "
+                                + "as a Spring Boot executable jar, i.e. the default, it is not "
+                                + "vulnerable to the exploit. However, the nature of the "
+                                + "vulnerability is more general, and there may be other ways to "
+                                + "exploit it.")
+                        .setRecommendation(
+                            "Users of affected versions should apply the following mitigation: "
+                                + "5.3.x users should upgrade to 5.3.18+, 5.2.x users should "
+                                + "upgrade to 5.2.20+."))
+                .build());
   }
 
   @Test
-  public void detect_whenIsNotVulnerable_doesNotReportVuln() {
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody("<p>Spring CVE-2022-22965 Test Page</p>\n"
-            + "<a href=\"http://127.0.0.1:8082/\">fixed site</a>"));
-    mockWebServer.url("index.html");
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody(""));
-    mockWebServer.url("?"+VULNERABILITY_PAYLOAD_STRING_1);
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody(""));
-    mockWebServer.url("?"+VULNERABILITY_PAYLOAD_STRING_2);
+  public void detect_whenNotVulnerable_returnsNoVulnerability() throws IOException {
+    mockWebServer.setDispatcher(new SafeEndpointDispatcher());
+    mockWebServer.start();
+    ImmutableList<NetworkService> httpServices =
+        ImmutableList.of(
+            NetworkService.newBuilder()
+                .setNetworkEndpoint(
+                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+                .setTransportProtocol(TransportProtocol.TCP)
+                .setServiceName("http")
+                .build());
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
+            .build();
 
-    assertThat(
-        detector
-            .detect(
-                buildTargetInfo(forHostname(mockWebServer.getHostName())),
-                ImmutableList.of(testService))
-            .getDetectionReportsList())
-        .isEmpty();
+    DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
 
-  private static TargetInfo buildTargetInfo(NetworkEndpoint networkEndpoint) {
-    return TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint).build();
+  static final class SafeEndpointDispatcher extends Dispatcher {
+
+    @Override
+    public MockResponse dispatch(RecordedRequest recordedRequest) {
+      return new MockResponse().setResponseCode(HttpStatus.OK.code());
+    }
+  }
+
+  static final class VulnerabilityEndpointDispatcher extends Dispatcher {
+
+    @Override
+    public MockResponse dispatch(RecordedRequest recordedRequest) {
+      if ("/?class.module.classLoader.DefaultAssertionStatus=1".equals(recordedRequest.getPath())) {
+        return new MockResponse().setResponseCode(HttpStatus.OK.code());
+      }
+      if ("/?class.module.classLoader.DefaultAssertionStatus=2".equals(recordedRequest.getPath())) {
+        return new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+      }
+      return new MockResponse()
+          .setResponseCode(HttpStatus.OK.code())
+          .setBody("<p><href=\"http://127.0.0.1:8889/\"></p>");
+    }
   }
 }
