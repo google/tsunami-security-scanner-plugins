@@ -113,16 +113,12 @@ dependencies {
     testAnnotationProcessor "com.google.auto.value:auto-value:${autoValueVersion}"
 }
 
-startScripts.enabled = false
-
-task fingerprintUpdater(type: CreateStartScripts) {
-    mainClassName = 'com.google.tsunami.plugins.fingerprinters.web.tools.FingerprintUpdater'
-    applicationName = 'fingerprint-updater'
-    outputDir = new File(project.buildDir, 'tmp')
-    classpath = startScripts.classpath
+task runFingerprintUpdater(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.google.tsunami.plugins.fingerprinters.web.tools.FingerprintUpdater'
 }
 
-applicationDistribution.into('bin') {
-    from(fingerprintUpdater)
-    fileMode = 0755
+task runFingerprintFileConverter(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.google.tsunami.plugins.fingerprinters.web.tools.FingerprintFileConverter'
 }

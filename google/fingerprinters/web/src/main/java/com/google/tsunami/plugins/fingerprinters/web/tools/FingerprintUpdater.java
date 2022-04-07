@@ -139,7 +139,7 @@ public final class FingerprintUpdater {
 
     logger.atInfo().log(
         "Crawler identified %s files. Moving on to check local static files.", fileHashes.size());
-    fileHashes.putAll(checkLocalRepos(ImmutableSet.copyOf(fileHashes.keySet())));
+    fileHashes.putAll(checkLocalRepos(ImmutableSet.copyOf(fileHashes.keySet()), oldFingerprints));
     // Remove empty path if present, this is not useful for fingerprint detection.
     fileHashes.remove("");
 
@@ -208,9 +208,22 @@ public final class FingerprintUpdater {
     return url.encodedPath() + "?" + query;
   }
 
-  private ImmutableMap<String, Hash> checkLocalRepos(ImmutableSet<String> visitedFiles) {
+  private ImmutableMap<String, Hash> checkLocalRepos(
+      ImmutableSet<String> visitedFiles, Fingerprints existingFingerprints) {
     ImmutableMap.Builder<String, Hash> fileHashesBuilder = ImmutableMap.builder();
-    ImmutableSet<String> localStaticFiles = allLocalStaticFiles();
+    ImmutableSet<String> localStaticFiles =
+        ImmutableSet.<String>builder()
+            .addAll(allLocalStaticFiles())
+            // Include all previously known paths as well.
+            .addAll(
+                existingFingerprints.getContentHashesList().stream()
+                    .map(ContentHash::getContentPath)
+                    .collect(toImmutableSet()))
+            .addAll(
+                existingFingerprints.getPathVersionsList().stream()
+                    .map(PathVersion::getContentPath)
+                    .collect(toImmutableSet()))
+            .build();
     for (String staticFile : localStaticFiles) {
       if (visitedFiles.contains(staticFile)) {
         logger.atInfo().log("(Ignore) File %s has already been crawled by crawler.", staticFile);
