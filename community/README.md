@@ -24,3 +24,4 @@ This directory contains plugins contributed by community members.
 *   [GitLab CE/EE Unauthenticated RCE using ExifTool and disclosure vulnerability (CVE-2021-29441)](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/gitlab_cve_2021_22205)
 *   [Unauthenticated RCE in Laravel <= 8.4.2 using Debug Mode (CVE-2021-3129) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/laravel_cve_2021_3129)
 *   [CVE-2021-26084 Confluence Server RCE via Pre-Auth OGNL Injection (CVE-2021-26084) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/confluence_cve_2021_26084)
+*   [CVE-2022-22965 Spring Framework RCE (CVE-2022-22965) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/spring_framework_cve_2022_22965)
