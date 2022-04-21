@@ -50,6 +50,8 @@ import org.mockito.Mockito;
 /** Tests for {@link NcrackCredentialTester}. */
 @RunWith(JUnit4.class)
 public final class NcrackCredentialTesterTest {
+  private static final ImmutableList<TargetService> EXCLUDED_TARGET_SERVICES =
+      ImmutableList.of(TargetService.SSH);
 
   @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
   private File report;
@@ -64,7 +66,9 @@ public final class NcrackCredentialTesterTest {
     report = tempFolder.newFile("report");
     clioptions = new NcrackClientCliOptions();
     client = new NcrackClient(ncrackFile.getAbsolutePath(), report, clioptions);
-    tester = new NcrackCredentialTester(() -> client, Executors.newCachedThreadPool());
+    tester =
+        new NcrackCredentialTester(
+            () -> client, Executors.newCachedThreadPool(), ImmutableList.of());
   }
 
   @Test
@@ -228,5 +232,27 @@ public final class NcrackCredentialTesterTest {
 
     assertThat(tester.testValidCredentials(networkService, ImmutableList.of()))
         .containsExactly(TestCredential.create("root", Optional.of("toor")));
+  }
+
+  @Test
+  public void canAccept_whenExcludedService_returnsFalse() {
+    NetworkService networkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(forIpAndPort("1.1.1.1", 22))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setServiceName("ssh")
+            .setSoftware(Software.newBuilder().setName("OpenSSH"))
+            .setVersionSet(
+                VersionSet.newBuilder()
+                    .addVersions(
+                        Version.newBuilder()
+                            .setType(VersionType.NORMAL)
+                            .setFullVersionString("1.1")))
+            .build();
+    tester =
+        new NcrackCredentialTester(
+            () -> client, Executors.newCachedThreadPool(), EXCLUDED_TARGET_SERVICES);
+
+    assertThat(tester.canAccept(networkService)).isFalse();
   }
 }

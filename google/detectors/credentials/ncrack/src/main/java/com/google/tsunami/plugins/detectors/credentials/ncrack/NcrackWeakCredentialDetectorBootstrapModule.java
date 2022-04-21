@@ -21,6 +21,8 @@ import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import com.google.tsunami.plugin.PluginBootstrapModule;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackBinaryPath;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TargetService;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackExcludedTargetServices;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.CredentialProvider;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.DefaultCredentials;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.Top100Passwords;
@@ -28,6 +30,7 @@ import com.google.tsunami.plugins.detectors.credentials.ncrack.tester.Credential
 import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 
 /** A {@link PluginBootstrapModule} for {@link NcrackWeakCredentialDetector}. */
 public final class NcrackWeakCredentialDetectorBootstrapModule extends PluginBootstrapModule {
@@ -69,5 +72,32 @@ public final class NcrackWeakCredentialDetectorBootstrapModule extends PluginBoo
     throw new FileNotFoundException(
         "Unable to find a valid ncrack binary. Make sure Tsunami config contains a valid ncrack"
             + " binary path.");
+  }
+
+  @Provides
+  @NcrackExcludedTargetServices
+  List<TargetService> provideNcrackExcludedTargetServices(
+      NcrackWeakCredentialDetectorCliOptions cliOptions,
+      NcrackWeakCredentialDetectorConfigs configs) {
+    if (cliOptions.excludedTargetServices != null && !cliOptions.excludedTargetServices.isEmpty()) {
+      return convertToExcludedTargetServices(cliOptions.excludedTargetServices);
+    }
+
+    if (configs.excludedTargetServices != null && !configs.excludedTargetServices.isEmpty()) {
+      return convertToExcludedTargetServices(configs.excludedTargetServices);
+    }
+
+    return ImmutableList.of();
+  }
+
+  private static ImmutableList<TargetService> convertToExcludedTargetServices(
+      List<String> services) {
+    ImmutableList.Builder<TargetService> excludedTargetServices = ImmutableList.builder();
+
+    for (String targetService : services) {
+      excludedTargetServices.add(TargetService.valueOf(targetService));
+    }
+
+    return excludedTargetServices.build();
   }
 }

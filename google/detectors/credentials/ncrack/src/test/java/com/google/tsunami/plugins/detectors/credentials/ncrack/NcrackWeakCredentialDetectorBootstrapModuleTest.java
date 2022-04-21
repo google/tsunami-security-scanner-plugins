@@ -17,11 +17,15 @@ package com.google.tsunami.plugins.detectors.credentials.ncrack;
 
 import static com.google.common.truth.Truth.assertThat;
 import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertThrows;
 
+import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.tsunami.common.command.CommandExecutorModule;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.SystemUtcClockModule;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TargetService;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.CredentialProvider;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.DefaultCredentials;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.Top100Passwords;
@@ -36,6 +40,12 @@ import org.junit.runners.JUnit4;
 public final class NcrackWeakCredentialDetectorBootstrapModuleTest {
 
   @Inject private NcrackWeakCredentialDetector detector;
+  private final NcrackWeakCredentialDetectorBootstrapModule module =
+      new NcrackWeakCredentialDetectorBootstrapModule();
+  private final NcrackWeakCredentialDetectorConfigs configs =
+      new NcrackWeakCredentialDetectorConfigs();
+  private final NcrackWeakCredentialDetectorCliOptions cliOptions =
+      new NcrackWeakCredentialDetectorCliOptions();
 
   @Before
   public void setUp() {
@@ -43,7 +53,14 @@ public final class NcrackWeakCredentialDetectorBootstrapModuleTest {
             new CommandExecutorModule(),
             new HttpClientModule.Builder().build(),
             new SystemUtcClockModule(),
-            new NcrackWeakCredentialDetectorBootstrapModule())
+            module,
+            new AbstractModule() {
+              @Override
+              protected void configure() {
+                bind(NcrackWeakCredentialDetectorConfigs.class).toInstance(configs);
+                bind(NcrackWeakCredentialDetectorCliOptions.class).toInstance(cliOptions);
+              }
+            })
         .injectMembers(this);
   }
 
@@ -53,5 +70,30 @@ public final class NcrackWeakCredentialDetectorBootstrapModuleTest {
     for (CredentialProvider provider : detector.providers) {
       assertTrue(provider instanceof DefaultCredentials || provider instanceof Top100Passwords);
     }
+  }
+
+  @Test
+  public void provideExcludedTargetServicesStrings_configsOnly_returnsExcludedTargetServices() {
+    configs.excludedTargetServices = ImmutableList.of("SSH", "IMAP");
+    assertThat(module.provideNcrackExcludedTargetServices(cliOptions, configs))
+        .containsExactly(TargetService.SSH, TargetService.IMAP);
+  }
+
+  @Test
+  public void
+      provideInvalidExcludedTargetServicesStrings_configsOnly_throwsIllegalArgumentException() {
+    configs.excludedTargetServices = ImmutableList.of("ssh");
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> module.provideNcrackExcludedTargetServices(cliOptions, configs));
+  }
+
+  @Test
+  public void
+      provideExcludedTargetServicesStrings_configsAndCliOptions_returnsExcludedTargetServicesFromCliOptions() {
+    configs.excludedTargetServices = ImmutableList.of("SSH");
+    cliOptions.excludedTargetServices = ImmutableList.of("IMAP");
+    assertThat(module.provideNcrackExcludedTargetServices(cliOptions, configs))
+        .contains(TargetService.IMAP);
   }
 }
