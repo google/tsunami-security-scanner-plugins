@@ -17,9 +17,13 @@ package com.google.tsunami.plugins.fingerprinters.web.common;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 
+import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
+import com.google.tsunami.proto.HttpHeader;
+import java.util.ArrayList;
+import java.util.List;
 
 /** Utilities for crawling and crawl results. */
 public final class CrawlUtils {
@@ -33,6 +37,17 @@ public final class CrawlUtils {
             .setResponseCode(httpResponse.status().code());
     httpResponse.headers().get(CONTENT_TYPE).ifPresent(crawlResultBuilder::setContentType);
     httpResponse.bodyBytes().ifPresent(crawlResultBuilder::setContent);
+
+    HttpHeaders httpResponseHeaders = httpResponse.headers();
+    List<HttpHeader> httpHeaders = new ArrayList<>();
+    for (String name : httpResponseHeaders.names()) {
+      httpResponseHeaders
+          .getAll(name)
+          .forEach(
+              value ->
+                  httpHeaders.add(HttpHeader.newBuilder().setKey(name).setValue(value).build()));
+    }
+    crawlResultBuilder.addAllResponseHeaders(httpHeaders);
     return crawlResultBuilder.build();
   }
 
