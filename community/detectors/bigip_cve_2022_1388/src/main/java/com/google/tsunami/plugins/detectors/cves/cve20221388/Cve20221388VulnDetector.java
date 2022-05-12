@@ -150,7 +150,7 @@ public final class Cve20221388VulnDetector implements VulnDetector {
                   .setRequestBody(ByteString.copyFrom(payload))
                   .build(),
               networkService);
-      System.out.println(httpResponse.bodyString().get());
+      logger.atInfo().log("Response: %s", httpResponse.bodyString().get());
       if (httpResponse.status().code() == 200
           && httpResponse.bodyString().get().contains(DETECTION_STRING)) {
         return true;
