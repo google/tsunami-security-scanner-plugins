@@ -127,10 +127,6 @@ public final class Cve20221388VulnDetector implements VulnDetector {
         .build();
   }
 
-  private String clearCookie(String cookie) {
-    return cookie.split("path=/;")[0];
-  }
-
   private boolean isServiceVulnerable(NetworkService networkService) {
     String targetVulnerabilityUrl = buildTarget(networkService).append(VUL_PATH).toString();
     try {
@@ -143,7 +139,7 @@ public final class Cve20221388VulnDetector implements VulnDetector {
                           .addHeader(HOST, "127.0.0.1")
                           .addHeader(AUTHORIZATION, "Basic YWRtaW46")
                           .addHeader(CONNECTION, "x-F5-Auth-token")
-                          .addHeader("X-F5-Auth-token","TSUNAMI_SCANNER")
+                          .addHeader("X-F5-Auth-token", "TSUNAMI_SCANNER")
                           .addHeader(USER_AGENT, "TSUNAMI_SCANNER")
                           .addHeader(CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
                           .build())
