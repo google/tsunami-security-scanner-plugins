@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.92 scan initiated Tue May 17 11:21:32 2022 as: nmap -&#45;unprivileged -Pn -n -sT -sV -&#45;version-intensity 5 -T4 -&#45;script banner -p 7001 -oX - 127.0.0.1 -->
+<nmaprun scanner="nmap" args="nmap -&#45;unprivileged -Pn -n -sT -sV -&#45;version-intensity 5 -T4 -&#45;script banner -p 7001 -oX - 127.0.0.1" start="1652811692" startstr="Tue May 17 11:21:32 2022" version="7.92" xmloutputversion="1.05">
+  <scaninfo type="connect" protocol="tcp" numservices="1" services="7001"/>
+  <verbose level="0"/>
+  <debugging level="0"/>
+  <host starttime="1652811692" endtime="1652811716"><status state="up" reason="user-set" reason_ttl="0"/>
+    <address addr="127.0.0.1" addrtype="ipv4"/>
+    <hostnames>
+    </hostnames>
+    <ports><port protocol="tcp" portid="7001"><state state="open" reason="syn-ack" reason_ttl="0"/><service name="http" product="Oracle WebLogic admin httpd" method="probed" conf="10"><cpe>cpe:/a:oracle:weblogic_server</cpe></service></port>
+    </ports>
+    <times srtt="72" rttvar="5000" to="100000"/>
+  </host>
+  <runstats><finished time="1652811716" timestr="Tue May 17 11:21:56 2022" summary="Nmap done at Tue May 17 11:21:56 2022; 1 IP address (1 host up) scanned in 24.21 seconds" elapsed="24.21" exit="success"/><hosts up="1" down="0" total="1"/>
+  </runstats>
+</nmaprun>
