@@ -1,0 +1,8 @@
+{
+    "Name": "%s",
+    "check": {
+        "Args": ["%s"],
+        "interval": "10s",
+        "timeout": "600s"
+    }
+}
