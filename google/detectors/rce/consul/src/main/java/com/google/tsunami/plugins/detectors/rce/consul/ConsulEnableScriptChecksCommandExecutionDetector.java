@@ -25,7 +25,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.io.Resources;
-import com.google.common.time.Sleeper;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -50,7 +49,6 @@ import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import javax.inject.Inject;
 
@@ -186,7 +184,7 @@ public final class ConsulEnableScriptChecksCommandExecutionDetector implements V
 
     try {
       // If there is an RCE, the execution isn't immediate.
-      Sleeper.defaultSleeper().sleep(Duration.ofSeconds(10));
+      Thread.sleep(10000);
 
       if (payload.getPayloadAttributes().getUsesCallbackServer()) {
         logger.atInfo().log("TCS enabled, so checking vulnerability using it.");
