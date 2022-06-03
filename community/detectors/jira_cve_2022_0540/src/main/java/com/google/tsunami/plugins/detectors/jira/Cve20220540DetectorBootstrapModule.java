@@ -20,8 +20,8 @@ import com.google.tsunami.plugin.PluginBootstrapModule;
 /** A {@link PluginBootstrapModule} for {@link Cve20220540VulnDetector} */
 public final class Cve20220540DetectorBootstrapModule extends PluginBootstrapModule {
 
-  @Override
-  protected void configurePlugin() {
-    registerPlugin(Cve20220540VulnDetector.class);
-  }
+    @Override
+    protected void configurePlugin() {
+        registerPlugin(Cve20220540VulnDetector.class);
+    }
 }
