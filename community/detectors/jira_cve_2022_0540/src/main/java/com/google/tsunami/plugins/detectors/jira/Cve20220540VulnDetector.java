@@ -39,139 +39,139 @@ import javax.inject.Inject;
 
 /** A {@link VulnDetector} that detects the CVE-2022-0540 vulnerability. Reading */
 @PluginInfo(
-        type = PluginType.VULN_DETECTION,
-        name = "Cve20220540VulnDetector",
-        version = "0.1",
-        description =
-                "A vulnerability in Jira Seraph allows a remote, unauthenticated attacker to bypass"
-                        + " authentication by sending a specially crafted HTTP request. This affects Atlassian"
-                        + " Jira Server and Data Center versions before 8.13.18, versions 8.14.0 and later"
-                        + " before 8.20.6, and versions 8.21.0 and later before 8.22.0. This also affects"
-                        + " Atlassian Jira Service Management Server and Data Center versions before 4.13.18,"
-                        + " versions 4.14.0 and later before 4.20.6, and versions 4.21.0 and later before"
-                        + " 4.22.0.",
-        author = "thiscodecc",
-        bootstrapModule = Cve20220540DetectorBootstrapModule.class)
+    type = PluginType.VULN_DETECTION,
+    name = "Cve20220540VulnDetector",
+    version = "0.1",
+    description =
+        "A vulnerability in Jira Seraph allows a remote, unauthenticated attacker to bypass"
+            + " authentication by sending a specially crafted HTTP request. This affects Atlassian"
+            + " Jira Server and Data Center versions before 8.13.18, versions 8.14.0 and later"
+            + " before 8.20.6, and versions 8.21.0 and later before 8.22.0. This also affects"
+            + " Atlassian Jira Service Management Server and Data Center versions before 4.13.18,"
+            + " versions 4.14.0 and later before 4.20.6, and versions 4.21.0 and later before"
+            + " 4.22.0.",
+    author = "thiscodecc",
+    bootstrapModule = Cve20220540DetectorBootstrapModule.class)
 public final class Cve20220540VulnDetector implements VulnDetector {
 
-    @VisibleForTesting static final String INSIGHT_BODY = "Insight Configuration";
-    @VisibleForTesting static final String WBSGANTT_DOBY = "WBS Gantt-Chart";
-    private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-    private static final String INSIGHT_CHECK_VUL_PATH =
-            "secure/InsightPluginUpdateGeneralConfiguration.jspa;";
-    private static final String WBSGANTT_CHECK_VUL_PATH =
-            "secure/WBSGanttManageScheduleJobAction.jspa;";
-    private final HttpClient httpClient;
-    private final Clock utcClock;
+  @VisibleForTesting static final String INSIGHT_BODY = "Insight Configuration";
+  @VisibleForTesting static final String WBSGANTT_DOBY = "WBS Gantt-Chart";
+  private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+  private static final String INSIGHT_CHECK_VUL_PATH =
+      "secure/InsightPluginUpdateGeneralConfiguration.jspa;";
+  private static final String WBSGANTT_CHECK_VUL_PATH =
+      "secure/WBSGanttManageScheduleJobAction.jspa;";
+  private final HttpClient httpClient;
+  private final Clock utcClock;
 
-    @Inject
-    Cve20220540VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
-        this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
-        this.utcClock = checkNotNull(utcClock);
+  @Inject
+  Cve20220540VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
+    this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
+    this.utcClock = checkNotNull(utcClock);
+  }
+
+  private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
+    return networkService.getServiceName().isEmpty()
+        || NetworkServiceUtils.isWebService(networkService);
+  }
+
+  private static String buildTargetInsightUrl(NetworkService networkService) {
+    StringBuilder targetUrlBuilder = new StringBuilder();
+    if (NetworkServiceUtils.isWebService(networkService)) {
+      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
+    } else {
+      // Assume the service uses HTTP protocol when the scanner cannot identify the actual service.
+      targetUrlBuilder
+          .append("http://")
+          .append(toUriAuthority(networkService.getNetworkEndpoint()))
+          .append("/");
+    }
+    targetUrlBuilder.append(INSIGHT_CHECK_VUL_PATH);
+    return targetUrlBuilder.toString();
+  }
+
+  private static String buildTargetWBSGanttUrl(NetworkService networkService) {
+    StringBuilder targetUrlBuilder = new StringBuilder();
+    if (NetworkServiceUtils.isWebService(networkService)) {
+      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
+    } else {
+      // Assume the service uses HTTP protocol when the scanner cannot identify the actual service.
+      targetUrlBuilder
+          .append("http://")
+          .append(toUriAuthority(networkService.getNetworkEndpoint()))
+          .append("/");
+    }
+    targetUrlBuilder.append(WBSGANTT_CHECK_VUL_PATH);
+    return targetUrlBuilder.toString();
+  }
+
+  @Override
+  public DetectionReportList detect(
+      TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
+    logger.atInfo().log("Cve20220540VulnDetector starts detecting.");
+    return DetectionReportList.newBuilder()
+        .addAllDetectionReports(
+            matchedServices.stream()
+                .filter(Cve20220540VulnDetector::isWebServiceOrUnknownService)
+                .filter(this::isServiceVulnerable)
+                .map(networkService -> buildDetectionReport(targetInfo, networkService))
+                .collect(toImmutableList()))
+        .build();
+  }
+
+  private boolean isServiceVulnerable(NetworkService networkService) {
+    String insightUrl = buildTargetInsightUrl(networkService);
+    try {
+      HttpResponse httpResponse =
+          httpClient.send(get(insightUrl).withEmptyHeaders().build(), networkService);
+      if (httpResponse.status().code() == 200
+          && httpResponse.bodyString().get().contains(INSIGHT_BODY)) {
+        return true;
+      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
     }
 
-    private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
-        return networkService.getServiceName().isEmpty()
-                || NetworkServiceUtils.isWebService(networkService);
+    String WBSGanttUrl = buildTargetWBSGanttUrl(networkService);
+    try {
+      HttpResponse httpResponse =
+          httpClient.send(get(WBSGanttUrl).withEmptyHeaders().build(), networkService);
+      if (httpResponse.status().code() == 200
+          && httpResponse.bodyString().get().contains(WBSGANTT_DOBY)) {
+        return true;
+      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
     }
+    return false;
+  }
 
-    private static String buildTargetInsightUrl(NetworkService networkService) {
-        StringBuilder targetUrlBuilder = new StringBuilder();
-        if (NetworkServiceUtils.isWebService(networkService)) {
-            targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-        } else {
-            // Assume the service uses HTTP protocol when the scanner cannot identify the actual service.
-            targetUrlBuilder
-                    .append("http://")
-                    .append(toUriAuthority(networkService.getNetworkEndpoint()))
-                    .append("/");
-        }
-        targetUrlBuilder.append(INSIGHT_CHECK_VUL_PATH);
-        return targetUrlBuilder.toString();
-    }
-
-    private static String buildTargetWBSGanttUrl(NetworkService networkService) {
-        StringBuilder targetUrlBuilder = new StringBuilder();
-        if (NetworkServiceUtils.isWebService(networkService)) {
-            targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-        } else {
-            // Assume the service uses HTTP protocol when the scanner cannot identify the actual service.
-            targetUrlBuilder
-                    .append("http://")
-                    .append(toUriAuthority(networkService.getNetworkEndpoint()))
-                    .append("/");
-        }
-        targetUrlBuilder.append(WBSGANTT_CHECK_VUL_PATH);
-        return targetUrlBuilder.toString();
-    }
-
-    @Override
-    public DetectionReportList detect(
-            TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
-        logger.atInfo().log("Cve20220540VulnDetector starts detecting.");
-        return DetectionReportList.newBuilder()
-                .addAllDetectionReports(
-                        matchedServices.stream()
-                                .filter(Cve20220540VulnDetector::isWebServiceOrUnknownService)
-                                .filter(this::isServiceVulnerable)
-                                .map(networkService -> buildDetectionReport(targetInfo, networkService))
-                                .collect(toImmutableList()))
-                .build();
-    }
-
-    private boolean isServiceVulnerable(NetworkService networkService) {
-        String insightUrl = buildTargetInsightUrl(networkService);
-        try {
-            HttpResponse httpResponse =
-                    httpClient.send(get(insightUrl).withEmptyHeaders().build(), networkService);
-            if (httpResponse.status().code() == 200
-                    && httpResponse.bodyString().get().contains(INSIGHT_BODY)) {
-                return true;
-            }
-        } catch (IOException e) {
-            logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
-        }
-
-        String WBSGanttUrl = buildTargetWBSGanttUrl(networkService);
-        try {
-            HttpResponse httpResponse =
-                    httpClient.send(get(WBSGanttUrl).withEmptyHeaders().build(), networkService);
-            if (httpResponse.status().code() == 200
-                    && httpResponse.bodyString().get().contains(WBSGANTT_DOBY)) {
-                return true;
-            }
-        } catch (IOException e) {
-            logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
-        }
-        return false;
-    }
-
-    private DetectionReport buildDetectionReport(
-            TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
-        return DetectionReport.newBuilder()
-                .setTargetInfo(targetInfo)
-                .setNetworkService(vulnerableNetworkService)
-                .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
-                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                        Vulnerability.newBuilder()
-                                .setMainId(
-                                        VulnerabilityId.newBuilder()
-                                                .setPublisher("TSUNAMI_COMMUNITY")
-                                                .setValue("CVE_2022_0540"))
-                                .setSeverity(Severity.CRITICAL)
-                                .setTitle(
-                                        "CVE-2022-0540: unauthenticated attacker to bypass authentication by sending a"
-                                                + " specially crafted HTTP request")
-                                .setDescription(
-                                        "A vulnerability in Jira Seraph allows a remote, unauthenticated attacker to"
-                                                + " bypass authentication by sending a specially crafted HTTP request. This"
-                                                + " affects Atlassian Jira Server and Data Center versions before 8.13.18,"
-                                                + " versions 8.14.0 and later before 8.20.6, and versions 8.21.0 and later"
-                                                + " before 8.22.0. This also affects Atlassian Jira Service Management"
-                                                + " Server and Data Center versions before 4.13.18, versions 4.14.0 and"
-                                                + " later before 4.20.6, and versions 4.21.0 and later before 4.22.0")
-                                .setRecommendation("Upgrade Jira to the latest version"))
-                .build();
-    }
+  private DetectionReport buildDetectionReport(
+      TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
+    return DetectionReport.newBuilder()
+        .setTargetInfo(targetInfo)
+        .setNetworkService(vulnerableNetworkService)
+        .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
+        .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+        .setVulnerability(
+            Vulnerability.newBuilder()
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("TSUNAMI_COMMUNITY")
+                        .setValue("CVE_2022_0540"))
+                .setSeverity(Severity.CRITICAL)
+                .setTitle(
+                    "CVE-2022-0540: unauthenticated attacker to bypass authentication by sending a"
+                        + " specially crafted HTTP request")
+                .setDescription(
+                    "A vulnerability in Jira Seraph allows a remote, unauthenticated attacker to"
+                        + " bypass authentication by sending a specially crafted HTTP request. This"
+                        + " affects Atlassian Jira Server and Data Center versions before 8.13.18,"
+                        + " versions 8.14.0 and later before 8.20.6, and versions 8.21.0 and later"
+                        + " before 8.22.0. This also affects Atlassian Jira Service Management"
+                        + " Server and Data Center versions before 4.13.18, versions 4.14.0 and"
+                        + " later before 4.20.6, and versions 4.21.0 and later before 4.22.0")
+                .setRecommendation("Upgrade Jira to the latest version"))
+        .build();
+  }
 }
