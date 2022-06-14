@@ -64,9 +64,63 @@ public final class Cve20220540VulnDetectorTest {
   }
 
   @Test
-  public void detect_whenVulnerable_returnsVulnerability() throws IOException {
+  public void detect_whenInsightsVulnerable_returnsVulnerability() throws IOException {
     mockWebServer.start();
     mockWebResponse(200, Cve20220540VulnDetector.INSIGHT_BODY);
+    mockWebResponse(302, "test");
+    NetworkService service =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setSoftware(Software.newBuilder().setName("http"))
+            .setServiceName("http")
+            .build();
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
+            .build();
+
+    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
+
+    assertThat(detectionReports.getDetectionReportsList())
+        .containsExactly(
+            DetectionReport.newBuilder()
+                .setTargetInfo(targetInfo)
+                .setNetworkService(service)
+                .setDetectionTimestamp(
+                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                .setVulnerability(
+                    Vulnerability.newBuilder()
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("TSUNAMI_COMMUNITY")
+                                .setValue("CVE_2022_0540"))
+                        .setSeverity(Severity.CRITICAL)
+                        .setTitle(
+                            "CVE-2022-0540: unauthenticated attacker to bypass authentication by"
+                                + " sending a specially crafted HTTP request")
+                        .setRecommendation("Upgrade Jira to the latest version")
+                        .setDescription(
+                            "A vulnerability in Jira Seraph allows a remote, unauthenticated"
+                                + " attacker to bypass authentication by sending a specially"
+                                + " crafted HTTP request. This affects Atlassian Jira Server and"
+                                + " Data Center versions before 8.13.18, versions 8.14.0 and later"
+                                + " before 8.20.6, and versions 8.21.0 and later before 8.22.0."
+                                + " This also affects Atlassian Jira Service Management Server and"
+                                + " Data Center versions before 4.13.18, versions 4.14.0 and later"
+                                + " before 4.20.6, and versions 4.21.0 and later before"
+                                + " 4.22.0,Using insights prior to 8.10.1 and WBSGantt plugin"
+                                + " versions prior to 9.14.4.1 can cause a remote code execution"
+                                + " hazard."))
+                .build());
+  }
+
+  @Test
+  public void detect_whenWBSGanttVulnerable_returnsVulnerability() throws IOException {
+    mockWebServer.start();
+    mockWebResponse(301, "test");
     mockWebResponse(200, Cve20220540VulnDetector.WBSGANTT_DOBY);
     NetworkService service =
         NetworkService.newBuilder()
@@ -110,7 +164,10 @@ public final class Cve20220540VulnDetectorTest {
                                 + " before 8.20.6, and versions 8.21.0 and later before 8.22.0."
                                 + " This also affects Atlassian Jira Service Management Server and"
                                 + " Data Center versions before 4.13.18, versions 4.14.0 and later"
-                                + " before 4.20.6, and versions 4.21.0 and later before 4.22.0"))
+                                + " before 4.20.6, and versions 4.21.0 and later before"
+                                + " 4.22.0,Using insights prior to 8.10.0 and WBSGantt plugin"
+                                + " versions prior to 9.14.4.1 can cause a remote code execution"
+                                + " hazard."))
                 .build());
   }
 
