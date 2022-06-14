@@ -31,7 +31,14 @@ import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
-import com.google.tsunami.proto.*;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
@@ -119,10 +126,10 @@ public final class Cve20220540VulnDetector implements VulnDetector {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
     }
 
-    String WBSGanttUrl = buildTargetUrl(networkService, WBSGANTT_CHECK_VUL_PATH);
+    String WbsGanttUrl = buildTargetUrl(networkService, WBSGANTT_CHECK_VUL_PATH);
     try {
       HttpResponse httpResponse =
-          httpClient.send(get(WBSGanttUrl).withEmptyHeaders().build(), networkService);
+          httpClient.send(get(WbsGanttUrl).withEmptyHeaders().build(), networkService);
       if (httpResponse.status().code() == 200
           && httpResponse.bodyString().get().contains(WBSGANTT_DOBY)) {
         return true;
@@ -158,7 +165,7 @@ public final class Cve20220540VulnDetector implements VulnDetector {
                         + " versions 8.14.0 and later before 8.20.6, and versions 8.21.0 and later"
                         + " before 8.22.0. This also affects Atlassian Jira Service Management"
                         + " Server and Data Center versions before 4.13.18, versions 4.14.0 and"
-                        + " later before 4.20.6, and versions 4.21.0 and later before 4.22.0,Using"
+                        + " later before 4.20.6, and versions 4.21.0 and later before 4.22.0, using"
                         + " insights prior to 8.10.0 and WBSGantt plugin versions prior to 9.14.4.1"
                         + " can cause a remote code execution hazard.")
                 .setRecommendation("Upgrade Jira to the latest version"))
