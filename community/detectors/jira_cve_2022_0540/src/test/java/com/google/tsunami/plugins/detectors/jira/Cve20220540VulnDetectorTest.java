@@ -111,7 +111,7 @@ public final class Cve20220540VulnDetectorTest {
                                 + " This also affects Atlassian Jira Service Management Server and"
                                 + " Data Center versions before 4.13.18, versions 4.14.0 and later"
                                 + " before 4.20.6, and versions 4.21.0 and later before"
-                                + " 4.22.0,Using insights prior to 8.10.0 and WBSGantt plugin"
+                                + " 4.22.0, using insights prior to 8.10.0 and WBSGantt plugin"
                                 + " versions prior to 9.14.4.1 can cause a remote code execution"
                                 + " hazard."))
                 .build());
@@ -165,7 +165,7 @@ public final class Cve20220540VulnDetectorTest {
                                 + " This also affects Atlassian Jira Service Management Server and"
                                 + " Data Center versions before 4.13.18, versions 4.14.0 and later"
                                 + " before 4.20.6, and versions 4.21.0 and later before"
-                                + " 4.22.0,Using insights prior to 8.10.0 and WBSGantt plugin"
+                                + " 4.22.0, using insights prior to 8.10.0 and WBSGantt plugin"
                                 + " versions prior to 9.14.4.1 can cause a remote code execution"
                                 + " hazard."))
                 .build());
