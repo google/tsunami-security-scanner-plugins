@@ -126,10 +126,10 @@ public final class Cve20220540VulnDetector implements VulnDetector {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
     }
 
-    String WbsGanttUrl = buildTargetUrl(networkService, WBSGANTT_CHECK_VUL_PATH);
+    String wbsGanttUrl = buildTargetUrl(networkService, WBSGANTT_CHECK_VUL_PATH);
     try {
       HttpResponse httpResponse =
-          httpClient.send(get(WbsGanttUrl).withEmptyHeaders().build(), networkService);
+          httpClient.send(get(wbsGanttUrl).withEmptyHeaders().build(), networkService);
       if (httpResponse.status().code() == 200
           && httpResponse.bodyString().get().contains(WBSGANTT_DOBY)) {
         return true;
