@@ -156,8 +156,8 @@ public final class Cve20220540VulnDetector implements VulnDetector {
                         .setValue("CVE_2022_0540"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle(
-                    "CVE-2022-0540: unauthenticated attacker to bypass authentication by sending a"
-                        + " specially crafted HTTP request")
+                    "CVE-2022-0540: Authentication Bypass in Atlassian Jira Service Management"
+                        + " Server and Data Center")
                 .setDescription(
                     "A vulnerability in Jira Seraph allows a remote, unauthenticated attacker to"
                         + " bypass authentication by sending a specially crafted HTTP request. This"
