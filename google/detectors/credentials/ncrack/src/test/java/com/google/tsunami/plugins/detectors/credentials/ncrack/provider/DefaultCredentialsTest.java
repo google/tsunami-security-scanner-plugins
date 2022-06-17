@@ -18,6 +18,8 @@ package com.google.tsunami.plugins.detectors.credentials.ncrack.provider;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.proto.DefaultCredentialsData;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.proto.ServiceDefaultCredentials;
 import com.google.tsunami.proto.NetworkService;
 import java.util.Optional;
 import org.junit.Test;
@@ -27,8 +29,24 @@ import org.junit.runners.JUnit4;
 /** Tests for {@link DefaultCredentials}. */
 @RunWith(JUnit4.class)
 public final class DefaultCredentialsTest {
+  private static final DefaultCredentialsData DEFAULT_CREDENTIALS_DATA =
+      DefaultCredentialsData.newBuilder()
+          .addServiceDefaultCredentials(
+              ServiceDefaultCredentials.newBuilder()
+                  .setServiceName("wordpress")
+                  .addDefaultUsernames("admin")
+                  .addDefaultPasswords("password"))
+          .addServiceDefaultCredentials(
+              ServiceDefaultCredentials.newBuilder()
+                  .setServiceName("test")
+                  .addDefaultUsernames("user1")
+                  .addDefaultUsernames("user2")
+                  .addDefaultPasswords("")
+                  .addDefaultPasswords("pass1")
+                  .addDefaultPasswords("pass2"))
+          .build();
 
-  private final DefaultCredentials provider = new DefaultCredentials();
+  private final DefaultCredentials provider = new DefaultCredentials(DEFAULT_CREDENTIALS_DATA);
 
   @Test
   public void getName_always_doNotReturnEmptyOrNull() {
@@ -51,6 +69,23 @@ public final class DefaultCredentialsTest {
 
     assertThat(generatedCredentials)
         .containsExactly(TestCredential.create("admin", Optional.of("password")));
+  }
+
+  @Test
+  public void genereateTestCredentials_withMultiplePairs_returnsExpectedCredentials() {
+    ImmutableList<TestCredential> generatedCredentials =
+        ImmutableList.copyOf(
+            provider.generateTestCredentials(
+                NetworkService.newBuilder().setServiceName("test").build()));
+
+    assertThat(generatedCredentials)
+        .containsExactly(
+            TestCredential.create("user1", Optional.of("")),
+            TestCredential.create("user1", Optional.of("pass1")),
+            TestCredential.create("user1", Optional.of("pass2")),
+            TestCredential.create("user2", Optional.of("")),
+            TestCredential.create("user2", Optional.of("pass1")),
+            TestCredential.create("user2", Optional.of("pass2")));
   }
 
   @Test

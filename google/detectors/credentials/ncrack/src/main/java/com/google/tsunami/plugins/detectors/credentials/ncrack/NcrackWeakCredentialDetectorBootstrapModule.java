@@ -15,19 +15,25 @@
  */
 package com.google.tsunami.plugins.detectors.credentials.ncrack;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Resources;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
+import com.google.protobuf.TextFormat;
 import com.google.tsunami.plugin.PluginBootstrapModule;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackBinaryPath;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TargetService;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackExcludedTargetServices;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.proto.DefaultCredentialsData;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.CredentialProvider;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.DefaultCredentials;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.Top100Passwords;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.tester.CredentialTester;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -88,6 +94,16 @@ public final class NcrackWeakCredentialDetectorBootstrapModule extends PluginBoo
     }
 
     return ImmutableList.of();
+  }
+
+  @Provides
+  DefaultCredentialsData providesDefaultCredentialsData() throws IOException {
+    return TextFormat.parse(
+        Resources.toString(
+            Resources.getResource(
+                "detectors/credentials/ncrack/data/service_default_credentials.textproto"),
+            UTF_8),
+        DefaultCredentialsData.class);
   }
 
   private static ImmutableList<TargetService> convertToExcludedTargetServices(
