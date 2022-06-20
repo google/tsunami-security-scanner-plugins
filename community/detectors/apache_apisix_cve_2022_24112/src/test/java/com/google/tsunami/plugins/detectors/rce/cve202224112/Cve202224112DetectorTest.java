@@ -82,15 +82,11 @@ public final class Cve202224112DetectorTest {
   @Test
   public void detect_whenVulnerable_returnsVulnerability() {
     mockWebServer.enqueue(
-        new MockResponse()
-            .addHeader("Server", "APISIX/2.12.0")
-            .setResponseCode(HttpStatus.NOT_FOUND.code()));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("[{\"reason\":\"OK\"}]"));
+        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("[{\"status\":200}]"));
     mockWebServer.enqueue(
         new MockResponse().setResponseCode(HttpStatus.SERVICE_UNAVAILABLE.code()));
     mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("[{\"reason\":\"OK\"}]"));
+        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("[{\"status\":200}]"));
     mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
 
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
@@ -107,7 +103,7 @@ public final class Cve202224112DetectorTest {
                     Vulnerability.newBuilder()
                         .setMainId(
                             VulnerabilityId.newBuilder()
-                                .setPublisher("yuradoc")
+                                .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE-2022-24112"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Apache APISIX RCE (CVE-2022-24112)")
@@ -117,27 +113,11 @@ public final class Cve202224112DetectorTest {
                                 + " A default configuration of Apache APISIX (with default API key) is"
                                 + " vulnerable to remote code execution through the plugin."))
                 .build());
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(6);
-  }
-
-  @Test
-  public void detect_ifNotVulnerableVersion_doesNotReportVuln() {
-    mockWebServer.enqueue(
-        new MockResponse()
-            .addHeader("Server", "APISIX/1.5")
-            .setResponseCode(HttpStatus.NOT_FOUND.code()));
-
-    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
-    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(4);
   }
 
   @Test
   public void detect_ifNotVulnerableBatchRequest_doesNotReportVuln() {
-    mockWebServer.enqueue(
-        new MockResponse()
-            .addHeader("Server", "APISIX/2.13.1")
-            .setResponseCode(HttpStatus.NOT_FOUND.code()));
-
     mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
 
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
@@ -147,13 +127,8 @@ public final class Cve202224112DetectorTest {
   @Test
   public void detect_ifNotCreatedRoute_doesNotReportVuln() {
     mockWebServer.enqueue(
-            new MockResponse()
-                    .addHeader("Server", "APISIX/2.12.0")
-                    .setResponseCode(HttpStatus.NOT_FOUND.code()));
-    mockWebServer.enqueue(
-            new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("[{\"reason\":\"OK\"}]"));
-    mockWebServer.enqueue(
-            new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
+        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("[{\"status\":200}]"));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
 
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
