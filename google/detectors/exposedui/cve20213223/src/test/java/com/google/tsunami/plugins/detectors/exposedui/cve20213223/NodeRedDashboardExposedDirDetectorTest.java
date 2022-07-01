@@ -171,6 +171,31 @@ public final class NodeRedDashboardExposedDirDetectorTest {
         .isEmpty();
   }
 
+  // Test for the case when it is not an Http network service
+  @Test
+  public void detect_whenNonHttpNetworkService_ignoresServices() {
+    ImmutableList<NetworkService> nonHttpServices =
+        ImmutableList.of(
+            NetworkService.newBuilder().setServiceName("ssh").build(),
+            NetworkService.newBuilder().setServiceName("rdp").build());
+    assertThat(
+            detector
+                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), nonHttpServices)
+                .getDetectionReportsList())
+        .isEmpty();
+  }
+
+  // Test for the case when the network service is empty
+  @Test
+  public void detect_whenEmptyNetworkService_generatesEmptyDetectionReports() {
+    assertThat(
+            detector
+                .detect(
+                    buildTargetInfo(forHostname(mockWebServer.getHostName())), ImmutableList.of())
+                .getDetectionReportsList())
+        .isEmpty();
+  }
+
   private void startMockWebServer(String url, int responseCode, String response)
       throws IOException {
     mockWebServer.enqueue(new MockResponse().setResponseCode(responseCode).setBody(response));
