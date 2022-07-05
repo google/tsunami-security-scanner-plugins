@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'Tsunami NodeRedDashboard ExposedDir VulnDetector plugin.'
+description = 'Tsunami NodeRedDashboard DirectoryTraversal VulnDetector plugin.'
 group = 'com.google.tsunami'
 version = '0.0.1-SNAPSHOT'
 

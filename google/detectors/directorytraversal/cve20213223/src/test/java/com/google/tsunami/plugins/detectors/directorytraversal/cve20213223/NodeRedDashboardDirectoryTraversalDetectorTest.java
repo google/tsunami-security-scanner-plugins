@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.tsunami.plugins.detectors.exposedui.cve20213223;
+package com.google.tsunami.plugins.detectors.directorytraversal.cve20213223;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
@@ -50,16 +50,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Unit tests for {@link NodeRedDashboardExposedDirDetector}. */
+/** Unit tests for {@link NodeRedDashboardDirectoryTraversalDetector}. */
 @RunWith(JUnit4.class)
-public final class NodeRedDashboardExposedDirDetectorTest {
+public final class NodeRedDashboardDirectoryTraversalDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2022-01-01T00:00:00.00Z"));
 
   private MockWebServer mockWebServer;
 
-  @Inject private NodeRedDashboardExposedDirDetector detector;
+  @Inject private NodeRedDashboardDirectoryTraversalDetector detector;
 
   @Before
   public void setUp() {
@@ -68,7 +68,7 @@ public final class NodeRedDashboardExposedDirDetectorTest {
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
-            new NodeRedDashboardExposedDirDetectorBootstrapModule())
+            new NodeRedDashboardDirectoryTraversalDetectorBootstrapModule())
         .injectMembers(this);
   }
 
@@ -112,7 +112,7 @@ public final class NodeRedDashboardExposedDirDetectorTest {
                                 .setPublisher("GOOGLE")
                                 .setValue("CVE_2021_3223"))
                         .setSeverity(Severity.CRITICAL)
-                        .setTitle("Node-RED-Dashboard directory exposed")
+                        .setTitle("Node-RED-Dashboard directory traversal vulnerability")
                         .setDescription(
                             "Directory Traversal vulnerability in exposed Node-RED-Dashboard")
                         .addAdditionalDetails(

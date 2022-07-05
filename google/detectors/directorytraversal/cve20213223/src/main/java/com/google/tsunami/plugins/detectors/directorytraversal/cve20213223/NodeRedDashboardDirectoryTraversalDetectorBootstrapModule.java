@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package com.google.tsunami.plugins.detectors.exposedui.cve20213223;
+package com.google.tsunami.plugins.detectors.directorytraversal.cve20213223;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
 /** An example Guice module that bootstraps the {@link NodeRedDashboardExposedDirDetector}. */
-public final class NodeRedDashboardExposedDirDetectorBootstrapModule extends PluginBootstrapModule {
+public final class NodeRedDashboardDirectoryTraversalDetectorBootstrapModule
+    extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
 
     // registerPlugin method is required in order for the Tsunami scanner to identify the new plugin
-    registerPlugin(NodeRedDashboardExposedDirDetector.class);
+    registerPlugin(NodeRedDashboardDirectoryTraversalDetector.class);
   }
 }

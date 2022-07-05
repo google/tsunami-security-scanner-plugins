@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.tsunami.plugins.detectors.exposedui.cve20213223;
+package com.google.tsunami.plugins.detectors.directorytraversal.cve20213223;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -46,16 +46,16 @@ import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
 
-/** NodeRedDashboardExposedDirDetector plugin. */
+/** NodeRedDashboardDirectoryTraversalDetector plugin. */
 // PluginInfo tells Tsunami scanning engine basic information about the plugin.
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "NodeRedDashboardExposedDirDetector",
+    name = "NodeRedDashboardDirectoryTraversalDetector",
     version = "0.1",
     description = "This plugin detects directory traversal vulnerability in Node-RED-Dashboard.",
     author = "Tsunami Team (tsunami-dev@google.com)",
-    bootstrapModule = NodeRedDashboardExposedDirDetectorBootstrapModule.class)
-public final class NodeRedDashboardExposedDirDetector implements VulnDetector {
+    bootstrapModule = NodeRedDashboardDirectoryTraversalDetectorBootstrapModule.class)
+public final class NodeRedDashboardDirectoryTraversalDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final Clock utcClock;
@@ -64,7 +64,7 @@ public final class NodeRedDashboardExposedDirDetector implements VulnDetector {
   // All the utility dependencies of the plugin must be injected through the constructor of the
   // detector. Here the UtcClock is provided by the scanner.
   @Inject
-  NodeRedDashboardExposedDirDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  NodeRedDashboardDirectoryTraversalDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
   }
@@ -75,7 +75,7 @@ public final class NodeRedDashboardExposedDirDetector implements VulnDetector {
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
-    logger.atInfo().log("NodeRedDashboardExposedDirDetector starts detecting.");
+    logger.atInfo().log("NodeRedDashboardDirectoryTraversalDetector starts detecting.");
 
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
@@ -133,7 +133,7 @@ public final class NodeRedDashboardExposedDirDetector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2021_3223"))
                 .setSeverity(Severity.CRITICAL)
-                .setTitle("Node-RED-Dashboard directory exposed")
+                .setTitle("Node-RED-Dashboard directory traversal vulnerability")
                 .setDescription("Directory Traversal vulnerability in exposed Node-RED-Dashboard")
                 .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
         .build();
