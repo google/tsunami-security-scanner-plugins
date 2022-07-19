@@ -109,7 +109,11 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
       logger.atInfo().log(
           "WebServiceFingerprinter failed to confirm running web application on '%s'.",
           startingUrl);
-      return FingerprintingReport.newBuilder().addNetworkServices(networkService).build();
+      return FingerprintingReport.newBuilder()
+          .addNetworkServices(
+              addWebServiceContext(
+                  networkService, Optional.empty(), Optional.empty(), crawlResults))
+          .build();
     } else {
       logger.atInfo().log(
           "WebServiceFingerprinter identified %d results for '%s'.",
@@ -119,7 +123,11 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
               versionsBySoftware.entrySet().stream()
                   .map(
                       entry ->
-                          addWebServiceContext(networkService, entry.getKey(), entry.getValue()))
+                          addWebServiceContext(
+                              networkService,
+                              Optional.of(entry.getKey()),
+                              Optional.of(entry.getValue()),
+                              crawlResults))
                   .collect(toImmutableList()))
           .build();
     }
@@ -152,30 +160,34 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
 
   private static NetworkService addWebServiceContext(
       NetworkService networkService,
-      DetectedSoftware detectedSoftware,
-      DetectedVersion detectedVersion) {
-    Software software =
-        Software.newBuilder().setName(detectedSoftware.softwareIdentity().getSoftware()).build();
-    VersionSet versionSet =
-        VersionSet.newBuilder()
-            .addAllVersions(
-                detectedVersion.versions().stream()
-                    .map(
-                        version ->
-                            Version.newBuilder()
-                                .setType(VersionType.NORMAL)
-                                .setFullVersionString(version.getFullName())
-                                .build())
-                    .collect(toImmutableList()))
-            .build();
-    WebServiceContext webServiceContext =
-        WebServiceContext.newBuilder()
-            .setApplicationRoot(detectedSoftware.rootPath())
-            .setSoftware(software)
-            .setVersionSet(versionSet)
-            .build();
+      Optional<DetectedSoftware> detectedSoftware,
+      Optional<DetectedVersion> detectedVersion,
+      ImmutableSet<CrawlResult> crawlResults) {
+    WebServiceContext.Builder webServiceContextBuilder =
+        WebServiceContext.newBuilder().addAllCrawlResults(crawlResults);
+    detectedSoftware.ifPresent(
+        software ->
+            webServiceContextBuilder
+                .setApplicationRoot(software.rootPath())
+                .setSoftware(
+                    Software.newBuilder().setName(software.softwareIdentity().getSoftware())));
+    detectedVersion.ifPresent(
+        version ->
+            webServiceContextBuilder.setVersionSet(
+                VersionSet.newBuilder()
+                    .addAllVersions(
+                        version.versions().stream()
+                            .map(
+                                v ->
+                                    Version.newBuilder()
+                                        .setType(VersionType.NORMAL)
+                                        .setFullVersionString(v.getFullName())
+                                        .build())
+                            .collect(toImmutableList()))
+                    .build()));
     return networkService.toBuilder()
-        .setServiceContext(ServiceContext.newBuilder().setWebServiceContext(webServiceContext))
+        .setServiceContext(
+            ServiceContext.newBuilder().setWebServiceContext(webServiceContextBuilder.build()))
         .build();
   }
 
@@ -187,7 +199,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
             .setShouldEnforceScopeCheck(shouldEnforceScopeCheck)
             .addSeedingUrls(seedingUrl)
             .setMaxDepth(3)
-            .setNetworkService(networkService)
+            .setNetworkEndpoint(networkService.getNetworkEndpoint())
             .build();
     return crawler.crawl(crawlConfig);
   }

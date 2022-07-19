@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.credentials.ncrack.provider;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.tsunami.proto.NetworkService;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +40,7 @@ public final class Top100PasswordsTest {
 
   @Test
   public void defaultConstruct_always_doNotRunOutOfMemoryOrThrows() {
-    new Top100Passwords();
+    var unused = new Top100Passwords();
   }
 
   @Test
@@ -57,7 +58,7 @@ public final class Top100PasswordsTest {
   @Test
   public void genereateTestCredentials_withinExpectedValues_returnsExpectedCredentials() {
     ImmutableList<TestCredential> generatedCredentials =
-        ImmutableList.copyOf(provider.generateTestCredentials());
+        ImmutableList.copyOf(provider.generateTestCredentials(NetworkService.getDefaultInstance()));
 
     assertThat(generatedCredentials)
         .containsExactly(

@@ -16,6 +16,7 @@
 package com.google.tsunami.plugins.portscan.nmap;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Splitter;
@@ -33,6 +34,7 @@ import com.google.tsunami.plugins.portscan.nmap.client.NmapClient.DnsResolution;
 import com.google.tsunami.plugins.portscan.nmap.client.NmapClient.ScanTechnique;
 import com.google.tsunami.plugins.portscan.nmap.client.NmapClient.TimingTemplate;
 import com.google.tsunami.plugins.portscan.nmap.client.result.Address;
+import com.google.tsunami.plugins.portscan.nmap.client.result.Cpe;
 import com.google.tsunami.plugins.portscan.nmap.client.result.Host;
 import com.google.tsunami.plugins.portscan.nmap.client.result.Hostname;
 import com.google.tsunami.plugins.portscan.nmap.client.result.NmapRun;
@@ -251,6 +253,7 @@ public final class NmapPortScanner implements PortScanner {
 
     getServiceNameFromPort(port).ifPresent(networkServiceBuilder::setServiceName);
     getSoftwareFromPort(port).ifPresent(networkServiceBuilder::setSoftware);
+    getCpeFromPort(port).ifPresent(networkServiceBuilder::addAllCpes);
     getSoftwareVersionSetFromPort(port).ifPresent(networkServiceBuilder::setVersionSet);
     getBannerScriptFromPort(port)
         .ifPresent(script -> networkServiceBuilder.addBanner(script.output()));
@@ -291,6 +294,11 @@ public final class NmapPortScanner implements PortScanner {
         .map(product -> Software.newBuilder().setName(product).build());
   }
 
+  private static Optional<List<String>> getCpeFromPort(Port port) {
+    return Optional.ofNullable(port.service())
+        .map(value -> value.cpes().stream().map(Cpe::value).collect(toImmutableList()));
+  }
+
   private static Optional<VersionSet> getSoftwareVersionSetFromPort(Port port) {
     return Optional.ofNullable(port.service())
         .map(service -> Strings.emptyToNull(service.version()))
@@ -313,15 +321,17 @@ public final class NmapPortScanner implements PortScanner {
   }
 
   private static Optional<String> getServiceNameFromPort(Port port) {
-    return Optional.ofNullable(port.service()).map(service -> {
-      if (Strings.isNullOrEmpty(service.name())) {
-        return null;
-      } else if (Strings.isNullOrEmpty(service.tunnel())) {
-        return service.name();
-      } else {
-        return service.tunnel() + "/" + service.name();
-      }
-    });
+    return Optional.ofNullable(port.service())
+        .map(
+            service -> {
+              if (Strings.isNullOrEmpty(service.name())) {
+                return null;
+              } else if (Strings.isNullOrEmpty(service.tunnel())) {
+                return service.name();
+              } else {
+                return service.tunnel() + "/" + service.name();
+              }
+            });
   }
 
   private static void logIdentifiedNetworkService(NetworkService networkService) {
@@ -337,6 +347,9 @@ public final class NmapPortScanner implements PortScanner {
     }
     if (networkService.hasSoftware()) {
       logMessageBuilder.append(", software ").append(networkService.getSoftware().getName());
+    }
+    if (!networkService.getCpesList().isEmpty()) {
+      logMessageBuilder.append(", cpe ").append(String.join(", ", networkService.getCpesList()));
     }
     if (networkService.hasVersionSet()) {
       logMessageBuilder

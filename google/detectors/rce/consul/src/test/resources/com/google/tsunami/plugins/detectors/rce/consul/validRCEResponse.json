@@ -1,0 +1,14 @@
+{
+  "Node": "test node",
+  "CheckID": "service:TSUNAMI_RCE_TEST",
+  "Name": "Service 'TSUNAMI_RCE_TEST' check",
+  "Status": "passing",
+  "Notes": "",
+  "Output": "TSUNAMI_PAYLOAD_STARTffffffffffffffffTSUNAMI_PAYLOAD_END",
+  "ServiceID": "TSUNAMI_RCE_TEST",
+  "ServiceName": "TSUNAMI_RCE_TEST",
+  "ServiceTags": null,
+  "Definition": {},
+  "CreateIndex": 81,
+  "ModifyIndex": 112
+}

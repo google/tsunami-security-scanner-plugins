@@ -16,9 +16,14 @@
 package com.google.tsunami.plugins.detectors.credentials.ncrack;
 
 import com.google.tsunami.common.config.annotations.ConfigProperties;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TargetService;
+import java.util.List;
 
 @ConfigProperties("plugins.google.detectors.credentials.ncrack")
 final class NcrackWeakCredentialDetectorConfigs {
   // Path to the ncrack binary.
   String ncrackBinaryPath;
+
+  /** String value of {@link TargetService} to exclude from ncrack scanning. */
+  List<String> excludedTargetServices;
 }

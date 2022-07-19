@@ -16,6 +16,8 @@
 package com.google.tsunami.plugins.fingerprinters.web.crawl;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
+import static com.google.common.net.HttpHeaders.LOCATION;
 
 import com.google.protobuf.ByteString;
 import com.google.tsunami.common.net.http.HttpMethod;
@@ -23,6 +25,7 @@ import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.proto.CrawlConfig;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
+import com.google.tsunami.proto.HttpHeader;
 import okhttp3.mockwebserver.MockWebServer;
 
 /** A testing util for building protobuf data used in web crawling tests. */
@@ -60,6 +63,10 @@ final class TestDataBuilder {
         .setCrawlDepth(depth)
         .setResponseCode(HttpStatus.OK.code())
         .setContent(ByteString.copyFromUtf8(response))
+        .addResponseHeaders(
+            HttpHeader.newBuilder()
+                .setKey(CONTENT_LENGTH)
+                .setValue(String.valueOf(response.length())))
         .build();
   }
 
@@ -71,6 +78,8 @@ final class TestDataBuilder {
                 .setHttpMethod(HttpMethod.GET.toString()))
         .setCrawlDepth(depth)
         .setResponseCode(HttpStatus.FOUND.code())
+        .addResponseHeaders(HttpHeader.newBuilder().setKey(CONTENT_LENGTH).setValue("0"))
+        .addResponseHeaders(HttpHeader.newBuilder().setKey(LOCATION).setValue("/"))
         .build();
   }
 }

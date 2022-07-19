@@ -61,6 +61,7 @@ import com.google.tsunami.plugins.fingerprinters.web.proto.Version;
 import com.google.tsunami.proto.CrawlConfig;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
+import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
@@ -101,13 +102,11 @@ public final class FingerprintUpdater {
   private final Options options;
   private final HttpClient httpClient;
   private final Crawler crawler;
-  private final NetworkService fakeNetworkService;
 
   @Inject
   public FingerprintUpdater(Options options, HttpClient httpClient, Crawler crawler) {
     this.options = checkNotNull(options);
     this.httpClient = checkNotNull(httpClient);
-    this.fakeNetworkService = NetworkService.getDefaultInstance();
     this.crawler = checkNotNull(crawler);
   }
 
@@ -140,7 +139,7 @@ public final class FingerprintUpdater {
 
     logger.atInfo().log(
         "Crawler identified %s files. Moving on to check local static files.", fileHashes.size());
-    fileHashes.putAll(checkLocalRepos(ImmutableSet.copyOf(fileHashes.keySet())));
+    fileHashes.putAll(checkLocalRepos(ImmutableSet.copyOf(fileHashes.keySet()), oldFingerprints));
     // Remove empty path if present, this is not useful for fingerprint detection.
     fileHashes.remove("");
 
@@ -188,7 +187,7 @@ public final class FingerprintUpdater {
             .addAllSeedingUrls(seedingUrls)
             .setMaxDepth(options.maxCrawlDepth)
             .addScopes(ScopeUtils.fromUrl(options.remoteUrl))
-            .setNetworkService(fakeNetworkService)
+            .setNetworkEndpoint(NetworkEndpoint.getDefaultInstance())
             .build();
     return crawler.crawl(crawlConfig).stream()
         .filter(crawlResult -> HttpStatus.fromCode(crawlResult.getResponseCode()).isSuccess())
@@ -209,9 +208,22 @@ public final class FingerprintUpdater {
     return url.encodedPath() + "?" + query;
   }
 
-  private ImmutableMap<String, Hash> checkLocalRepos(ImmutableSet<String> visitedFiles) {
+  private ImmutableMap<String, Hash> checkLocalRepos(
+      ImmutableSet<String> visitedFiles, Fingerprints existingFingerprints) {
     ImmutableMap.Builder<String, Hash> fileHashesBuilder = ImmutableMap.builder();
-    ImmutableSet<String> localStaticFiles = allLocalStaticFiles();
+    ImmutableSet<String> localStaticFiles =
+        ImmutableSet.<String>builder()
+            .addAll(allLocalStaticFiles())
+            // Include all previously known paths as well.
+            .addAll(
+                existingFingerprints.getContentHashesList().stream()
+                    .map(ContentHash::getContentPath)
+                    .collect(toImmutableSet()))
+            .addAll(
+                existingFingerprints.getPathVersionsList().stream()
+                    .map(PathVersion::getContentPath)
+                    .collect(toImmutableSet()))
+            .build();
     for (String staticFile : localStaticFiles) {
       if (visitedFiles.contains(staticFile)) {
         logger.atInfo().log("(Ignore) File %s has already been crawled by crawler.", staticFile);
@@ -235,7 +247,7 @@ public final class FingerprintUpdater {
       HttpUrl url =
           HttpUrl.parse(options.remoteUrl).newBuilder().addPathSegments(staticFile).build();
       HttpResponse response =
-          httpClient.send(get(url).withEmptyHeaders().build(), fakeNetworkService);
+          httpClient.send(get(url).withEmptyHeaders().build(), NetworkService.getDefaultInstance());
       if (!response.status().isSuccess()) {
         logger.atWarning().log("(Ignored) status %s for file '%s'", response.status(), staticFile);
         return Optional.empty();

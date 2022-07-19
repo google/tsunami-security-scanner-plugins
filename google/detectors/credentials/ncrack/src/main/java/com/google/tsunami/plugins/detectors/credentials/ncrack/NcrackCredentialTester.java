@@ -27,6 +27,7 @@ import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TargetService;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackClient.TimingTemplate;
+import com.google.tsunami.plugins.detectors.credentials.ncrack.client.NcrackExcludedTargetServices;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.client.data.NcrackRun;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.tester.CredentialTester;
@@ -48,6 +49,7 @@ final class NcrackCredentialTester extends CredentialTester {
   private static final ImmutableMap<String, TargetService> SERVICE_MAP =
       ImmutableMap.<String, TargetService>builder()
           // Missing from TargetService: JOOMLA, HTTP, OWA
+          .put("cassandra", TargetService.CASSANDRA)
           .put("ssh", TargetService.SSH)
           .put("ms-wtb-server", TargetService.RDP)
           .put("ftp", TargetService.FTP)
@@ -72,12 +74,16 @@ final class NcrackCredentialTester extends CredentialTester {
 
   private final Provider<NcrackClient> ncrackClientProvider;
   private final Executor executor;
+  private final List<TargetService> excludedTargetServices;
 
   @Inject
   NcrackCredentialTester(
-      Provider<NcrackClient> ncrackClientProvider, @CommandExecutionThreadPool Executor executor) {
+      Provider<NcrackClient> ncrackClientProvider,
+      @CommandExecutionThreadPool Executor executor,
+      @NcrackExcludedTargetServices List<TargetService> excludedTargetServices) {
     this.ncrackClientProvider = checkNotNull(ncrackClientProvider);
     this.executor = checkNotNull(executor);
+    this.excludedTargetServices = checkNotNull(excludedTargetServices);
   }
 
   @Override
@@ -94,7 +100,9 @@ final class NcrackCredentialTester extends CredentialTester {
 
   @Override
   public boolean canAccept(NetworkService networkService) {
-    return SERVICE_MAP.containsKey(NetworkServiceUtils.getServiceName(networkService));
+    String serviceName = NetworkServiceUtils.getServiceName(networkService);
+    return SERVICE_MAP.containsKey(serviceName)
+        && !excludedTargetServices.contains(SERVICE_MAP.get(serviceName));
   }
 
   @Override

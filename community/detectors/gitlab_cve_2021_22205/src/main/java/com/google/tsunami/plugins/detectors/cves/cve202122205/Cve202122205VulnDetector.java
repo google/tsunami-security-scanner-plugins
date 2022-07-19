@@ -67,8 +67,10 @@ public final class Cve202122205VulnDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String USER_SIGN_PATH = "users/sign_in";
   private static final String VUL_PATH = "uploads/user";
+  // CSRF token looks like <meta name="csrf-token" content="ABCE" />
   private static final Pattern CSRF_TOKEN_PATTERN =
-      Pattern.compile("csrf-token\" content=\"(.*?)\" />\\n\\n<meta");
+      Pattern.compile("csrf-token\" content=\"(.*?)\" />");
+
   /**
    * The detailed principle of Poc generation for the vulnerability can be found in the following
    * article devcraft.io/2021/05/04/exiftool-arbitrary-code-execution-cve-2021-22204.html

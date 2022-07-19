@@ -9,16 +9,18 @@ group = 'com.google.tsunami'
 version = '0.0.1-SNAPSHOT'
 
 repositories {
+    /* TODO(b/210549664): reenable google mirror
     maven { // The google mirror is less flaky than mavenCentral()
         url 'https://maven-central.storage-download.googleapis.com/repos/central/data/'
     }
+     */
     mavenCentral()
     mavenLocal()
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 
     jar {
         manifest {
@@ -37,7 +39,6 @@ java {
         encoding = 'UTF-8'
         use = true
         links 'https://docs.oracle.com/javase/8/docs/api/'
-        source = '8'
     }
 
     // Log stacktrace to console when test fails.
@@ -63,7 +64,7 @@ ext {
     jsoupVersion = '1.9.2'
     okhttpVersion = '3.12.0'
     protobufVersion = '3.11.4'
-    tsunamiVersion = '0.0.4'
+    tsunamiVersion = '0.0.10'
 
     junitVersion = '4.13'
     mockitoVersion = '2.28.2'
@@ -112,16 +113,12 @@ dependencies {
     testAnnotationProcessor "com.google.auto.value:auto-value:${autoValueVersion}"
 }
 
-startScripts.enabled = false
-
-task fingerprintUpdater(type: CreateStartScripts) {
-    mainClassName = 'com.google.tsunami.plugins.fingerprinters.web.tools.FingerprintUpdater'
-    applicationName = 'fingerprint-updater'
-    outputDir = new File(project.buildDir, 'tmp')
-    classpath = startScripts.classpath
+task runFingerprintUpdater(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.google.tsunami.plugins.fingerprinters.web.tools.FingerprintUpdater'
 }
 
-applicationDistribution.into('bin') {
-    from(fingerprintUpdater)
-    fileMode = 0755
+task runFingerprintFileConverter(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.google.tsunami.plugins.fingerprinters.web.tools.FingerprintFileConverter'
 }

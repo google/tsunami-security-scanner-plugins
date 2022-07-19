@@ -37,6 +37,7 @@ import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.PortScanningReport;
 import com.google.tsunami.proto.ScanTarget;
+import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
 import java.io.File;
@@ -121,12 +122,11 @@ public class NmapPortScannerTest {
   }
 
   @Test
-  public void run_whenNmapRunHasHttpWithSslTunnel_returnsExpectedServiceName()
-      throws Exception {
+  public void run_whenNmapRunHasHttpWithSslTunnel_returnsExpectedServiceName() throws Exception {
     doReturn(loadNmapRun("testdata/localhostHttpSslTunnel.xml")).when(nmapClient).run(any());
     NetworkEndpoint networkEndpoint = NetworkEndpointUtils.forIp("127.0.0.1");
     assertThat(
-        portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
+            portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
         .isEqualTo(
             PortScanningReport.newBuilder()
                 .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint))
@@ -172,6 +172,26 @@ public class NmapPortScannerTest {
                             NetworkEndpointUtils.forHostnameAndPort("localhost", 80))
                         .setTransportProtocol(TransportProtocol.TCP)
                         .setServiceName("http"))
+                .build());
+  }
+
+  @Test
+  public void run_whenNmapRunHasOpenPortsAndCpe_returnsMatchingServiceWithCpe() throws Exception {
+    doReturn(loadNmapRun("testdata/localhostHttpWithCpe.xml")).when(nmapClient).run(any());
+    NetworkEndpoint networkEndpoint = NetworkEndpointUtils.forIp("127.0.0.1");
+    assertThat(
+            portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
+        .isEqualTo(
+            PortScanningReport.newBuilder()
+                .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint))
+                .addNetworkServices(
+                    NetworkService.newBuilder()
+                        .setNetworkEndpoint(NetworkEndpointUtils.forIpAndPort("127.0.0.1", 7001))
+                        .setTransportProtocol(TransportProtocol.TCP)
+                        .setServiceName("http")
+                        .setSoftware(
+                            Software.newBuilder().setName("Oracle WebLogic admin httpd").build())
+                        .addCpes("cpe:/a:oracle:weblogic_server"))
                 .build());
   }
 

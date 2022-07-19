@@ -17,10 +17,13 @@ package com.google.tsunami.plugins.detectors.credentials.ncrack.client;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import com.google.tsunami.common.cli.CliOption;
 import com.google.tsunami.common.command.CommandExecutor;
 import com.google.tsunami.common.command.CommandExecutorFactory;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
@@ -149,6 +152,7 @@ public class NcrackClient {
   private final List<NetworkEndpoint> networkEndpoints = new ArrayList<>();
   private final String ncrackBinaryPath;
   private final File reportFile;
+  private final NcrackClientCliOptions clioptions;
   private boolean pairwiseMode = false;
   private boolean sslEnabled = false;
   private boolean quitCrackingAfterOneFound = false;
@@ -160,10 +164,33 @@ public class NcrackClient {
   private ImmutableList<String> passwordList;
   private TargetService targetService;
 
+  /** NcrackClientCliOptions provides configuration options for {@link NcrackClient}. */
+  @Parameters(separators = "=")
+  public static class NcrackClientCliOptions implements CliOption {
+    @Parameter(
+        names = "--ncrack-max-time",
+        description = "Maximum time for a single ncrack run. Example: --ncrack-max-time=3h")
+    protected String maxTime;
+
+    @Override
+    public void validate() {}
+
+    /**
+     * Sets the maximum time for a single ncrack run.
+     *
+     * @param maxtime String to specify time in nmap timing format.
+     */
+    public NcrackClientCliOptions withMaxTime(String maxtime) {
+      this.maxTime = maxtime;
+      return this;
+    }
+  }
+
   /** Constructor using ncrack runtime path. */
   @Inject
-  public NcrackClient(@NcrackBinaryPath String ncrackBinaryPath) throws IOException {
-    this(ncrackBinaryPath, File.createTempFile("ncrack", ".report"));
+  public NcrackClient(@NcrackBinaryPath String ncrackBinaryPath, NcrackClientCliOptions options)
+      throws IOException {
+    this(ncrackBinaryPath, File.createTempFile("ncrack", ".report"), options);
   }
 
   /**
@@ -171,12 +198,14 @@ public class NcrackClient {
    *
    * @param ncrackBinaryPath Path to the ncrack binary.
    * @param report File to write Ncrack output to.
+   * @param options Cli options passed by JCommander framework.
    */
-  public NcrackClient(String ncrackBinaryPath, File report) {
+  public NcrackClient(String ncrackBinaryPath, File report, NcrackClientCliOptions options) {
     checkArgument(
         Files.exists(Paths.get(ncrackBinaryPath)), "Binary %s do not exist", ncrackBinaryPath);
     this.ncrackBinaryPath = ncrackBinaryPath;
     this.reportFile = report;
+    this.clioptions = options;
   }
 
   /**
@@ -203,6 +232,14 @@ public class NcrackClient {
 
   public TargetService getTargetService() {
     return targetService;
+  }
+
+  public Optional<String> getMaxTime() {
+    if (clioptions != null) {
+      return Optional.ofNullable(clioptions.maxTime);
+    } else {
+      return Optional.empty();
+    }
   }
 
   public ImmutableList<String> getUsernameList() {
@@ -233,6 +270,7 @@ public class NcrackClient {
     for (NetworkEndpoint networkEndpoint : networkEndpoints) {
       runCommandArgs.add(buildServiceCommandValue(networkEndpoint));
     }
+    getMaxTime().ifPresent(maxtime -> runCommandArgs.add("-g to=" + maxtime));
     runCommandArgs.add("-oN");
     runCommandArgs.add(reportFile.getAbsolutePath());
     return runCommandArgs;
@@ -372,4 +410,3 @@ public class NcrackClient {
     return this;
   }
 }
-

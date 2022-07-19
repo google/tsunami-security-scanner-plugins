@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
@@ -35,7 +36,6 @@ import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.composer.WeakCredentialComposer;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.CredentialProvider;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.TestCredential;
-import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.Top100Passwords;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.tester.CredentialTester;
 import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.Credential;
@@ -51,15 +51,18 @@ import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import javax.inject.Inject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 /**
- * The weak credentials plugins checks for the top 100 passwords on all the services supported by
- * {@link NcrackCredentialTester}. See {@link Top100Passwords} for the list of passwords checked by
- * the plugin.
+ * The weak credentials plugins checks credentials on all the services supported by {@link
+ * NcrackCredentialTester}. See the {@link CredentialProvider}s registered in {@link
+ * NcrackWeakCredentialDetectorBootstrapModule} for the list of passwords checked by the detector.
+ * Add additional {@link CredentialProvider} to test more credentials.
  */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
@@ -72,27 +75,32 @@ public final class NcrackWeakCredentialDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final Severity DEFAULT_SEVERITY = Severity.CRITICAL;
 
-  private final CredentialProvider provider;
+  @VisibleForTesting
+  final ImmutableSet<CredentialProvider> providers;
   private final ImmutableList<CredentialTester> testers;
   private final Clock utcClock;
   private final HttpClient httpClient;
 
   @Inject
-  public NcrackWeakCredentialDetector(
-      CredentialProvider provider,
+  NcrackWeakCredentialDetector(
+      Set<CredentialProvider> providers,
       CredentialTester tester,
       @UtcClock Clock utcClock,
       HttpClient httpClient) {
-    this(provider, ImmutableList.of(checkNotNull(tester)), utcClock, httpClient);
+    this(
+        ImmutableSet.copyOf(checkNotNull(providers)),
+        ImmutableList.of(checkNotNull(tester)),
+        utcClock,
+        httpClient);
   }
 
   @VisibleForTesting
   NcrackWeakCredentialDetector(
-      CredentialProvider provider,
+      ImmutableSet<CredentialProvider> providers,
       ImmutableList<CredentialTester> testers,
       Clock utcClock,
       HttpClient httpClient) {
-    this.provider = checkNotNull(provider);
+    this.providers = checkNotNull(providers);
     this.testers = checkNotNull(testers);
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
@@ -106,6 +114,12 @@ public final class NcrackWeakCredentialDetector implements VulnDetector {
     DetectionReportList.Builder detectionReportsBuilder = DetectionReportList.newBuilder();
 
     doSimpleWebServiceDetection(matchedServices).stream()
+        // Disable scanner on postgresql due to
+        // https://github.com/nmap/ncrack/issues/49#issuecomment-1064651415
+        // We could also do this in NcrackCredentialTester but this is more visible.
+        .filter(
+            networkService ->
+                !NetworkServiceUtils.getServiceName(networkService).equals("postgresql"))
         .filter(
             networkService -> testers.stream().anyMatch(tester -> tester.canAccept(networkService)))
         .forEach(
@@ -133,11 +147,18 @@ public final class NcrackWeakCredentialDetector implements VulnDetector {
       NetworkService networkService,
       CredentialTester tester,
       DetectionReportList.Builder detectionReportsBuilder) {
-    logger.atInfo().log(
-        "Running tester '%s' and credential provider '%s' on service %s.",
-        tester.name(), provider.name(), formatNetworkService(networkService));
+
+    // Multiple providers could give the same credentials, so create
+    // a set to dedupe them before testing.
+    HashSet<TestCredential> credentials = new HashSet<>();
+
+    for (CredentialProvider provider : providers) {
+      provider.generateTestCredentials(networkService).forEachRemaining(credentials::add);
+    }
+
     ImmutableList<TestCredential> validCredentials =
-        new WeakCredentialComposer(provider, tester).run(networkService);
+        new WeakCredentialComposer(ImmutableList.copyOf(credentials), tester).run(networkService);
+
     validCredentials.forEach(
         testCredential ->
             addFindingForCredential(
@@ -163,7 +184,7 @@ public final class NcrackWeakCredentialDetector implements VulnDetector {
                             .setValue(buildVulnerabilityId(networkService)))
                     .setSeverity(DEFAULT_SEVERITY)
                     .setTitle(buildTitle(networkService))
-                    // TODO(b/145315535): determine CVSS score.
+                    .setCvssV3("7.5") // CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
                     .setDescription(buildDescription(networkService))
                     .addAdditionalDetails(buildCredentialDetail(testCredential)))
             .build());

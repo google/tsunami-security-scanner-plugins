@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.tsunami.proto.NetworkService;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -44,6 +45,7 @@ public final class Top100Passwords extends CredentialProvider {
           "info",
           "adm",
           "mysql",
+          "postgres",
           "user",
           "administrator",
           "oracle",
@@ -185,7 +187,7 @@ public final class Top100Passwords extends CredentialProvider {
   }
 
   @Override
-  public Iterator<TestCredential> generateTestCredentials() {
+  public Iterator<TestCredential> generateTestCredentials(NetworkService unused) {
     return credentials.iterator();
   }
 }

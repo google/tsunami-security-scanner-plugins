@@ -18,10 +18,13 @@ package com.google.tsunami.plugins.fingerprinters.web.crawl;
 import static com.google.common.net.HttpHeaders.CONTENT_LOCATION;
 import static com.google.common.net.HttpHeaders.LINK;
 import static com.google.common.net.HttpHeaders.LOCATION;
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpMethod;
 import com.google.tsunami.proto.CrawlTarget;
@@ -184,13 +187,68 @@ public final class CrawlTargetUtilsTest {
   @Test
   public void
       extractFromHtml_withFormTagActionAttributePostMethod_extractsAbsoluteUrlWithPostMethod() {
-    String html = "<form action=\"/form-action\" method=\"PosT\"></form>";
-    assertThat(CrawlTargetUtils.extractFromHtml(html, HttpUrl.parse(BASE_URL)))
+    String html =
+        "<form action=\"/form-action\" method=\"PosT\">\n"
+            + "<input type=\"text\" id=\"id1\" name=\"text\">\n"
+            + "<input type=\"radio\" id=\"id2\" name=\"radio\">\n"
+            + "<input type=\"radio\" id=\"id3\" name=\"radio\">\n"
+            + "<input type=\"checkbox\" id=\"id4\" name=\"checkbox1\" value=\"value1\">\n"
+            + "<input type=\"checkbox\" id=\"id5\" name=\"checkbox2\" value=\"value2\">\n"
+            + "<input type=\"checkbox\" id=\"id5\" name=\"checkbox2\" value=\"value2\">\n"
+            + "<select name=\"select\" id=\"select\">\n"
+            + "<option value=\"option1\">option1</option>\n"
+            + "<option value=\"option2\">option2</option>\n"
+            + "</select>\n"
+            + "<input type=\"submit\" value=\"Submit\">\n"
+            + "</form>";
+
+    ImmutableSet<CrawlTarget> crawlTargets =
+        CrawlTargetUtils.extractFromHtml(html, HttpUrl.parse(BASE_URL));
+
+    assertThat(crawlTargets)
+        .comparingExpectedFieldsOnly()
         .containsExactly(
             CrawlTarget.newBuilder()
                 .setHttpMethod("POST")
                 .setUrl(BASE_URL + "/form-action")
                 .build());
+    assertThat(
+            Splitter.on("&")
+                .split(crawlTargets.iterator().next().getHttpRequestBody().toStringUtf8()))
+        .containsExactly(
+            "text=test", "radio=test", "checkbox1=value1", "checkbox2=value2", "select=option1");
+  }
+
+  @Test
+  public void extractFromHtml_withFormTagActionAttributeGetMethod_appendsToExistingQueryParams() {
+    String html =
+        "<form action=\"/form-action/?form=form1\" method=\"get\">\n"
+            + "<input type=\"text\" id=\"id1\" name=\"text\">\n"
+            + "<input type=\"radio\" id=\"id2\" name=\"radio\">\n"
+            + "<input type=\"radio\" id=\"id3\" name=\"radio\">\n"
+            + "<input type=\"checkbox\" id=\"id4\" name=\"checkbox1\" value=\"value1\">\n"
+            + "<input type=\"checkbox\" id=\"id5\" name=\"checkbox2\" value=\"value2\">\n"
+            + "<input type=\"checkbox\" id=\"id5\" name=\"checkbox2\" value=\"value2\">\n"
+            + "<select name=\"select\" id=\"select\">\n"
+            + "</select>\n"
+            + "<input type=\"submit\" value=\"Submit\">\n"
+            + "</form>";
+
+    ImmutableSet<CrawlTarget> crawlTargets =
+        CrawlTargetUtils.extractFromHtml(html, HttpUrl.parse(BASE_URL));
+
+    assertThat(crawlTargets).hasSize(1);
+    CrawlTarget crawlTarget = crawlTargets.iterator().next();
+    assertThat(crawlTarget.getHttpMethod()).isEqualTo("GET");
+    assertThat(crawlTarget.getUrl()).startsWith(BASE_URL + "/form-action/?form=form1&");
+    assertThat(
+            Splitter.on("&")
+                .split(
+                    crawlTarget
+                        .getUrl()
+                        .substring((BASE_URL + "/form-action/?form=form1&").length())))
+        .containsExactly(
+            "text=test", "radio=test", "checkbox1=value1", "checkbox2=value2", "select=test");
   }
 
   @Test

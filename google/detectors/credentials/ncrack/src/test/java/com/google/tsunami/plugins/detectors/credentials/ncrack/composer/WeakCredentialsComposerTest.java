@@ -25,7 +25,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.CredentialProvider;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.ncrack.tester.CredentialTester;
 import com.google.tsunami.proto.NetworkService;
@@ -46,19 +45,16 @@ public final class WeakCredentialsComposerTest {
           TestCredential.create("username2", Optional.of("password2")),
           TestCredential.create("username3", Optional.of("password3")));
   private static final int BATCH_SIZE = 2;
-  private CredentialProvider provider;
   private CredentialTester tester;
   private WeakCredentialComposer composer;
 
   @Before
   public void setupComposer() {
-    provider = mock(CredentialProvider.class);
     tester = mock(CredentialTester.class);
-    when(provider.generateTestCredentials()).thenReturn(TEST_CREDENTIALS.iterator());
     when(tester.testValidCredentials(any(), any()))
         .thenReturn(ImmutableList.of(TestCredential.create("username1", Optional.of("password1"))))
         .thenReturn(ImmutableList.of());
-    composer = new WeakCredentialComposer(provider, tester, BATCH_SIZE);
+    composer = new WeakCredentialComposer(TEST_CREDENTIALS, tester, BATCH_SIZE);
   }
 
   @Test
@@ -73,7 +69,6 @@ public final class WeakCredentialsComposerTest {
             .build());
 
     verify(tester, never()).testValidCredentials(any(), any());
-    verify(provider, never()).generateTestCredentials();
   }
 
   @Test
