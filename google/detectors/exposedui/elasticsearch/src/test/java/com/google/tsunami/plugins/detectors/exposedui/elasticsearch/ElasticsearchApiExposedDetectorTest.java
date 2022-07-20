@@ -147,6 +147,46 @@ public final class ElasticsearchApiExposedDetectorTest {
   }
 
   @Test
+  public void detect_whenApiEndpointReturnsEmptyBody_doesNotReportVuln() throws IOException {
+    startMockWebServer("/", HttpStatus.OK.code(), "");
+    NetworkService httpService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setSoftware(Software.newBuilder().setName("Elasticsearch API"))
+            .setServiceName("http")
+            .build();
+    ImmutableList<NetworkService> httpServices = ImmutableList.of(httpService);
+
+    assertThat(
+            detector
+                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), httpServices)
+                .getDetectionReportsList())
+        .isEmpty();
+  }
+
+  @Test
+  public void detect_whenApiEndpointReturnsEmptyJson_doesNotReportVuln() throws IOException {
+    startMockWebServer("/", HttpStatus.OK.code(), "{}");
+    NetworkService httpService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setSoftware(Software.newBuilder().setName("Elasticsearch API"))
+            .setServiceName("http")
+            .build();
+    ImmutableList<NetworkService> httpServices = ImmutableList.of(httpService);
+
+    assertThat(
+            detector
+                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), httpServices)
+                .getDetectionReportsList())
+        .isEmpty();
+  }
+
+  @Test
   public void detect_whenNonElasticsearchWebApp_ignoresServices() throws IOException {
     startMockWebServer("/", HttpStatus.OK.code(), "This is WordPress.");
     ImmutableList<NetworkService> httpServices =

@@ -86,20 +86,19 @@ public final class ElasticsearchApiExposedDetector implements VulnDetector {
       // This is a blocking call.
       HttpResponse response =
           httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
+
       return response.status().isSuccess()
-          && response
-              .bodyJson()
-              .get()
-              .getAsJsonObject()
-              .getAsJsonPrimitive("tagline")
-              .getAsString()
-              .equals("You Know, for Search");
+          && response.jsonFieldEqualsToValue("tagline", "You Know, for Search");
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
       return false;
     } catch (JsonSyntaxException e) {
       logger.atWarning().withCause(e).log(
           "JSON syntax error occurred parsing response for target URI: '%s'.", targetUri);
+      return false;
+    } catch (IllegalStateException e) {
+      logger.atWarning().withCause(e).log(
+          "JSON object parsing error for target URI: '%s'.", targetUri);
       return false;
     }
   }

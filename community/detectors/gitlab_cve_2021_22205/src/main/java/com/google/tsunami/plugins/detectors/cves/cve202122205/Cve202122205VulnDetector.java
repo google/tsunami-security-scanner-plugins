@@ -176,8 +176,8 @@ public final class Cve202122205VulnDetector implements VulnDetector {
       HttpResponse httpResponse =
           httpClient.send(get(targetUserSignUrl).withEmptyHeaders().build(), networkService);
       if (httpResponse.status().code() == 200) {
-        String cookie = httpResponse.headers().get(SET_COOKIE).get();
-        Matcher csrfTokenMatcher = CSRF_TOKEN_PATTERN.matcher(httpResponse.bodyString().get());
+        String cookie = httpResponse.headers().get(SET_COOKIE).orElse("");
+        Matcher csrfTokenMatcher = CSRF_TOKEN_PATTERN.matcher(httpResponse.bodyString().orElse(""));
         if (csrfTokenMatcher.find() && !cookie.isEmpty()) {
           result.setCsrfToken(csrfTokenMatcher.group(1));
           StringBuilder cookies = new StringBuilder();
@@ -221,7 +221,7 @@ public final class Cve202122205VulnDetector implements VulnDetector {
                   .build(),
               networkService);
       if (httpResponse.status().code() == 422
-          && httpResponse.bodyString().get().contains(DETECTION_STRING)) {
+          && httpResponse.bodyString().orElse("").contains(DETECTION_STRING)) {
         return true;
       }
     } catch (IOException | AssertionError e) {
