@@ -49,7 +49,6 @@ import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
 
-
 /** A {@link VulnDetector} plugin that detects CVE-2021-35464. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
@@ -136,7 +135,8 @@ public final class Cve202135464Detector implements VulnDetector {
       }
       return false;
     } catch (IOException e) {
-      throw new AssertionError("Couldn't load payload resource file for Cve202135464Detector", e);
+      logger.atSevere().withCause(e).log("Cve202135464Detector: Unable to query %s.", targetUri);
+      return false;
     }
   }
 
