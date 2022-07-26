@@ -1,9 +1,18 @@
 package com.google.tsunami.plugins.detectors.rce.cve202224112;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.net.HttpHeaders.CONNECTION;
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.google.tsunami.common.net.http.HttpRequest.get;
+import static com.google.tsunami.common.net.http.HttpRequest.post;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.google.gson.JsonElement;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
@@ -17,21 +26,20 @@ import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.proto.*;
-
-import javax.inject.Inject;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
+import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.net.HttpHeaders.CONNECTION;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.tsunami.common.net.http.HttpRequest.get;
-import static com.google.tsunami.common.net.http.HttpRequest.post;
-import static java.nio.charset.StandardCharsets.UTF_8;
+import javax.inject.Inject;
 
 /** A {@link VulnDetector} that detects Apache APISIX RCE CVE-2022-24112. */
 @PluginInfo(
@@ -63,7 +71,7 @@ public final class Cve202224112Detector implements VulnDetector {
   private final HttpClient httpClient;
 
   private final PayloadGenerator payloadGenerator;
-  private String batchRequestBodyTemplate;
+  private final String batchRequestBodyTemplate;
 
   @Inject
   Cve202224112Detector(
@@ -112,7 +120,9 @@ public final class Cve202224112Detector implements VulnDetector {
     String filterFunc = String.format(FILTER_FUNC_OS_RCE, cmd);
 
     var vulnRouteCreated = registerRouteRequest(networkService, filterFunc);
-    if (!vulnRouteCreated) return false;
+    if (!vulnRouteCreated) {
+      return false;
+    }
 
     Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(BATCH_REQUEST_WAIT_AFTER_TIMEOUT));
 
@@ -125,7 +135,9 @@ public final class Cve202224112Detector implements VulnDetector {
     HttpResponse resp;
 
     var vulnRouteCreated = registerRouteRequest(networkService, FILTER_FUNC_OS_EXEC);
-    if (!vulnRouteCreated) return false;
+    if (!vulnRouteCreated) {
+      return false;
+    }
 
     Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(BATCH_REQUEST_WAIT_AFTER_TIMEOUT));
 
@@ -135,14 +147,14 @@ public final class Cve202224112Detector implements VulnDetector {
             || resp.status().code() == HttpStatus.BAD_GATEWAY.code())) return false;
 
     var trueNegativeRouteCreated = registerRouteRequest(networkService, FILTER_FUNC_FALSE);
-    if (!trueNegativeRouteCreated) return false;
+    if (!trueNegativeRouteCreated) {
+      return false;
+    }
 
     Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(BATCH_REQUEST_WAIT_AFTER_TIMEOUT));
 
     resp = executeCreatedRouteRequest(networkService);
-    if (resp == null || resp.status().code() != HttpStatus.NOT_FOUND.code()) return false;
-
-    return true;
+    return resp != null && resp.status().code() == HttpStatus.NOT_FOUND.code();
   }
 
   private HttpResponse executeBatchRequest(NetworkService networkService, String filterFunc) {
@@ -196,17 +208,26 @@ public final class Cve202224112Detector implements VulnDetector {
 
   private boolean registerRouteRequest(NetworkService networkService, String filterFunc) {
     HttpResponse resp = executeBatchRequest(networkService, filterFunc);
+
     return resp != null
         && resp.status().code() == HttpStatus.OK.code()
         && resp.bodyJson().isPresent()
-        && resp.bodyJson()
-            .get()
-            .getAsJsonArray()
-            .get(0)
-            .getAsJsonObject()
-            .get("status")
-            .getAsString()
-            .matches("200|201");
+        && containsOkStatus(resp.bodyJson().get());
+  }
+
+  private boolean containsOkStatus(JsonElement jsonElement) {
+    try {
+      return jsonElement
+          .getAsJsonArray()
+          .get(0)
+          .getAsJsonObject()
+          .get("status")
+          .getAsString()
+          .matches("200|201");
+    } catch (Exception e) {
+      logger.atInfo().log("Best effort Json parsing failed for %s.", jsonElement);
+    }
+    return false;
   }
 
   private HttpResponse executeCreatedRouteRequest(NetworkService networkService) {
@@ -253,3 +274,4 @@ public final class Cve202224112Detector implements VulnDetector {
         .build();
   }
 }
+

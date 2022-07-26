@@ -15,6 +15,9 @@
  */
 package com.google.tsunami.plugins.detectors.rce.cve202224112;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.protobuf.util.JsonFormat;
@@ -27,6 +30,9 @@ import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.TargetInfo;
+import java.io.IOException;
+import java.time.Instant;
+import javax.inject.Inject;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.After;
@@ -34,13 +40,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import javax.inject.Inject;
-import java.io.IOException;
-import java.time.Instant;
-
-import static com.google.common.truth.Truth.assertThat;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 
 /** Unit tests for {@link Cve202224112Detector}. */
 @RunWith(JUnit4.class)
@@ -99,6 +98,21 @@ public final class Cve202224112DetectorWithCallbackServerTest {
   }
 
   @Test
+  public void detect_returnsEmptyJsonBody_doesNotReportVuln() throws IOException {
+    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("[{}]"));
+    mockWebServer.enqueue(
+        new MockResponse().setResponseCode(HttpStatus.SERVICE_UNAVAILABLE.code()));
+    PollingResult log = PollingResult.newBuilder().setHasHttpInteraction(true).build();
+    String body = JsonFormat.printer().preservingProtoFieldNames().print(log);
+    mockCallbackServer.enqueue(
+        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(body));
+
+    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
   public void detect_ifNotVulnerable_doesNotReportVuln() throws IOException {
     mockWebServer.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("[{\"status\":200}]"));
@@ -113,3 +127,4 @@ public final class Cve202224112DetectorWithCallbackServerTest {
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
 }
+
