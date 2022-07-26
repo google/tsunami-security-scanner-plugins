@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
  */
 package com.google.tsunami.plugins.detectors.rce.cve202224112;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.tsunami.common.net.http.HttpClientModule;
@@ -25,6 +28,9 @@ import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.TargetInfo;
+import java.io.IOException;
+import java.time.Instant;
+import javax.inject.Inject;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.After;
@@ -32,13 +38,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import javax.inject.Inject;
-import java.io.IOException;
-import java.time.Instant;
-
-import static com.google.common.truth.Truth.assertThat;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 
 /** Unit tests for {@link Cve202224112Detector}. */
 @RunWith(JUnit4.class)
@@ -107,3 +106,4 @@ public final class Cve202224112DetectorWithoutCallbackServerTest {
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
 }
+

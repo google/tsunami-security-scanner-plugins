@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,21 @@
 
 package com.google.tsunami.plugins.detectors.rce.cve202224112;
 
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
-import com.google.tsunami.proto.*;
-import okhttp3.mockwebserver.MockWebServer;
-
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkEndpoint;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TransportProtocol;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
 import java.time.Instant;
-
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import okhttp3.mockwebserver.MockWebServer;
 
 final class TestHelper {
   private TestHelper() {}
@@ -64,3 +71,4 @@ final class TestHelper {
         .build();
   }
 }
+
