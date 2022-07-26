@@ -144,7 +144,9 @@ public final class Cve202224112Detector implements VulnDetector {
     resp = executeCreatedRouteRequest(networkService);
     if (resp == null
         || !(resp.status().code() == HttpStatus.SERVICE_UNAVAILABLE.code()
-            || resp.status().code() == HttpStatus.BAD_GATEWAY.code())) return false;
+            || resp.status().code() == HttpStatus.BAD_GATEWAY.code())) {
+      return false;
+    }
 
     var trueNegativeRouteCreated = registerRouteRequest(networkService, FILTER_FUNC_FALSE);
     if (!trueNegativeRouteCreated) {
