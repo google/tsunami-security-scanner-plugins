@@ -138,8 +138,7 @@ public final class ConfluenceOgnlInjectionRceDetector implements VulnDetector {
         || isVulnerableWithoutCallback(rootUri, networkService);
   }
 
-  private boolean isVulnerableWithCallback(
-      String rootUri, NetworkService networkService) {
+  private boolean isVulnerableWithCallback(String rootUri, NetworkService networkService) {
     PayloadGeneratorConfig config =
         PayloadGeneratorConfig.newBuilder()
             .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
@@ -164,8 +163,7 @@ public final class ConfluenceOgnlInjectionRceDetector implements VulnDetector {
     return payload.checkIfExecuted();
   }
 
-  private boolean isVulnerableWithoutCallback(
-      String rootUri, NetworkService networkService) {
+  private boolean isVulnerableWithoutCallback(String rootUri, NetworkService networkService) {
     PayloadGeneratorConfig config =
         PayloadGeneratorConfig.newBuilder()
             .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
@@ -174,7 +172,7 @@ public final class ConfluenceOgnlInjectionRceDetector implements VulnDetector {
             .setExecutionEnvironment(
                 PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
             .build();
-    Payload payload = payloadGenerator.generate(config);
+    Payload payload = payloadGenerator.generateNoCallback(config);
     String targetUri =
         rootUri
             + String.format(
