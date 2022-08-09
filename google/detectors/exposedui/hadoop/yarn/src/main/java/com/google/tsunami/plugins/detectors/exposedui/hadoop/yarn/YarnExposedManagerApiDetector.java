@@ -174,8 +174,7 @@ public final class YarnExposedManagerApiDetector implements VulnDetector {
       HttpResponse response =
           httpClient.send(post(targetUri).withEmptyHeaders().build(), networkService);
 
-      if (response.status().isSuccess()) {
-
+      if (response.status().isSuccess() && response.bodyJson().isPresent()) {
         JsonObject jsonResponse = (JsonObject) response.bodyJson().get();
         JsonPrimitive appIdPrimitive = jsonResponse.getAsJsonPrimitive("application-id");
         if (appIdPrimitive != null) {

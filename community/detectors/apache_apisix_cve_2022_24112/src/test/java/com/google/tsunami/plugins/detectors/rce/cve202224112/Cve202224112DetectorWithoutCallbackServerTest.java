@@ -97,6 +97,21 @@ public final class Cve202224112DetectorWithoutCallbackServerTest {
   }
 
   @Test
+  public void detect_ifNotVulnerableHtmlResponse_doesNotReportVuln() {
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody(
+                "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta"
+                    + " name=\"viewport\" content=\"width=device-width, initial-scale=1,"
+                    + " shrink-to-fit=no\">\n"
+                    + "Error\n"));
+
+    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
   public void detect_ifNotCreatedRoute_doesNotReportVuln() {
     mockWebServer.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("[{\"status\":200}]"));
