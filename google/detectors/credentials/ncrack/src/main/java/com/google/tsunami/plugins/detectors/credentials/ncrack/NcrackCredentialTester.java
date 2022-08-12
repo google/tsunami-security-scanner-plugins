@@ -51,7 +51,7 @@ final class NcrackCredentialTester extends CredentialTester {
           // Missing from TargetService: JOOMLA, HTTP, OWA
           .put("cassandra", TargetService.CASSANDRA)
           .put("ssh", TargetService.SSH)
-          .put("ms-wtb-server", TargetService.RDP)
+          .put("ms-wbt-server", TargetService.RDP)
           .put("ftp", TargetService.FTP)
           .put("wordpress", TargetService.WORDPRESS)
           .put("telnet", TargetService.TELNET)
