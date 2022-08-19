@@ -133,7 +133,9 @@ public final class JavaJmxRceDetectorTest {
                                 + " diagnostics for Java applications. Running JMX with"
                                 + " unprotected RMI endpoint allows any remote users to create a"
                                 + " javax.management.loading.MLet MBean and use it to create new"
-                                + " MBeans from arbitrary URLs."))
+                                + " MBeans from arbitrary URLs.")
+                        .setRecommendation(
+                            "Enable authentication and upgrade to the latest JDK environment."))
                 .build());
   }
 

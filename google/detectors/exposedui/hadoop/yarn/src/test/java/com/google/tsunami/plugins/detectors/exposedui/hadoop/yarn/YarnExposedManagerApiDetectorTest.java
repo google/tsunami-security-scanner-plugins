@@ -76,6 +76,9 @@ public final class YarnExposedManagerApiDetectorTest {
                   + " resources of a Hadoop cluster. Unauthenticated ResourceManager"
                   + " API allows any remote users to create and execute arbitrary"
                   + " applications on the host.")
+          .setRecommendation(
+              "Set up authentication by following the instructions at"
+                  + " https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/HttpAuthentication.html.")
           .build();
 
   private final FakeUtcClock fakeUtcClock =

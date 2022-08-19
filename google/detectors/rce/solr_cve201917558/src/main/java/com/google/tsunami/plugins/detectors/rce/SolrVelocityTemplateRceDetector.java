@@ -227,7 +227,8 @@ public final class SolrVelocityTemplateRceDetector implements VulnDetector {
                         + " configuration API access. Solr 8.4 removed the params resource loader"
                         + " entirely, and only enables the configset-provided template rendering"
                         + " when the configset is `trusted` (has been uploaded by an authenticated"
-                        + " user)."))
+                        + " user).")
+                .setRecommendation("Upgrade to Solr 8.4.0 or greater."))
         .build();
   }
 }

@@ -113,6 +113,10 @@ public final class ElasticsearchApiExposedDetectorTest {
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Elasticsearch API Exposed")
                         .setDescription("Elasticsearch API endpoint is exposed.")
+                        .setRecommendation(
+                            "Do not expose Elasticsearch externally.\n"
+                                + "Bind it to localhost, or run it on a host that is not exposed to"
+                                + " the Internet.")
                         .addAdditionalDetails(
                             AdditionalDetail.newBuilder()
                                 .setTextData(

@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
@@ -59,6 +60,11 @@ import org.jsoup.select.Elements;
 @ForWebService
 public final class WordPressInstallPageDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+
+  @VisibleForTesting
+  static final String FINDING_RECOMMENDATION_TEXT =
+      "Do not leave this installation page in place. Either finish the installation or remove"
+          + " Wordpress.";
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -142,7 +148,8 @@ public final class WordPressInstallPageDetector implements VulnDetector {
                 .setDescription(
                     "An unfinished WordPress installation exposes the /wp-admin/install.php page,"
                         + " which allows attacker to set the admin password and possibly"
-                        + " compromise the system."))
+                        + " compromise the system.")
+                .setRecommendation(FINDING_RECOMMENDATION_TEXT))
         .build();
   }
 }

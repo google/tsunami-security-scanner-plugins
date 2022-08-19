@@ -186,6 +186,7 @@ public final class NcrackWeakCredentialDetector implements VulnDetector {
                     .setTitle(buildTitle(networkService))
                     .setCvssV3("7.5") // CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
                     .setDescription(buildDescription(networkService))
+                    .setRecommendation("Change the password of all affected users to a strong one.")
                     .addAdditionalDetails(buildCredentialDetail(testCredential)))
             .build());
   }

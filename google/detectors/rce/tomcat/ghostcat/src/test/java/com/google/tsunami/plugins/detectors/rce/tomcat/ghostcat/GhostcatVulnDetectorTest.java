@@ -197,6 +197,7 @@ public final class GhostcatVulnDetectorTest {
                         + " to read any webapps files. If the Tomcat instance supports"
                         + " file uploads, the vulnerability could also be leveraged to"
                         + " achieve remote code execution.")
+                .setRecommendation("Install the latest security patches for Apache Tomcat.")
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
                         .setTextData(

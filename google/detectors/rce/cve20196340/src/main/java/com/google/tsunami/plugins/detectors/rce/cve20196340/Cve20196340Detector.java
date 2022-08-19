@@ -164,7 +164,9 @@ public final class Cve20196340Detector implements VulnDetector {
                         + " enabled, like JSON:API in Drupal 8, or Services or RESTful Web Services"
                         + " in Drupal 7. (Note: The Drupal 7 Services module itself does not"
                         + " require an update at this time, but you should apply other contributed"
-                        + " updates associated with this advisory if Services is in use.)"))
+                        + " updates associated with this advisory if Services is in use.)")
+                .setRecommendation(
+                    "Upgrade to Drupal 8.6.10 or Drupal 8.5.11 with security patches."))
         .build();
   }
 }

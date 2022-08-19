@@ -193,6 +193,7 @@ public final class SpringBootExposedEndpointDetector implements VulnDetector {
                         + " variables, and '/heapdump' will dump the entire memory of the server"
                         + " into a file. Exposing these endpoints could potentially leak sensitive"
                         + " information to any unauthenticated users.")
+                .setRecommendation("Disable public access to Actuator endpoints.")
                 .addAdditionalDetails(buildAdditionalDetail(endpointProbingResult)))
         .build();
   }

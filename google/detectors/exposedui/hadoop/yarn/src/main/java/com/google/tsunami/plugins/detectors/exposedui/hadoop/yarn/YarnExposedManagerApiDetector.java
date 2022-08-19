@@ -155,7 +155,10 @@ public final class YarnExposedManagerApiDetector implements VulnDetector {
                     "Hadoop Yarn ResourceManager controls the computation and storage resources of"
                         + " a Hadoop cluster. Unauthenticated ResourceManager API allows any"
                         + " remote users to create and execute arbitrary applications on the"
-                        + " host."))
+                        + " host.")
+                .setRecommendation(
+                    "Set up authentication by following the instructions at"
+                        + " https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/HttpAuthentication.html."))
         .build();
   }
 

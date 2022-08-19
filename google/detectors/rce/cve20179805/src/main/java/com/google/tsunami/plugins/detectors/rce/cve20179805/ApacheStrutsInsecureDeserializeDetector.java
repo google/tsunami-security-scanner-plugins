@@ -184,7 +184,8 @@ public final class ApacheStrutsInsecureDeserializeDetector implements VulnDetect
                     "The REST Plugin in Apache Struts 2.1.1 through 2.3.x before 2.3.34 and 2.5.x"
                         + " before 2.5.13 uses an XStreamHandler with an instance of XStream for"
                         + " deserialization without any type filtering, which can lead to Remote"
-                        + " Code Execution when deserializing XML payloads."))
+                        + " Code Execution when deserializing XML payloads.")
+                .setRecommendation("Upgrade to Struts 2.5.13 or Struts 2.3.34."))
         .build();
   }
 }

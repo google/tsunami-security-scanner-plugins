@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.exposedui.jupyter;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static com.google.tsunami.plugins.detectors.exposedui.jupyter.JupyterExposedUiDetector.FINDING_RECOMMENDATION_TEXT;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -108,7 +109,8 @@ public final class JupyterExposedUiDetectorTest {
                                 .setValue("JUPYTER_NOTEBOOK_EXPOSED_UI"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Jupyter Notebook Exposed Ui")
-                        .setDescription("Jupyter Notebook is not password or token protected"))
+                        .setDescription("Jupyter Notebook is not password or token protected")
+                        .setRecommendation(FINDING_RECOMMENDATION_TEXT))
                 .build());
   }
 

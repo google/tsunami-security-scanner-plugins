@@ -181,6 +181,8 @@ public final class PHPUnitExposedEvalStdinDetectorTest {
                         .setDescription(
                             "CVE-2017-9841: For vulnerable versions of PHPUnit, its eval-stdin.php"
                                 + " script allows RCE via a POST request payload.")
+                        .setRecommendation(
+                            "Remove the PHPUnit module or upgrade to the latest version.")
                         .addAdditionalDetails(
                             AdditionalDetail.newBuilder()
                                 .setTextData(

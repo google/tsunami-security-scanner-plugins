@@ -106,7 +106,10 @@ public final class ApacheNiFiApiExposedUiDetectorTest {
                                 .setValue("APACHE_NIFI_API_EXPOSED_UI"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Apache NiFi API Exposed UI")
-                        .setDescription("Apache NiFi API is not password or token protected."))
+                        .setDescription("Apache NiFi API is not password or token protected.")
+                        .setRecommendation(
+                            "Do not expose Apache NiFi API externally. Add authentication or bind"
+                                + " it to local network."))
                 .build());
     RecordedRequest recordedRequest = mockWebServer.takeRequest();
     assertThat(recordedRequest.getPath()).isEqualTo("/nifi-api/access/config");
