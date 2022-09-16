@@ -141,6 +141,7 @@ public final class DrupalCve20187600Detector implements VulnDetector {
                         + " sanitation on Form API AJAX requests. This enables an attacker to"
                         + " inject a malicious payload into the internal form structure which would"
                         + " then be executed without any authentication")
+                .setRecommendation("Upgrade to Drupal 8.3.9 or Drupal 8.5.1.")
                 .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
         .build();
   }

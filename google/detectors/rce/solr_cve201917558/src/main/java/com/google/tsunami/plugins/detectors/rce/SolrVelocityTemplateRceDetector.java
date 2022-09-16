@@ -107,7 +107,7 @@ public final class SolrVelocityTemplateRceDetector implements VulnDetector {
       HttpResponse response =
           httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
       try {
-        if (!response.bodyJson().isPresent()) {
+        if (response.bodyJson().isEmpty()) {
           return ImmutableList.of();
         }
         JsonElement json = response.bodyJson().get();
@@ -173,16 +173,8 @@ public final class SolrVelocityTemplateRceDetector implements VulnDetector {
       if (response.status().code() != 200) {
         return false;
       }
-      try {
-        // A failed rce will include json in the response. Attempt to parse it and catch parsing
-        // errors to find the response.
-        response.bodyJson();
-        return false;
-      } catch (Throwable t) {
-        String responseStr = response.bodyString().get();
-        logger.atInfo().log("Got response from java injection: %s", responseStr);
-        return responseStr.matches(".*amiTSUN [0-9]+ amiTSUN.*");
-      }
+      return response.bodyString().isPresent()
+          && response.bodyString().get().matches(".*amiTSUN [0-9]+ amiTSUN.*");
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
       return false;
@@ -235,7 +227,8 @@ public final class SolrVelocityTemplateRceDetector implements VulnDetector {
                         + " configuration API access. Solr 8.4 removed the params resource loader"
                         + " entirely, and only enables the configset-provided template rendering"
                         + " when the configset is `trusted` (has been uploaded by an authenticated"
-                        + " user)."))
+                        + " user).")
+                .setRecommendation("Upgrade to Solr 8.4.0 or greater."))
         .build();
   }
 }

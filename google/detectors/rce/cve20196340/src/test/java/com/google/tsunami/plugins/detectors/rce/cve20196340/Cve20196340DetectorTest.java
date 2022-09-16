@@ -141,7 +141,9 @@ public final class Cve20196340DetectorTest {
                                 + "in Drupal 7. (Note: The Drupal 7 Services module itself does "
                                 + "not require an update at this time, but you should apply other "
                                 + "contributed updates associated with this advisory if Services "
-                                + "is in use.)"))
+                                + "is in use.)")
+                        .setRecommendation(
+                            "Upgrade to Drupal 8.6.10 or Drupal 8.5.11 with security patches."))
                 .build());
   }
 

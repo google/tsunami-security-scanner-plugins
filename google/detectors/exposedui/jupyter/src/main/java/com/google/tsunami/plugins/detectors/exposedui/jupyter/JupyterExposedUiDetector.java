@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
@@ -58,6 +59,13 @@ import javax.inject.Inject;
 @ForWebService
 public final class JupyterExposedUiDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+
+  @VisibleForTesting
+  static final String FINDING_RECOMMENDATION_TEXT = "If it is necessary to keep running this "
+      + "instance of Jupyter, DO NOT expose it externally, in favor of using SSH tunnels to "
+      + "access it. In addition, the service should only listen on localhost (127.0.0.1), and "
+      + "consider restrict the access to the Jupyter Notebook using an authentication method. "
+      + "See https://jupyter-notebook.readthedocs.io/en/stable/security.html";
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -120,7 +128,8 @@ public final class JupyterExposedUiDetector implements VulnDetector {
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Jupyter Notebook Exposed Ui")
                 // TODO(b/147455413): determine CVSS score.
-                .setDescription("Jupyter Notebook is not password or token protected"))
+                .setDescription("Jupyter Notebook is not password or token protected")
+                .setRecommendation(FINDING_RECOMMENDATION_TEXT))
         .build();
   }
 }

@@ -125,7 +125,8 @@ public final class ApacheStrutsInsecureDeserializeDetectorTest {
                                 + " and 2.5.x before 2.5.13 uses an XStreamHandler with an"
                                 + " instance of XStream for deserialization without any type"
                                 + " filtering, which can lead to Remote Code Execution when"
-                                + " deserializing XML payloads."))
+                                + " deserializing XML payloads.")
+                        .setRecommendation("Upgrade to Struts 2.5.13 or Struts 2.3.34."))
                 .build());
 
     // Check that the detector creates and erases the file.

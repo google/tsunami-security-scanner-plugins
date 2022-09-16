@@ -113,7 +113,8 @@ public final class JoomlaCve20158562DetectorTest {
                         .setDescription(
                             "The Joomla application is vulnerable to CVE-2015-8562, which allow"
                                 + " remote attackers to conduct PHP object injection attacks and"
-                                + " execute arbitrary PHP code via the HTTP User-Agent header."))
+                                + " execute arbitrary PHP code via the HTTP User-Agent header.")
+                        .setRecommendation("Upgrade to Joomla 3.4.6 or greater."))
                 .build());
   }
 

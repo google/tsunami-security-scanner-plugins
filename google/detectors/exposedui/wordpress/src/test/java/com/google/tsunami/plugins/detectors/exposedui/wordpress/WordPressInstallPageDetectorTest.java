@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.exposedui.wordpress;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static com.google.tsunami.plugins.detectors.exposedui.wordpress.WordPressInstallPageDetector.FINDING_RECOMMENDATION_TEXT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
@@ -116,7 +117,8 @@ public final class WordPressInstallPageDetectorTest {
                         .setDescription(
                             "An unfinished WordPress installation exposes the"
                                 + " /wp-admin/install.php page, which allows attacker to set the"
-                                + " admin password and possibly compromise the system."))
+                                + " admin password and possibly compromise the system.")
+                        .setRecommendation(FINDING_RECOMMENDATION_TEXT))
                 .build());
   }
 
@@ -158,7 +160,8 @@ public final class WordPressInstallPageDetectorTest {
                         .setDescription(
                             "An unfinished WordPress installation exposes the"
                                 + " /wp-admin/install.php page, which allows attacker to set the"
-                                + " admin password and possibly compromise the system."))
+                                + " admin password and possibly compromise the system.")
+                        .setRecommendation(FINDING_RECOMMENDATION_TEXT))
                 .build());
   }
 
@@ -204,7 +207,8 @@ public final class WordPressInstallPageDetectorTest {
                         .setDescription(
                             "An unfinished WordPress installation exposes the"
                                 + " /wp-admin/install.php page, which allows attacker to set the"
-                                + " admin password and possibly compromise the system."))
+                                + " admin password and possibly compromise the system.")
+                        .setRecommendation(FINDING_RECOMMENDATION_TEXT))
                 .build());
   }
 

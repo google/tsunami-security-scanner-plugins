@@ -99,9 +99,9 @@ public final class ApacheStrutsContentTypeRceDetectorTest {
                 .build());
 
     assertThat(
-        detector
-            .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), httpServices)
-            .getDetectionReportsList())
+            detector
+                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), httpServices)
+                .getDetectionReportsList())
         .containsExactly(
             DetectionReport.newBuilder()
                 .setTargetInfo(buildTargetInfo(forHostname(mockWebServer.getHostName())))
@@ -119,7 +119,11 @@ public final class ApacheStrutsContentTypeRceDetectorTest {
                             "Apache Struts Command Injection via Content-Type header "
                                 + "(CVE-2017-5638)")
                         .setDescription(
-                            "Apache Struts server is vulnerable to CVE-2017-5638."))
+                            "The Jakarta Multipart parser in Apache Struts 2 2.3.x before 2.3.32"
+                                + " and 2.5.x before 2.5.10.1 has incorrect exception handling and"
+                                + " error-message generation during file-upload attempts, which"
+                                + " allows for remote RCE.")
+                        .setRecommendation("Upgrade to Struts 2.3.32 or Struts 2.5.10.1."))
                 .build());
   }
 

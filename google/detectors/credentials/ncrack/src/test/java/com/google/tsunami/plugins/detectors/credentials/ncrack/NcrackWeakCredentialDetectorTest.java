@@ -192,6 +192,7 @@ public final class NcrackWeakCredentialDetectorTest {
                         "Well known or weak credentials are detected for 'wordpress' service on"
                             + " port '%s'.",
                         mockWebServer.getPort()))
+                .setRecommendation("Change the password of all affected users to a strong one.")
                 .addAdditionalDetails(additionalDetailBuilder));
   }
 

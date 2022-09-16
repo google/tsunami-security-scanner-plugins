@@ -174,7 +174,7 @@ public final class WebLogicAdminConsoleRceDetector implements VulnDetector {
             .setExecutionEnvironment(
                 PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
             .build();
-    Payload payload = payloadGenerator.generate(config);
+    Payload payload = payloadGenerator.generateNoCallback(config);
     String targetUri =
         String.format(
             INJECTION_TEMPLATE,

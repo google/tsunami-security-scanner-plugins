@@ -139,6 +139,29 @@ public final class Cve202122205VulnDetectorTest {
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
 
+  @Test
+  public void detect_whenEmptyCookie_notVulnerable_returnsNoVulnerability() throws IOException {
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(CSRF_TEMPLATE));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(422).setBody(""));
+    mockWebServer.start();
+    ImmutableList<NetworkService> httpServices =
+        ImmutableList.of(
+            NetworkService.newBuilder()
+                .setNetworkEndpoint(
+                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+                .setTransportProtocol(TransportProtocol.TCP)
+                .setServiceName("http")
+                .build());
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
+            .build();
+
+    DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
   private void mockWebResponse(String body) throws IOException {
     mockWebServer.enqueue(
         new MockResponse()

@@ -135,6 +135,7 @@ public final class NodeRedDashboardDirectoryTraversalDetector implements VulnDet
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Node-RED-Dashboard directory traversal vulnerability")
                 .setDescription("Directory Traversal vulnerability in exposed Node-RED-Dashboard")
+                .setRecommendation("Upgrade node-red-dashboard to version 2.26.2 or greater.")
                 .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
         .build();
   }
