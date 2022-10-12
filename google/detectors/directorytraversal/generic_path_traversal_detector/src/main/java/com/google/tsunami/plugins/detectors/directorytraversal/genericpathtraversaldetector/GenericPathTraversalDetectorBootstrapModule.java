@@ -33,6 +33,6 @@ public final class GenericPathTraversalDetectorBootstrapModule extends PluginBoo
     return GenericPathTraversalDetectorConfig.create(
         ImmutableSet.of(new GetParameterInjection(), new PathParameterInjection()),
         /* maxCrawledUrlsToFuzz= */ 50,
-        /* maxExploitsToTest= */ 4);
+        /* maxExploitsToTest= */ 200);
   }
 }

@@ -17,6 +17,7 @@ package com.google.tsunami.plugins.detectors.directorytraversal.genericpathtrave
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static java.util.Comparator.comparing;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -49,7 +50,6 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.List;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 
@@ -57,7 +57,7 @@ import javax.inject.Inject;
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "GenericPathTraversalDetector",
-    version = "0.5",
+    version = "1.0",
     description = "This plugin detects generic Path Traversal vulnerabilities.",
     author = "Moritz Wilhelm (mzwm@google.com)",
     bootstrapModule = GenericPathTraversalDetectorBootstrapModule.class)
@@ -92,6 +92,13 @@ public final class GenericPathTraversalDetector implements VulnDetector {
                 .map(this::generatePotentialExploits)
                 .flatMap(Collection::stream)
                 .distinct()
+                /**
+                 * TODO(b/251767111) This is suboptimal without a heuristic. Sampling based only on
+                 * sorting might drop promising potential exploits and only keep less likely to
+                 * succeed exploits.
+                 */
+                .sorted(comparing((PotentialExploit exploit) -> exploit.request().url()))
+                .limit(config.maxExploitsToTest())
                 .filter(this::isExploitable)
                 .collect(BiStream.groupingBy(PotentialExploit::networkService, toImmutableSet()))
                 .toList((service, exploits) -> buildDetectionReport(targetInfo, service, exploits)))
@@ -118,11 +125,12 @@ public final class GenericPathTraversalDetector implements VulnDetector {
   }
 
   private ImmutableSet<PotentialExploit> generatePotentialExploits(NetworkService networkService) {
-    List<CrawlResult> crawlResults =
-        networkService.getServiceContext().getWebServiceContext().getCrawlResultsList();
-    return crawlResults.stream()
+    return networkService.getServiceContext().getWebServiceContext().getCrawlResultsList().stream()
         .filter(this::shouldFuzzCrawlResult)
-        .map(crawlResult -> this.buildHttpRequestFromCrawlTarget(crawlResult.getCrawlTarget()))
+        .map(CrawlResult::getCrawlTarget)
+        .sorted(comparing(CrawlTarget::getUrl))
+        .limit(config.maxCrawledUrlsToFuzz())
+        .map(this::buildHttpRequestFromCrawlTarget)
         .map(request -> new ExploitGenerator(request, networkService, config.injectionPoints()))
         .map(this::injectPayloads)
         .flatMap(Collection::stream)

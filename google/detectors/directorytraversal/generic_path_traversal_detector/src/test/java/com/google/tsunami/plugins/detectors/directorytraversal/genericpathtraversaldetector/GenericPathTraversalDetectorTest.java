@@ -19,12 +19,19 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Provides;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClientModule;
+import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.proto.CrawlResult;
@@ -58,16 +65,27 @@ public final class GenericPathTraversalDetectorTest {
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
+  private InjectionPoint mockInjectionPoint;
   private MockWebServer mockWebServer;
 
   @Inject private GenericPathTraversalDetector detector;
 
   @Before
   public void setUp() throws IOException {
+    this.mockInjectionPoint = mock(InjectionPoint.class);
+
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
-            new GenericPathTraversalDetectorBootstrapModule())
+            new AbstractModule() {
+              @Provides
+              GenericPathTraversalDetectorConfig provideGenericPathTraversalDetectorConfig() {
+                return GenericPathTraversalDetectorConfig.create(
+                    ImmutableSet.of(mockInjectionPoint),
+                    /* maxCrawledUrlsToFuzz= */ 5,
+                    /* maxExploitsToTest= */ 2);
+              }
+            })
         .injectMembers(this);
 
     this.mockWebServer = new MockWebServer();
@@ -82,11 +100,13 @@ public final class GenericPathTraversalDetectorTest {
   public void detect_whenOneVulnerableNetworkService_reportsOneVulnerability() throws IOException {
     this.mockWebServer.setDispatcher(new VulnerableApplicationDispatcher());
     this.mockWebServer.start();
+    NetworkService networkService = buildMinimalNetworkService();
+    this.setUpMockInjectionPoint(networkService);
 
     ImmutableList<DetectionReport> detectionReports =
         ImmutableList.copyOf(
             detector
-                .detect(buildMinimalTargetInfo(), ImmutableList.of(buildMinimalNetworkService()))
+                .detect(buildMinimalTargetInfo(), ImmutableList.of(networkService))
                 .getDetectionReportsList());
 
     assertThat(detectionReports).hasSize(1);
@@ -97,11 +117,13 @@ public final class GenericPathTraversalDetectorTest {
       throws IOException {
     this.mockWebServer.setDispatcher(new VulnerableApplicationDispatcher());
     this.mockWebServer.start();
+    NetworkService networkService = buildMinimalNetworkService();
+    this.setUpMockInjectionPoint(networkService);
 
     ImmutableList<DetectionReport> detectionReports =
         ImmutableList.copyOf(
             detector
-                .detect(buildMinimalTargetInfo(), ImmutableList.of(buildMinimalNetworkService()))
+                .detect(buildMinimalTargetInfo(), ImmutableList.of(networkService))
                 .getDetectionReportsList());
 
     assertThat(detectionReports).hasSize(1);
@@ -136,13 +158,44 @@ public final class GenericPathTraversalDetectorTest {
   }
 
   @Test
+  public void detect_whenInjectionPointExceedingRequestLimit_limitsRequests() throws IOException {
+    this.mockWebServer.setDispatcher(new VulnerableApplicationDispatcher());
+    this.mockWebServer.start();
+    NetworkService networkService = buildMinimalNetworkService();
+    when(this.mockInjectionPoint.injectPayload(any(), any()))
+        .thenReturn(
+            ImmutableSet.of(
+                HttpRequest.get(
+                        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                            + "/a/..%2Fetc%2Fpasswd")
+                    .withEmptyHeaders()
+                    .build(),
+                HttpRequest.get(
+                        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                            + "/b/..%2Fetc%2Fpasswd")
+                    .withEmptyHeaders()
+                    .build(),
+                HttpRequest.get(
+                        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                            + "/c/..%2Fetc%2Fpasswd")
+                    .withEmptyHeaders()
+                    .build()));
+
+    var unused = detector.detect(buildMinimalTargetInfo(), ImmutableList.of(networkService));
+
+    assertThat(this.mockWebServer.getRequestCount()).isEqualTo(2);
+  }
+
+  @Test
   public void detect_whenNotVulnerable_returnsNoFinding() throws IOException {
     this.mockWebServer.setDispatcher(new SecureApplicationDispatcher());
     this.mockWebServer.start();
+    NetworkService networkService = buildMinimalNetworkService();
+    this.setUpMockInjectionPoint(networkService);
 
     assertThat(
             detector
-                .detect(buildMinimalTargetInfo(), ImmutableList.of(buildMinimalNetworkService()))
+                .detect(buildMinimalTargetInfo(), ImmutableList.of(networkService))
                 .getDetectionReportsList())
         .isEmpty();
   }
@@ -152,10 +205,12 @@ public final class GenericPathTraversalDetectorTest {
       throws IOException {
     this.mockWebServer.setDispatcher(new ClientErrorDispatcher());
     this.mockWebServer.start();
+    NetworkService networkService = buildMinimalNetworkService();
+    this.setUpMockInjectionPoint(networkService);
 
     assertThat(
             detector
-                .detect(buildMinimalTargetInfo(), ImmutableList.of(buildMinimalNetworkService()))
+                .detect(buildMinimalTargetInfo(), ImmutableList.of(networkService))
                 .getDetectionReportsList())
         .isEmpty();
   }
@@ -164,10 +219,12 @@ public final class GenericPathTraversalDetectorTest {
   public void detect_whenExploitResponseHasNoBody_doesNotDetectVulnerability() throws IOException {
     this.mockWebServer.setDispatcher(new BodylessApplicationDispatcher());
     this.mockWebServer.start();
+    NetworkService networkService = buildMinimalNetworkService();
+    this.setUpMockInjectionPoint(networkService);
 
     assertThat(
             detector
-                .detect(buildMinimalTargetInfo(), ImmutableList.of(buildMinimalNetworkService()))
+                .detect(buildMinimalTargetInfo(), ImmutableList.of(networkService))
                 .getDetectionReportsList())
         .isEmpty();
   }
@@ -176,12 +233,12 @@ public final class GenericPathTraversalDetectorTest {
   public void detect_whenRedirect_doesNotDetectVulnerability() throws IOException {
     this.mockWebServer.setDispatcher(new VulnerableApplicationDispatcher());
     this.mockWebServer.start();
+    NetworkService networkService = buildMinimalNetworkService("GET", 300);
+    this.setUpMockInjectionPoint(networkService);
 
     assertThat(
             detector
-                .detect(
-                    buildMinimalTargetInfo(),
-                    ImmutableList.of(buildMinimalNetworkService("GET", 300)))
+                .detect(buildMinimalTargetInfo(), ImmutableList.of(networkService))
                 .getDetectionReportsList())
         .isEmpty();
   }
@@ -190,12 +247,12 @@ public final class GenericPathTraversalDetectorTest {
   public void detect_whenClientError_doesDetectVulnerability() throws IOException {
     this.mockWebServer.setDispatcher(new VulnerableApplicationDispatcher());
     this.mockWebServer.start();
+    NetworkService networkService = buildMinimalNetworkService("GET", 400);
+    this.setUpMockInjectionPoint(networkService);
 
     assertThat(
             detector
-                .detect(
-                    buildMinimalTargetInfo(),
-                    ImmutableList.of(buildMinimalNetworkService("GET", 400)))
+                .detect(buildMinimalTargetInfo(), ImmutableList.of(networkService))
                 .getDetectionReportsList())
         .isNotEmpty();
   }
@@ -204,12 +261,12 @@ public final class GenericPathTraversalDetectorTest {
   public void detect_whenNotGetRequest_doesNotDetectVulnerability() throws IOException {
     this.mockWebServer.setDispatcher(new VulnerableApplicationDispatcher());
     this.mockWebServer.start();
+    NetworkService networkService = buildMinimalNetworkService("POST", 200);
+    this.setUpMockInjectionPoint(networkService);
 
     assertThat(
             detector
-                .detect(
-                    buildMinimalTargetInfo(),
-                    ImmutableList.of(buildMinimalNetworkService("POST", 200)))
+                .detect(buildMinimalTargetInfo(), ImmutableList.of(networkService))
                 .getDetectionReportsList())
         .isEmpty();
   }
@@ -218,6 +275,7 @@ public final class GenericPathTraversalDetectorTest {
   public void detect_whenNonHttpNetworkService_doesNotDetectVulnerability() throws IOException {
     this.mockWebServer.setDispatcher(new VulnerableApplicationDispatcher());
     this.mockWebServer.start();
+    this.setUpMockInjectionPoint(buildMinimalNetworkService());
     ImmutableList<NetworkService> nonHttpServices =
         ImmutableList.of(
             NetworkService.newBuilder().setServiceName("ssh").build(),
@@ -235,6 +293,17 @@ public final class GenericPathTraversalDetectorTest {
     assertThat(
             detector.detect(buildMinimalTargetInfo(), ImmutableList.of()).getDetectionReportsList())
         .isEmpty();
+  }
+
+  private void setUpMockInjectionPoint(NetworkService networkService) {
+    when(this.mockInjectionPoint.injectPayload(any(), any()))
+        .thenReturn(
+            ImmutableSet.of(
+                HttpRequest.get(
+                        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                            + "/..%2Fetc%2Fpasswd")
+                    .withEmptyHeaders()
+                    .build()));
   }
 
   private NetworkService buildMinimalNetworkService(String httpMethod, int responseCode) {
