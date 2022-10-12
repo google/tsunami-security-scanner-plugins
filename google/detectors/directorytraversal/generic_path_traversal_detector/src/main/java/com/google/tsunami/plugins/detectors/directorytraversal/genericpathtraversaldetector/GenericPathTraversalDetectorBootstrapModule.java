@@ -15,6 +15,8 @@
  */
 package com.google.tsunami.plugins.detectors.directorytraversal.genericpathtraversaldetector;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
 /** A Guice module that bootstraps the {@link GenericPathTraversalDetector}. */
@@ -24,5 +26,13 @@ public final class GenericPathTraversalDetectorBootstrapModule extends PluginBoo
   protected void configurePlugin() {
     // registerPlugin method is required in order for the Tsunami scanner to identify the plugin.
     registerPlugin(GenericPathTraversalDetector.class);
+  }
+
+  @Provides
+  GenericPathTraversalDetectorConfig provideGenericPathTraversalDetectorConfig() {
+    return GenericPathTraversalDetectorConfig.create(
+        ImmutableSet.of(new GetParameterInjection(), new PathParameterInjection()),
+        /* maxCrawledUrlsToFuzz= */ 50,
+        /* maxExploitsToTest= */ 4);
   }
 }

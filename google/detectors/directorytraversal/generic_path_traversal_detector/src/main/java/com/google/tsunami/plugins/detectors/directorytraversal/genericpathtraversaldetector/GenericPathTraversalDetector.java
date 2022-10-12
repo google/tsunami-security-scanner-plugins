@@ -64,18 +64,20 @@ import javax.inject.Inject;
 public final class GenericPathTraversalDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  private static final ImmutableSet<InjectionPoint> INJECTION_POINTS =
-      ImmutableSet.of(new PathParameterInjection(), new GetParameterInjection());
   private static final String RELATIVE_PATH_PREFIX = "../".repeat(29) + "..";
   private static final String ETC_PASSWD_PATH = "/etc/passwd";
   private static final Pattern ETC_PASSWD_PATTERN = Pattern.compile("root:x:0:0:");
+
   private final Clock utcClock;
   private final HttpClient httpClient;
+  private final GenericPathTraversalDetectorConfig config;
 
   @Inject
-  GenericPathTraversalDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  GenericPathTraversalDetector(
+      @UtcClock Clock utcClock, HttpClient httpClient, GenericPathTraversalDetectorConfig config) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
+    this.config = checkNotNull(config);
   }
 
   @Override
@@ -121,7 +123,7 @@ public final class GenericPathTraversalDetector implements VulnDetector {
     return crawlResults.stream()
         .filter(this::shouldFuzzCrawlResult)
         .map(crawlResult -> this.buildHttpRequestFromCrawlTarget(crawlResult.getCrawlTarget()))
-        .map(targetRequest -> new ExploitGenerator(targetRequest, networkService, INJECTION_POINTS))
+        .map(request -> new ExploitGenerator(request, networkService, config.injectionPoints()))
         .map(this::injectPayloads)
         .flatMap(Collection::stream)
         .collect(toImmutableSet());
