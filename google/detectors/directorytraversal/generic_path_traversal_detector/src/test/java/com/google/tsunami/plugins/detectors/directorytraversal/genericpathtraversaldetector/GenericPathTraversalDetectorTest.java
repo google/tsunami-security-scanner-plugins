@@ -23,6 +23,7 @@ import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAnd
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
@@ -105,8 +106,12 @@ public final class GenericPathTraversalDetectorTest {
             Vulnerability.newBuilder()
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("GENERIC_PT"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Generic Path Traversal vulnerability")
+                .setSeverity(Severity.MEDIUM)
+                .setTitle(
+                    String.format(
+                        "Generic Path Traversal vulnerability at %s",
+                        NetworkServiceUtils.buildWebApplicationRootUrl(
+                            buildMinimalNetworkService())))
                 .setDescription(
                     "Generic Path Traversal vulnerability allowing to leak arbitrary files.")
                 .build());

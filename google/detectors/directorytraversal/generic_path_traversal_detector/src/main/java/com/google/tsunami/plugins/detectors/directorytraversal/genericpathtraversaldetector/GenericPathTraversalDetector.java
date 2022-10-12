@@ -57,7 +57,7 @@ import javax.inject.Inject;
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "GenericPathTraversalDetector",
-    version = "0.2",
+    version = "0.3",
     description = "This plugin detects generic Path Traversal vulnerabilities.",
     author = "Moritz Wilhelm (mzwm@google.com)",
     bootstrapModule = GenericPathTraversalDetectorBootstrapModule.class)
@@ -142,14 +142,6 @@ public final class GenericPathTraversalDetector implements VulnDetector {
   }
 
   private DetectionReport buildDetectionReport(TargetInfo targetInfo, PotentialExploit exploit) {
-    TextData details =
-        TextData.newBuilder()
-            .setText(
-                String.format(
-                    "%s is vulnerable to Path Traversal via %s allowing attackers to read files.",
-                    NetworkServiceUtils.buildWebApplicationRootUrl(exploit.networkService()),
-                    exploit.request()))
-            .build();
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(exploit.networkService())
@@ -159,11 +151,26 @@ public final class GenericPathTraversalDetector implements VulnDetector {
             Vulnerability.newBuilder()
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("GENERIC_PT"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Generic Path Traversal vulnerability")
+                .setSeverity(Severity.MEDIUM)
+                .setTitle(
+                    String.format(
+                        "Generic Path Traversal vulnerability at %s",
+                        NetworkServiceUtils.buildWebApplicationRootUrl(exploit.networkService())))
                 .setDescription(
                     "Generic Path Traversal vulnerability allowing to leak arbitrary files.")
-                .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
+                .setRecommendation(
+                    "Do not accept user-controlled file paths or restrict file paths to a set of"
+                        + " pre-defined paths. If the application is meant to let users define file"
+                        + " names, apply `basename` or equivalent before handling the provided file"
+                        + " name.")
+                .addAdditionalDetails(
+                    AdditionalDetail.newBuilder()
+                        .setTextData(
+                            TextData.newBuilder()
+                                .setText(
+                                    String.format(
+                                        "Path Traversal vulnerablity via %s leveraging payload %s.",
+                                        exploit.request(), exploit.payload())))))
         .build();
   }
 }
