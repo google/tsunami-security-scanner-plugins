@@ -57,7 +57,7 @@ import javax.inject.Inject;
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "GenericPathTraversalDetector",
-    version = "1.0",
+    version = "1.0.1",
     description = "This plugin detects generic Path Traversal vulnerabilities.",
     author = "Moritz Wilhelm (mzwm@google.com)",
     bootstrapModule = GenericPathTraversalDetectorBootstrapModule.class)
@@ -142,7 +142,7 @@ public final class GenericPathTraversalDetector implements VulnDetector {
       HttpResponse response =
           httpClient.send(potentialExploit.request(), potentialExploit.networkService());
 
-      if (response.status().isSuccess() && response.bodyString().isPresent()) {
+      if (response.bodyString().isPresent()) {
         return ETC_PASSWD_PATTERN.matcher(response.bodyString().get()).find();
       }
     } catch (IOException e) {

@@ -201,9 +201,8 @@ public final class GenericPathTraversalDetectorTest {
   }
 
   @Test
-  public void detect_whenExploitResponseIsNotSuccess_doesNotDetectVulnerability()
-      throws IOException {
-    this.mockWebServer.setDispatcher(new ClientErrorDispatcher());
+  public void detect_whenExploitResponseIsNotSuccess_doesDetectVulnerability() throws IOException {
+    this.mockWebServer.setDispatcher(new NotFoundDispatcher());
     this.mockWebServer.start();
     NetworkService networkService = buildMinimalNetworkService();
     this.setUpMockInjectionPoint(networkService);
@@ -212,7 +211,7 @@ public final class GenericPathTraversalDetectorTest {
             detector
                 .detect(buildMinimalTargetInfo(), ImmutableList.of(networkService))
                 .getDetectionReportsList())
-        .isEmpty();
+        .isNotEmpty();
   }
 
   @Test
@@ -371,10 +370,10 @@ public final class GenericPathTraversalDetectorTest {
     }
   }
 
-  private static final class ClientErrorDispatcher extends Dispatcher {
+  private static final class NotFoundDispatcher extends Dispatcher {
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
-      return new MockResponse().setResponseCode(400).setBody("root:x:0:0:root:/root:/bin/bash");
+      return new MockResponse().setResponseCode(404).setBody("root:x:0:0:root:/root:/bin/bash");
     }
   }
 }
