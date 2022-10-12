@@ -79,6 +79,20 @@ public final class GenericPathTraversalDetectorTest {
   }
 
   @Test
+  public void detect_whenOneVulnerableNetworkService_reportsOneVulnerability() throws IOException {
+    this.mockWebServer.setDispatcher(new VulnerableApplicationDispatcher());
+    this.mockWebServer.start();
+
+    ImmutableList<DetectionReport> detectionReports =
+        ImmutableList.copyOf(
+            detector
+                .detect(buildMinimalTargetInfo(), ImmutableList.of(buildMinimalNetworkService()))
+                .getDetectionReportsList());
+
+    assertThat(detectionReports).hasSize(1);
+  }
+
+  @Test
   public void detect_whenVulnerableNetworkService_reportContainsAllInformation()
       throws IOException {
     this.mockWebServer.setDispatcher(new VulnerableApplicationDispatcher());
@@ -90,7 +104,7 @@ public final class GenericPathTraversalDetectorTest {
                 .detect(buildMinimalTargetInfo(), ImmutableList.of(buildMinimalNetworkService()))
                 .getDetectionReportsList());
 
-    assertThat(detectionReports).isNotEmpty();
+    assertThat(detectionReports).hasSize(1);
     assertThat(detectionReports)
         .comparingExpectedFieldsOnly()
         .contains(
@@ -224,6 +238,23 @@ public final class GenericPathTraversalDetectorTest {
   }
 
   private NetworkService buildMinimalNetworkService(String httpMethod, int responseCode) {
+    ImmutableList<CrawlResult> crawlResults =
+        ImmutableList.of(
+            CrawlResult.newBuilder()
+                .setResponseCode(responseCode)
+                .setCrawlTarget(
+                    CrawlTarget.newBuilder()
+                        .setUrl(this.mockWebServer.url("/") + "test_get/?get_param=1")
+                        .setHttpMethod(httpMethod))
+                .build(),
+            CrawlResult.newBuilder()
+                .setResponseCode(responseCode)
+                .setCrawlTarget(
+                    CrawlTarget.newBuilder()
+                        .setUrl(this.mockWebServer.url("/") + "test_path/1")
+                        .setHttpMethod(httpMethod))
+                .build());
+
     return NetworkService.newBuilder()
         .setNetworkEndpoint(
             forHostnameAndPort(this.mockWebServer.getHostName(), this.mockWebServer.getPort()))
@@ -232,16 +263,7 @@ public final class GenericPathTraversalDetectorTest {
         .setServiceContext(
             ServiceContext.newBuilder()
                 .setWebServiceContext(
-                    WebServiceContext.newBuilder()
-                        .addCrawlResults(
-                            CrawlResult.newBuilder()
-                                .setResponseCode(responseCode)
-                                .setCrawlTarget(
-                                    CrawlTarget.newBuilder()
-                                        .setUrl(
-                                            this.mockWebServer.url("/") + "test_get/?get_param=1")
-                                        .setHttpMethod(httpMethod)))
-                        .build()))
+                    WebServiceContext.newBuilder().addAllCrawlResults(crawlResults).build()))
         .build();
   }
 

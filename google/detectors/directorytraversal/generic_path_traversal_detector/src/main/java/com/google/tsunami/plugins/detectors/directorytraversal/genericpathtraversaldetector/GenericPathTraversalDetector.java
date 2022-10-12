@@ -16,12 +16,12 @@
 package com.google.tsunami.plugins.detectors.directorytraversal.genericpathtraversaldetector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.labs.collect.BiStream;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.UrlUtils;
@@ -57,7 +57,7 @@ import javax.inject.Inject;
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "GenericPathTraversalDetector",
-    version = "0.3",
+    version = "0.4",
     description = "This plugin detects generic Path Traversal vulnerabilities.",
     author = "Moritz Wilhelm (mzwm@google.com)",
     bootstrapModule = GenericPathTraversalDetectorBootstrapModule.class)
@@ -91,8 +91,8 @@ public final class GenericPathTraversalDetector implements VulnDetector {
                 .flatMap(Collection::stream)
                 .distinct()
                 .filter(this::isExploitable)
-                .map(exploit -> buildDetectionReport(targetInfo, exploit))
-                .collect(toImmutableList()))
+                .collect(BiStream.groupingBy(PotentialExploit::networkService, toImmutableSet()))
+                .toList((service, exploits) -> buildDetectionReport(targetInfo, service, exploits)))
         .build();
   }
 
@@ -141,10 +141,26 @@ public final class GenericPathTraversalDetector implements VulnDetector {
     return false;
   }
 
-  private DetectionReport buildDetectionReport(TargetInfo targetInfo, PotentialExploit exploit) {
+  private ImmutableSet<AdditionalDetail> buildAdditionalDetails(
+      ImmutableSet<PotentialExploit> exploits) {
+    ImmutableSet.Builder<AdditionalDetail> additionalDetails = ImmutableSet.builder();
+    for (PotentialExploit potentialExploit : exploits) {
+      AdditionalDetail detail =
+          AdditionalDetail.newBuilder()
+              .setTextData(TextData.newBuilder().setText(potentialExploit.toString()).build())
+              .build();
+      additionalDetails.add(detail);
+    }
+    return additionalDetails.build();
+  }
+
+  private DetectionReport buildDetectionReport(
+      TargetInfo targetInfo,
+      NetworkService networkService,
+      ImmutableSet<PotentialExploit> exploits) {
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
-        .setNetworkService(exploit.networkService())
+        .setNetworkService(networkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
@@ -155,7 +171,7 @@ public final class GenericPathTraversalDetector implements VulnDetector {
                 .setTitle(
                     String.format(
                         "Generic Path Traversal vulnerability at %s",
-                        NetworkServiceUtils.buildWebApplicationRootUrl(exploit.networkService())))
+                        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)))
                 .setDescription(
                     "Generic Path Traversal vulnerability allowing to leak arbitrary files.")
                 .setRecommendation(
@@ -169,8 +185,9 @@ public final class GenericPathTraversalDetector implements VulnDetector {
                             TextData.newBuilder()
                                 .setText(
                                     String.format(
-                                        "Path Traversal vulnerablity via %s leveraging payload %s.",
-                                        exploit.request(), exploit.payload())))))
+                                        "Found %s distinct vulnerable configurations.",
+                                        exploits.size()))))
+                .addAllAdditionalDetails(this.buildAdditionalDetails(exploits)))
         .build();
   }
 }
