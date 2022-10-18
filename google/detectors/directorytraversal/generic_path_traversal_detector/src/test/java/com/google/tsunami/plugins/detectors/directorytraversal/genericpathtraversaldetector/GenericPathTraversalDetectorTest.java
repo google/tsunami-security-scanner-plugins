@@ -162,28 +162,105 @@ public final class GenericPathTraversalDetectorTest {
     this.mockWebServer.setDispatcher(new VulnerableApplicationDispatcher());
     this.mockWebServer.start();
     NetworkService networkService = buildMinimalNetworkService();
-    when(this.mockInjectionPoint.injectPayload(any(), any()))
+    when(this.mockInjectionPoint.injectPayload(any(), any(), any()))
         .thenReturn(
             ImmutableSet.of(
-                HttpRequest.get(
-                        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
-                            + "/a/..%2Fetc%2Fpasswd")
-                    .withEmptyHeaders()
-                    .build(),
-                HttpRequest.get(
-                        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
-                            + "/b/..%2Fetc%2Fpasswd")
-                    .withEmptyHeaders()
-                    .build(),
-                HttpRequest.get(
-                        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
-                            + "/c/..%2Fetc%2Fpasswd")
-                    .withEmptyHeaders()
-                    .build()));
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/a/..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.LOW),
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/b/..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.LOW),
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/c/..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.LOW)));
 
     var unused = detector.detect(buildMinimalTargetInfo(), ImmutableList.of(networkService));
 
     assertThat(this.mockWebServer.getRequestCount()).isEqualTo(2);
+  }
+
+  @Test
+  public void detect_whenInjectionPointExceedingRequestLimit_testsThoseWithHigherPriority()
+      throws IOException {
+    this.mockWebServer.setDispatcher(new VulnerableApplicationDispatcher());
+    this.mockWebServer.start();
+    NetworkService networkService = buildMinimalNetworkService();
+    when(this.mockInjectionPoint.injectPayload(any(), any(), any()))
+        .thenReturn(
+            ImmutableSet.of(
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/?file=..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.HIGH),
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/?other=..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.LOW),
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/path/to/admin/..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.MEDIUM)));
+
+    ImmutableList<DetectionReport> detectionReports =
+        ImmutableList.copyOf(
+            detector
+                .detect(buildMinimalTargetInfo(), ImmutableList.of(networkService))
+                .getDetectionReportsList());
+
+    assertThat(detectionReports).hasSize(1);
+    assertThat(
+            detectionReports.get(0).getVulnerability().getAdditionalDetailsList().stream()
+                .anyMatch(
+                    detail -> detail.getTextData().getText().contains("/?file=..%2Fetc%2Fpasswd")))
+        .isTrue();
+    assertThat(
+            detectionReports.get(0).getVulnerability().getAdditionalDetailsList().stream()
+                .anyMatch(
+                    detail ->
+                        detail
+                            .getTextData()
+                            .getText()
+                            .contains("/path/to/admin/..%2Fetc%2Fpasswd")))
+        .isTrue();
+    assertThat(
+            detectionReports.get(0).getVulnerability().getAdditionalDetailsList().stream()
+                .noneMatch(
+                    detail -> detail.getTextData().getText().contains("/?other=..%2Fetc%2Fpasswd")))
+        .isTrue();
   }
 
   @Test
@@ -295,14 +372,18 @@ public final class GenericPathTraversalDetectorTest {
   }
 
   private void setUpMockInjectionPoint(NetworkService networkService) {
-    when(this.mockInjectionPoint.injectPayload(any(), any()))
+    when(this.mockInjectionPoint.injectPayload(any(), any(), any()))
         .thenReturn(
             ImmutableSet.of(
-                HttpRequest.get(
-                        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
-                            + "/..%2Fetc%2Fpasswd")
-                    .withEmptyHeaders()
-                    .build()));
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.LOW)));
   }
 
   private NetworkService buildMinimalNetworkService(String httpMethod, int responseCode) {

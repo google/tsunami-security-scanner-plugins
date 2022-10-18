@@ -57,7 +57,7 @@ import javax.inject.Inject;
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "GenericPathTraversalDetector",
-    version = "1.0.1",
+    version = "1.1",
     description = "This plugin detects generic Path Traversal vulnerabilities.",
     author = "Moritz Wilhelm (mzwm@google.com)",
     bootstrapModule = GenericPathTraversalDetectorBootstrapModule.class)
@@ -97,7 +97,9 @@ public final class GenericPathTraversalDetector implements VulnDetector {
                  * sorting might drop promising potential exploits and only keep less likely to
                  * succeed exploits.
                  */
-                .sorted(comparing((PotentialExploit exploit) -> exploit.request().url()))
+                .sorted(
+                    comparing(PotentialExploit::priority, PotentialExploit.Priority.COMPARATOR)
+                        .thenComparing((PotentialExploit exploit) -> exploit.request().url()))
                 .limit(config.maxExploitsToTest())
                 .filter(this::isExploitable)
                 .collect(BiStream.groupingBy(PotentialExploit::networkService, toImmutableSet()))

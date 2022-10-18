@@ -19,8 +19,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.tsunami.common.net.http.HttpRequest;
-import java.util.HashSet;
-import java.util.Set;
+import com.google.tsunami.proto.NetworkService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -30,6 +29,10 @@ import org.junit.runners.JUnit4;
 public final class PathParameterInjectionTest {
   private static final PathParameterInjection INJECTION_POINT = new PathParameterInjection();
 
+  private static final NetworkService MINIMAL_NETWORK_SERVICE =
+      NetworkService.newBuilder().setServiceName("http").build();
+  private static final String PAYLOAD = "../../../../etc/passwd";
+
   @Test
   public void injectPayload_onRelativePathTraversalPayload_generatesExploitsForRoot() {
     HttpRequest exploitAtRoot =
@@ -37,9 +40,12 @@ public final class PathParameterInjectionTest {
 
     assertThat(
             INJECTION_POINT.injectPayload(
+                MINIMAL_NETWORK_SERVICE,
                 HttpRequest.get("https://google.com/path/to/file").withEmptyHeaders().build(),
-                "../../../../etc/passwd"))
-        .contains(exploitAtRoot);
+                PAYLOAD))
+        .contains(
+            PotentialExploit.create(
+                MINIMAL_NETWORK_SERVICE, exploitAtRoot, PAYLOAD, PotentialExploit.Priority.LOW));
   }
 
   @Test
@@ -51,9 +57,15 @@ public final class PathParameterInjectionTest {
 
     assertThat(
             INJECTION_POINT.injectPayload(
+                MINIMAL_NETWORK_SERVICE,
                 HttpRequest.get("https://google.com/path/to/file").withEmptyHeaders().build(),
-                "../../../../etc/passwd"))
-        .contains(exploitAtCurrentPath);
+                PAYLOAD))
+        .contains(
+            PotentialExploit.create(
+                MINIMAL_NETWORK_SERVICE,
+                exploitAtCurrentPath,
+                PAYLOAD,
+                PotentialExploit.Priority.LOW));
   }
 
   @Test
@@ -86,16 +98,23 @@ public final class PathParameterInjectionTest {
             "https://google.com/xls/../../../../etc/passwd"
             // go/keep-sorted end
             );
-    Set<HttpRequest> requests = new HashSet<>();
+    ImmutableSet.Builder<PotentialExploit> builder = ImmutableSet.builder();
     for (String target : targets) {
-      requests.add(HttpRequest.get(target).withEmptyHeaders().build());
+      builder.add(
+          PotentialExploit.create(
+              MINIMAL_NETWORK_SERVICE,
+              HttpRequest.get(target).withEmptyHeaders().build(),
+              PAYLOAD,
+              PotentialExploit.Priority.LOW));
     }
+    ImmutableSet<PotentialExploit> exploits = builder.build();
 
     assertThat(
             INJECTION_POINT.injectPayload(
+                MINIMAL_NETWORK_SERVICE,
                 HttpRequest.get("https://google.com/path/to/file").withEmptyHeaders().build(),
-                "../../../../etc/passwd"))
-        .containsAtLeastElementsIn(requests);
+                PAYLOAD))
+        .containsAtLeastElementsIn(exploits);
   }
 
   @Test
@@ -103,14 +122,16 @@ public final class PathParameterInjectionTest {
     assertThat(
             INJECTION_POINT
                 .injectPayload(
+                    MINIMAL_NETWORK_SERVICE,
                     HttpRequest.get("https://google.com").withEmptyHeaders().build(),
-                    "../../../../etc/passwd")
+                    PAYLOAD)
                 .size())
         .isLessThan(
             INJECTION_POINT
                 .injectPayload(
+                    MINIMAL_NETWORK_SERVICE,
                     HttpRequest.get("https://google.com/path/to/file").withEmptyHeaders().build(),
-                    "../../../../etc/passwd")
+                    PAYLOAD)
                 .size());
   }
 
@@ -118,11 +139,13 @@ public final class PathParameterInjectionTest {
   public void injectPayload_whenInjectionAtRoot_ignoresTrailingSlash() {
     assertThat(
             INJECTION_POINT.injectPayload(
+                MINIMAL_NETWORK_SERVICE,
                 HttpRequest.get("https://google.com").withEmptyHeaders().build(),
-                "../../../../etc/passwd"))
+                PAYLOAD))
         .containsExactlyElementsIn(
             INJECTION_POINT.injectPayload(
+                MINIMAL_NETWORK_SERVICE,
                 HttpRequest.get("https://google.com/").withEmptyHeaders().build(),
-                "../../../../etc/passwd"));
+                PAYLOAD));
   }
 }

@@ -19,6 +19,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.tsunami.common.net.http.HttpRequest;
+import com.google.tsunami.proto.NetworkService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -32,27 +33,41 @@ public final class GetParameterInjectionTest {
       HttpRequest.get("https://google.com").withEmptyHeaders().build();
   private static final HttpRequest REQUEST_WITH_GET_PARAMETERS =
       HttpRequest.get("https://google.com?key=value&other=test").withEmptyHeaders().build();
+  private static final NetworkService MINIMAL_NETWORK_SERVICE =
+      NetworkService.newBuilder().setServiceName("http").build();
+  private static final String PAYLOAD = "../../../../etc/passwd";
 
   @Test
   public void injectPayload_onRelativePathTraversalPayloadWithGetParameters_generatesExploits() {
-    ImmutableSet<HttpRequest> requestsWithFuzzedGetParameters =
+    ImmutableSet<PotentialExploit> exploitsWithPayloadInGetParameters =
         ImmutableSet.of(
-            HttpRequest.get("https://google.com?key=../../../../etc/passwd&other=test")
-                .withEmptyHeaders()
-                .build(),
-            HttpRequest.get("https://google.com?key=value&other=../../../../etc/passwd")
-                .withEmptyHeaders()
-                .build());
+            PotentialExploit.create(
+                MINIMAL_NETWORK_SERVICE,
+                HttpRequest.get("https://google.com?key=../../../../etc/passwd&other=test")
+                    .withEmptyHeaders()
+                    .build(),
+                PAYLOAD,
+                PotentialExploit.Priority.LOW),
+            PotentialExploit.create(
+                MINIMAL_NETWORK_SERVICE,
+                HttpRequest.get("https://google.com?key=value&other=../../../../etc/passwd")
+                    .withEmptyHeaders()
+                    .build(),
+                PAYLOAD,
+                PotentialExploit.Priority.LOW));
 
-    assertThat(INJECTION_POINT.injectPayload(REQUEST_WITH_GET_PARAMETERS, "../../../../etc/passwd"))
-        .containsAtLeastElementsIn(requestsWithFuzzedGetParameters);
+    assertThat(
+            INJECTION_POINT.injectPayload(
+                MINIMAL_NETWORK_SERVICE, REQUEST_WITH_GET_PARAMETERS, PAYLOAD))
+        .containsAtLeastElementsIn(exploitsWithPayloadInGetParameters);
   }
 
   @Test
   public void
       injectPayload_onRelativePathTraversalPayloadWithoutGetParameters_generatesNoExploits() {
     assertThat(
-            INJECTION_POINT.injectPayload(REQUEST_WITHOUT_GET_PARAMETERS, "../../../../etc/passwd"))
+            INJECTION_POINT.injectPayload(
+                MINIMAL_NETWORK_SERVICE, REQUEST_WITHOUT_GET_PARAMETERS, PAYLOAD))
         .isEmpty();
   }
 }
