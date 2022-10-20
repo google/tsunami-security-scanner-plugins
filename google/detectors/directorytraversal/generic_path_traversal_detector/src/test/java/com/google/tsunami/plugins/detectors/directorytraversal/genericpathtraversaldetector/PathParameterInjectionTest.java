@@ -36,7 +36,7 @@ public final class PathParameterInjectionTest {
   @Test
   public void injectPayload_onRelativePathTraversalPayload_generatesExploitsForRoot() {
     HttpRequest exploitAtRoot =
-        HttpRequest.get("https://google.com/../../../../etc/passwd").withEmptyHeaders().build();
+        HttpRequest.get("https://google.com/" + PAYLOAD).withEmptyHeaders().build();
 
     assertThat(
             INJECTION_POINT.injectPayload(
@@ -51,9 +51,7 @@ public final class PathParameterInjectionTest {
   @Test
   public void injectPayload_onRelativePathTraversalPayload_generatesExploitsForCurrentPath() {
     HttpRequest exploitAtCurrentPath =
-        HttpRequest.get("https://google.com/path/to/../../../../etc/passwd")
-            .withEmptyHeaders()
-            .build();
+        HttpRequest.get("https://google.com/path/to/" + PAYLOAD).withEmptyHeaders().build();
 
     assertThat(
             INJECTION_POINT.injectPayload(
@@ -73,29 +71,29 @@ public final class PathParameterInjectionTest {
     ImmutableSet<String> targets =
         ImmutableSet.of(
             // go/keep-sorted start
-            "https://google.com/admin/../../../../etc/passwd",
-            "https://google.com/album/../../../../etc/passwd",
-            "https://google.com/app/../../../../etc/passwd",
-            "https://google.com/assets/../../../../etc/passwd",
-            "https://google.com/bin/../../../../etc/passwd",
-            "https://google.com/console/../../../../etc/passwd",
-            "https://google.com/css/../../../../etc/passwd",
-            "https://google.com/demo/../../../../etc/passwd",
-            "https://google.com/doc/../../../../etc/passwd",
-            "https://google.com/eqx/../../../../etc/passwd",
-            "https://google.com/files/../../../../etc/passwd",
-            "https://google.com/fs/../../../../etc/passwd",
-            "https://google.com/html/../../../../etc/passwd",
-            "https://google.com/img-sys/../../../../etc/passwd",
-            "https://google.com/jquery_ui/../../../../etc/passwd",
-            "https://google.com/js/../../../../etc/passwd",
-            "https://google.com/media/../../../../etc/passwd",
-            "https://google.com/public/../../../../etc/passwd",
-            "https://google.com/scripts/../../../../etc/passwd",
-            "https://google.com/static/../../../../etc/passwd",
-            "https://google.com/tmp/../../../../etc/passwd",
-            "https://google.com/upload/../../../../etc/passwd",
-            "https://google.com/xls/../../../../etc/passwd"
+            "https://google.com/admin/" + PAYLOAD,
+            "https://google.com/album/" + PAYLOAD,
+            "https://google.com/app/" + PAYLOAD,
+            "https://google.com/assets/" + PAYLOAD,
+            "https://google.com/bin/" + PAYLOAD,
+            "https://google.com/console/" + PAYLOAD,
+            "https://google.com/css/" + PAYLOAD,
+            "https://google.com/demo/" + PAYLOAD,
+            "https://google.com/doc/" + PAYLOAD,
+            "https://google.com/eqx/" + PAYLOAD,
+            "https://google.com/files/" + PAYLOAD,
+            "https://google.com/fs/" + PAYLOAD,
+            "https://google.com/html/" + PAYLOAD,
+            "https://google.com/img-sys/" + PAYLOAD,
+            "https://google.com/jquery_ui/" + PAYLOAD,
+            "https://google.com/js/" + PAYLOAD,
+            "https://google.com/media/" + PAYLOAD,
+            "https://google.com/public/" + PAYLOAD,
+            "https://google.com/scripts/" + PAYLOAD,
+            "https://google.com/static/" + PAYLOAD,
+            "https://google.com/tmp/" + PAYLOAD,
+            "https://google.com/upload/" + PAYLOAD,
+            "https://google.com/xls/" + PAYLOAD
             // go/keep-sorted end
             );
     ImmutableSet.Builder<PotentialExploit> builder = ImmutableSet.builder();
@@ -147,5 +145,102 @@ public final class PathParameterInjectionTest {
                 MINIMAL_NETWORK_SERVICE,
                 HttpRequest.get("https://google.com/").withEmptyHeaders().build(),
                 PAYLOAD));
+  }
+
+  @Test
+  public void injectPayload_whenInjectionAtRoot_assignsLowPriority() {
+    HttpRequest exploitAtRoot =
+        HttpRequest.get("https://google.com/" + PAYLOAD).withEmptyHeaders().build();
+
+    ImmutableSet<PotentialExploit> exploits =
+        INJECTION_POINT.injectPayload(
+            MINIMAL_NETWORK_SERVICE,
+            HttpRequest.get("https://google.com/").withEmptyHeaders().build(),
+            PAYLOAD);
+    PotentialExploit generatedExploit =
+        exploits.stream()
+            .filter(exploit -> exploit.request().equals(exploitAtRoot))
+            .findFirst()
+            .get();
+
+    assertThat(generatedExploit.priority()).isEqualTo(PotentialExploit.Priority.LOW);
+  }
+
+  @Test
+  public void injectPayload_whenPathSuffixRepresentsPath_assignsHighPriority() {
+    HttpRequest exploitAtCurrentPath =
+        HttpRequest.get("https://google.com/path/to/" + PAYLOAD).withEmptyHeaders().build();
+
+    ImmutableSet<PotentialExploit> exploits =
+        INJECTION_POINT.injectPayload(
+            MINIMAL_NETWORK_SERVICE,
+            HttpRequest.get("https://google.com/path/to/a%2Fb").withEmptyHeaders().build(),
+            PAYLOAD);
+    PotentialExploit generatedExploit =
+        exploits.stream()
+            .filter(exploit -> exploit.request().equals(exploitAtCurrentPath))
+            .findFirst()
+            .get();
+
+    assertThat(generatedExploit.priority()).isEqualTo(PotentialExploit.Priority.HIGH);
+  }
+
+  @Test
+  public void injectPayload_whenPathEndsWithFileExtension_assignsMediumPriority() {
+    HttpRequest exploitAtCurrentPath =
+        HttpRequest.get("https://google.com/path/to/" + PAYLOAD).withEmptyHeaders().build();
+
+    ImmutableSet<PotentialExploit> exploits =
+        INJECTION_POINT.injectPayload(
+            MINIMAL_NETWORK_SERVICE,
+            HttpRequest.get("https://google.com/path/to/file.jpg").withEmptyHeaders().build(),
+            PAYLOAD);
+    PotentialExploit generatedExploit =
+        exploits.stream()
+            .filter(exploit -> exploit.request().equals(exploitAtCurrentPath))
+            .findFirst()
+            .get();
+
+    assertThat(generatedExploit.priority()).isEqualTo(PotentialExploit.Priority.MEDIUM);
+  }
+
+  @Test
+  public void injectPayload_whenPathContainsCommonSubPath_assignsMediumPriority() {
+    HttpRequest exploitAtCurrentPath =
+        HttpRequest.get("https://google.com/path/to/admin/" + PAYLOAD).withEmptyHeaders().build();
+
+    ImmutableSet<PotentialExploit> exploits =
+        INJECTION_POINT.injectPayload(
+            MINIMAL_NETWORK_SERVICE,
+            HttpRequest.get("https://google.com/path/to/admin/file").withEmptyHeaders().build(),
+            PAYLOAD);
+    PotentialExploit generatedExploit =
+        exploits.stream()
+            .filter(exploit -> exploit.request().equals(exploitAtCurrentPath))
+            .findFirst()
+            .get();
+
+    assertThat(generatedExploit.priority()).isEqualTo(PotentialExploit.Priority.MEDIUM);
+  }
+
+  @Test
+  public void injectPayload_whenPathContainsUncommonSubPath_assignsLowPriority() {
+    HttpRequest exploitAtCurrentPath =
+        HttpRequest.get("https://google.com/path/to/notadmin/" + PAYLOAD)
+            .withEmptyHeaders()
+            .build();
+
+    ImmutableSet<PotentialExploit> exploits =
+        INJECTION_POINT.injectPayload(
+            MINIMAL_NETWORK_SERVICE,
+            HttpRequest.get("https://google.com/path/to/notadmin/file").withEmptyHeaders().build(),
+            PAYLOAD);
+    PotentialExploit generatedExploit =
+        exploits.stream()
+            .filter(exploit -> exploit.request().equals(exploitAtCurrentPath))
+            .findFirst()
+            .get();
+
+    assertThat(generatedExploit.priority()).isEqualTo(PotentialExploit.Priority.LOW);
   }
 }

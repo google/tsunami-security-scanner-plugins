@@ -92,11 +92,6 @@ public final class GenericPathTraversalDetector implements VulnDetector {
                 .map(this::generatePotentialExploits)
                 .flatMap(Collection::stream)
                 .distinct()
-                /**
-                 * TODO(b/251767111) This is suboptimal without a heuristic. Sampling based only on
-                 * sorting might drop promising potential exploits and only keep less likely to
-                 * succeed exploits.
-                 */
                 .sorted(
                     comparing(PotentialExploit::priority, PotentialExploit.Priority.COMPARATOR)
                         .thenComparing((PotentialExploit exploit) -> exploit.request().url()))
