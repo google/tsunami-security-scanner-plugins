@@ -25,7 +25,6 @@ import com.google.common.flogger.GoogleLogger;
 import com.google.common.labs.collect.BiStream;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
-import com.google.tsunami.common.net.UrlUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpMethod;
 import com.google.tsunami.common.net.http.HttpRequest;
@@ -57,15 +56,15 @@ import javax.inject.Inject;
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "GenericPathTraversalDetector",
-    version = "1.1",
+    version = "1.2",
     description = "This plugin detects generic Path Traversal vulnerabilities.",
     author = "Moritz Wilhelm (mzwm@google.com)",
     bootstrapModule = GenericPathTraversalDetectorBootstrapModule.class)
 public final class GenericPathTraversalDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  private static final String RELATIVE_PATH_PREFIX = "../".repeat(29) + "..";
-  private static final String ETC_PASSWD_PATH = "/etc/passwd";
+  private static final ImmutableSet<String> PAYLOADS =
+      ImmutableSet.of("..%2F".repeat(29) + ".." + "%2Fetc%2Fpasswd", "%2Fetc%2Fpasswd");
   private static final Pattern ETC_PASSWD_PATTERN = Pattern.compile("root:x:0:0:");
 
   private final Clock utcClock;
@@ -117,8 +116,11 @@ public final class GenericPathTraversalDetector implements VulnDetector {
   }
 
   private ImmutableSet<PotentialExploit> injectPayloads(ExploitGenerator exploitGenerator) {
-    String payload = UrlUtils.urlEncode(RELATIVE_PATH_PREFIX + ETC_PASSWD_PATH).get();
-    return exploitGenerator.injectPayload(payload);
+    ImmutableSet.Builder<PotentialExploit> exploits = ImmutableSet.builder();
+    for (String payload : PAYLOADS) {
+      exploits.addAll(exploitGenerator.injectPayload(payload));
+    }
+    return exploits.build();
   }
 
   private ImmutableSet<PotentialExploit> generatePotentialExploits(NetworkService networkService) {
