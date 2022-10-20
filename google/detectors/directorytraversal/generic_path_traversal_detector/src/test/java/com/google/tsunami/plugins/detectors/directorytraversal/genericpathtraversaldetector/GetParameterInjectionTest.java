@@ -16,6 +16,7 @@
 package com.google.tsunami.plugins.detectors.directorytraversal.genericpathtraversaldetector;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.tsunami.common.net.http.HttpRequest;
@@ -69,5 +70,83 @@ public final class GetParameterInjectionTest {
             INJECTION_POINT.injectPayload(
                 MINIMAL_NETWORK_SERVICE, REQUEST_WITHOUT_GET_PARAMETERS, PAYLOAD))
         .isEmpty();
+  }
+
+  @Test
+  public void injectPayload_whenPromisingParameterName_assignsHighPriority() {
+    HttpRequest requestWithPromisingParameterName =
+        HttpRequest.get("https://google.com?file=test").withEmptyHeaders().build();
+    ImmutableSet<PotentialExploit> exploits =
+        INJECTION_POINT.injectPayload(
+            MINIMAL_NETWORK_SERVICE, requestWithPromisingParameterName, PAYLOAD);
+
+    for (PotentialExploit exploit : exploits) {
+      assertThat(exploit.priority()).isEqualTo(PotentialExploit.Priority.HIGH);
+    }
+  }
+
+  @Test
+  public void
+      injectPayload_whenPromisingParameterNameIsSnakeCase_normalizesValueAndAssignsHighPriority() {
+    HttpRequest requestWithPromisingParameterName =
+        HttpRequest.get("https://google.com?file_name=test").withEmptyHeaders().build();
+    ImmutableSet<PotentialExploit> exploits =
+        INJECTION_POINT.injectPayload(
+            MINIMAL_NETWORK_SERVICE, requestWithPromisingParameterName, PAYLOAD);
+
+    for (PotentialExploit exploit : exploits) {
+      assertThat(exploit.priority()).isEqualTo(PotentialExploit.Priority.HIGH);
+    }
+  }
+
+  @Test
+  public void injectPayload_whenPromisingParameterName_assignsPriorityOnlyToPromisingParameter() {
+    HttpRequest requestWithPromisingParameterName =
+        HttpRequest.get("https://google.com?file=test&notfile=nottest").withEmptyHeaders().build();
+    ImmutableSet<PotentialExploit> exploits =
+        INJECTION_POINT.injectPayload(
+            MINIMAL_NETWORK_SERVICE, requestWithPromisingParameterName, PAYLOAD);
+
+    assertThat(exploits.stream().map(PotentialExploit::priority))
+        .containsExactly(PotentialExploit.Priority.LOW, PotentialExploit.Priority.HIGH);
+  }
+
+  @Test
+  public void injectPayload_whenParameterValueRepresentsPath_assignsHighPriority() {
+    HttpRequest requestWithPromisingParameterName =
+        HttpRequest.get("https://google.com?key=path/to/file").withEmptyHeaders().build();
+    ImmutableSet<PotentialExploit> exploits =
+        INJECTION_POINT.injectPayload(
+            MINIMAL_NETWORK_SERVICE, requestWithPromisingParameterName, PAYLOAD);
+
+    for (PotentialExploit exploit : exploits) {
+      assertThat(exploit.priority()).isEqualTo(PotentialExploit.Priority.HIGH);
+    }
+  }
+
+  @Test
+  public void injectPayload_whenParameterValueRepresentsEncodedPath_assignsHighPriority() {
+    HttpRequest requestWithPromisingParameterName =
+        HttpRequest.get("https://google.com?key=path%2Fto%2ffile").withEmptyHeaders().build();
+    ImmutableSet<PotentialExploit> exploits =
+        INJECTION_POINT.injectPayload(
+            MINIMAL_NETWORK_SERVICE, requestWithPromisingParameterName, PAYLOAD);
+
+    for (PotentialExploit exploit : exploits) {
+      assertThat(exploit.priority()).isEqualTo(PotentialExploit.Priority.HIGH);
+    }
+  }
+
+  @Test
+  public void injectPayload_whenParameterValueHasFileExtension_assignsHighPriority() {
+    HttpRequest requestWithPromisingParameterName =
+        HttpRequest.get("https://google.com?key=img.jpg").withEmptyHeaders().build();
+    ImmutableSet<PotentialExploit> exploits =
+        INJECTION_POINT.injectPayload(
+            MINIMAL_NETWORK_SERVICE, requestWithPromisingParameterName, PAYLOAD);
+
+    for (PotentialExploit exploit : exploits) {
+      assertThat(exploit.priority()).isEqualTo(PotentialExploit.Priority.HIGH);
+    }
   }
 }
