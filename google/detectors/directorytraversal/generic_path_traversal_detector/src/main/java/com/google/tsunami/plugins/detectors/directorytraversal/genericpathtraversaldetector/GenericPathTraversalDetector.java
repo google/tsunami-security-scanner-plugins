@@ -56,15 +56,13 @@ import javax.inject.Inject;
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "GenericPathTraversalDetector",
-    version = "1.2",
+    version = "1.3",
     description = "This plugin detects generic Path Traversal vulnerabilities.",
     author = "Moritz Wilhelm (mzwm@google.com)",
     bootstrapModule = GenericPathTraversalDetectorBootstrapModule.class)
 public final class GenericPathTraversalDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  private static final ImmutableSet<String> PAYLOADS =
-      ImmutableSet.of("..%2F".repeat(29) + ".." + "%2Fetc%2Fpasswd", "%2Fetc%2Fpasswd");
   private static final Pattern ETC_PASSWD_PATTERN = Pattern.compile("root:x:0:0:");
 
   private final Clock utcClock;
@@ -117,7 +115,7 @@ public final class GenericPathTraversalDetector implements VulnDetector {
 
   private ImmutableSet<PotentialExploit> injectPayloads(ExploitGenerator exploitGenerator) {
     ImmutableSet.Builder<PotentialExploit> exploits = ImmutableSet.builder();
-    for (String payload : PAYLOADS) {
+    for (String payload : this.config.payloads()) {
       exploits.addAll(exploitGenerator.injectPayload(payload));
     }
     return exploits.build();

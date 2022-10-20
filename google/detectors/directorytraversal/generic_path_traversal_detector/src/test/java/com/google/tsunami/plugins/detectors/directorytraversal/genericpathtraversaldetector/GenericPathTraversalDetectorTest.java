@@ -83,7 +83,8 @@ public final class GenericPathTraversalDetectorTest {
                 return GenericPathTraversalDetectorConfig.create(
                     ImmutableSet.of(mockInjectionPoint),
                     /* maxCrawledUrlsToFuzz= */ 5,
-                    /* maxExploitsToTest= */ 2);
+                    /* maxExploitsToTest= */ 2,
+                    ImmutableSet.of("..%2Fetc%2Fpasswd"));
               }
             })
         .injectMembers(this);

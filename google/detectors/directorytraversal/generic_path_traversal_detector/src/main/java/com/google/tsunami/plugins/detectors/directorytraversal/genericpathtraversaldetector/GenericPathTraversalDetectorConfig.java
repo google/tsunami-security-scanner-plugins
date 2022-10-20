@@ -27,11 +27,14 @@ abstract class GenericPathTraversalDetectorConfig {
 
   abstract int maxExploitsToTest();
 
+  abstract ImmutableSet<String> payloads();
+
   static GenericPathTraversalDetectorConfig create(
       ImmutableSet<InjectionPoint> injectingPoints,
       int maxCrawledUrlsToFuzz,
-      int maxExploitsToTest) {
+      int maxExploitsToTest,
+      ImmutableSet<String> payloads) {
     return new AutoValue_GenericPathTraversalDetectorConfig(
-        injectingPoints, maxCrawledUrlsToFuzz, maxExploitsToTest);
+        injectingPoints, maxCrawledUrlsToFuzz, maxExploitsToTest, payloads);
   }
 }
