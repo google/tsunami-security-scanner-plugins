@@ -35,6 +35,9 @@ public final class GenericPathTraversalDetectorBootstrapModule extends PluginBoo
       "%25%32%65%25%32%65%25%32%66".repeat(30) + "etc%25%32%66passwd";
   private static final String FULL_DOUBLE_PERCENT_ENCODED_ABSOLUTE_PAYLOAD =
       "%25%32%66etc%25%32%66passwd";
+  // ..(../)/ bypasses an insufficient Path Traversal mitigation that replaces ../ only once
+  private static final String BASIC_MITIGATION_BYPASSING_PAYLOAD =
+      "....%2F%2F".repeat(30) + "etc%2Fpasswd";
 
   @Override
   protected void configurePlugin() {
@@ -70,7 +73,8 @@ public final class GenericPathTraversalDetectorBootstrapModule extends PluginBoo
             PERCENT_ENCODED_INCLUDING_DOTS_PAYLOAD,
             DOUBLE_PERCENT_ENCODED_INCLUDING_DOTS_PAYLOAD,
             FULL_DOUBLE_PERCENT_ENCODED_RELATIVE_PAYLOAD,
-            FULL_DOUBLE_PERCENT_ENCODED_ABSOLUTE_PAYLOAD);
+            FULL_DOUBLE_PERCENT_ENCODED_ABSOLUTE_PAYLOAD,
+            BASIC_MITIGATION_BYPASSING_PAYLOAD);
     }
     return ImmutableSet.of();
   }
