@@ -16,6 +16,7 @@
 package com.google.tsunami.plugins.detectors.directorytraversal.genericpathtraversaldetector;
 
 import com.google.common.collect.ImmutableSet;
+import java.util.regex.Pattern;
 
 /** A collection of constants that are shared among InjectionPoints. */
 final class InjectionPointConstants {
@@ -47,6 +48,15 @@ final class InjectionPointConstants {
           "xls"
           // go/keep-sorted end
           );
+
+  public static final ImmutableSet<String> PROMISING_PARAMETER_NAMES =
+      ImmutableSet.of(
+          // go/keep-sorted start
+          "file", "filename", "filepath", "path", "url"
+          // go/keep-sorted end
+          );
+
+  public static final Pattern FILE_EXTENSION_PATTERN = Pattern.compile(".+\\.[^\\.]+");
 
   private InjectionPointConstants() {}
 }

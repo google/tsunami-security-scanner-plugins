@@ -33,7 +33,6 @@ final class PathParameterInjection implements InjectionPoint {
           InjectionPointConstants.COMMON_PATHS.stream()
               .map(path -> String.format("(/%s/)", path))
               .collect(joining("|")));
-  private static final Pattern FILE_EXTENSION_PATTERN = Pattern.compile(".+\\.[^\\.]+");
 
   @Override
   public ImmutableSet<PotentialExploit> injectPayload(
@@ -63,6 +62,14 @@ final class PathParameterInjection implements InjectionPoint {
     return Ascii.toLowerCase(suffix).contains("%2f");
   }
 
+  private boolean endsWithFileExtension(String suffix) {
+    return InjectionPointConstants.FILE_EXTENSION_PATTERN.matcher(suffix).find();
+  }
+
+  private boolean containsCommonPath(String path) {
+    return COMMON_PATHS_PATTERN.matcher(path).find();
+  }
+
   private ImmutableSet<FuzzTarget> generateTargetAtCurrentPath(URI url, String payload) {
     String path = UrlUtils.removeTrailingSlashes(url.getRawPath());
     int endOfParent = path.lastIndexOf("/");
@@ -71,8 +78,7 @@ final class PathParameterInjection implements InjectionPoint {
     PotentialExploit.Priority priority = PotentialExploit.Priority.LOW;
     if (isPromisingSuffix(suffix)) {
       priority = PotentialExploit.Priority.HIGH;
-    } else if (FILE_EXTENSION_PATTERN.matcher(suffix).find()
-        || COMMON_PATHS_PATTERN.matcher(prefix).find()) {
+    } else if (endsWithFileExtension(suffix) || containsCommonPath(prefix)) {
       priority = PotentialExploit.Priority.MEDIUM;
     }
     return ImmutableSet.of(FuzzTarget.create(this.extractRoot(url) + prefix + payload, priority));

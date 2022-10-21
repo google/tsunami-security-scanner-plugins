@@ -23,17 +23,9 @@ import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.proto.NetworkService;
 import java.net.URI;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 /** An {@code InjectionPoint} that injects payloads as GET parameters. */
 final class GetParameterInjection implements InjectionPoint {
-  private static final ImmutableSet<String> PROMISING_NAMES =
-      ImmutableSet.of(
-          // go/keep-sorted start
-          "file", "filename", "filepath", "path", "url"
-          // go/keep-sorted end
-          );
-  private static final Pattern FILE_EXTENSION_PATTERN = Pattern.compile(".+\\..+");
 
   @Override
   public ImmutableSet<PotentialExploit> injectPayload(
@@ -77,7 +69,7 @@ final class GetParameterInjection implements InjectionPoint {
   }
 
   private boolean isPromisingParameterName(String name) {
-    return PROMISING_NAMES.contains(normalizeParameterName(name));
+    return InjectionPointConstants.PROMISING_PARAMETER_NAMES.contains(normalizeParameterName(name));
   }
 
   private String normalizeParameterName(String name) {
@@ -94,7 +86,7 @@ final class GetParameterInjection implements InjectionPoint {
   }
 
   private boolean isParameterValueExtensionLike(String value) {
-    return FILE_EXTENSION_PATTERN.matcher(value).find();
+    return InjectionPointConstants.FILE_EXTENSION_PATTERN.matcher(value).find();
   }
 
   private boolean isParameterValuePathLike(String value) {
