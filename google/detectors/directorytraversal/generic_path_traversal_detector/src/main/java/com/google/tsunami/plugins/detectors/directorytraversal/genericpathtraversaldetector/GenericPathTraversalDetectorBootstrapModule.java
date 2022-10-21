@@ -21,6 +21,8 @@ import com.google.tsunami.plugin.PluginBootstrapModule;
 
 /** A Guice module that bootstraps the {@link GenericPathTraversalDetector}. */
 public final class GenericPathTraversalDetectorBootstrapModule extends PluginBootstrapModule {
+  private static final String NON_ENCODED_RELATIVE_PAYLOAD = "../".repeat(30) + "etc/passwd";
+  private static final String NON_ENCODED_ABSOLUTE_PAYLOAD = "/etc/passwd";
   private static final String PERCENT_ENCODED_RELATIVE_PAYLOAD =
       "..%2F".repeat(30) + "etc%2Fpasswd";
   private static final String PERCENT_ENCODED_ABSOLUTE_PAYLOAD = "%2Fetc%2Fpasswd";
@@ -51,11 +53,11 @@ public final class GenericPathTraversalDetectorBootstrapModule extends PluginBoo
         ImmutableSet.of(
             new RootInjection(), new GetParameterInjection(), new PathParameterInjection()),
         /* maxCrawledUrlsToFuzz= */ 50,
-        /* maxExploitsToTest= */ 200,
+        /* maxExploitsToTest= */ 250,
         /**
          * TODO(b/202565385) Add a command line parameter to configure the scanning mode. Ideally,
-         * it should be possible to pass the scanning mode (QUICK/EXTENSIVE) via a command line
-         * parameter to configure Tsunami to do either QUICK or EXTENSIVE scanning.
+         * it should be possible to pass the scanning mode (QUICK/SMART/EXTENSIVE) via a command
+         * line parameter to configure Tsunami to do either QUICK, SMART, or EXTENSIVE scanning.
          */
         getPayloadsForScanningMode(Mode.QUICK));
   }
@@ -64,8 +66,17 @@ public final class GenericPathTraversalDetectorBootstrapModule extends PluginBoo
     switch (scanningMode) {
       case QUICK:
         return ImmutableSet.of(PERCENT_ENCODED_RELATIVE_PAYLOAD, PERCENT_ENCODED_ABSOLUTE_PAYLOAD);
+      case SMART:
+        return ImmutableSet.of(
+            PERCENT_ENCODED_INCLUDING_DOTS_PAYLOAD,
+            PERCENT_ENCODED_ABSOLUTE_PAYLOAD,
+            FULL_DOUBLE_PERCENT_ENCODED_RELATIVE_PAYLOAD,
+            FULL_DOUBLE_PERCENT_ENCODED_ABSOLUTE_PAYLOAD,
+            BASIC_MITIGATION_BYPASSING_PAYLOAD);
       case EXTENSIVE:
         return ImmutableSet.of(
+            NON_ENCODED_RELATIVE_PAYLOAD,
+            NON_ENCODED_ABSOLUTE_PAYLOAD,
             PERCENT_ENCODED_RELATIVE_PAYLOAD,
             PERCENT_ENCODED_ABSOLUTE_PAYLOAD,
             DOUBLE_PERCENT_ENCODED_RELATIVE_PAYLOAD,
@@ -81,6 +92,7 @@ public final class GenericPathTraversalDetectorBootstrapModule extends PluginBoo
 
   enum Mode {
     QUICK,
+    SMART,
     EXTENSIVE;
   }
 }
