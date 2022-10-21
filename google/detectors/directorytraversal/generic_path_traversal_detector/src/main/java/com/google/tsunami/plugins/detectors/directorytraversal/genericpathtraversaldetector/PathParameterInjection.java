@@ -26,43 +26,30 @@ import com.google.tsunami.proto.NetworkService;
 import java.net.URI;
 import java.util.regex.Pattern;
 
-/**
- * An {@code InjectionPoint} that plants payloads at the root, current path, and frequently
- * encountered path prefixes of the url.
- */
+/** An {@code InjectionPoint} that plants payloads at the current path. */
 final class PathParameterInjection implements InjectionPoint {
-  private static final ImmutableSet<String> COMMON_PATHS =
-      ImmutableSet.of(
-          // go/keep-sorted start
-          "admin",
-          "album",
-          "app",
-          "assets",
-          "bin",
-          "console",
-          "css",
-          "demo",
-          "doc",
-          "eqx",
-          "files",
-          "fs",
-          "html",
-          "img-sys",
-          "jquery_ui",
-          "js",
-          "media",
-          "public",
-          "scripts",
-          "static",
-          "tmp",
-          "upload",
-          "xls"
-          // go/keep-sorted end
-          );
   private static final Pattern COMMON_PATHS_PATTERN =
       Pattern.compile(
-          COMMON_PATHS.stream().map(path -> String.format("(/%s/)", path)).collect(joining("|")));
+          InjectionPointConstants.COMMON_PATHS.stream()
+              .map(path -> String.format("(/%s/)", path))
+              .collect(joining("|")));
   private static final Pattern FILE_EXTENSION_PATTERN = Pattern.compile(".+\\.[^\\.]+");
+
+  @Override
+  public ImmutableSet<PotentialExploit> injectPayload(
+      NetworkService networkService, HttpRequest request, String payload) {
+    ImmutableSet.Builder<PotentialExploit> builder = ImmutableSet.builder();
+    for (FuzzTarget fuzzTarget :
+        this.generateTargetAtCurrentPath(URI.create(request.url()), payload)) {
+      builder.add(
+          PotentialExploit.create(
+              networkService,
+              this.buildModifiedRequest(request, fuzzTarget.targetUrl()),
+              payload,
+              fuzzTarget.priority()));
+    }
+    return builder.build();
+  }
 
   private HttpRequest buildModifiedRequest(HttpRequest request, String url) {
     return request.toBuilder().setUrl(url).build();
@@ -74,34 +61,6 @@ final class PathParameterInjection implements InjectionPoint {
 
   private boolean isPromisingSuffix(String suffix) {
     return Ascii.toLowerCase(suffix).contains("%2f");
-  }
-
-  @Override
-  public ImmutableSet<PotentialExploit> injectPayload(
-      NetworkService networkService, HttpRequest request, String payload) {
-    ImmutableSet.Builder<PotentialExploit> builder = ImmutableSet.builder();
-    for (FuzzTarget fuzzTarget : this.generateFuzzTargets(URI.create(request.url()), payload)) {
-      builder.add(
-          PotentialExploit.create(
-              networkService,
-              this.buildModifiedRequest(request, fuzzTarget.targetUrl()),
-              payload,
-              fuzzTarget.priority()));
-    }
-    return builder.build();
-  }
-
-  private ImmutableSet<FuzzTarget> generateFuzzTargets(URI url, String payload) {
-    return ImmutableSet.<FuzzTarget>builder()
-        .addAll(this.generateTargetAtRoot(url, payload))
-        .addAll(this.generateTargetAtCurrentPath(url, payload))
-        .addAll(this.generateTargetAtCommonPaths(url, payload))
-        .build();
-  }
-
-  private ImmutableSet<FuzzTarget> generateTargetAtRoot(URI url, String payload) {
-    return ImmutableSet.of(
-        FuzzTarget.create(this.extractRoot(url) + "/" + payload, PotentialExploit.Priority.LOW));
   }
 
   private ImmutableSet<FuzzTarget> generateTargetAtCurrentPath(URI url, String payload) {
@@ -117,17 +76,6 @@ final class PathParameterInjection implements InjectionPoint {
       priority = PotentialExploit.Priority.MEDIUM;
     }
     return ImmutableSet.of(FuzzTarget.create(this.extractRoot(url) + prefix + payload, priority));
-  }
-
-  private ImmutableSet<FuzzTarget> generateTargetAtCommonPaths(URI url, String payload) {
-    ImmutableSet.Builder<FuzzTarget> builder = ImmutableSet.builder();
-    for (String commonPath : COMMON_PATHS) {
-      builder.add(
-          FuzzTarget.create(
-              this.extractRoot(url) + "/" + commonPath + "/" + payload,
-              PotentialExploit.Priority.LOW));
-    }
-    return builder.build();
   }
 
   @AutoValue

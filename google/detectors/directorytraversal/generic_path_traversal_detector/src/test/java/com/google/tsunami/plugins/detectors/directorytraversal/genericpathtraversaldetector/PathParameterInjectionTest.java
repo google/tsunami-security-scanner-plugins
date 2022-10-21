@@ -34,21 +34,6 @@ public final class PathParameterInjectionTest {
   private static final String PAYLOAD = "../../../../etc/passwd";
 
   @Test
-  public void injectPayload_onRelativePathTraversalPayload_generatesExploitsForRoot() {
-    HttpRequest exploitAtRoot =
-        HttpRequest.get("https://google.com/" + PAYLOAD).withEmptyHeaders().build();
-
-    assertThat(
-            INJECTION_POINT.injectPayload(
-                MINIMAL_NETWORK_SERVICE,
-                HttpRequest.get("https://google.com/path/to/file").withEmptyHeaders().build(),
-                PAYLOAD))
-        .contains(
-            PotentialExploit.create(
-                MINIMAL_NETWORK_SERVICE, exploitAtRoot, PAYLOAD, PotentialExploit.Priority.LOW));
-  }
-
-  @Test
   public void injectPayload_onRelativePathTraversalPayload_generatesExploitsForCurrentPath() {
     HttpRequest exploitAtCurrentPath =
         HttpRequest.get("https://google.com/path/to/" + PAYLOAD).withEmptyHeaders().build();
@@ -67,103 +52,18 @@ public final class PathParameterInjectionTest {
   }
 
   @Test
-  public void injectPayload_onRelativePathTraversalPayload_generatesExploitsForCommonPaths() {
-    ImmutableSet<String> targets =
-        ImmutableSet.of(
-            // go/keep-sorted start
-            "https://google.com/admin/" + PAYLOAD,
-            "https://google.com/album/" + PAYLOAD,
-            "https://google.com/app/" + PAYLOAD,
-            "https://google.com/assets/" + PAYLOAD,
-            "https://google.com/bin/" + PAYLOAD,
-            "https://google.com/console/" + PAYLOAD,
-            "https://google.com/css/" + PAYLOAD,
-            "https://google.com/demo/" + PAYLOAD,
-            "https://google.com/doc/" + PAYLOAD,
-            "https://google.com/eqx/" + PAYLOAD,
-            "https://google.com/files/" + PAYLOAD,
-            "https://google.com/fs/" + PAYLOAD,
-            "https://google.com/html/" + PAYLOAD,
-            "https://google.com/img-sys/" + PAYLOAD,
-            "https://google.com/jquery_ui/" + PAYLOAD,
-            "https://google.com/js/" + PAYLOAD,
-            "https://google.com/media/" + PAYLOAD,
-            "https://google.com/public/" + PAYLOAD,
-            "https://google.com/scripts/" + PAYLOAD,
-            "https://google.com/static/" + PAYLOAD,
-            "https://google.com/tmp/" + PAYLOAD,
-            "https://google.com/upload/" + PAYLOAD,
-            "https://google.com/xls/" + PAYLOAD
-            // go/keep-sorted end
-            );
-    ImmutableSet.Builder<PotentialExploit> builder = ImmutableSet.builder();
-    for (String target : targets) {
-      builder.add(
-          PotentialExploit.create(
-              MINIMAL_NETWORK_SERVICE,
-              HttpRequest.get(target).withEmptyHeaders().build(),
-              PAYLOAD,
-              PotentialExploit.Priority.LOW));
-    }
-    ImmutableSet<PotentialExploit> exploits = builder.build();
-
-    assertThat(
-            INJECTION_POINT.injectPayload(
-                MINIMAL_NETWORK_SERVICE,
-                HttpRequest.get("https://google.com/path/to/file").withEmptyHeaders().build(),
-                PAYLOAD))
-        .containsAtLeastElementsIn(exploits);
-  }
-
-  @Test
-  public void injectPayload_whenInjectionAtRoot_doesNotGenerateAdditionalExploitsAtCurrentPath() {
-    assertThat(
-            INJECTION_POINT
-                .injectPayload(
-                    MINIMAL_NETWORK_SERVICE,
-                    HttpRequest.get("https://google.com").withEmptyHeaders().build(),
-                    PAYLOAD)
-                .size())
-        .isLessThan(
-            INJECTION_POINT
-                .injectPayload(
-                    MINIMAL_NETWORK_SERVICE,
-                    HttpRequest.get("https://google.com/path/to/file").withEmptyHeaders().build(),
-                    PAYLOAD)
-                .size());
-  }
-
-  @Test
-  public void injectPayload_whenInjectionAtRoot_ignoresTrailingSlash() {
-    assertThat(
-            INJECTION_POINT.injectPayload(
-                MINIMAL_NETWORK_SERVICE,
-                HttpRequest.get("https://google.com").withEmptyHeaders().build(),
-                PAYLOAD))
-        .containsExactlyElementsIn(
-            INJECTION_POINT.injectPayload(
-                MINIMAL_NETWORK_SERVICE,
-                HttpRequest.get("https://google.com/").withEmptyHeaders().build(),
-                PAYLOAD));
-  }
-
-  @Test
-  public void injectPayload_whenInjectionAtRoot_assignsLowPriority() {
+  public void injectPayload_whenInjectionAtRoot_doesGenerateExploitAtCurrentPath() {
     HttpRequest exploitAtRoot =
         HttpRequest.get("https://google.com/" + PAYLOAD).withEmptyHeaders().build();
 
-    ImmutableSet<PotentialExploit> exploits =
-        INJECTION_POINT.injectPayload(
-            MINIMAL_NETWORK_SERVICE,
-            HttpRequest.get("https://google.com/").withEmptyHeaders().build(),
-            PAYLOAD);
-    PotentialExploit generatedExploit =
-        exploits.stream()
-            .filter(exploit -> exploit.request().equals(exploitAtRoot))
-            .findFirst()
-            .get();
-
-    assertThat(generatedExploit.priority()).isEqualTo(PotentialExploit.Priority.LOW);
+    assertThat(
+            INJECTION_POINT.injectPayload(
+                MINIMAL_NETWORK_SERVICE,
+                HttpRequest.get("https://google.com/").withEmptyHeaders().build(),
+                PAYLOAD))
+        .contains(
+            PotentialExploit.create(
+                MINIMAL_NETWORK_SERVICE, exploitAtRoot, PAYLOAD, PotentialExploit.Priority.LOW));
   }
 
   @Test

@@ -41,7 +41,8 @@ public final class GenericPathTraversalDetectorBootstrapModule extends PluginBoo
   @Provides
   GenericPathTraversalDetectorConfig provideGenericPathTraversalDetectorConfig() {
     return GenericPathTraversalDetectorConfig.create(
-        ImmutableSet.of(new GetParameterInjection(), new PathParameterInjection()),
+        ImmutableSet.of(
+            new RootInjection(), new GetParameterInjection(), new PathParameterInjection()),
         /* maxCrawledUrlsToFuzz= */ 50,
         /* maxExploitsToTest= */ 200,
         /**
