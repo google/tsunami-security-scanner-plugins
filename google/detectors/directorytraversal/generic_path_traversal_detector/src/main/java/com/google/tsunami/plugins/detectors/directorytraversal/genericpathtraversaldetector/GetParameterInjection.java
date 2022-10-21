@@ -38,32 +38,39 @@ final class GetParameterInjection implements InjectionPoint {
   @Override
   public ImmutableSet<PotentialExploit> injectPayload(
       NetworkService networkService, HttpRequest request, String payload) {
-    ImmutableList<FuzzingUtils.HttpQueryParameter> parsedQuery =
-        FuzzingUtils.parseQuery(URI.create(request.url()).getQuery());
     ImmutableSet.Builder<PotentialExploit> builder = ImmutableSet.builder();
-    for (HttpRequest target : FuzzingUtils.fuzzGetParameters(request, payload)) {
-      builder.add(
-          PotentialExploit.create(
-              networkService, target, payload, determinePriority(parsedQuery, target, payload)));
+    for (HttpRequest target : FuzzingUtils.fuzzGetParametersExpectingPathValues(request, payload)) {
+      Optional<FuzzingUtils.HttpQueryParameter> fuzzedParameter =
+          determineFuzzedParameter(target, payload);
+      if (fuzzedParameter.isPresent()) {
+        builder.add(
+            PotentialExploit.create(
+                networkService,
+                target,
+                fuzzedParameter.get().value(),
+                determinePriority(request, fuzzedParameter.get())));
+      }
     }
     return builder.build();
   }
 
-  private PotentialExploit.Priority determinePriority(
-      ImmutableList<FuzzingUtils.HttpQueryParameter> originalQuery,
-      HttpRequest request,
-      String payload) {
+  private Optional<FuzzingUtils.HttpQueryParameter> determineFuzzedParameter(
+      HttpRequest request, String payload) {
     ImmutableList<FuzzingUtils.HttpQueryParameter> fuzzedQuery =
-        FuzzingUtils.parseQuery(URI.create(request.url()).getQuery());
+        FuzzingUtils.parseQuery(URI.create(request.url()).getRawQuery());
+    return fuzzedQuery.stream()
+        .filter(parameter -> parameter.value().contains(payload))
+        .findFirst();
+  }
 
-    Optional<FuzzingUtils.HttpQueryParameter> fuzzedParameter =
-        fuzzedQuery.stream().filter(parameter -> parameter.value().equals(payload)).findFirst();
-    if (fuzzedParameter.isPresent()) {
-      String parameterName = fuzzedParameter.get().name();
-      if (isPromisingParameterName(parameterName)
-          || isPromisingParameterValue(originalQuery, parameterName)) {
-        return PotentialExploit.Priority.HIGH;
-      }
+  private PotentialExploit.Priority determinePriority(
+      HttpRequest request, FuzzingUtils.HttpQueryParameter fuzzedParameter) {
+    ImmutableList<FuzzingUtils.HttpQueryParameter> originalQuery =
+        FuzzingUtils.parseQuery(URI.create(request.url()).getRawQuery());
+    String parameterName = fuzzedParameter.name();
+    if (isPromisingParameterName(parameterName)
+        || isPromisingParameterValue(originalQuery, parameterName)) {
+      return PotentialExploit.Priority.HIGH;
     }
 
     return PotentialExploit.Priority.LOW;
@@ -91,6 +98,6 @@ final class GetParameterInjection implements InjectionPoint {
   }
 
   private boolean isParameterValuePathLike(String value) {
-    return value.contains("/");
+    return value.contains("/") || Ascii.toLowerCase(value).contains("%2f");
   }
 }

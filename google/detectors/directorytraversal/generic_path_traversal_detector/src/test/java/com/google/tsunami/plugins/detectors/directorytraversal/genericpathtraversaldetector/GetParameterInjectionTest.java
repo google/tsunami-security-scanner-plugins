@@ -44,14 +44,14 @@ public final class GetParameterInjectionTest {
         ImmutableSet.of(
             PotentialExploit.create(
                 MINIMAL_NETWORK_SERVICE,
-                HttpRequest.get("https://google.com?key=../../../../etc/passwd&other=test")
+                HttpRequest.get("https://google.com?key=" + PAYLOAD + "&other=test")
                     .withEmptyHeaders()
                     .build(),
                 PAYLOAD,
                 PotentialExploit.Priority.LOW),
             PotentialExploit.create(
                 MINIMAL_NETWORK_SERVICE,
-                HttpRequest.get("https://google.com?key=value&other=../../../../etc/passwd")
+                HttpRequest.get("https://google.com?key=value&other=" + PAYLOAD)
                     .withEmptyHeaders()
                     .build(),
                 PAYLOAD,
@@ -61,6 +61,37 @@ public final class GetParameterInjectionTest {
             INJECTION_POINT.injectPayload(
                 MINIMAL_NETWORK_SERVICE, REQUEST_WITH_GET_PARAMETERS, PAYLOAD))
         .containsAtLeastElementsIn(exploitsWithPayloadInGetParameters);
+  }
+
+  @Test
+  public void
+      injectPayload_whenGetParameterHasFileExtensionAndPrefix_generatesExploitsWithFileExtensionAndPrefix() {
+    HttpRequest requestWIthFileExtensionAndPrefix =
+        HttpRequest.get("https://google.com?key=value.jpg&other=resources/test")
+            .withEmptyHeaders()
+            .build();
+    ImmutableSet<PotentialExploit> exploitsWithFileExtensionAndPrefix =
+        ImmutableSet.of(
+            PotentialExploit.create(
+                MINIMAL_NETWORK_SERVICE,
+                HttpRequest.get(
+                        "https://google.com?key=" + PAYLOAD + "%00.jpg&other=resources/test")
+                    .withEmptyHeaders()
+                    .build(),
+                PAYLOAD,
+                PotentialExploit.Priority.LOW),
+            PotentialExploit.create(
+                MINIMAL_NETWORK_SERVICE,
+                HttpRequest.get("https://google.com?key=value.jpg&other=resources/" + PAYLOAD)
+                    .withEmptyHeaders()
+                    .build(),
+                PAYLOAD,
+                PotentialExploit.Priority.LOW));
+
+    assertThat(
+            INJECTION_POINT.injectPayload(
+                MINIMAL_NETWORK_SERVICE, requestWIthFileExtensionAndPrefix, PAYLOAD))
+        .containsAtLeastElementsIn(exploitsWithFileExtensionAndPrefix);
   }
 
   @Test
