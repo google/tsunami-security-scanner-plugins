@@ -52,7 +52,7 @@ public final class PathParameterInjectionTest {
   }
 
   @Test
-  public void injectPayload_whenInjectionAtRoot_doesGenerateExploitAtCurrentPath() {
+  public void injectPayload_whenInjectionAtRoot_generatesExploitAtCurrentPath() {
     HttpRequest exploitAtRoot =
         HttpRequest.get("https://google.com/" + PAYLOAD).withEmptyHeaders().build();
 
@@ -83,6 +83,47 @@ public final class PathParameterInjectionTest {
             .get();
 
     assertThat(generatedExploit.priority()).isEqualTo(PotentialExploit.Priority.HIGH);
+  }
+
+  @Test
+  public void injectPayload_whenPathEndsWithFileExtension_generatesExploitWithFileExtension() {
+    HttpRequest exploitAtCurrentPath =
+        HttpRequest.get("https://google.com/path/to/" + PAYLOAD + "%00.jpg")
+            .withEmptyHeaders()
+            .build();
+
+    assertThat(
+            INJECTION_POINT.injectPayload(
+                MINIMAL_NETWORK_SERVICE,
+                HttpRequest.get("https://google.com/path/to/file.jpg").withEmptyHeaders().build(),
+                PAYLOAD))
+        .contains(
+            PotentialExploit.create(
+                MINIMAL_NETWORK_SERVICE,
+                exploitAtCurrentPath,
+                PAYLOAD,
+                PotentialExploit.Priority.LOW));
+  }
+
+  @Test
+  public void
+      injectPayload_whenPathDoesNotEndWithFileExtension_doesNotGeneratesExploitWithFileExtension() {
+    HttpRequest exploitAtCurrentPath =
+        HttpRequest.get("https://google.com/path/to/" + PAYLOAD + "%00.jpg")
+            .withEmptyHeaders()
+            .build();
+
+    assertThat(
+            INJECTION_POINT.injectPayload(
+                MINIMAL_NETWORK_SERVICE,
+                HttpRequest.get("https://google.com/path/to/file").withEmptyHeaders().build(),
+                PAYLOAD))
+        .doesNotContain(
+            PotentialExploit.create(
+                MINIMAL_NETWORK_SERVICE,
+                exploitAtCurrentPath,
+                PAYLOAD,
+                PotentialExploit.Priority.LOW));
   }
 
   @Test

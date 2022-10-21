@@ -44,7 +44,7 @@ final class PathParameterInjection implements InjectionPoint {
           PotentialExploit.create(
               networkService,
               this.buildModifiedRequest(request, fuzzTarget.targetUrl()),
-              payload,
+              fuzzTarget.payload(),
               fuzzTarget.priority()));
     }
     return builder.build();
@@ -71,27 +71,42 @@ final class PathParameterInjection implements InjectionPoint {
   }
 
   private ImmutableSet<FuzzTarget> generateTargetAtCurrentPath(URI url, String payload) {
+    ImmutableSet.Builder<FuzzTarget> builder = ImmutableSet.builder();
+
     String path = UrlUtils.removeTrailingSlashes(url.getRawPath());
     int endOfParent = path.lastIndexOf("/");
     String prefix = endOfParent != -1 ? path.substring(0, endOfParent + 1) : "/";
     String suffix = path.substring(endOfParent + 1);
+
     PotentialExploit.Priority priority = PotentialExploit.Priority.LOW;
     if (isPromisingSuffix(suffix)) {
       priority = PotentialExploit.Priority.HIGH;
-    } else if (endsWithFileExtension(suffix) || containsCommonPath(prefix)) {
+    } else if (endsWithFileExtension(suffix)) {
+      priority = PotentialExploit.Priority.MEDIUM;
+      String payloadWithFileExtension = payload + "%00" + suffix.substring(suffix.lastIndexOf("."));
+      builder.add(
+          FuzzTarget.create(
+              this.extractRoot(url) + prefix + payloadWithFileExtension,
+              payloadWithFileExtension,
+              priority));
+    } else if (containsCommonPath(prefix)) {
       priority = PotentialExploit.Priority.MEDIUM;
     }
-    return ImmutableSet.of(FuzzTarget.create(this.extractRoot(url) + prefix + payload, priority));
+
+    builder.add(FuzzTarget.create(this.extractRoot(url) + prefix + payload, payload, priority));
+    return builder.build();
   }
 
   @AutoValue
   abstract static class FuzzTarget {
     abstract String targetUrl();
 
+    abstract String payload();
+
     abstract PotentialExploit.Priority priority();
 
-    static FuzzTarget create(String targetUrl, PotentialExploit.Priority priority) {
-      return new AutoValue_PathParameterInjection_FuzzTarget(targetUrl, priority);
+    static FuzzTarget create(String targetUrl, String payload, PotentialExploit.Priority priority) {
+      return new AutoValue_PathParameterInjection_FuzzTarget(targetUrl, payload, priority);
     }
   }
 }
