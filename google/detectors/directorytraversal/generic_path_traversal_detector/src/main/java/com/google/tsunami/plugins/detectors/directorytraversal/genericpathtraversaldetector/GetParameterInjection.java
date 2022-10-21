@@ -17,7 +17,6 @@ package com.google.tsunami.plugins.detectors.directorytraversal.genericpathtrave
 
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.tsunami.common.net.FuzzingUtils;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.proto.NetworkService;
@@ -28,9 +27,9 @@ import java.util.Optional;
 final class GetParameterInjection implements InjectionPoint {
 
   @Override
-  public ImmutableSet<PotentialExploit> injectPayload(
+  public ImmutableList<PotentialExploit> injectPayload(
       NetworkService networkService, HttpRequest request, String payload) {
-    ImmutableSet.Builder<PotentialExploit> builder = ImmutableSet.builder();
+    ImmutableList.Builder<PotentialExploit> builder = ImmutableList.builder();
     for (HttpRequest target : FuzzingUtils.fuzzGetParametersExpectingPathValues(request, payload)) {
       Optional<FuzzingUtils.HttpQueryParameter> fuzzedParameter =
           determineFuzzedParameter(target, payload);

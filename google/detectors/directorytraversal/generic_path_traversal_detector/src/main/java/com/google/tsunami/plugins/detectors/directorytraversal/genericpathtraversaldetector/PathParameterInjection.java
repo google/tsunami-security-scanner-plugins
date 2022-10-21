@@ -19,6 +19,7 @@ import static java.util.stream.Collectors.joining;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Ascii;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.tsunami.common.net.UrlUtils;
 import com.google.tsunami.common.net.http.HttpRequest;
@@ -35,9 +36,9 @@ final class PathParameterInjection implements InjectionPoint {
               .collect(joining("|")));
 
   @Override
-  public ImmutableSet<PotentialExploit> injectPayload(
+  public ImmutableList<PotentialExploit> injectPayload(
       NetworkService networkService, HttpRequest request, String payload) {
-    ImmutableSet.Builder<PotentialExploit> builder = ImmutableSet.builder();
+    ImmutableList.Builder<PotentialExploit> builder = ImmutableList.builder();
     for (FuzzTarget fuzzTarget :
         this.generateTargetAtCurrentPath(URI.create(request.url()), payload)) {
       builder.add(

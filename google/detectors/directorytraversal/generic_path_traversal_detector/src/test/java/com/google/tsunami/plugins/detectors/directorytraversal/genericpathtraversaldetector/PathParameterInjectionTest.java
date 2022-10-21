@@ -17,7 +17,7 @@ package com.google.tsunami.plugins.detectors.directorytraversal.genericpathtrave
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.proto.NetworkService;
 import org.junit.Test;
@@ -71,7 +71,7 @@ public final class PathParameterInjectionTest {
     HttpRequest exploitAtCurrentPath =
         HttpRequest.get("https://google.com/path/to/" + PAYLOAD).withEmptyHeaders().build();
 
-    ImmutableSet<PotentialExploit> exploits =
+    ImmutableList<PotentialExploit> exploits =
         INJECTION_POINT.injectPayload(
             MINIMAL_NETWORK_SERVICE,
             HttpRequest.get("https://google.com/path/to/a%2Fb").withEmptyHeaders().build(),
@@ -131,7 +131,7 @@ public final class PathParameterInjectionTest {
     HttpRequest exploitAtCurrentPath =
         HttpRequest.get("https://google.com/path/to/" + PAYLOAD).withEmptyHeaders().build();
 
-    ImmutableSet<PotentialExploit> exploits =
+    ImmutableList<PotentialExploit> exploits =
         INJECTION_POINT.injectPayload(
             MINIMAL_NETWORK_SERVICE,
             HttpRequest.get("https://google.com/path/to/file.jpg").withEmptyHeaders().build(),
@@ -150,7 +150,7 @@ public final class PathParameterInjectionTest {
     HttpRequest exploitAtCurrentPath =
         HttpRequest.get("https://google.com/path/to/admin/" + PAYLOAD).withEmptyHeaders().build();
 
-    ImmutableSet<PotentialExploit> exploits =
+    ImmutableList<PotentialExploit> exploits =
         INJECTION_POINT.injectPayload(
             MINIMAL_NETWORK_SERVICE,
             HttpRequest.get("https://google.com/path/to/admin/file").withEmptyHeaders().build(),
@@ -171,7 +171,7 @@ public final class PathParameterInjectionTest {
             .withEmptyHeaders()
             .build();
 
-    ImmutableSet<PotentialExploit> exploits =
+    ImmutableList<PotentialExploit> exploits =
         INJECTION_POINT.injectPayload(
             MINIMAL_NETWORK_SERVICE,
             HttpRequest.get("https://google.com/path/to/notadmin/file").withEmptyHeaders().build(),

@@ -17,6 +17,7 @@ package com.google.tsunami.plugins.detectors.directorytraversal.genericpathtrave
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.proto.NetworkService;
@@ -190,7 +191,7 @@ public final class RootInjectionTest {
     HttpRequest exploitAtRoot =
         HttpRequest.get("https://google.com/" + PAYLOAD).withEmptyHeaders().build();
 
-    ImmutableSet<PotentialExploit> exploits =
+    ImmutableList<PotentialExploit> exploits =
         INJECTION_POINT.injectPayload(
             MINIMAL_NETWORK_SERVICE,
             HttpRequest.get("https://google.com/").withEmptyHeaders().build(),

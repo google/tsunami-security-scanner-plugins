@@ -18,7 +18,7 @@ package com.google.tsunami.plugins.detectors.directorytraversal.genericpathtrave
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.proto.NetworkService;
 import org.junit.Test;
@@ -40,8 +40,8 @@ public final class GetParameterInjectionTest {
 
   @Test
   public void injectPayload_onRelativePathTraversalPayloadWithGetParameters_generatesExploits() {
-    ImmutableSet<PotentialExploit> exploitsWithPayloadInGetParameters =
-        ImmutableSet.of(
+    ImmutableList<PotentialExploit> exploitsWithPayloadInGetParameters =
+        ImmutableList.of(
             PotentialExploit.create(
                 MINIMAL_NETWORK_SERVICE,
                 HttpRequest.get("https://google.com?key=" + PAYLOAD + "&other=test")
@@ -70,8 +70,8 @@ public final class GetParameterInjectionTest {
         HttpRequest.get("https://google.com?key=value.jpg&other=resources/test")
             .withEmptyHeaders()
             .build();
-    ImmutableSet<PotentialExploit> exploitsWithFileExtensionAndPrefix =
-        ImmutableSet.of(
+    ImmutableList<PotentialExploit> exploitsWithFileExtensionAndPrefix =
+        ImmutableList.of(
             PotentialExploit.create(
                 MINIMAL_NETWORK_SERVICE,
                 HttpRequest.get(
@@ -107,7 +107,7 @@ public final class GetParameterInjectionTest {
   public void injectPayload_whenPromisingParameterName_assignsHighPriority() {
     HttpRequest requestWithPromisingParameterName =
         HttpRequest.get("https://google.com?file=test").withEmptyHeaders().build();
-    ImmutableSet<PotentialExploit> exploits =
+    ImmutableList<PotentialExploit> exploits =
         INJECTION_POINT.injectPayload(
             MINIMAL_NETWORK_SERVICE, requestWithPromisingParameterName, PAYLOAD);
 
@@ -121,7 +121,7 @@ public final class GetParameterInjectionTest {
       injectPayload_whenPromisingParameterNameIsSnakeCase_normalizesValueAndAssignsHighPriority() {
     HttpRequest requestWithPromisingParameterName =
         HttpRequest.get("https://google.com?file_name=test").withEmptyHeaders().build();
-    ImmutableSet<PotentialExploit> exploits =
+    ImmutableList<PotentialExploit> exploits =
         INJECTION_POINT.injectPayload(
             MINIMAL_NETWORK_SERVICE, requestWithPromisingParameterName, PAYLOAD);
 
@@ -134,7 +134,7 @@ public final class GetParameterInjectionTest {
   public void injectPayload_whenPromisingParameterName_assignsPriorityOnlyToPromisingParameter() {
     HttpRequest requestWithPromisingParameterName =
         HttpRequest.get("https://google.com?file=test&notfile=nottest").withEmptyHeaders().build();
-    ImmutableSet<PotentialExploit> exploits =
+    ImmutableList<PotentialExploit> exploits =
         INJECTION_POINT.injectPayload(
             MINIMAL_NETWORK_SERVICE, requestWithPromisingParameterName, PAYLOAD);
 
@@ -146,7 +146,7 @@ public final class GetParameterInjectionTest {
   public void injectPayload_whenParameterValueRepresentsPath_assignsHighPriority() {
     HttpRequest requestWithPromisingParameterName =
         HttpRequest.get("https://google.com?key=path/to/file").withEmptyHeaders().build();
-    ImmutableSet<PotentialExploit> exploits =
+    ImmutableList<PotentialExploit> exploits =
         INJECTION_POINT.injectPayload(
             MINIMAL_NETWORK_SERVICE, requestWithPromisingParameterName, PAYLOAD);
 
@@ -159,7 +159,7 @@ public final class GetParameterInjectionTest {
   public void injectPayload_whenParameterValueRepresentsEncodedPath_assignsHighPriority() {
     HttpRequest requestWithPromisingParameterName =
         HttpRequest.get("https://google.com?key=path%2Fto%2ffile").withEmptyHeaders().build();
-    ImmutableSet<PotentialExploit> exploits =
+    ImmutableList<PotentialExploit> exploits =
         INJECTION_POINT.injectPayload(
             MINIMAL_NETWORK_SERVICE, requestWithPromisingParameterName, PAYLOAD);
 
@@ -172,7 +172,7 @@ public final class GetParameterInjectionTest {
   public void injectPayload_whenParameterValueHasFileExtension_assignsHighPriority() {
     HttpRequest requestWithPromisingParameterName =
         HttpRequest.get("https://google.com?key=img.jpg").withEmptyHeaders().build();
-    ImmutableSet<PotentialExploit> exploits =
+    ImmutableList<PotentialExploit> exploits =
         INJECTION_POINT.injectPayload(
             MINIMAL_NETWORK_SERVICE, requestWithPromisingParameterName, PAYLOAD);
 

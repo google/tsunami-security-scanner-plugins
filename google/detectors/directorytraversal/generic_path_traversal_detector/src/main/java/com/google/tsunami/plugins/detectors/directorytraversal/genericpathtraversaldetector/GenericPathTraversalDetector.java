@@ -16,6 +16,7 @@
 package com.google.tsunami.plugins.detectors.directorytraversal.genericpathtraversaldetector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Comparator.comparing;
 
@@ -56,7 +57,7 @@ import javax.inject.Inject;
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "GenericPathTraversalDetector",
-    version = "1.3",
+    version = "1.4",
     description = "This plugin detects generic Path Traversal vulnerabilities.",
     author = "Moritz Wilhelm (mzwm@google.com)",
     bootstrapModule = GenericPathTraversalDetectorBootstrapModule.class)
@@ -88,10 +89,10 @@ public final class GenericPathTraversalDetector implements VulnDetector {
                 .filter(NetworkServiceUtils::isWebService)
                 .map(this::generatePotentialExploits)
                 .flatMap(Collection::stream)
-                .distinct()
                 .sorted(
                     comparing(PotentialExploit::priority, PotentialExploit.Priority.COMPARATOR)
                         .thenComparing((PotentialExploit exploit) -> exploit.request().url()))
+                .distinct()
                 .limit(config.maxExploitsToTest())
                 .filter(this::isExploitable)
                 .collect(BiStream.groupingBy(PotentialExploit::networkService, toImmutableSet()))
@@ -113,15 +114,15 @@ public final class GenericPathTraversalDetector implements VulnDetector {
         .build();
   }
 
-  private ImmutableSet<PotentialExploit> injectPayloads(ExploitGenerator exploitGenerator) {
-    ImmutableSet.Builder<PotentialExploit> exploits = ImmutableSet.builder();
+  private ImmutableList<PotentialExploit> injectPayloads(ExploitGenerator exploitGenerator) {
+    ImmutableList.Builder<PotentialExploit> exploits = ImmutableList.builder();
     for (String payload : this.config.payloads()) {
       exploits.addAll(exploitGenerator.injectPayload(payload));
     }
     return exploits.build();
   }
 
-  private ImmutableSet<PotentialExploit> generatePotentialExploits(NetworkService networkService) {
+  private ImmutableList<PotentialExploit> generatePotentialExploits(NetworkService networkService) {
     return networkService.getServiceContext().getWebServiceContext().getCrawlResultsList().stream()
         .filter(this::shouldFuzzCrawlResult)
         .map(CrawlResult::getCrawlTarget)
@@ -131,7 +132,7 @@ public final class GenericPathTraversalDetector implements VulnDetector {
         .map(request -> new ExploitGenerator(request, networkService, config.injectionPoints()))
         .map(this::injectPayloads)
         .flatMap(Collection::stream)
-        .collect(toImmutableSet());
+        .collect(toImmutableList());
   }
 
   private boolean isExploitable(PotentialExploit potentialExploit) {

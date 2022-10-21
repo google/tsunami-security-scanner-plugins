@@ -165,7 +165,7 @@ public final class GenericPathTraversalDetectorTest {
     NetworkService networkService = buildMinimalNetworkService();
     when(this.mockInjectionPoint.injectPayload(any(), any(), any()))
         .thenReturn(
-            ImmutableSet.of(
+            ImmutableList.of(
                 PotentialExploit.create(
                     networkService,
                     HttpRequest.get(
@@ -207,7 +207,7 @@ public final class GenericPathTraversalDetectorTest {
     NetworkService networkService = buildMinimalNetworkService();
     when(this.mockInjectionPoint.injectPayload(any(), any(), any()))
         .thenReturn(
-            ImmutableSet.of(
+            ImmutableList.of(
                 PotentialExploit.create(
                     networkService,
                     HttpRequest.get(
@@ -261,6 +261,156 @@ public final class GenericPathTraversalDetectorTest {
             detectionReports.get(0).getVulnerability().getAdditionalDetailsList().stream()
                 .noneMatch(
                     detail -> detail.getTextData().getText().contains("/?other=..%2Fetc%2Fpasswd")))
+        .isTrue();
+  }
+
+  @Test
+  public void
+      detect_whenInjectionPointGeneratesIdenticalExploitRequestWithDifferingPriority_deduplicates()
+          throws IOException {
+    this.mockWebServer.setDispatcher(new VulnerableApplicationDispatcher());
+    this.mockWebServer.start();
+    NetworkService networkService = buildMinimalNetworkService();
+    when(this.mockInjectionPoint.injectPayload(any(), any(), any()))
+        .thenReturn(
+            ImmutableList.of(
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/?file=..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.HIGH),
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/?file=..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.HIGH),
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/?other=..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.LOW),
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/path/to/admin/..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.MEDIUM)));
+
+    ImmutableList<DetectionReport> detectionReports =
+        ImmutableList.copyOf(
+            detector
+                .detect(buildMinimalTargetInfo(), ImmutableList.of(networkService))
+                .getDetectionReportsList());
+
+    assertThat(detectionReports).hasSize(1);
+    assertThat(
+            detectionReports.get(0).getVulnerability().getAdditionalDetailsList().stream()
+                .anyMatch(
+                    detail -> detail.getTextData().getText().contains("/?file=..%2Fetc%2Fpasswd")))
+        .isTrue();
+    assertThat(
+            detectionReports.get(0).getVulnerability().getAdditionalDetailsList().stream()
+                .anyMatch(
+                    detail ->
+                        detail
+                            .getTextData()
+                            .getText()
+                            .contains("/path/to/admin/..%2Fetc%2Fpasswd")))
+        .isTrue();
+    assertThat(
+            detectionReports.get(0).getVulnerability().getAdditionalDetailsList().stream()
+                .noneMatch(
+                    detail -> detail.getTextData().getText().contains("/?other=..%2Fetc%2Fpasswd")))
+        .isTrue();
+  }
+
+  @Test
+  public void
+      detect_whenInjectionPointGeneratesIdenticalExploitRequestWithDifferingPriority_keepsHigherPriorityWhenDeduplicating()
+          throws IOException {
+    this.mockWebServer.setDispatcher(new VulnerableApplicationDispatcher());
+    this.mockWebServer.start();
+    NetworkService networkService = buildMinimalNetworkService();
+    when(this.mockInjectionPoint.injectPayload(any(), any(), any()))
+        .thenReturn(
+            ImmutableList.of(
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/?file=..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.HIGH),
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/?other=..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.LOW),
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/?other=..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.HIGH),
+                PotentialExploit.create(
+                    networkService,
+                    HttpRequest.get(
+                            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+                                + "/path/to/admin/..%2Fetc%2Fpasswd")
+                        .withEmptyHeaders()
+                        .build(),
+                    "..%2Fetc%2Fpasswd",
+                    PotentialExploit.Priority.MEDIUM)));
+
+    ImmutableList<DetectionReport> detectionReports =
+        ImmutableList.copyOf(
+            detector
+                .detect(buildMinimalTargetInfo(), ImmutableList.of(networkService))
+                .getDetectionReportsList());
+
+    assertThat(detectionReports).hasSize(1);
+    assertThat(
+            detectionReports.get(0).getVulnerability().getAdditionalDetailsList().stream()
+                .anyMatch(
+                    detail -> detail.getTextData().getText().contains("/?file=..%2Fetc%2Fpasswd")))
+        .isTrue();
+    assertThat(
+            detectionReports.get(0).getVulnerability().getAdditionalDetailsList().stream()
+                .anyMatch(
+                    detail -> detail.getTextData().getText().contains("/?other=..%2Fetc%2Fpasswd")))
+        .isTrue();
+    assertThat(
+            detectionReports.get(0).getVulnerability().getAdditionalDetailsList().stream()
+                .noneMatch(
+                    detail ->
+                        detail
+                            .getTextData()
+                            .getText()
+                            .contains("/path/to/admin/..%2Fetc%2Fpasswd")))
         .isTrue();
   }
 
@@ -375,7 +525,7 @@ public final class GenericPathTraversalDetectorTest {
   private void setUpMockInjectionPoint(NetworkService networkService) {
     when(this.mockInjectionPoint.injectPayload(any(), any(), any()))
         .thenReturn(
-            ImmutableSet.of(
+            ImmutableList.of(
                 PotentialExploit.create(
                     networkService,
                     HttpRequest.get(

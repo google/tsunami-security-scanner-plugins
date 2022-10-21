@@ -15,6 +15,7 @@
  */
 package com.google.tsunami.plugins.detectors.directorytraversal.genericpathtraversaldetector;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.tsunami.common.net.UrlUtils;
 import com.google.tsunami.common.net.http.HttpRequest;
@@ -28,9 +29,9 @@ import java.net.URI;
 final class RootInjection implements InjectionPoint {
 
   @Override
-  public ImmutableSet<PotentialExploit> injectPayload(
+  public ImmutableList<PotentialExploit> injectPayload(
       NetworkService networkService, HttpRequest request, String payload) {
-    ImmutableSet.Builder<PotentialExploit> builder = ImmutableSet.builder();
+    ImmutableList.Builder<PotentialExploit> builder = ImmutableList.builder();
     if (isRoot(request)) {
       for (String target : this.generateFuzzTargets(extractRoot(request), payload)) {
         builder.add(
