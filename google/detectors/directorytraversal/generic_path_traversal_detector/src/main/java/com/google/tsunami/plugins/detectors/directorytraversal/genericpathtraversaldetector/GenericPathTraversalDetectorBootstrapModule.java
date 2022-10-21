@@ -31,6 +31,10 @@ public final class GenericPathTraversalDetectorBootstrapModule extends PluginBoo
       "%2E%2E%2F".repeat(30) + "etc%2Fpasswd";
   private static final String DOUBLE_PERCENT_ENCODED_INCLUDING_DOTS_PAYLOAD =
       "%252E%252E%252F".repeat(30) + "etc%252Fpasswd";
+  private static final String FULL_DOUBLE_PERCENT_ENCODED_RELATIVE_PAYLOAD =
+      "%25%32%65%25%32%65%25%32%66".repeat(30) + "etc%25%32%66passwd";
+  private static final String FULL_DOUBLE_PERCENT_ENCODED_ABSOLUTE_PAYLOAD =
+      "%25%32%66etc%25%32%66passwd";
 
   @Override
   protected void configurePlugin() {
@@ -64,7 +68,9 @@ public final class GenericPathTraversalDetectorBootstrapModule extends PluginBoo
             DOUBLE_PERCENT_ENCODED_RELATIVE_PAYLOAD,
             DOUBLE_PERCENT_ENCODED_ABSOLUTE_PAYLOAD,
             PERCENT_ENCODED_INCLUDING_DOTS_PAYLOAD,
-            DOUBLE_PERCENT_ENCODED_INCLUDING_DOTS_PAYLOAD);
+            DOUBLE_PERCENT_ENCODED_INCLUDING_DOTS_PAYLOAD,
+            FULL_DOUBLE_PERCENT_ENCODED_RELATIVE_PAYLOAD,
+            FULL_DOUBLE_PERCENT_ENCODED_ABSOLUTE_PAYLOAD);
     }
     return ImmutableSet.of();
   }
