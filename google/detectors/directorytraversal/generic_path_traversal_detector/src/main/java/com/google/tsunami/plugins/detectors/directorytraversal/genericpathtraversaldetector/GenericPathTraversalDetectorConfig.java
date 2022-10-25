@@ -23,16 +23,16 @@ import com.google.common.collect.ImmutableSet;
 abstract class GenericPathTraversalDetectorConfig {
   abstract ImmutableSet<InjectionPoint> injectionPoints();
 
-  abstract int maxCrawledUrlsToFuzz();
+  abstract long maxCrawledUrlsToFuzz();
 
-  abstract int maxExploitsToTest();
+  abstract long maxExploitsToTest();
 
   abstract ImmutableSet<String> payloads();
 
   static GenericPathTraversalDetectorConfig create(
       ImmutableSet<InjectionPoint> injectingPoints,
-      int maxCrawledUrlsToFuzz,
-      int maxExploitsToTest,
+      long maxCrawledUrlsToFuzz,
+      long maxExploitsToTest,
       ImmutableSet<String> payloads) {
     return new AutoValue_GenericPathTraversalDetectorConfig(
         injectingPoints, maxCrawledUrlsToFuzz, maxExploitsToTest, payloads);
