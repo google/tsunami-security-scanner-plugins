@@ -21,25 +21,27 @@ import com.google.tsunami.plugin.PluginBootstrapModule;
 
 /** A Guice module that bootstraps the {@link GenericPathTraversalDetector}. */
 public final class GenericPathTraversalDetectorBootstrapModule extends PluginBootstrapModule {
-  private static final String NON_ENCODED_RELATIVE_PAYLOAD = "../".repeat(30) + "etc/passwd";
+  private static final int CHAIN_LENGTH = 30;
+  private static final String NON_ENCODED_RELATIVE_PAYLOAD =
+      "../".repeat(CHAIN_LENGTH) + "etc/passwd";
   private static final String NON_ENCODED_ABSOLUTE_PAYLOAD = "/etc/passwd";
   private static final String PERCENT_ENCODED_RELATIVE_PAYLOAD =
-      "..%2F".repeat(30) + "etc%2Fpasswd";
+      "..%2F".repeat(CHAIN_LENGTH) + "etc%2Fpasswd";
   private static final String PERCENT_ENCODED_ABSOLUTE_PAYLOAD = "%2Fetc%2Fpasswd";
   private static final String DOUBLE_PERCENT_ENCODED_RELATIVE_PAYLOAD =
-      "..%252F".repeat(30) + "etc%252Fpasswd";
+      "..%252F".repeat(CHAIN_LENGTH) + "etc%252Fpasswd";
   private static final String DOUBLE_PERCENT_ENCODED_ABSOLUTE_PAYLOAD = "%252Fetc%252Fpasswd";
   private static final String PERCENT_ENCODED_INCLUDING_DOTS_PAYLOAD =
-      "%2E%2E%2F".repeat(30) + "etc%2Fpasswd";
+      "%2E%2E%2F".repeat(CHAIN_LENGTH) + "etc%2Fpasswd";
   private static final String DOUBLE_PERCENT_ENCODED_INCLUDING_DOTS_PAYLOAD =
-      "%252E%252E%252F".repeat(30) + "etc%252Fpasswd";
+      "%252E%252E%252F".repeat(CHAIN_LENGTH) + "etc%252Fpasswd";
   private static final String FULL_DOUBLE_PERCENT_ENCODED_RELATIVE_PAYLOAD =
-      "%25%32%65%25%32%65%25%32%66".repeat(30) + "etc%25%32%66passwd";
+      "%25%32%65%25%32%65%25%32%66".repeat(CHAIN_LENGTH) + "etc%25%32%66passwd";
   private static final String FULL_DOUBLE_PERCENT_ENCODED_ABSOLUTE_PAYLOAD =
       "%25%32%66etc%25%32%66passwd";
   // ..(../)/ bypasses an insufficient Path Traversal mitigation that replaces ../ only once
   private static final String BASIC_MITIGATION_BYPASSING_PAYLOAD =
-      "....%2F%2F".repeat(30) + "etc%2Fpasswd";
+      "....%2F%2F".repeat(CHAIN_LENGTH) + "etc%2Fpasswd";
 
   @Override
   protected void configurePlugin() {
@@ -56,8 +58,8 @@ public final class GenericPathTraversalDetectorBootstrapModule extends PluginBoo
         /* maxExploitsToTest= */ 250,
         /**
          * TODO(b/202565385) Add a command line parameter to configure the scanning mode. Ideally,
-         * it should be possible to pass the scanning mode (QUICK/SMART/EXTENSIVE) via a command
-         * line parameter to configure Tsunami to do either QUICK, SMART, or EXTENSIVE scanning.
+         * it should be possible to pass the scanning mode (QUICK/SMART/EXHAUSTIVE) via a command
+         * line parameter to configure Tsunami to do either QUICK, SMART, or EXHAUSTIVE scanning.
          */
         getPayloadsForScanningMode(Mode.QUICK));
   }
@@ -73,7 +75,7 @@ public final class GenericPathTraversalDetectorBootstrapModule extends PluginBoo
             FULL_DOUBLE_PERCENT_ENCODED_RELATIVE_PAYLOAD,
             FULL_DOUBLE_PERCENT_ENCODED_ABSOLUTE_PAYLOAD,
             BASIC_MITIGATION_BYPASSING_PAYLOAD);
-      case EXTENSIVE:
+      case EXHAUSTIVE:
         return ImmutableSet.of(
             NON_ENCODED_RELATIVE_PAYLOAD,
             NON_ENCODED_ABSOLUTE_PAYLOAD,
@@ -93,6 +95,6 @@ public final class GenericPathTraversalDetectorBootstrapModule extends PluginBoo
   enum Mode {
     QUICK,
     SMART,
-    EXTENSIVE;
+    EXHAUSTIVE;
   }
 }
