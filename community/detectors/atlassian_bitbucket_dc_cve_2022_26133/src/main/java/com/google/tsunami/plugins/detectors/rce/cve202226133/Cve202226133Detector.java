@@ -134,12 +134,13 @@ public final class Cve202226133Detector implements VulnDetector {
 
     Stopwatch stopwatch = null;
     try {
-      if(clusterName == null) {
+      if (clusterName == null) {
         clusterName = retrieveClusterName(hp);
         if (!validateClusterName(clusterName)) {
           return false;
         }
       }
+      else if (!validateClusterName(clusterName)) return false;
 
       this.payload =
           Resources.toByteArray(Resources.getResource(this.getClass(), "payloadThreadSleep.bin"));
@@ -169,9 +170,7 @@ public final class Cve202226133Detector implements VulnDetector {
   }
 
   private boolean validateClusterName(byte[] clusterName) {
-    if (clusterName.length == 0 || Arrays.equals(clusterName, new byte[clusterName.length])) {
-      return false;
-    }
+    if (clusterName.length == 0 || Arrays.equals(clusterName, new byte[clusterName.length])) return false;
     return true;
   }
 
