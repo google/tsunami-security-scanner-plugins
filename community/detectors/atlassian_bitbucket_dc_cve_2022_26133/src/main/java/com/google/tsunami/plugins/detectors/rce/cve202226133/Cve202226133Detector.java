@@ -170,8 +170,7 @@ public final class Cve202226133Detector implements VulnDetector {
   }
 
   private boolean validateClusterName(byte[] clusterName) {
-    if (clusterName.length == 0 || Arrays.equals(clusterName, new byte[clusterName.length])) return false;
-    return true;
+    return !(clusterName.length == 0 || Arrays.equals(clusterName, new byte[clusterName.length]));
   }
 
   private DetectionReport buildDetectionReport(
