@@ -50,6 +50,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 
@@ -94,9 +95,15 @@ public final class GenericPathTraversalDetector implements VulnDetector {
                         .thenComparing((PotentialExploit exploit) -> exploit.request().url()))
                 .distinct()
                 .limit(config.maxExploitsToTest())
-                .filter(this::isExploitable)
-                .collect(BiStream.groupingBy(PotentialExploit::networkService, toImmutableSet()))
-                .toList((service, exploits) -> buildDetectionReport(targetInfo, service, exploits)))
+                .map(this::checkExploitabilty)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(
+                    BiStream.groupingBy(
+                        (Detection detection) -> detection.exploit().networkService(),
+                        toImmutableSet()))
+                .toList(
+                    (service, detections) -> buildDetectionReport(targetInfo, service, detections)))
         .build();
   }
 
@@ -135,27 +142,28 @@ public final class GenericPathTraversalDetector implements VulnDetector {
         .collect(toImmutableList());
   }
 
-  private boolean isExploitable(PotentialExploit potentialExploit) {
+  private Optional<Detection> checkExploitabilty(PotentialExploit potentialExploit) {
     try {
       HttpResponse response =
           httpClient.send(potentialExploit.request(), potentialExploit.networkService());
 
-      if (response.bodyString().isPresent()) {
-        return ETC_PASSWD_PATTERN.matcher(response.bodyString().get()).find();
+      if (response.bodyString().isPresent()
+          && ETC_PASSWD_PATTERN.matcher(response.bodyString().get()).find()) {
+        return Optional.of(Detection.create(potentialExploit, response));
       }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", potentialExploit.request());
     }
-    return false;
+    return Optional.empty();
   }
 
   private ImmutableSet<AdditionalDetail> buildAdditionalDetails(
-      ImmutableSet<PotentialExploit> exploits) {
+      ImmutableSet<Detection> detections) {
     ImmutableSet.Builder<AdditionalDetail> additionalDetails = ImmutableSet.builder();
-    for (PotentialExploit potentialExploit : exploits) {
+    for (Detection detection : detections) {
       AdditionalDetail detail =
           AdditionalDetail.newBuilder()
-              .setTextData(TextData.newBuilder().setText(potentialExploit.toString()).build())
+              .setTextData(TextData.newBuilder().setText(detection.toString()).build())
               .build();
       additionalDetails.add(detail);
     }
@@ -163,9 +171,7 @@ public final class GenericPathTraversalDetector implements VulnDetector {
   }
 
   private DetectionReport buildDetectionReport(
-      TargetInfo targetInfo,
-      NetworkService networkService,
-      ImmutableSet<PotentialExploit> exploits) {
+      TargetInfo targetInfo, NetworkService networkService, ImmutableSet<Detection> detections) {
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(networkService)
@@ -194,8 +200,8 @@ public final class GenericPathTraversalDetector implements VulnDetector {
                                 .setText(
                                     String.format(
                                         "Found %s distinct vulnerable configurations.",
-                                        exploits.size()))))
-                .addAllAdditionalDetails(this.buildAdditionalDetails(exploits)))
+                                        detections.size()))))
+                .addAllAdditionalDetails(this.buildAdditionalDetails(detections)))
         .build();
   }
 }
