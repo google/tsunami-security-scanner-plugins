@@ -62,6 +62,7 @@ public final class Top100Passwords extends CredentialProvider {
           "",
           "123456",
           "password",
+          "Password",
           "12345678",
           "qwerty",
           "123456789",
