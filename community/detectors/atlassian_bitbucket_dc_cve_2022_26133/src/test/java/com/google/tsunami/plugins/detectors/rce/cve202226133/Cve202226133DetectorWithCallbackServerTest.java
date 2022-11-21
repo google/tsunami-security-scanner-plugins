@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,38 +15,39 @@
  */
 package com.google.tsunami.plugins.detectors.rce.cve202226133;
 
+import static com.google.common.truth.Truth.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Key;
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
+import com.google.tsunami.plugins.detectors.rce.cve202226133.Cve202226133Detector.SocketFactoryInstance;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.TargetInfo;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+import java.time.Instant;
+import javax.inject.Inject;
+import javax.net.SocketFactory;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import javax.inject.Inject;
-import javax.net.SocketFactory;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.net.Socket;
-import java.time.Instant;
-
-import static com.google.common.truth.Truth.assertThat;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /** Unit tests for {@link Cve202226133Detector}. */
 @RunWith(JUnit4.class)
@@ -69,7 +70,8 @@ public final class Cve202226133DetectorWithCallbackServerTest {
             new AbstractModule() {
               @Override
               protected void configure() {
-                OptionalBinder.newOptionalBinder(binder(), SocketFactory.class)
+                OptionalBinder.newOptionalBinder(
+                        binder(), Key.get(SocketFactory.class, SocketFactoryInstance.class))
                     .setBinding()
                     .toInstance(socketFactoryMock);
               }
@@ -111,12 +113,9 @@ public final class Cve202226133DetectorWithCallbackServerTest {
     Socket socket = mock(Socket.class);
     when(socketFactoryMock.createSocket(anyString(), anyInt())).thenReturn(socket);
     when(socket.getOutputStream()).thenReturn(new ByteArrayOutputStream());
-    when(socket.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[]{}));
+    when(socket.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[] {}));
 
-    assertThat(
-        detector
-            .detect(targetInfo, ImmutableList.of(service))
-            .getDetectionReportsList())
+    assertThat(detector.detect(targetInfo, ImmutableList.of(service)).getDetectionReportsList())
         .isEmpty();
   }
 }
