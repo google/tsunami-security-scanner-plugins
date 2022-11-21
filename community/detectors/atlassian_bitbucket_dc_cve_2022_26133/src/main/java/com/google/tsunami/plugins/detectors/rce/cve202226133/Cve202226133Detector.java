@@ -1,4 +1,23 @@
+/*
+ * Copyright 2022 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.google.tsunami.plugins.detectors.rce.cve202226133;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
@@ -16,20 +35,27 @@ import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.proto.*;
-
-import javax.inject.Inject;
-import javax.net.SocketFactory;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
+import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.net.Socket;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
+import javax.inject.Inject;
+import javax.inject.Qualifier;
+import javax.net.SocketFactory;
 
 /** A {@link VulnDetector} that detects Atlassian Bitbucket Data Center RCE CVE-2022-26133. */
 @PluginInfo(
@@ -44,15 +70,19 @@ public final class Cve202226133Detector implements VulnDetector {
   private final Clock utcClock;
   private final PayloadGenerator payloadGenerator;
   private final SocketFactory socketFactory;
-  private static final byte[] CLUSTER_NAME_REQUEST_GARBAGE = new byte[] {0x00, 0x00, 0x00, 0x02, 0x73, 0x61};
+  private static final byte[] CLUSTER_NAME_REQUEST_GARBAGE =
+      new byte[] {0x00, 0x00, 0x00, 0x02, 0x73, 0x61};
   private static final String RCE_CMD_PLACEHOLDER = "{{CMD}}";
   private static final short RCE_CMD_WAIT_AFTER_TIMEOUT = 1000;
   private static final short SLEEP_CMD_WAIT_DURATION_SECONDS = 4;
   private byte[] clusterName;
   private byte[] payload;
+
   @Inject
   Cve202226133Detector(
-      @UtcClock Clock utcClock, SocketFactory socketFactory, PayloadGenerator payloadGenerator) {
+      @UtcClock Clock utcClock,
+      @SocketFactoryInstance SocketFactory socketFactory,
+      PayloadGenerator payloadGenerator) {
     this.utcClock = checkNotNull(utcClock);
     this.socketFactory = checkNotNull(socketFactory);
     this.payloadGenerator = checkNotNull(payloadGenerator);
@@ -85,8 +115,7 @@ public final class Cve202226133Detector implements VulnDetector {
   }
 
   private boolean isVulnerableWithCallback(NetworkService networkService) {
-    HostAndPort hp =
-        NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
+    HostAndPort hp = NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
 
     Payload cmdPayload;
     try {
@@ -109,51 +138,60 @@ public final class Cve202226133Detector implements VulnDetector {
 
       cmdPayload = payloadGenerator.generate(config);
 
-      byte[] cmd = cmdPayload.getPayload().getBytes();
+      byte[] cmd = cmdPayload.getPayload().getBytes(UTF_8);
 
-      int cmdIndex = Bytes.indexOf(this.payload, RCE_CMD_PLACEHOLDER.getBytes());
-      byte[] payloadMessage = Bytes.concat(
-          clusterName, Arrays.copyOfRange(this.payload, 0, cmdIndex), cmd,
-          Arrays.copyOfRange(this.payload, cmdIndex + cmd.length, this.payload.length));
+      int cmdIndex = Bytes.indexOf(this.payload, RCE_CMD_PLACEHOLDER.getBytes(UTF_8));
+      byte[] payloadMessage =
+          Bytes.concat(
+              clusterName,
+              Arrays.copyOf(this.payload, cmdIndex),
+              cmd,
+              Arrays.copyOfRange(this.payload, cmdIndex + cmd.length, this.payload.length));
 
       Socket socket = socketFactory.createSocket(hp.getHost(), hp.getPort());
       socket.getOutputStream().write(payloadMessage);
       Uninterruptibles.sleepUninterruptibly(Duration.ofMillis(RCE_CMD_WAIT_AFTER_TIMEOUT));
       socket.close();
     } catch (IOException e) {
-      logger.atWarning().withCause(e).log("Unable to communicate with '%s'.", hp.toString());
+      logger.atWarning().withCause(e).log("Unable to communicate with '%s'.", hp);
       return false;
     }
 
     return cmdPayload.checkIfExecuted();
   }
 
+  @SuppressWarnings("CheckReturnValue")
   private boolean isVulnerableWithoutCallback(NetworkService networkService) {
-    HostAndPort hp =
-        NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
+    HostAndPort hp = NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
 
-    Stopwatch stopwatch = null;
+    Stopwatch stopwatch = Stopwatch.createUnstarted();
     try {
       if (clusterName == null) {
         clusterName = retrieveClusterName(hp);
         if (!validateClusterName(clusterName)) {
           return false;
         }
+      } else if (!validateClusterName(clusterName)) {
+        return false;
       }
-      else if (!validateClusterName(clusterName)) return false;
 
       this.payload =
           Resources.toByteArray(Resources.getResource(this.getClass(), "payloadThreadSleep.bin"));
 
       byte[] payloadMessage = Bytes.concat(clusterName, this.payload);
 
-      stopwatch = Stopwatch.createStarted();
+      stopwatch.start();
 
       Socket socket = socketFactory.createSocket(hp.getHost(), hp.getPort());
       socket.getOutputStream().write(payloadMessage);
       socket.getInputStream().readAllBytes();
       socket.close();
-    } catch (IOException e) {}
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log(
+          "Error executing time based payload for CVE-2022-26133 on target '%s'. This error is"
+              + " ignored.",
+          hp);
+    }
 
     stopwatch.stop();
 
@@ -196,4 +234,8 @@ public final class Cve202226133Detector implements VulnDetector {
                         + "execute arbitrary code via Java deserialization."))
         .build();
   }
+
+  @Qualifier
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface SocketFactoryInstance {}
 }
