@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,10 @@
  */
 package com.google.tsunami.plugins.detectors.rce.cve202226133;
 
+import com.google.inject.Key;
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.tsunami.plugin.PluginBootstrapModule;
-
+import com.google.tsunami.plugins.detectors.rce.cve202226133.Cve202226133Detector.SocketFactoryInstance;
 import javax.net.SocketFactory;
 
 /** A {@link PluginBootstrapModule} for {@link Cve202226133Detector}. */
@@ -25,9 +26,10 @@ public final class Cve202226133DetectorBootstrapModule extends PluginBootstrapMo
 
   @Override
   protected void configurePlugin() {
-    OptionalBinder.newOptionalBinder(binder(), SocketFactory.class)
-            .setDefault()
-            .toInstance(SocketFactory.getDefault());
+    OptionalBinder.newOptionalBinder(
+            binder(), Key.get(SocketFactory.class, SocketFactoryInstance.class))
+        .setDefault()
+        .toInstance(SocketFactory.getDefault());
     registerPlugin(Cve202226133Detector.class);
   }
 }
