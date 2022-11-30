@@ -144,11 +144,7 @@ public final class GenericPathTraversalDetectorTest {
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("GENERIC_PT"))
                 .setSeverity(Severity.MEDIUM)
-                .setTitle(
-                    String.format(
-                        "Generic Path Traversal vulnerability at %s",
-                        NetworkServiceUtils.buildWebApplicationRootUrl(
-                            buildMinimalNetworkService())))
+                .setTitle("Generic Path Traversal Vulnerability")
                 .setDescription(
                     "Generic Path Traversal vulnerability allowing to leak arbitrary files.")
                 .build());
