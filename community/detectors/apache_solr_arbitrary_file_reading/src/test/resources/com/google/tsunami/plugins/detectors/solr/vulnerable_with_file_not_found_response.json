@@ -1,0 +1,22 @@
+{
+  "responseHeader": {
+    "status": 500,
+    "QTime": 6,
+    "handler": "org.apache.solr.handler.DumpRequestHandler",
+    "params": {
+      "param": "ContentStreams",
+      "stream.url": "file:///etc/shadow1"
+    }
+  },
+  "params": {
+    "stream.url": "file:///etc/shadow1",
+    "echoHandler": "true",
+    "param": "ContentStreams",
+    "echoParams": "explicit"
+  },
+  "error": {
+    "msg": "/etc/shadow1 (No such file or directory)",
+    "trace": "...Exception: /etc/shadow1 (No such file or directory)...",
+    "code": 500
+  }
+}
