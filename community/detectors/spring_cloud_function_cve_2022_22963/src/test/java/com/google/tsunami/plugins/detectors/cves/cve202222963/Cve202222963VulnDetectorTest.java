@@ -59,7 +59,6 @@ public final class Cve202222963VulnDetectorTest {
 
   @Inject private Cve202222963VulnDetector detector;
 
-  // A version of secure random that gives predictable output for our unit tests
   private final SecureRandom testSecureRandom =
       new SecureRandom() {
         @Override
@@ -67,11 +66,7 @@ public final class Cve202222963VulnDetectorTest {
           Arrays.fill(bytes, (byte) 0xFF);
         }
       };
-
-  // To simulate responses against the scan target
   private final MockWebServer mockTargetService = new MockWebServer();
-
-  // To simulate callback server responses
   private final MockWebServer mockCallbackServer = new MockWebServer();
 
   @Before
@@ -80,13 +75,8 @@ public final class Cve202222963VulnDetectorTest {
     mockCallbackServer.start();
 
     Guice.createInjector(
-            // These modules provide dependencies the detector requires
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
-            // We provide a test helper for interacting with the payload generator.
-            // If you are testing against the callback server, provide the mock callback server.
-            // If not testing against the callback server, you can provide a mock version of
-            // SecureRandom.
             FakePayloadGeneratorModule.builder()
                 .setCallbackServer(mockCallbackServer)
                 .setSecureRng(testSecureRandom)
@@ -104,7 +94,8 @@ public final class Cve202222963VulnDetectorTest {
   @Test
   public void detect_withCallbackServer_onVulnerableTarget_returnsVulnerability()
       throws IOException {
-    mockTargetService.enqueue(new MockResponse().setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.code()));
+    mockTargetService.enqueue(
+        new MockResponse().setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.code()));
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
@@ -138,8 +129,8 @@ public final class Cve202222963VulnDetectorTest {
                                 .setValue("CVE_2022_22963"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Spring Cloud Function SpEL Code Injection RCE (CVE-2022-22963)")
-                        .setRecommendation("Users of affected versions should upgrade to "
-                            + "3.1.7, 3.2.3.")
+                        .setRecommendation(
+                            "Users of affected versions should upgrade to " + "3.1.7, 3.2.3.")
                         .setDescription(Cve202222963VulnDetector.VULN_DESCRIPTION))
                 .build());
   }
@@ -169,15 +160,12 @@ public final class Cve202222963VulnDetectorTest {
 
   @Test
   public void detect_withoutCallbackServer_returnsEmpty() throws IOException {
-    // Now replace the payload generator with a version without a configured callback server by not
-    // supplying mockCallbackServer.
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
             FakePayloadGeneratorModule.builder().build(),
             new Cve202222963DetectorBootstrapModule())
         .injectMembers(this);
-
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
