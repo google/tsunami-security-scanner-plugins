@@ -52,7 +52,7 @@ stopLoscust() {
 }
 
 # Convert the existing data file to a human-readable json file.
-convertFingerprint "${BINPROTO}" "${JSON_DATA}"
+convertFingerprint "${BIN_DATA}" "${JSON_DATA}"
 
 # Fetch Locust codebase.
 if [[ ! -d "${GIT_REPO}" ]] ; then
