@@ -16,7 +16,7 @@
 
 set -e
 
-source ./common.sh
+source ../../../../../google/fingerprinters/web/scripts/updater/common.sh
 
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 # Root path to the web fingerprinter plugin.
