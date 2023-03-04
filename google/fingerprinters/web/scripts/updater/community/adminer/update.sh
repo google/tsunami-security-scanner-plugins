@@ -16,11 +16,11 @@
 
 set -e
 
-source ../../../../../google/fingerprinters/web/scripts/updater/common.sh
+source ../../common.sh
 
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 # Root path to the web fingerprinter plugin.
-PROJECT_ROOT="$(cd -- "${SCRIPT_PATH}/../../../../../google/fingerprinters/web" >/dev/null 2>&1 ; pwd -P)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_PATH}/../../../.." >/dev/null 2>&1 ; pwd -P)"
 # Path to the configurations 
 APP_PATH="${SCRIPT_PATH}/app"
 # Path to the temporary data holder.
@@ -36,7 +36,7 @@ BIN_DATA="${FINGERPRINTS_PATH}/fingerprint.binproto"
 
 mkdir -p "${FINGERPRINTS_PATH}"
 
-BINPROTO="${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/adminer.binproto"
+BINPROTO="${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/community/adminer.binproto"
 
 # Convert the existing data file to a human-readable json file.
 convertFingerprint "${BINPROTO}"  "${JSON_DATA}"
