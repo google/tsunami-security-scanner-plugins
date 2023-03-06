@@ -16,8 +16,6 @@
 package com.google.tsunami.plugins.detectors.cves.cve201920933;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.net.HttpHeaders.ACCEPT_ENCODING;
 import static com.google.common.net.HttpHeaders.ACCEPT_LANGUAGE;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.UPGRADE_INSECURE_REQUESTS;
@@ -42,7 +40,6 @@ import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionReportList.Builder;
-import com.google.tsunami.proto.DetectionReportListOrBuilder;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
@@ -51,39 +48,32 @@ import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.stream.Stream;
 import javax.inject.Inject;
 
 /**
- * A {@link VulnDetector} that detects the CVE-2019-20933 vulnerability.
+ * A {@link VulnDetector} that detects the CVE-2019-20933 & missing auth vulnerability in InfluxDB.
  */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "Cve201920933VulnDetector",
     version = "0.1",
     description =
-        "CVE-2019-20933: InfluxDB before 1.7.6 has an authentication bypass vulnerability "
-            + "because a JWT token may have an empty SharedSecret (aka shared secret).",
+        "CVE-2019-20933: InfluxDB before 1.7.6 has an authentication bypass vulnerability because a"
+            + " JWT token may have an empty SharedSecret (aka shared secret). Missing auth:"
+            + " authentication is not enabled for InfluxDB",
     author = "Secureness",
     bootstrapModule = Cve201920933DetectorBootstrapModule.class)
 public final class Cve201920933VulnDetector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  @VisibleForTesting
-  static final String VULNERABLE_PATH = "query";
-
-  @VisibleForTesting
-  static final String DETECTION_STRING_1 = "results";
-  @VisibleForTesting
-  static final String DETECTION_STRING_BY_HEADER_Name_1 = "X-Influxdb-Version";
-  @VisibleForTesting
-  static final String DETECTION_STRING_BY_HEADER_Name_2 = "X-Influxdb-Build";
-  @VisibleForTesting
-  static final int DETECTION_STRING_BY_STATUS = HttpStatus.OK.code();
+  @VisibleForTesting static final String VULNERABLE_PATH = "query";
+  @VisibleForTesting static final String DETECTION_STRING_1 = "results";
+  @VisibleForTesting static final String DETECTION_STRING_BY_HEADER_NANE_1 = "X-Influxdb-Version";
+  @VisibleForTesting static final String DETECTION_STRING_BY_HEADER_NAME_2 = "X-Influxdb-Build";
+  @VisibleForTesting static final int DETECTION_STRING_BY_STATUS = HttpStatus.OK.code();
   private final HttpClient httpClient;
 
   private final Clock utcClock;
@@ -111,18 +101,20 @@ public final class Cve201920933VulnDetector implements VulnDetector {
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("CVE-2019-20933 starts detecting.");
-    Builder detectionreport = DetectionReportList.newBuilder();
+    Builder detectionReport = DetectionReportList.newBuilder();
     matchedServices.stream()
-        .filter(NetworkServiceUtils::isWebService).forEach(networkService -> {
-          if (isServiceVulnerableByMissingAuth(networkService)) {
-            detectionreport.addDetectionReports(
-                buildMissingAuthDetectionReport(targetInfo, networkService));
-          } else if ((isServiceVulnerableByCve201920933(networkService))) {
-            detectionreport.addDetectionReports(
-                buildCve201920933DetectionReport(targetInfo, networkService));
-          }
-        });
-    return detectionreport.build();
+        .filter(NetworkServiceUtils::isWebService)
+        .forEach(
+            networkService -> {
+              if (isServiceVulnerableByMissingAuth(networkService)) {
+                detectionReport.addDetectionReports(
+                    buildMissingAuthDetectionReport(targetInfo, networkService));
+              } else if ((isServiceVulnerableByCve201920933(networkService))) {
+                detectionReport.addDetectionReports(
+                    buildCve201920933DetectionReport(targetInfo, networkService));
+              }
+            });
+    return detectionReport.build();
   }
 
   private boolean isServiceVulnerableByCve201920933(NetworkService networkService) {
@@ -132,32 +124,13 @@ public final class Cve201920933VulnDetector implements VulnDetector {
             .addHeader(CONTENT_TYPE, "application/x-www-form-urlencoded")
             .addHeader(
                 "Authorization",
-                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzk1MjMzMjY3fQ.u8VkK_D8ERfgYAKoo8E0Llri1HdrEU0ml6Q0_YEx9fI")
+                "Bearer"
+                    + " eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzk1MjMzMjY3fQ.u8VkK_D8ERfgYAKoo8E0Llri1HdrEU0ml6Q0_YEx9fI")
             .addHeader(UPGRADE_INSECURE_REQUESTS, "1")
             .addHeader(ACCEPT_LANGUAGE, "en-US,en;q=0.5")
             .build();
 
-    String targetVulnerabilityUrl = buildTarget(networkService).append(VULNERABLE_PATH).toString();
-    try {
-      HttpResponse httpResponse =
-          httpClient.send(
-              post(targetVulnerabilityUrl).setHeaders(httpHeaders).setRequestBody(
-                  ByteString.copyFromUtf8("db=sample&q=show+users")).build(), networkService);
-      if (httpResponse.status().code() != DETECTION_STRING_BY_STATUS
-          || !httpResponse.bodyString().isPresent()) {
-        return false;
-      }
-      if (httpResponse.headers().get(DETECTION_STRING_BY_HEADER_Name_1).isPresent()
-          || httpResponse.headers().get(DETECTION_STRING_BY_HEADER_Name_2).isPresent()) {
-        if (httpResponse.bodyString().get().contains(DETECTION_STRING_1)) {
-          return true;
-        }
-      }
-    } catch (IOException | AssertionError e) {
-      logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
-      return false;
-    }
-    return false;
+    return canExecuteDbQuery(httpHeaders, networkService);
   }
 
   private boolean isServiceVulnerableByMissingAuth(NetworkService networkService) {
@@ -168,19 +141,25 @@ public final class Cve201920933VulnDetector implements VulnDetector {
             .addHeader(UPGRADE_INSECURE_REQUESTS, "1")
             .addHeader(ACCEPT_LANGUAGE, "en-US,en;q=0.5")
             .build();
+    return canExecuteDbQuery(httpHeaders, networkService);
+  }
 
+  private boolean canExecuteDbQuery(HttpHeaders httpHeaders, NetworkService networkService) {
     String targetVulnerabilityUrl = buildTarget(networkService).append(VULNERABLE_PATH).toString();
     try {
       HttpResponse httpResponse =
           httpClient.send(
-              post(targetVulnerabilityUrl).setHeaders(httpHeaders).setRequestBody(
-                  ByteString.copyFromUtf8("db=sample&q=show+users")).build(), networkService);
+              post(targetVulnerabilityUrl)
+                  .setHeaders(httpHeaders)
+                  .setRequestBody(ByteString.copyFromUtf8("q=show+users"))
+                  .build(),
+              networkService);
       if (httpResponse.status().code() != DETECTION_STRING_BY_STATUS
-          || !httpResponse.bodyString().isPresent()) {
+          || httpResponse.bodyString().isEmpty()) {
         return false;
       }
-      if (httpResponse.headers().get(DETECTION_STRING_BY_HEADER_Name_1).isPresent()
-          || httpResponse.headers().get(DETECTION_STRING_BY_HEADER_Name_2).isPresent()) {
+      if (httpResponse.headers().get(DETECTION_STRING_BY_HEADER_NANE_1).isPresent()
+          || httpResponse.headers().get(DETECTION_STRING_BY_HEADER_NAME_2).isPresent()) {
         if (httpResponse.bodyString().get().contains(DETECTION_STRING_1)) {
           return true;
         }
@@ -191,7 +170,6 @@ public final class Cve201920933VulnDetector implements VulnDetector {
     }
     return false;
   }
-
 
   private DetectionReport buildCve201920933DetectionReport(
       TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
@@ -209,7 +187,8 @@ public final class Cve201920933VulnDetector implements VulnDetector {
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("InfluxDB Empty JWT Secret Key Authentication Bypass")
                 .setDescription(
-                    "InfluxDB before 1.7.6 has an authentication bypass vulnerability because a JWT token may have an empty SharedSecret (aka shared secret).")
+                    "InfluxDB before 1.7.6 has an authentication bypass vulnerability because a JWT"
+                        + " token may have an empty SharedSecret (aka shared secret).")
                 .setRecommendation("Upgrade to higher versions")
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
@@ -234,17 +213,20 @@ public final class Cve201920933VulnDetector implements VulnDetector {
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("MISSING_AUTHENTICATION_FOR_INFLUX_DB"))
                 .setSeverity(Severity.CRITICAL)
-                .setTitle("influxDB instance without any authentication")
+                .setTitle("InfluxDB instance without any authentication")
                 .setDescription(
-                    "attacker can access any DB information for this influxDB instance because there are no authentication methods")
+                    "Attacker can access any DB information for this InfluxDB instance because"
+                        + " there are no authentication.")
                 .setRecommendation(
-                    "set authentication value to true in influxDB setup config file before running a instance of influxDB")
+                    "Set authentication value to true in InfluxDB setup config file before running"
+                        + " an instance of InfluxDB.")
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
                         .setTextData(
                             TextData.newBuilder()
                                 .setText(
-                                    "attacker can run arbitrary queries and see database data"))))
+                                    "Attacker can run arbitrary queries and access database"
+                                        + " data"))))
         .build();
   }
 }
