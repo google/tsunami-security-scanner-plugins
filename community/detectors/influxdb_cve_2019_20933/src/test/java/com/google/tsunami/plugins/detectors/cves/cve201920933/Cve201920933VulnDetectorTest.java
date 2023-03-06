@@ -16,14 +16,11 @@
 package com.google.tsunami.plugins.detectors.cves.cve201920933;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.*;
-import static com.google.tsunami.plugins.detectors.cves.cve201920933.Cve201920933VulnDetector.DETECTION_STRING_1;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static com.google.tsunami.plugins.detectors.cves.cve201920933.Cve201920933VulnDetector.DETECTION_STRING_BY_HEADER_NAME_1;
+import static com.google.tsunami.plugins.detectors.cves.cve201920933.Cve201920933VulnDetector.DETECTION_STRING_BY_HEADER_NAME_2;
 import static com.google.tsunami.plugins.detectors.cves.cve201920933.Cve201920933VulnDetector.DETECTION_STRING_BY_STATUS;
 import static com.google.tsunami.plugins.detectors.cves.cve201920933.Cve201920933VulnDetector.VULNERABLE_PATH;
-import static com.google.tsunami.plugins.detectors.cves.cve201920933.Cve201920933VulnDetector.DETECTION_STRING_BY_HEADER_Name_1;
-import static com.google.tsunami.plugins.detectors.cves.cve201920933.Cve201920933VulnDetector.DETECTION_STRING_BY_HEADER_Name_2;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -45,21 +42,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for {@link Cve201920933VulnDetector}.
- */
+/** Unit tests for {@link Cve201920933VulnDetector}. */
 @RunWith(JUnit4.class)
 public final class Cve201920933VulnDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
-  @Inject
-  private Cve201920933VulnDetector detector;
+  @Inject private Cve201920933VulnDetector detector;
 
   private final MockWebServer mockWebServer = new MockWebServer();
-  ;
-
   private NetworkService influxDBservice;
   private TargetInfo targetInfo;
 
@@ -95,25 +87,23 @@ public final class Cve201920933VulnDetectorTest {
   }
 
   @Test
-  public void detect_CVE201920933() throws InterruptedException {
-    MockResponse response =
-        new MockResponse()
-            .setResponseCode(401);
+  public void detect_whenCve201920933_returnsCve201920933Vuln() throws InterruptedException {
+    MockResponse response = new MockResponse().setResponseCode(401);
     // the first response return 401 as we check for missing Authentication in first request
     mockWebServer.enqueue(response);
     response =
         new MockResponse()
-            .addHeader(DETECTION_STRING_BY_HEADER_Name_1, "1.6.6")
-            .addHeader(DETECTION_STRING_BY_HEADER_Name_2, "1")
+            .addHeader(DETECTION_STRING_BY_HEADER_NAME_1, "1.6.6")
+            .addHeader(DETECTION_STRING_BY_HEADER_NAME_2, "1")
             .setBody(
                 "{\"results\":[{\"statement_id\":0,\"series\":[{\"columns\":[\"user\",\"admin\"],\"values\":[[\"admin\",true]]}]}]}")
             .setResponseCode(DETECTION_STRING_BY_STATUS);
     mockWebServer.enqueue(response);
 
-    DetectionReport mockWebServer_detectionReport =
+    DetectionReport actual =
         detector.detect(targetInfo, ImmutableList.of(influxDBservice)).getDetectionReports(0);
 
-    DetectionReport expected_detectionReport =
+    DetectionReport expected =
         DetectionReport.newBuilder()
             .setTargetInfo(targetInfo)
             .setNetworkService(influxDBservice)
@@ -128,41 +118,45 @@ public final class Cve201920933VulnDetectorTest {
                     .setSeverity(Severity.CRITICAL)
                     .setTitle("InfluxDB Empty JWT Secret Key Authentication Bypass")
                     .setDescription(
-                        "InfluxDB before 1.7.6 has an authentication bypass vulnerability because a JWT token may have an empty SharedSecret (aka shared secret).")
+                        "InfluxDB before 1.7.6 has an authentication bypass vulnerability because a"
+                            + " JWT token may have an empty SharedSecret (aka shared secret).")
                     .setRecommendation("Upgrade to higher versions")
                     .addAdditionalDetails(
                         AdditionalDetail.newBuilder()
                             .setTextData(
                                 TextData.newBuilder()
                                     .setText(
-                                        "attacker can run arbitrary queries and see database data"))))
+                                        "Attacker can run arbitrary queries and access database"
+                                            + " data"))))
             .build();
-
-    mockWebServer.takeRequest(); // pass first request that is for checking the missing authentication scenario
+    mockWebServer
+        .takeRequest(); // pass first request that is for checking the missing authentication
+                        // scenario
     RecordedRequest request1 = mockWebServer.takeRequest();
     // second request must have the Authorization header to pass a successful test
-    if (Objects.equals(request1.getHeader("Authorization"),
-        "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzk1MjMzMjY3fQ.u8VkK_D8ERfgYAKoo8E0Llri1HdrEU0ml6Q0_YEx9fI")) {
-      assertThat(mockWebServer_detectionReport)
-          .isEqualTo(expected_detectionReport);
+    if (Objects.equals(
+        request1.getHeader("Authorization"),
+        "Bearer"
+            + " eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzk1MjMzMjY3fQ.u8VkK_D8ERfgYAKoo8E0Llri1HdrEU0ml6Q0_YEx9fI")) {
+      assertThat(actual).isEqualTo(expected);
     }
-
   }
 
   @Test
-  public void detect_MissingAuth() throws InterruptedException {
+  public void detect_whenMissingAuth_returnsMissingAuthVuln() {
     MockResponse response =
         new MockResponse()
-            .addHeader(DETECTION_STRING_BY_HEADER_Name_1, "1.6.6")
-            .addHeader(DETECTION_STRING_BY_HEADER_Name_2, "1")
+            .addHeader(DETECTION_STRING_BY_HEADER_NAME_1, "1.6.6")
+            .addHeader(DETECTION_STRING_BY_HEADER_NAME_2, "1")
             .setBody(
                 "{\"results\":[{\"statement_id\":0,\"series\":[{\"columns\":[\"user\",\"admin\"],\"values\":[[\"admin\",true]]}]}]}")
             .setResponseCode(DETECTION_STRING_BY_STATUS);
     mockWebServer.enqueue(response);
-    DetectionReport mockWebServer_detectionReport_Missing_auth =
+
+    DetectionReport actual =
         detector.detect(targetInfo, ImmutableList.of(influxDBservice)).getDetectionReports(0);
 
-    DetectionReport expected_detectionReport_missing_auth =
+    DetectionReport expected =
         DetectionReport.newBuilder()
             .setTargetInfo(targetInfo)
             .setNetworkService(influxDBservice)
@@ -175,24 +169,27 @@ public final class Cve201920933VulnDetectorTest {
                             .setPublisher("TSUNAMI_COMMUNITY")
                             .setValue("MISSING_AUTHENTICATION_FOR_INFLUX_DB"))
                     .setSeverity(Severity.CRITICAL)
-                    .setTitle("influxDB instance without any authentication")
+                    .setTitle("InfluxDB instance without any authentication")
                     .setDescription(
-                        "attacker can access any DB information for this influxDB instance because there are no authentication methods")
+                        "Attacker can access any DB information for this InfluxDB instance because"
+                            + " there are no authentication.")
                     .setRecommendation(
-                        "set authentication value to true in influxDB setup config file before running a instance of influxDB")
+                        "Set authentication value to true in InfluxDB setup config file before running"
+                            + " an instance of InfluxDB.")
                     .addAdditionalDetails(
                         AdditionalDetail.newBuilder()
                             .setTextData(
                                 TextData.newBuilder()
                                     .setText(
-                                        "attacker can run arbitrary queries and see database data"))))
+                                        "Attacker can run arbitrary queries and access database"
+                                            + " data"))))
             .build();
-    assertThat(mockWebServer_detectionReport_Missing_auth)
-        .isEqualTo(expected_detectionReport_missing_auth);
+    assertThat(actual)
+        .isEqualTo(expected);
   }
 
   @Test
-  public void detect_whenNotVulnerable_returnsNoVulnerability() throws IOException {
+  public void detect_whenNotVulnerable_returnsNoVulnerability() {
     mockWebServer.url("/notexistpath123321");
     MockResponse response =
         new MockResponse()
@@ -200,9 +197,10 @@ public final class Cve201920933VulnDetectorTest {
             .setBody("NotExistDetectionString")
             .setResponseCode(200);
     mockWebServer.enqueue(response);
-    DetectionReportList mockWebServer_detectionReport =
-        detector.detect(targetInfo, ImmutableList.of(influxDBservice));
-    assert (mockWebServer_detectionReport.getDetectionReportsList().isEmpty());
-  }
 
+    DetectionReportList findings =
+        detector.detect(targetInfo, ImmutableList.of(influxDBservice));
+
+    assert (findings.getDetectionReportsList().isEmpty());
+  }
 }
