@@ -53,7 +53,7 @@ stopZabbix() {
 
 # Convert the existing data file to a human-readable json file.
 convertFingerprint \
-  "${PROJECT_ROOT}/web/zabbix/zabbix.binproto" \
+  "${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/commuity/zabbix.binproto" \
   "${JSON_DATA}"
 
 # Fetch Zabbix codebase.
