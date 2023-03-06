@@ -28,8 +28,19 @@ import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
-import com.google.tsunami.proto.*;
-import java.io.*;
+import com.google.tsunami.proto.AdditionalDetail;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.Software;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TextData;
+import com.google.tsunami.proto.TransportProtocol;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -131,7 +142,7 @@ public final class Cve201920933VulnDetectorTest {
             .build();
     mockWebServer
         .takeRequest(); // pass first request that is for checking the missing authentication
-                        // scenario
+    // scenario
     RecordedRequest request1 = mockWebServer.takeRequest();
     // second request must have the Authorization header to pass a successful test
     if (Objects.equals(
@@ -174,8 +185,8 @@ public final class Cve201920933VulnDetectorTest {
                         "Attacker can access any DB information for this InfluxDB instance because"
                             + " there are no authentication.")
                     .setRecommendation(
-                        "Set authentication value to true in InfluxDB setup config file before running"
-                            + " an instance of InfluxDB.")
+                        "Set authentication value to true in InfluxDB setup config file before"
+                            + " running an instance of InfluxDB.")
                     .addAdditionalDetails(
                         AdditionalDetail.newBuilder()
                             .setTextData(
@@ -184,8 +195,7 @@ public final class Cve201920933VulnDetectorTest {
                                         "Attacker can run arbitrary queries and access database"
                                             + " data"))))
             .build();
-    assertThat(actual)
-        .isEqualTo(expected);
+    assertThat(actual).isEqualTo(expected);
   }
 
   @Test
@@ -198,8 +208,7 @@ public final class Cve201920933VulnDetectorTest {
             .setResponseCode(200);
     mockWebServer.enqueue(response);
 
-    DetectionReportList findings =
-        detector.detect(targetInfo, ImmutableList.of(influxDBservice));
+    DetectionReportList findings = detector.detect(targetInfo, ImmutableList.of(influxDBservice));
 
     assert (findings.getDetectionReportsList().isEmpty());
   }
