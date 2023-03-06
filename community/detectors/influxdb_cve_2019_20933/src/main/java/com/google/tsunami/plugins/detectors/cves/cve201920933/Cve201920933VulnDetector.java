@@ -195,7 +195,8 @@ public final class Cve201920933VulnDetector implements VulnDetector {
                         .setTextData(
                             TextData.newBuilder()
                                 .setText(
-                                    "Attacker can run arbitrary queries and access database data"))))
+                                    "Attacker can run arbitrary queries and access database"
+                                        + " data"))))
         .build();
   }
 
