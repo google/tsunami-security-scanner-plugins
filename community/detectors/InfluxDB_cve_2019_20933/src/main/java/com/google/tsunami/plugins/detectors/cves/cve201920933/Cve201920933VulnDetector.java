@@ -66,7 +66,7 @@ import javax.inject.Inject;
     version = "0.1",
     description =
         "CVE-2019-20933: InfluxDB before 1.7.6 has an authentication bypass vulnerability "
-            + " because a JWT token may have an empty SharedSecret (aka shared secret).",
+            + "because a JWT token may have an empty SharedSecret (aka shared secret).",
     author = "Secureness",
     bootstrapModule = Cve201920933DetectorBootstrapModule.class)
 public final class Cve201920933VulnDetector implements VulnDetector {
