@@ -71,7 +71,7 @@ public final class Cve201920933VulnDetector implements VulnDetector {
 
   @VisibleForTesting static final String VULNERABLE_PATH = "query";
   @VisibleForTesting static final String DETECTION_STRING_1 = "results";
-  @VisibleForTesting static final String DETECTION_STRING_BY_HEADER_NANE_1 = "X-Influxdb-Version";
+  @VisibleForTesting static final String DETECTION_STRING_BY_HEADER_NAME_1 = "X-Influxdb-Version";
   @VisibleForTesting static final String DETECTION_STRING_BY_HEADER_NAME_2 = "X-Influxdb-Build";
   @VisibleForTesting static final int DETECTION_STRING_BY_STATUS = HttpStatus.OK.code();
   private final HttpClient httpClient;
@@ -158,7 +158,7 @@ public final class Cve201920933VulnDetector implements VulnDetector {
           || httpResponse.bodyString().isEmpty()) {
         return false;
       }
-      if (httpResponse.headers().get(DETECTION_STRING_BY_HEADER_NANE_1).isPresent()
+      if (httpResponse.headers().get(DETECTION_STRING_BY_HEADER_NAME_1).isPresent()
           || httpResponse.headers().get(DETECTION_STRING_BY_HEADER_NAME_2).isPresent()) {
         if (httpResponse.bodyString().get().contains(DETECTION_STRING_1)) {
           return true;
@@ -195,7 +195,7 @@ public final class Cve201920933VulnDetector implements VulnDetector {
                         .setTextData(
                             TextData.newBuilder()
                                 .setText(
-                                    "attacker can run arbitrary queries and see database data"))))
+                                    "Attacker can run arbitrary queries and access database data"))))
         .build();
   }
 
