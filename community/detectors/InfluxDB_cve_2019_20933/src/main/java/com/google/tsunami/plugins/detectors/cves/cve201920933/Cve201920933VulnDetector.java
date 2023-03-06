@@ -65,8 +65,8 @@ import javax.inject.Inject;
     name = "Cve201920933VulnDetector",
     version = "0.1",
     description =
-        "CVE-2019-20933: An improper access check allows unauthorized access to webservice"
-            + " endpoints",
+        "CVE-2019-20933: InfluxDB before 1.7.6 has an authentication bypass vulnerability "
+            + " because a JWT token may have an empty SharedSecret (aka shared secret).",
     author = "Secureness",
     bootstrapModule = Cve201920933DetectorBootstrapModule.class)
 public final class Cve201920933VulnDetector implements VulnDetector {
@@ -78,7 +78,6 @@ public final class Cve201920933VulnDetector implements VulnDetector {
 
   @VisibleForTesting
   static final String DETECTION_STRING_1 = "results";
-  //    @VisibleForTesting static final String DETECTION_STRING_2 = "missing required parameter";
   @VisibleForTesting
   static final String DETECTION_STRING_BY_HEADER_Name_1 = "X-Influxdb-Version";
   @VisibleForTesting
