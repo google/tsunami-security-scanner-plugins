@@ -19,6 +19,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static com.google.tsunami.plugins.detectors.directorytraversal.genericpathtraversaldetector.GenericPathTraversalDetector.FINDING_DESCRIPTION_TEXT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -145,8 +146,7 @@ public final class GenericPathTraversalDetectorTest {
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("GENERIC_PT"))
                 .setSeverity(Severity.MEDIUM)
                 .setTitle("Generic Path Traversal Vulnerability")
-                .setDescription(
-                    "Generic Path Traversal vulnerability allowing to leak arbitrary files.")
+                .setDescription(FINDING_DESCRIPTION_TEXT)
                 .build());
     assertThat(
             detectionReports.get(0).getVulnerability().getAdditionalDetailsList().stream()

@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Comparator.comparing;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
@@ -66,6 +67,11 @@ public final class GenericPathTraversalDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private static final Pattern ETC_PASSWD_PATTERN = Pattern.compile("root:x:0:0:");
+
+  @VisibleForTesting
+  static final String FINDING_DESCRIPTION_TEXT =
+      "Generic Path Traversal vulnerability allows arbitrary files leaks, see "
+          + "https://owasp.org/www-community/attacks/Path_Traversal";
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -183,8 +189,7 @@ public final class GenericPathTraversalDetector implements VulnDetector {
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("GENERIC_PT"))
                 .setSeverity(Severity.MEDIUM)
                 .setTitle("Generic Path Traversal Vulnerability")
-                .setDescription(
-                    "Generic Path Traversal vulnerability allowing to leak arbitrary files.")
+                .setDescription(FINDING_DESCRIPTION_TEXT)
                 .setRecommendation(
                     "Do not accept user-controlled file paths or restrict file paths to a set of"
                         + " pre-defined paths. If the application is meant to let users define file"
