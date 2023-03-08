@@ -16,22 +16,21 @@
 package com.google.tsunami.plugins.detectors.cves;
 
 import com.google.tsunami.proto.NetworkEndpoint;
+import java.io.IOException;
 import redis.clients.jedis.JedisPool;
 
-import java.io.IOException;
-
 public class JedisPoolFactory {
-    JedisPool create(NetworkEndpoint networkEndpoint) throws IOException {
-        int port = 6379;
-        if (networkEndpoint.hasPort()) {
-            port = networkEndpoint.getPort().getPortNumber();
-        }
-        if (networkEndpoint.hasHostname()) {
-            return new JedisPool(networkEndpoint.getHostname().getName(), port);
-        } else if (networkEndpoint.hasIpAddress()) {
-            return new JedisPool(networkEndpoint.getIpAddress().getAddress(), port);
-        } else {
-            throw new IOException("Jedis missing target.");
-        }
+  JedisPool create(NetworkEndpoint networkEndpoint) throws IOException {
+    int port = 6379;
+    if (networkEndpoint.hasPort()) {
+      port = networkEndpoint.getPort().getPortNumber();
     }
+    if (networkEndpoint.hasHostname()) {
+      return new JedisPool(networkEndpoint.getHostname().getName(), port);
+    } else if (networkEndpoint.hasIpAddress()) {
+      return new JedisPool(networkEndpoint.getIpAddress().getAddress(), port);
+    } else {
+      throw new IOException("Jedis missing target.");
+    }
+  }
 }
