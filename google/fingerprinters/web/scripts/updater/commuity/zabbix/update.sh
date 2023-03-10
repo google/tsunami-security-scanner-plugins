@@ -20,7 +20,7 @@ source ../../common.sh
 
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 # Root path to the web fingerprinter plugin.
-PROJECT_ROOT="$(cd -- "${SCRIPT_PATH}/../../.." >/dev/null 2>&1 ; pwd -P)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_PATH}/../../../.." >/dev/null 2>&1 ; pwd -P)"
 # Path to the configurations for starting a live instance of Zabbix.
 ZABBIX_APP_PATH="${SCRIPT_PATH}/app"
 # Path to the temporary data holder.
@@ -69,8 +69,10 @@ for zabbix_version in "${ALL_VERSIONS[@]}"; do
   # Arbitrarily chosen so that Zabbix is up and running.
   echo "Waiting for Zabbix ${zabbix_version} to be ready ..."
   sleep 30
+  TMP_VERSION=`echo ${zabbix_version}|grep -o '\d\.\d\.\d'`
+  echo ${TMP_VERSION}
   # Checkout the repository to the correct tag.
-  checkOutRepo "${GIT_REPO}" "${zabbix_version}"
+  checkOutRepo "${GIT_REPO}" "${TMP_VERSION}"
 
   updateFingerprint \
     "zabbix" \

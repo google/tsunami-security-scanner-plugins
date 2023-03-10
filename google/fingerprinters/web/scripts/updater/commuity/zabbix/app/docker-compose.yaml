@@ -220,8 +220,8 @@ services:
   zabbix-web-nginx-pgsql:
     image: "zabbix/zabbix-web-nginx-pgsql:${ZABBIX_VERSION}"
     ports:
-      - "80:8080"
-      - "443:8443"
+      - "280:80"
+      - "2443:443"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
