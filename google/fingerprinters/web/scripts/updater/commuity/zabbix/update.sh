@@ -79,7 +79,7 @@ for zabbix_version in "${ALL_VERSIONS[@]}"; do
     "${zabbix_version}" \
     "${FINGERPRINTS_PATH}" \
     "${GIT_REPO}/ui" \
-    "http://localhost:80"
+    "http://localhost:280"
 
   # Stop the live instance of Zabbix.
   stopZabbix "${zabbix_version}"
