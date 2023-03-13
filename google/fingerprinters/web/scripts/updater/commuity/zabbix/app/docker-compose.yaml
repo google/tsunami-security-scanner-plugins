@@ -222,6 +222,8 @@ services:
     ports:
       - "280:80"
       - "2443:443"
+      - "18080:8080"
+      - "18443:8443"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro

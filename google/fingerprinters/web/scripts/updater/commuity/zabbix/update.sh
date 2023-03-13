@@ -30,9 +30,9 @@ GIT_REPO="${TMP_DATA}/repo"
 # Path to the directory of all the updated fingerprints data.
 FINGERPRINTS_PATH="${TMP_DATA}/fingerprints"
 # Json data of the final result.
-JSON_DATA="${FINGERPRINTS_PATH}/fingerprint.json"
+JSON_DATA="${FINGERPRINTS_PATH}/zabbix.json"
 # Binary proto data of the final result.
-BIN_DATA="${FINGERPRINTS_PATH}/fingerprint.binproto"
+BIN_DATA="${FINGERPRINTS_PATH}/zabbix.binproto"
 # Read all the versions to be fingerprinted.
 readarray -t ALL_VERSIONS < "${SCRIPT_PATH}/versions.txt"
 mkdir -p "${FINGERPRINTS_PATH}"
@@ -62,27 +62,35 @@ if [[ ! -d "${GIT_REPO}" ]] ; then
 fi
 
 # Update for all the versions listed in versions.txt file.
-for zabbix_version in "${ALL_VERSIONS[@]}"; do
-  echo "Fingerprinting Zabbix version ${zabbix_version} ..."
+for DISTROLESS_VERSION in "${ALL_VERSIONS[@]}"; do
+  echo "Fingerprinting Zabbix version ${DISTROLESS_VERSION} ..."
   # Start a live instance of Zabbix.
-  startZabbix "${zabbix_version}"
+  startZabbix "${DISTROLESS_VERSION}"
   # Arbitrarily chosen so that Zabbix is up and running.
-  echo "Waiting for Zabbix ${zabbix_version} to be ready ..."
+  echo "Waiting for Zabbix ${DISTROLESS_VERSION} to be ready ..."
   sleep 30
-  TMP_VERSION=`echo ${zabbix_version}|grep -o '\d\.\d\.\d'`
-  echo ${TMP_VERSION}
+  TMP_VERSION=`echo ${DISTROLESS_VERSION}|grep -Eo '[0-9]+\.[0-9]+\.[0-9]+'`
   # Checkout the repository to the correct tag.
   checkOutRepo "${GIT_REPO}" "${TMP_VERSION}"
+  RESOURCES_PATH="${GIT_REPO}"
+  WEBSITE='http://localhost:280'
+  if [ ! -d "${GIT_REPO}/frontends" ]; then
+    RESOURCES_PATH="${GIT_REPO}/ui"
+    WEBSITE='http://localhost:18080'
+  else
+    WEBSITE='http://localhost:280'
+    RESOURCES_PATH="${GIT_REPO}/frontends/php"
+  fi
 
   updateFingerprint \
     "zabbix" \
-    "${zabbix_version}" \
+    "${DISTROLESS_VERSION}" \
     "${FINGERPRINTS_PATH}" \
-    "${GIT_REPO}/ui" \
-    "http://localhost:280"
+    "${RESOURCES_PATH}" \
+    "${WEBSITE}"
 
   # Stop the live instance of Zabbix.
-  stopZabbix "${zabbix_version}"
+  stopZabbix "${DISTROLESS_VERSION}"
 done
 
 convertFingerprint "${JSON_DATA}" "${BIN_DATA}"
