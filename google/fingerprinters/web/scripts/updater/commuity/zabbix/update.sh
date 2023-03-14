@@ -30,7 +30,7 @@ GIT_REPO="${TMP_DATA}/repo"
 # Path to the directory of all the updated fingerprints data.
 FINGERPRINTS_PATH="${TMP_DATA}/fingerprints"
 # Json data of the final result.
-JSON_DATA="${FINGERPRINTS_PATH}/zabbix.json"
+JSON_DATA="${FINGERPRINTS_PATH}/fingerprint.json"
 # Binary proto data of the final result.
 BIN_DATA="${FINGERPRINTS_PATH}/zabbix.binproto"
 # Read all the versions to be fingerprinted.
@@ -53,7 +53,7 @@ stopZabbix() {
 
 # Convert the existing data file to a human-readable json file.
 convertFingerprint \
-  "${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/commuity/zabbix.binproto" \
+  "${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/community/zabbix.binproto" \
   "${JSON_DATA}"
 
 # Fetch Zabbix codebase.
@@ -62,16 +62,16 @@ if [[ ! -d "${GIT_REPO}" ]] ; then
 fi
 
 # Update for all the versions listed in versions.txt file.
-for DISTROLESS_VERSION in "${ALL_VERSIONS[@]}"; do
-  echo "Fingerprinting Zabbix version ${DISTROLESS_VERSION} ..."
+for VERSION in "${ALL_VERSIONS[@]}"; do
+  echo "Fingerprinting Zabbix version ${VERSION} ..."
   # Start a live instance of Zabbix.
-  startZabbix "${DISTROLESS_VERSION}"
+  startZabbix "${VERSION}"
   # Arbitrarily chosen so that Zabbix is up and running.
-  echo "Waiting for Zabbix ${DISTROLESS_VERSION} to be ready ..."
+  echo "Waiting for Zabbix ${VERSION} to be ready ..."
   sleep 30
-  TMP_VERSION=`echo ${DISTROLESS_VERSION}|grep -Eo '[0-9]+\.[0-9]+\.[0-9]+'`
+  DISTROLESS_VERSION=`echo ${VERSION}|grep -Eo '[0-9]+\.[0-9]+\.[0-9]+'`
   # Checkout the repository to the correct tag.
-  checkOutRepo "${GIT_REPO}" "${TMP_VERSION}"
+  checkOutRepo "${GIT_REPO}" "${DISTROLESS_VERSION}"
   RESOURCES_PATH="${GIT_REPO}"
   WEBSITE='http://localhost:280'
   if [ ! -d "${GIT_REPO}/frontends" ]; then
@@ -90,7 +90,7 @@ for DISTROLESS_VERSION in "${ALL_VERSIONS[@]}"; do
     "${WEBSITE}"
 
   # Stop the live instance of Zabbix.
-  stopZabbix "${DISTROLESS_VERSION}"
+  stopZabbix "${VERSION}"
 done
 
 convertFingerprint "${JSON_DATA}" "${BIN_DATA}"
