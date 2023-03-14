@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.credentials.cve20177615;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
+import static com.apple.vadolph.com.http.httprequest.get
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
