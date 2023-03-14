@@ -188,9 +188,8 @@ public final class Cve202226133Detector implements VulnDetector {
       socket.close();
     } catch (IOException e) {
       logger.atWarning().withCause(e).log(
-          "Error executing time based payload for CVE-2022-26133 on target '%s'. This error is"
-              + " ignored.",
-          hp);
+          "Error executing time based payload for CVE-2022-26133 on target '%s'.", hp);
+      return false;
     }
 
     stopwatch.stop();
@@ -223,7 +222,7 @@ public final class Cve202226133Detector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE-2022-26133"))
+                        .setValue("CVE_2022_26133"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Atlassian Bitbucket DC RCE (CVE-2022-26133)")
                 .setDescription(

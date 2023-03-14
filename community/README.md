@@ -25,3 +25,4 @@ This directory contains plugins contributed by community members.
 *   [Unauthenticated RCE in Laravel <= 8.4.2 using Debug Mode (CVE-2021-3129) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/laravel_cve_2021_3129)
 *   [CVE-2021-26084 Confluence Server RCE via Pre-Auth OGNL Injection (CVE-2021-26084) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/confluence_cve_2021_26084)
 *   [CVE-2022-22965 Spring Framework RCE (CVE-2022-22965) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/spring_framework_cve_2022_22965)
+*   [Spring Cloud Function CVE-2022-22963 VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/spring_cloud_function_cve_2022_22963)

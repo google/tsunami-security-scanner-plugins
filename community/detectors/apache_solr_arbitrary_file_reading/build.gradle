@@ -46,6 +46,7 @@ java {
 }
 
 ext {
+    autoValueVersion = '1.7'
     tsunamiVersion = '0.0.14'
     junitVersion = '4.13'
     truthVersion = '1.0.1'
@@ -53,9 +54,11 @@ ext {
 }
 
 dependencies {
+    implementation "com.google.auto.value:auto-value-annotations:${autoValueVersion}"
     implementation "com.google.tsunami:tsunami-common:${tsunamiVersion}"
     implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
     implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
+    annotationProcessor "com.google.auto.value:auto-value:${autoValueVersion}"
 
     testImplementation "junit:junit:${junitVersion}"
     testImplementation "com.google.truth:truth:${truthVersion}"

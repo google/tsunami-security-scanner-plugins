@@ -86,13 +86,11 @@ public final class Cve202226133DetectorWithoutCallbackServerTest {
     when(socketFactoryMock.createSocket(anyString(), anyInt())).thenReturn(socket);
     when(socket.getOutputStream()).thenReturn(new ByteArrayOutputStream());
     when(socket.getInputStream())
-        .thenReturn(new ByteArrayInputStream(TestHelper.CLUSTER_NAME))
         .thenAnswer(
-            (Answer)
-                invocation -> {
-                  Thread.sleep(4100);
-                  throw new IOException();
-                });
+            invocation -> {
+              Thread.sleep(4100);
+              return new ByteArrayInputStream(TestHelper.CLUSTER_NAME);
+            });
 
     when(socket.getOutputStream()).thenReturn(new ByteArrayOutputStream());
 
@@ -100,6 +98,24 @@ public final class Cve202226133DetectorWithoutCallbackServerTest {
 
     assertThat(detectionReports.getDetectionReportsList())
         .containsExactly(TestHelper.buildValidDetectionReport(targetInfo, service, fakeUtcClock));
+  }
+
+  @Test
+  public void detect_whenSocketError_doesNotReportVuln() throws Exception {
+    Socket socket = mock(Socket.class);
+    when(socketFactoryMock.createSocket(anyString(), anyInt())).thenReturn(socket);
+    when(socket.getOutputStream()).thenReturn(new ByteArrayOutputStream());
+    when(socket.getInputStream())
+        .thenAnswer(
+            invocation -> {
+              throw new IOException();
+            });
+
+    when(socket.getOutputStream()).thenReturn(new ByteArrayOutputStream());
+
+    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
 
   @Test
