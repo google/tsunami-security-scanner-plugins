@@ -48,6 +48,7 @@ stopZabbix() {
   local version="$1"
   pushd "${ZABBIX_APP_PATH}" >/dev/null
     ZABBIX_VERSION="${version}" docker-compose down --volumes --remove-orphans
+    rm -rf "$ZABBIX_APP_PATH/zbx_env/var/lib/postgresql/data"
   popd >/dev/null
 }
 
@@ -68,7 +69,7 @@ for VERSION in "${ALL_VERSIONS[@]}"; do
   startZabbix "${VERSION}"
   # Arbitrarily chosen so that Zabbix is up and running.
   echo "Waiting for Zabbix ${VERSION} to be ready ..."
-  sleep 30
+  sleep 60
   DISTROLESS_VERSION=`echo ${VERSION}|grep -Eo '[0-9]+\.[0-9]+\.[0-9]+'`
   # Checkout the repository to the correct tag.
   checkOutRepo "${GIT_REPO}" "${DISTROLESS_VERSION}"
