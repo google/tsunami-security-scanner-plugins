@@ -21,7 +21,7 @@ source ../../common.sh
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 # Root path to the web fingerprinter plugin.
 PROJECT_ROOT="$(cd -- "${SCRIPT_PATH}/../../../.." >/dev/null 2>&1 ; pwd -P)"
-# Path to the configurations 
+# Path to the configurations
 APP_PATH="${SCRIPT_PATH}/app"
 # Path to the temporary data holder.
 TMP_DATA="/tmp/adminer_fingerprints"
@@ -53,8 +53,8 @@ readarray -t ALL_VERSIONS < "${SCRIPT_PATH}/versions.txt"
 # Update for all the versions listed in versions.txt file.
 for app_version in "${ALL_VERSIONS[@]}"; do
   echo "Fingerprinting Adminer version ${app_version} ..."
-  docker run --rm -d --name adminer_${app_version} -p 8080:8080 adminer:${app_version} 
-  
+  docker run --rm -d --name adminer_${app_version} -p 8080:8080 adminer:${app_version}
+
   # Start docker container
   echo "Waiting for Adminer ${app_version} to be ready ..."
 
@@ -74,7 +74,7 @@ for app_version in "${ALL_VERSIONS[@]}"; do
     "${GIT_REPO}" \
     "http://localhost:8080"
 
-  # Stop the live instance 
+  # Stop the live instance
   docker stop adminer_${app_version}
 
 done
