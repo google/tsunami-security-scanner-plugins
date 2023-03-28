@@ -122,8 +122,7 @@ public final class Cve202323752VulnDetectorTest {
                                 .setTextData(
                                     TextData.newBuilder()
                                         .setText(
-                                            "attacker can get DB and webservers critical information"
-                                                + " like passwords by this vulnerability "))))
+                                            "attacker can get critical information of database and webserver like passwords by this vulnerability"))))
                 .build();
 
         assertThat(mockWebServer_detectionReports.getDetectionReportsList())
