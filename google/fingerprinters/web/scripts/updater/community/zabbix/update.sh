@@ -73,14 +73,13 @@ for VERSION in "${ALL_VERSIONS[@]}"; do
   DISTROLESS_VERSION=`echo ${VERSION}|grep -Eo '[0-9]+\.[0-9]+\.[0-9]+'`
   # Checkout the repository to the correct tag.
   checkOutRepo "${GIT_REPO}" "${DISTROLESS_VERSION}"
-  RESOURCES_PATH="${GIT_REPO}"
+  RESOURCES_PATH="${GIT_REPO}/frontends/php"
   WEBSITE='http://localhost:280'
   if [ ! -d "${GIT_REPO}/frontends" ]; then
     RESOURCES_PATH="${GIT_REPO}/ui"
+  fi
+  if [ "$DISTROLESS_VERSION" > "4.0.19" ]; then
     WEBSITE='http://localhost:18080'
-  else
-    WEBSITE='http://localhost:280'
-    RESOURCES_PATH="${GIT_REPO}/frontends/php"
   fi
 
   updateFingerprint \
