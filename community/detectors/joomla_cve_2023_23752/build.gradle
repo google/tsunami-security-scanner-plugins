@@ -58,6 +58,7 @@ dependencies {
     implementation "com.google.tsunami:tsunami-common:${tsunamiVersion}"
     implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
     implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
+    implementation group: 'org.json', name: 'json', version: '20230227'
 
     testImplementation "junit:junit:${junitVersion}"
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"

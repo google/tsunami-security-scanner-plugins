@@ -10,6 +10,7 @@ For detailed information please read following reference.
 
 - https://vulncheck.com/blog/joomla-for-rce
 
+
 ## Build jar file for this plugin
 
 Using `gradlew`:
