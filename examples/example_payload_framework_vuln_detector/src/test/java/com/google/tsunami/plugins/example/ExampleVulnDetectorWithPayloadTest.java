@@ -143,7 +143,8 @@ public final class ExampleVulnDetectorWithPayloadTest {
                                 .setValue("VULNERABILITY_ID"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Vulnerability Title")
-                        .setDescription("Detailed description of the vulnerability")
+                        .setDescription("Verbose description of the issue")
+                        .setRecommendation("Verbose recommended solution")
                         .addAdditionalDetails(
                             AdditionalDetail.newBuilder()
                                 .setTextData(

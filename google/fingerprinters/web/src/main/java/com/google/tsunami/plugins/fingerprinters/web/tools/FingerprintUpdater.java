@@ -65,6 +65,7 @@ import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -376,6 +377,9 @@ public final class FingerprintUpdater {
   private void dumpToFile(Fingerprints data) throws IOException {
     Path resultPath = buildResultFilePath();
     logger.atInfo().log("Write data file to %s.", resultPath);
+    // No-op if the file already exists.
+    File resultFile = new File(resultPath.toString());
+    Files.createParentDirs(resultFile);
     if (Files.getFileExtension(resultPath.toString()).equals("json")) {
       Files.asCharSink(resultPath.toFile(), UTF_8).write(JsonFormat.printer().print(data));
     } else {

@@ -26,3 +26,4 @@ This directory contains plugins contributed by community members.
 *   [CVE-2021-26084 Confluence Server RCE via Pre-Auth OGNL Injection (CVE-2021-26084) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/confluence_cve_2021_26084)
 *   [CVE-2022-22965 Spring Framework RCE (CVE-2022-22965) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/spring_framework_cve_2022_22965)
 *   [CVE-2022-36804 Bitbucket Server RCE via command injection](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/bitbucket_cve_2022_36804)
+*   [Spring Cloud Function CVE-2022-22963 VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/spring_cloud_function_cve_2022_22963)

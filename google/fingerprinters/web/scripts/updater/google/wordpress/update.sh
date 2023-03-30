@@ -16,11 +16,11 @@
 
 set -e
 
-source ../common.sh
+source ../../common.sh
 
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 # Root path to the web fingerprinter plugin.
-PROJECT_ROOT="$(cd -- "${SCRIPT_PATH}/../../.." >/dev/null 2>&1 ; pwd -P)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_PATH}/../../../.." >/dev/null 2>&1 ; pwd -P)"
 # Path to the configurations for starting a live instance of WordPress.
 WP_APP_PATH="${SCRIPT_PATH}/app"
 # Path to the temporary data holder.
@@ -53,7 +53,7 @@ stopWordPress() {
 
 # Convert the existing data file to a human-readable json file.
 convertFingerprint \
-  "${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/wordpress.binproto" \
+  "${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/google/wordpress.binproto" \
   "${JSON_DATA}"
 
 # Fetch WordPress codebase.

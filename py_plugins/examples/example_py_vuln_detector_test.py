@@ -58,7 +58,8 @@ class ExamplePyVulnDetectorTest(absltest.TestCase):
                     value='VULNERABILITY_ID'),
                 severity=vulnerability_pb2.CRITICAL,
                 title='Vulnerability Title',
-                description='Detailed description of the vulnerability',
+                description='Verbose description of the issue',
+                recommendation='Verbose recommended solution',
                 additional_details=[
                     vulnerability_pb2.AdditionalDetail(
                         text_data=vulnerability_pb2.TextData(
