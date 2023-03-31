@@ -16,7 +16,6 @@
 package com.google.tsunami.plugins.detectors.cves.cve202323752;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.*;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
@@ -85,7 +84,6 @@ public final class Cve202323752VulnDetector implements VulnDetector {
   @VisibleForTesting static final int DETECTION_STRING_BY_STATUS = HttpStatus.OK.code();
   private final HttpClient httpClient;
   private final Clock utcClock;
-  //  private JSONObject ResponseBodyJson;
 
   @Inject
   Cve202323752VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
@@ -312,79 +310,6 @@ public final class Cve202323752VulnDetector implements VulnDetector {
             + DataBasePassword
             + "&option=com_login&task=login",
         "Set-Cookie");
-    //    java.net.http.HttpClient httpClient =
-    //        java.net.http.HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
-    //    HttpRequest request =
-    //        HttpRequest.newBuilder()
-    //            .GET()
-    //            .uri(URI.create(url.toString() + "administrator/index.php"))
-    //            .setHeader(
-    //                ACCEPT,
-    //
-    // "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
-    //            .setHeader(
-    //                "User-Agent",
-    //                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like
-    // Gecko) Chrome/111.0.5563.65 Safari/537.36")
-    //            .setHeader("Cache-Control", "max-age=0")
-    //            .build();
-    //    java.net.http.HttpResponse<String> httpResponse =
-    //        httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
-    //
-    //    // get value of hidden parameter named return
-    //    String ReturnToken = null;
-    //    Pattern ReturnTokenPattern =
-    //        Pattern.compile("<input type=\"hidden\" name=\"return\" value=\"(.+?)\">");
-    //    Matcher matcher = ReturnTokenPattern.matcher(httpResponse.body());
-    //    if (matcher.find()) {
-    //      ReturnToken = matcher.group(1);
-    //
-    //    } else return false;
-    //
-    //    // get CSRF token
-    //    String CsrfToken = null;
-    //    Pattern CsrfPattern = Pattern.compile("<input type=\"hidden\" name=\"(.+?)\"
-    // value=\"1\">");
-    //    matcher = CsrfPattern.matcher(httpResponse.body());
-    //    if (matcher.find()) {
-    //      CsrfToken = matcher.group(1);
-    //    } else return false;
-    //
-    //    // get PreAuth Cookies
-    //    String Cookies = String.valueOf(httpResponse.headers().firstValue("Set-Cookie"));
-    //
-    //    request =
-    //        HttpRequest.newBuilder()
-    //            .POST(
-    //                HttpRequest.BodyPublishers.ofString(
-    //                    "username="
-    //                        + DataBaseUsername
-    //                        + "&passwd="
-    //                        + DataBasePassword
-    //                        + "&option=com_login&task=login"
-    //                        + "&return="
-    //                        + ReturnToken
-    //                        + "&"
-    //                        + CsrfToken
-    //                        + "=1"))
-    //            .uri(URI.create(url.toString() + "administrator/index.php"))
-    //            .setHeader(
-    //                ACCEPT,
-    //
-    // "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
-    //            .setHeader(
-    //                "User-Agent",
-    //                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like
-    // Gecko) Chrome/111.0.5563.65 Safari/537.36")
-    //            .setHeader("Cache-Control", "max-age=0")
-    //            .setHeader("Cookie", Cookies)
-    //            .setHeader("Content-Type", "application/x-www-form-urlencoded")
-    //            .build();
-    //    httpResponse = httpClient.send(request,
-    // java.net.http.HttpResponse.BodyHandlers.ofString());
-    //
-    //    return httpResponse.headers().toString().contains("Set-Cookie")
-    //        || httpResponse.headers().toString().contains("Set-Cookie".toLowerCase());
   }
 
   public static boolean checkJoomlaUsersLogin(
@@ -399,87 +324,6 @@ public final class Cve202323752VulnDetector implements VulnDetector {
             + DataBasePassword
             + "&Submit=&option=com_users&task=user.login",
         "joomla_user_state=logged_in;");
-
-    //    java.net.http.HttpClient httpClient =
-    //        java.net.http.HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
-    //    HttpRequest request =
-    //        HttpRequest.newBuilder()
-    //            .GET()
-    //            .uri(URI.create(url.toString()))
-    //            .setHeader(
-    //                ACCEPT,
-    //
-    // "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
-    //            .setHeader(
-    //                "User-Agent",
-    //                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like
-    // Gecko) Chrome/111.0.5563.65 Safari/537.36")
-    //            .setHeader("Cache-Control", "max-age=0")
-    //            .build();
-    //    java.net.http.HttpResponse<String> httpResponse =
-    //        httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
-    //
-    //    // get some hidden parameter values
-    //    String ReturnToken = null;
-    //    Pattern ReturnTokenPattern =
-    //        Pattern.compile("<input type=\"hidden\" name=\"return\" value=\"(.+?)\">");
-    //    Matcher matcher = ReturnTokenPattern.matcher(httpResponse.body());
-    //    if (matcher.find()) {
-    //      ReturnToken = matcher.group(1);
-    //    } else return false;
-    //
-    //    // get CSRF token method 1
-    //    String CsrfToken = null;
-    //    Pattern CsrfPattern = Pattern.compile("<input type=\"hidden\" name=\"(.+?)\"
-    // value=\"1\">");
-    //    matcher = CsrfPattern.matcher(httpResponse.body());
-    //    if (matcher.find()) {
-    //      CsrfToken = matcher.group(1);
-    //    } else return false;
-    //
-    //    //    // get CSRF token method 2
-    //    //    String CsrfToken=null;
-    //    //    Pattern CsrfPattern =
-    //    //        Pattern.compile(
-    //    //            "<script type=\"application/json\" class=\"joomla-script-options
-    //    // new\">(.+)</script>");
-    //    //    matcher = CsrfPattern.matcher(httpResponse.body());
-    //    //    if (matcher.find()) {
-    //    //      CsrfToken = new JSONObject(matcher.group(1)).get("csrf.token").toString();
-    //    //     } else return false;
-    //
-    //    // get PreAuth Cookies
-    //    String Cookies = String.valueOf(httpResponse.headers().firstValue("Set-Cookie"));
-    //
-    //    request =
-    //        HttpRequest.newBuilder()
-    //            .POST(
-    //                HttpRequest.BodyPublishers.ofString(
-    //                    "username="
-    //                        + DataBaseUsername
-    //                        + "&password="
-    //                        + DataBasePassword
-    //                        + "&Submit=&option=com_users&task=user.login&return="
-    //                        + ReturnToken
-    //                        + "&"
-    //                        + CsrfToken
-    //                        + "=1"))
-    //            .uri(URI.create(url.append("index.php").toString()))
-    //            .setHeader(
-    //                ACCEPT,
-    //
-    // "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
-    //            .setHeader(
-    //                "User-Agent",
-    //                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like
-    // Gecko) Chrome/111.0.5563.65 Safari/537.36")
-    //            .setHeader("Cache-Control", "max-age=0")
-    //            .setHeader("Cookie", Cookies)
-    //            .setHeader("Content-Type", "application/x-www-form-urlencoded")
-    //            .build();
-    //    httpResponse = httpClient.send(request,
-    // java.net.http.HttpResponse.BodyHandlers.ofString());
-    //    return httpResponse.headers().toString().contains("joomla_user_state=logged_in;");
   }
 
   public static boolean checkJoomlaLogin(
@@ -551,9 +395,6 @@ public final class Cve202323752VulnDetector implements VulnDetector {
             .setHeader("Content-Type", "application/x-www-form-urlencoded")
             .build();
     httpResponse = httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
-
-    logger.atInfo().log(
-        "================" + httpResponse.headers().toString() + "========================");
     return httpResponse.headers().toString().contains(FinalResponseMatcher)
         || httpResponse.headers().toString().contains(FinalResponseMatcher.toLowerCase());
   }
