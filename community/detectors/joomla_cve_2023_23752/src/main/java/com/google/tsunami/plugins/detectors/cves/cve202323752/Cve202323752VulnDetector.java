@@ -333,6 +333,16 @@ public final class Cve202323752VulnDetector implements VulnDetector {
 
     java.net.http.HttpClient httpClient =
         java.net.http.HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
+    //    if (InitialUrl.contains("administrator")) {
+    //      httpClient =
+    //          java.net.http.HttpClient.newBuilder()
+    //              .connectTimeout(Duration.ofSeconds(2))
+    //              .followRedirects(Redirect.ALWAYS)
+    //              .build();
+    //    } else {
+    //      httpClient =
+    //          java.net.http.HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
+    //    }
     HttpRequest request =
         HttpRequest.newBuilder()
             .GET()
@@ -388,8 +398,12 @@ public final class Cve202323752VulnDetector implements VulnDetector {
             .setHeader("Content-Type", "application/x-www-form-urlencoded")
             .build();
 
+    httpResponse = httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+
     return httpResponse.headers().toString().contains(FinalResponseMatcher)
-        || httpResponse.headers().toString().contains(FinalResponseMatcher.toLowerCase());
+        || httpResponse.headers().toString().contains(FinalResponseMatcher.toLowerCase())
+        || httpResponse.body().contains(FinalResponseMatcher)
+        || httpResponse.body().contains(FinalResponseMatcher.toLowerCase());
   }
 
   public static boolean IsPublicHost(String url) {
@@ -455,3 +469,14 @@ public final class Cve202323752VulnDetector implements VulnDetector {
     }
   }
 }
+
+//    // get CSRF token method 2
+//    String CsrfToken=null;
+//    Pattern CsrfPattern =
+//        Pattern.compile(
+//            "<script type=\"application/json\" class=\"joomla-script-options
+// new\">(.+)</script>");
+//    matcher = CsrfPattern.matcher(httpResponse.body());
+//    if (matcher.find()) {
+//      CsrfToken = new JSONObject(matcher.group(1)).get("csrf.token").toString();
+//     } else return false;
