@@ -67,3 +67,14 @@ dependencies {
     testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
     testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"
 }
+
+
+jar {
+    manifest {
+        attributes('Main-Class': 'org.json')
+    }
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+            {
+                exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/*.MF'
+            }
+}

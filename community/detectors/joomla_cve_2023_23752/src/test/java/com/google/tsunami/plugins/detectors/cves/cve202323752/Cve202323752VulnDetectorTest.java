@@ -136,8 +136,8 @@ public final class Cve202323752VulnDetectorTest {
               return new MockResponse()
                   .addHeader(
                       "Set-Cookie",
-                      "b0f43562296ae8185ebb20d3202668f1=0217fe5eafaeb889764abd5964927f0b; path=/;HttpOnly")
-                  .setResponseCode(303);
+                      "0b1c5a17e16790c9e00e62288f3fdbd9=4e1c8abe0a7ded7b6d2f9c59834c0e61; path=/; HttpOnly")
+                  .setResponseCode(200);
             case "/":
               return new MockResponse()
                   .addHeader(
@@ -211,7 +211,7 @@ public final class Cve202323752VulnDetectorTest {
       };
 
   @Test
-  public void detect_NotReusedLeakedCredentialsInLogin() {
+  public void DetectNotReusedLeakedCredentialsInLogin() {
     mockWebServer.setDispatcher(dispatcherNotReusedCredentials);
     DetectionReportList MockWebServerDetectionReports =
         detector.detect(targetInfo, ImmutableList.of(joomlaservice));

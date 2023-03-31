@@ -50,6 +50,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpRequest;
 import java.time.Clock;
 import java.time.Duration;
@@ -277,7 +278,7 @@ public final class Cve202323752VulnDetector implements VulnDetector {
           }
         }
 
-        //         Check leaked Credentials if administrator has used them in some other entries
+        // Check leaked Credentials if administrator has used them in some other entries
         if (!Results.DataBaseUsername.isEmpty() && !Results.DataBasePassword.isEmpty()) {
           Results.CompromisedAdminAccount =
               checkJoomlaAdminsLogin(
@@ -304,7 +305,7 @@ public final class Cve202323752VulnDetector implements VulnDetector {
     return checkJoomlaLogin(
         url + "administrator/",
         url + "administrator/index.php",
-        "DataBaseUsername="
+        "username="
             + DataBaseUsername
             + "&passwd="
             + DataBasePassword
@@ -364,19 +365,11 @@ public final class Cve202323752VulnDetector implements VulnDetector {
       CsrfToken = matcher.group(1);
     } else return false;
 
-    //    // get CSRF token method 2
-    //    String CsrfToken=null;
-    //    Pattern CsrfPattern =
-    //        Pattern.compile(
-    //            "<script type=\"application/json\" class=\"joomla-script-options
-    // new\">(.+)</script>");
-    //    matcher = CsrfPattern.matcher(httpResponse.body());
-    //    if (matcher.find()) {
-    //      CsrfToken = new JSONObject(matcher.group(1)).get("csrf.token").toString();
-    //     } else return false;
-
     // get PreAuth Cookies
-    String Cookies = String.valueOf(httpResponse.headers().firstValue("Set-Cookie"));
+    if (httpResponse.headers().firstValue("Set-Cookie").isEmpty()) {
+      return false;
+    }
+    String Cookies = httpResponse.headers().firstValue("Set-Cookie").get();
 
     request =
         HttpRequest.newBuilder()
@@ -394,7 +387,7 @@ public final class Cve202323752VulnDetector implements VulnDetector {
             .setHeader("Cookie", Cookies)
             .setHeader("Content-Type", "application/x-www-form-urlencoded")
             .build();
-    httpResponse = httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+
     return httpResponse.headers().toString().contains(FinalResponseMatcher)
         || httpResponse.headers().toString().contains(FinalResponseMatcher.toLowerCase());
   }
