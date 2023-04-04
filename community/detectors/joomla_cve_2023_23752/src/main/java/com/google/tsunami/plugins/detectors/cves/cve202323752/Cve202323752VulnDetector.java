@@ -244,34 +244,20 @@ public final class Cve202323752VulnDetector implements VulnDetector {
 
         JsonObject jsonResponse = (JsonObject) httpResponse.bodyJson().get();
         if (jsonResponse.keySet().contains("data")) {
-          logger.atInfo().log(
-              "\n==========================jsonResponse.getAsJsonArray(\"data\")\n"
-                  + jsonResponse.getAsJsonArray("data")
-                  + "\n==========================\n");
           JsonArray jsonArray = jsonResponse.getAsJsonArray("data");
           for (int i = 0; i < jsonArray.size(); i++) {
             if (jsonArray.get(i).getAsJsonObject().keySet().contains("attributes")) {
               JsonObject tmp =
                   jsonArray.get(i).getAsJsonObject().get("attributes").getAsJsonObject();
-              logger.atInfo().log(
-                  "\n==========================tmp\n" + tmp + "\n==========================\n");
               if (tmp.keySet().contains(("user"))) {
-                results.dataBaseUsername = tmp.get("user").toString();
+                results.dataBaseUsername = tmp.get("user").getAsString();
               }
               if (tmp.keySet().contains(("password"))) {
-                results.dataBasePassword = tmp.get("password").toString();
+                results.dataBasePassword = tmp.get("password").getAsString();
               }
               if (tmp.keySet().contains(("host"))) {
-                results.dataBaseHost = tmp.get("host").toString();
-                logger.atInfo().log(
-                    "\n==========================results.dataBaseHost\n"
-                        + results.dataBaseHost
-                        + "\n==========================\n");
-                results.isPublicDatabaseHost = IsPublicHost(tmp.get("host").toString());
-                logger.atInfo().log(
-                    "\n==========================results.isPublicDatabaseHost\n"
-                        + results.isPublicDatabaseHost
-                        + "\n==========================\n");
+                results.dataBaseHost = tmp.get("host").getAsString();
+                results.isPublicDatabaseHost = IsPublicHost(results.dataBaseHost);
               }
             }
           }
