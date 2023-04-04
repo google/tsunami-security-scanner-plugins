@@ -181,7 +181,9 @@ public final class Cve202323752VulnDetector implements VulnDetector {
       TargetInfo targetInfo, NetworkService vulnerableNetworkService, ScanResults results) {
     StringBuilder ScanResultReport = new StringBuilder();
 
-    ScanResultReport.append("Full Leaked Reponse\n").append(results.leakedResponse()).append("\n");
+    ScanResultReport.append("Full Leaked Response:\n")
+        .append(results.leakedResponse())
+        .append("\n");
     ScanResultReport.append("The leaked credentials are: \n")
         .append("Database Password:\n")
         .append(results.dataBasePassword())
@@ -236,7 +238,6 @@ public final class Cve202323752VulnDetector implements VulnDetector {
   }
 
   private ScanResults isServiceVulnerable(NetworkService networkService) {
-    //    ScanResults results = new ScanResults("", "", "", "", false, false, false, false);
     ScanResults.Builder results = ScanResults.builder();
     HttpHeaders httpHeaders =
         HttpHeaders.builder()
@@ -344,7 +345,7 @@ public final class Cve202323752VulnDetector implements VulnDetector {
   }
 
   public static boolean checkJoomlaLogin(
-      String initialUrl, String loginUrl, String Body, String finalResponseMatcher)
+      String initialUrl, String loginUrl, String body, String finalResponseMatcher)
       throws IOException, InterruptedException {
 
     java.net.http.HttpClient httpClient =
@@ -391,7 +392,7 @@ public final class Cve202323752VulnDetector implements VulnDetector {
         HttpRequest.newBuilder()
             .POST(
                 HttpRequest.BodyPublishers.ofString(
-                    Body + "&return=" + returnToken + "&" + csrfToken + "=1"))
+                    body + "&return=" + returnToken + "&" + csrfToken + "=1"))
             .uri(URI.create(loginUrl))
             .setHeader(
                 ACCEPT,
