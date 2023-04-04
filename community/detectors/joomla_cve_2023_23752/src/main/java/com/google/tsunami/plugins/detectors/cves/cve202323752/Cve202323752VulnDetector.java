@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
@@ -61,8 +60,62 @@ import java.time.Instant;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.google.auto.value.AutoValue;
+
+@AutoValue
+abstract class ScanResults {
+
+  abstract String dataBaseUsername();
+
+  abstract String dataBasePassword();
+
+  abstract String dataBaseHost();
+
+  abstract String leakedResponse();
+
+  abstract boolean isPublicDatabaseHost();
+
+  abstract boolean compromisedAdminAccount();
+
+  abstract boolean compromisedUserAccount();
+
+  abstract boolean isSuccessful();
+
+  static Builder builder() {
+
+    return new AutoValue_ScanResults.Builder()
+        .setIsSuccessful(false)
+        .setIsPublicDatabaseHost(false)
+        .setDataBaseUsername("")
+        .setDataBasePassword("")
+        .setLeakedResponse("")
+        .setDataBaseHost("")
+        .setCompromisedUserAccount(false)
+        .setCompromisedAdminAccount(false);
+  }
+
+  @AutoValue.Builder
+  abstract static class Builder {
+
+    abstract Builder setIsPublicDatabaseHost(boolean value);
+
+    abstract Builder setIsSuccessful(boolean value);
+
+    abstract Builder setDataBaseUsername(String value);
+
+    abstract Builder setDataBasePassword(String value);
+
+    abstract Builder setDataBaseHost(String value);
+
+    abstract Builder setLeakedResponse(String value);
+
+    abstract Builder setCompromisedAdminAccount(boolean value);
+
+    abstract Builder setCompromisedUserAccount(boolean value);
+
+    abstract ScanResults build();
+  }
+}
 
 /** A {@link VulnDetector} that detects the CVE-2023-23752 vulnerability. */
 @PluginInfo(
@@ -105,36 +158,6 @@ public final class Cve202323752VulnDetector implements VulnDetector {
     return targetUrlBuilder;
   }
 
-  static final class ScanResults {
-    private String dataBaseUsername;
-    private String dataBasePassword;
-    private String dataBaseHost;
-    private String leakedResponse;
-    private boolean isPublicDatabaseHost;
-    private boolean compromisedAdminAccount;
-    private boolean compromisedUserAccount;
-    private boolean isSuccessFul;
-
-    public ScanResults(
-        String dataBaseUsername,
-        String dataBasePassword,
-        String dataBaseHost,
-        String leakedResponse,
-        boolean isPublicDatabaseHost,
-        boolean compromisedAdminAccount,
-        boolean compromisedUserAccount,
-        boolean isSuccessFul) {
-      this.dataBaseUsername = dataBaseUsername;
-      this.dataBasePassword = dataBasePassword;
-      this.dataBaseHost = dataBaseHost;
-      this.isPublicDatabaseHost = isPublicDatabaseHost;
-      this.compromisedUserAccount = compromisedUserAccount;
-      this.compromisedAdminAccount = compromisedAdminAccount;
-      this.isSuccessFul = isSuccessFul;
-      this.leakedResponse = leakedResponse;
-    }
-  }
-
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
@@ -146,7 +169,7 @@ public final class Cve202323752VulnDetector implements VulnDetector {
         .forEach(
             networkService -> {
               ScanResults results = isServiceVulnerable(networkService);
-              if (results.isSuccessFul) {
+              if (results.isSuccessful()) {
                 detectionReport.addDetectionReports(
                     buildDetectionReport(targetInfo, networkService, results));
               }
@@ -157,30 +180,32 @@ public final class Cve202323752VulnDetector implements VulnDetector {
   private DetectionReport buildDetectionReport(
       TargetInfo targetInfo, NetworkService vulnerableNetworkService, ScanResults results) {
     StringBuilder ScanResultReport = new StringBuilder();
+
+    ScanResultReport.append("Full Leaked Reponse\n").append(results.leakedResponse()).append("\n");
     ScanResultReport.append("The leaked credentials are: \n")
         .append("Database Password:\n")
-        .append(results.dataBasePassword)
+        .append(results.dataBasePassword())
         .append("\n")
         .append("Database UserName:\n")
-        .append(results.dataBaseUsername)
+        .append(results.dataBaseUsername())
         .append("\n");
 
-    if (results.isPublicDatabaseHost) {
+    if (results.isPublicDatabaseHost()) {
       ScanResultReport.append(
               "The dataBase host is Accessible to Public Because it has a public IP address, "
                   + "Attackers can leverage leaked DataBase credentials to login into your DataBase, The DataBase HostName is: ")
-          .append(results.dataBaseHost)
+          .append(results.dataBaseHost())
           .append("\n");
     }
 
-    if (results.compromisedAdminAccount) {
+    if (results.compromisedAdminAccount()) {
       ScanResultReport.append(
               "Scanner has checked the credentials against Administrator login page "
                   + "and Leaked credentials had used as a Joomla Administrator credentials")
           .append("\n");
     }
 
-    if (results.compromisedUserAccount) {
+    if (results.compromisedUserAccount()) {
       ScanResultReport.append(
               "Scanner has checked the credentials against Users login page "
                   + "and Leaked credentials had used as a Joomla User credentials")
@@ -211,7 +236,8 @@ public final class Cve202323752VulnDetector implements VulnDetector {
   }
 
   private ScanResults isServiceVulnerable(NetworkService networkService) {
-    ScanResults results = new ScanResults("", "", "", "", false, false, false, false);
+    //    ScanResults results = new ScanResults("", "", "", "", false, false, false, false);
+    ScanResults.Builder results = ScanResults.builder();
     HttpHeaders httpHeaders =
         HttpHeaders.builder()
             .addHeader(CONTENT_TYPE, "text/plain; charset=UTF-8")
@@ -232,15 +258,15 @@ public final class Cve202323752VulnDetector implements VulnDetector {
       if (httpResponse.status().code() != DETECTION_STRING_BY_STATUS
           || httpResponse.bodyJson().isEmpty()
           || httpResponse.bodyString().isEmpty()) {
-        return results;
+        return results.build();
       }
 
       // check for body values match our detection rules
       // and save leaked credentials
       if (httpResponse.bodyString().get().contains(DETECTION_STRING_1)
           && httpResponse.bodyString().get().contains(DETECTION_STRING_2)) {
-        results.isSuccessFul = true;
-        results.leakedResponse = httpResponse.bodyString().get();
+        results.setIsSuccessful(true);
+        results.setLeakedResponse(httpResponse.bodyString().get());
 
         JsonObject jsonResponse = (JsonObject) httpResponse.bodyJson().get();
         if (jsonResponse.keySet().contains("data")) {
@@ -250,59 +276,43 @@ public final class Cve202323752VulnDetector implements VulnDetector {
               JsonObject tmp =
                   jsonArray.get(i).getAsJsonObject().get("attributes").getAsJsonObject();
               if (tmp.keySet().contains(("user"))) {
-                results.dataBaseUsername = tmp.get("user").getAsString();
+                results.setDataBaseUsername(tmp.get("user").getAsString());
               }
               if (tmp.keySet().contains(("password"))) {
-                results.dataBasePassword = tmp.get("password").getAsString();
+                results.setDataBasePassword(tmp.get("password").getAsString());
               }
               if (tmp.keySet().contains(("host"))) {
-                results.dataBaseHost = tmp.get("host").getAsString();
-                results.isPublicDatabaseHost = IsPublicHost(results.dataBaseHost);
+                results.setDataBaseHost(tmp.get("host").getAsString());
+                results.setIsPublicDatabaseHost(IsPublicHost(results.build().dataBaseHost()));
               }
             }
           }
         }
 
-        //        JSONObject ResponseBodyJson = new JSONObject(httpResponse.bodyString().get());
-        //        if (ResponseBodyJson.keySet().contains("data")) {
-        //          JSONArray jsonArray = ResponseBodyJson.getJSONArray("data");
-        //          for (int i = 0; i < jsonArray.length(); i++) {
-        //            if (jsonArray.getJSONObject(i).keySet().contains("attributes")) {
-        //              JSONObject tmp =
-        //                  new JSONObject(jsonArray.getJSONObject(i).get("attributes").toString());
-        //              if (tmp.keySet().contains(("user"))) {
-        //                results.dataBaseUsername = tmp.get("user").toString();
-        //              }
-        //              if (tmp.keySet().contains(("password"))) {
-        //                results.dataBasePassword = tmp.get("password").toString();
-        //              }
-        //              if (tmp.keySet().contains(("host"))) {
-        //                results.dataBaseHost = tmp.get("host").toString();
-        //                results.isPublicDatabaseHost = IsPublicHost(tmp.get("host").toString());
-        //              }
-        //            }
-        //          }
-        //        }
-
         // Check leaked Credentials if administrator has used them in some other entries
-        if (!results.dataBaseUsername.isEmpty() && !results.dataBasePassword.isEmpty()) {
-          results.compromisedAdminAccount =
+        if (!results.build().dataBaseUsername().isEmpty()
+            && !results.build().dataBasePassword().isEmpty()) {
+          results.setCompromisedAdminAccount(
               checkJoomlaAdminsLogin(
-                  buildTarget(networkService), results.dataBaseUsername, results.dataBasePassword);
-          results.compromisedUserAccount =
+                  buildTarget(networkService),
+                  results.build().dataBaseUsername(),
+                  results.build().dataBasePassword()));
+          results.setCompromisedUserAccount(
               checkJoomlaUsersLogin(
-                  buildTarget(networkService), results.dataBaseUsername, results.dataBasePassword);
+                  buildTarget(networkService),
+                  results.build().dataBaseUsername(),
+                  results.build().dataBasePassword()));
         }
 
-        return results;
+        return results.build();
       }
     } catch (JsonSyntaxException | IOException | AssertionError e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
-      return results;
+      return results.build();
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
-    return results;
+    return results.build();
   }
 
   public static boolean checkJoomlaAdminsLogin(

@@ -34,14 +34,12 @@ import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Unit tests for {@link Cve202323752VulnDetector}. */
 @RunWith(JUnit4.class)
 public final class Cve202323752VulnDetectorTest {
 
@@ -53,36 +51,35 @@ public final class Cve202323752VulnDetectorTest {
   private final MockWebServer mockWebServer = new MockWebServer();
 
   private NetworkService joomlaService;
-  private static final JSONObject LeakedDataJsonSample =
-      new JSONObject(
-          "{\n"
-              + "    \"data\": [\n"
-              + "        {\n"
-              + "            \"type\": \"application\",\n"
-              + "            \"id\": \"224\",\n"
-              + "            \"attributes\": {\n"
-              + "                \"host\": \"google.com\",\n"
-              + "                \"id\": 224\n"
-              + "            }\n"
-              + "        },\n"
-              + "        {\n"
-              + "            \"type\": \"application\",\n"
-              + "            \"id\": \"224\",\n"
-              + "            \"attributes\": {\n"
-              + "                \"user\": \"root\",\n"
-              + "                \"id\": 224\n"
-              + "            }\n"
-              + "        },\n"
-              + "        {\n"
-              + "            \"type\": \"application\",\n"
-              + "            \"id\": \"224\",\n"
-              + "            \"attributes\": {\n"
-              + "                \"password\": \"example\",\n"
-              + "                \"id\": 224\n"
-              + "            }\n"
-              + "        }\n"
-              + "    ]\n"
-              + "}");
+  private static final String LeakedDataJsonSample =
+      "{\n"
+          + "    \"data\": [\n"
+          + "        {\n"
+          + "            \"type\": \"application\",\n"
+          + "            \"id\": \"224\",\n"
+          + "            \"attributes\": {\n"
+          + "                \"host\": \"google.com\",\n"
+          + "                \"id\": 224\n"
+          + "            }\n"
+          + "        },\n"
+          + "        {\n"
+          + "            \"type\": \"application\",\n"
+          + "            \"id\": \"224\",\n"
+          + "            \"attributes\": {\n"
+          + "                \"user\": \"root\",\n"
+          + "                \"id\": 224\n"
+          + "            }\n"
+          + "        },\n"
+          + "        {\n"
+          + "            \"type\": \"application\",\n"
+          + "            \"id\": \"224\",\n"
+          + "            \"attributes\": {\n"
+          + "                \"password\": \"example\",\n"
+          + "                \"id\": 224\n"
+          + "            }\n"
+          + "        }\n"
+          + "    ]\n"
+          + "}";
   private TargetInfo targetInfo;
 
   @Before
@@ -156,7 +153,7 @@ public final class Cve202323752VulnDetectorTest {
             case "/api/index.php/v1/config/application?public=true":
               return new MockResponse()
                   .addHeader("Content-Type", "application/json; charset=utf-8")
-                  .setBody(LeakedDataJsonSample.toString())
+                  .setBody(LeakedDataJsonSample)
                   .setResponseCode(DETECTION_STRING_BY_STATUS);
           }
           return new MockResponse().setResponseCode(404);
@@ -201,7 +198,7 @@ public final class Cve202323752VulnDetectorTest {
             case "/api/index.php/v1/config/application?public=true":
               return new MockResponse()
                   .addHeader("Content-Type", "application/json; charset=utf-8")
-                  .setBody(LeakedDataJsonSample.toString())
+                  .setBody(LeakedDataJsonSample)
                   .setResponseCode(DETECTION_STRING_BY_STATUS);
           }
           return new MockResponse().setResponseCode(404);
