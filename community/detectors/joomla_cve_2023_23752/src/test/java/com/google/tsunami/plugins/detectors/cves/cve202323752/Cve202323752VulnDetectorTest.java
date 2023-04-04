@@ -21,7 +21,6 @@ import static com.google.tsunami.plugins.detectors.cves.cve202323752.Cve20232375
 import static org.junit.Assert.*;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.flogger.GoogleLogger;
 import com.google.inject.Guice;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
@@ -48,14 +47,13 @@ public final class Cve202323752VulnDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
-  private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   @Inject private Cve202323752VulnDetector detector;
 
   private final MockWebServer mockWebServer = new MockWebServer();
 
-  private NetworkService joomlaservice;
-  private final JSONObject LeakedDataJsonSample =
+  private NetworkService joomlaService;
+  private static final JSONObject LeakedDataJsonSample =
       new JSONObject(
           "{\n"
               + "    \"data\": [\n"
@@ -96,7 +94,7 @@ public final class Cve202323752VulnDetectorTest {
             new Cve202323752DetectorBootstrapModule())
         .injectMembers(this);
 
-    joomlaservice =
+    joomlaService =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
@@ -213,16 +211,16 @@ public final class Cve202323752VulnDetectorTest {
   @Test
   public void DetectNotReusedLeakedCredentialsInLogin() {
     mockWebServer.setDispatcher(dispatcherNotReusedCredentials);
-    DetectionReportList MockWebServerDetectionReports =
-        detector.detect(targetInfo, ImmutableList.of(joomlaservice));
+    DetectionReportList mockWebServerDetectionReports =
+        detector.detect(targetInfo, ImmutableList.of(joomlaService));
 
     // all we need to check is Detection Status But I think it is very hard to set the
     // addAdditionalDetails , so I add the original Report addAdditionalDetails here in
     // expected and then check for AdditionalDetails in another assert
-    DetectionReport ExpectedDetectionReport =
+    DetectionReport expectedDetectionReport =
         DetectionReport.newBuilder()
             .setTargetInfo(targetInfo)
-            .setNetworkService(joomlaservice)
+            .setNetworkService(joomlaService)
             .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
             .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
             .setVulnerability(
@@ -242,7 +240,8 @@ public final class Cve202323752VulnDetectorTest {
                             .setTextData(
                                 TextData.newBuilder()
                                     .setText(
-                                        MockWebServerDetectionReports.getDetectionReports(0)
+                                        mockWebServerDetectionReports
+                                            .getDetectionReports(0)
                                             .getVulnerability()
                                             .getAdditionalDetails(0)
                                             .getTextData()
@@ -250,11 +249,12 @@ public final class Cve202323752VulnDetectorTest {
             .build();
 
     // Vulnerable to CVE202323752
-    assertThat(MockWebServerDetectionReports.getDetectionReportsList())
-        .containsExactly(ExpectedDetectionReport);
+    assertThat(mockWebServerDetectionReports.getDetectionReportsList())
+        .containsExactly(expectedDetectionReport);
     // Leaked Credentials have not been used as users/admins login credentials
     assertFalse(
-        MockWebServerDetectionReports.getDetectionReports(0)
+        mockWebServerDetectionReports
+            .getDetectionReports(0)
             .getVulnerability()
             .getAdditionalDetails(0)
             .getTextData()
@@ -265,16 +265,16 @@ public final class Cve202323752VulnDetectorTest {
   @Test
   public void DetectReusedLeakedCredentialsInLogin() throws InterruptedException {
     mockWebServer.setDispatcher(dispatcher);
-    DetectionReportList MockWebServerDetectionReports =
-        detector.detect(targetInfo, ImmutableList.of(joomlaservice));
+    DetectionReportList mockWebServerDetectionReports =
+        detector.detect(targetInfo, ImmutableList.of(joomlaService));
 
     // all we need to check is Detection Status But I think it is very hard to set the
     // addAdditionalDetails , so I add the original Report addAdditionalDetails here in
     // expected and then check for AdditionalDetails in another assert
-    DetectionReport ExpectedDetectionReport =
+    DetectionReport expectedDetectionReport =
         DetectionReport.newBuilder()
             .setTargetInfo(targetInfo)
-            .setNetworkService(joomlaservice)
+            .setNetworkService(joomlaService)
             .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
             .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
             .setVulnerability(
@@ -294,7 +294,8 @@ public final class Cve202323752VulnDetectorTest {
                             .setTextData(
                                 TextData.newBuilder()
                                     .setText(
-                                        MockWebServerDetectionReports.getDetectionReports(0)
+                                        mockWebServerDetectionReports
+                                            .getDetectionReports(0)
                                             .getVulnerability()
                                             .getAdditionalDetails(0)
                                             .getTextData()
@@ -302,14 +303,15 @@ public final class Cve202323752VulnDetectorTest {
             .build();
 
     // Vulnerable to CVE202323752
-    assertThat(MockWebServerDetectionReports.getDetectionReportsList())
-        .containsExactly(ExpectedDetectionReport);
+    assertThat(mockWebServerDetectionReports.getDetectionReportsList())
+        .containsExactly(expectedDetectionReport);
 
     RecordedRequest request = mockWebServer.takeRequest();
     // get second request to check what kind of login attempt is this
     request = mockWebServer.takeRequest();
     if (request.getRequestUrl().toString().contains("administrator")) {
-      assert (MockWebServerDetectionReports.getDetectionReports(0)
+      assert (mockWebServerDetectionReports
+              .getDetectionReports(0)
               .getVulnerability()
               .getAdditionalDetails(0)
               .getTextData()
@@ -317,7 +319,8 @@ public final class Cve202323752VulnDetectorTest {
           .contains("Scanner has checked the credentials against Administrator login page");
 
     } else {
-      assert (MockWebServerDetectionReports.getDetectionReports(0)
+      assert (mockWebServerDetectionReports
+              .getDetectionReports(0)
               .getVulnerability()
               .getAdditionalDetails(0)
               .getTextData()
@@ -329,16 +332,16 @@ public final class Cve202323752VulnDetectorTest {
   @Test
   public void DetectCVE202323752() {
     mockWebServer.setDispatcher(dispatcher);
-    DetectionReportList MockWebServerDetectionReports =
-        detector.detect(targetInfo, ImmutableList.of(joomlaservice));
+    DetectionReportList mockWebServerDetectionReports =
+        detector.detect(targetInfo, ImmutableList.of(joomlaService));
 
     // all we need to check is Detection Status But I think it is very hard to set the
     // addAdditionalDetails , so I add the original Report addAdditionalDetails here in
     // expected and then check for AdditionalDetails in another assert
-    DetectionReport ExpectedDetectionReport =
+    DetectionReport expectedDetectionReport =
         DetectionReport.newBuilder()
             .setTargetInfo(targetInfo)
-            .setNetworkService(joomlaservice)
+            .setNetworkService(joomlaService)
             .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
             .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
             .setVulnerability(
@@ -358,7 +361,8 @@ public final class Cve202323752VulnDetectorTest {
                             .setTextData(
                                 TextData.newBuilder()
                                     .setText(
-                                        MockWebServerDetectionReports.getDetectionReports(0)
+                                        mockWebServerDetectionReports
+                                            .getDetectionReports(0)
                                             .getVulnerability()
                                             .getAdditionalDetails(0)
                                             .getTextData()
@@ -366,11 +370,12 @@ public final class Cve202323752VulnDetectorTest {
             .build();
 
     // Vulnerable to CVE202323752
-    assertThat(MockWebServerDetectionReports.getDetectionReportsList())
-        .containsExactly(ExpectedDetectionReport);
+    assertThat(mockWebServerDetectionReports.getDetectionReportsList())
+        .containsExactly(expectedDetectionReport);
 
     // Double-Check the additional Data in report
-    assert (MockWebServerDetectionReports.getDetectionReports(0)
+    assert (mockWebServerDetectionReports
+            .getDetectionReports(0)
             .getVulnerability()
             .getAdditionalDetails(0)
             .getTextData()
@@ -381,18 +386,18 @@ public final class Cve202323752VulnDetectorTest {
   @Test
   public void detect_publicExposedDataBaseHost() {
     mockWebServer.setDispatcher(dispatcher);
-    DetectionReportList MockWebServerDetectionReports =
-        detector.detect(targetInfo, ImmutableList.of(joomlaservice));
+    DetectionReportList mockWebServerDetectionReports =
+        detector.detect(targetInfo, ImmutableList.of(joomlaService));
     /*
     all we need to check is Detection Status But I think it is hard to set the
     addAdditionalDetails for expected detection report, so I add the original Report
     addAdditionalDetails here in
     expected and then check for AdditionalDetails in another assert
     */
-    DetectionReport ExpectedDetectionReport =
+    DetectionReport expectedDetectionReport =
         DetectionReport.newBuilder()
             .setTargetInfo(targetInfo)
-            .setNetworkService(joomlaservice)
+            .setNetworkService(joomlaService)
             .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
             .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
             .setVulnerability(
@@ -412,7 +417,8 @@ public final class Cve202323752VulnDetectorTest {
                             .setTextData(
                                 TextData.newBuilder()
                                     .setText(
-                                        MockWebServerDetectionReports.getDetectionReports(0)
+                                        mockWebServerDetectionReports
+                                            .getDetectionReports(0)
                                             .getVulnerability()
                                             .getAdditionalDetails(0)
                                             .getTextData()
@@ -420,11 +426,12 @@ public final class Cve202323752VulnDetectorTest {
             .build();
 
     // Vulnerable to CVE202323752
-    assertThat(MockWebServerDetectionReports.getDetectionReportsList())
-        .containsExactly(ExpectedDetectionReport);
+    assertThat(mockWebServerDetectionReports.getDetectionReportsList())
+        .containsExactly(expectedDetectionReport);
 
     // DataBase has a public IP address
-    assert (MockWebServerDetectionReports.getDetectionReports(0)
+    assert (mockWebServerDetectionReports
+            .getDetectionReports(0)
             .getVulnerability()
             .getAdditionalDetails(0)
             .getTextData()
@@ -442,8 +449,8 @@ public final class Cve202323752VulnDetectorTest {
             .setResponseCode(200);
     mockWebServer.enqueue(response);
 
-    DetectionReportList MockWebServerDetectionReports =
-        detector.detect(targetInfo, ImmutableList.of(joomlaservice));
-    assert (MockWebServerDetectionReports.getDetectionReportsList().isEmpty());
+    DetectionReportList mockWebServerDetectionReports =
+        detector.detect(targetInfo, ImmutableList.of(joomlaService));
+    assert (mockWebServerDetectionReports.getDetectionReportsList().isEmpty());
   }
 }
