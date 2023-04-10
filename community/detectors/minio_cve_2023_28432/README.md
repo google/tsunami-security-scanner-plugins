@@ -16,7 +16,7 @@ The following cases are detected:
 Docker compose files for each case can be found [here](https://github.com/h0ng10/CVE-2023-28432_docker).
 
 For authentication, this plugin uses code from the [MinIO Java SDK](https://github.com/minio/minio-java), which is licensed under Apache 2.0 license.
-The code has been minimized and adjusted to work with Tsunamies own httpclient instead of okhttp.
+The code has been minimized and adjusted to work with Tsunamis own httpclient instead of okhttp.
 
 
 ## Build jar file for this plugin
