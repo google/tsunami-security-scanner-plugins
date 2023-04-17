@@ -74,7 +74,7 @@ public final class Cve20199193Detector implements VulnDetector {
       Vulnerability.newBuilder()
           .setMainId(VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2019_9193"))
           .setSeverity(Severity.CRITICAL)
-          .setTitle("PostgresQL RCE CVE-2019-9193 Detected")
+          .setTitle("PostgreSQL RCE CVE-2019-9193 Detected")
           .setDescription(DESCRIPTION)
           .setRecommendation(RECOMMENDATION)
           .build();
