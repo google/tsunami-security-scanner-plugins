@@ -4,8 +4,8 @@ networks:
   default:
     name: datahub_network
 services:
-  datahub-frontend-react:
-    container_name: datahub-frontend-react
+  datahub-frontend-X:
+    container_name: ${DATAHUB_FRONTEND_TYPE}
     depends_on:
 #    - datahub-gms
     - broker # Timo TODO
@@ -22,8 +22,8 @@ services:
     - DATAHUB_TRACKING_TOPIC=DataHubUsageEvent_v1
     - ELASTIC_CLIENT_HOST=elasticsearch
     - ELASTIC_CLIENT_PORT=9200
-    hostname: datahub-frontend-react
-    image: linkedin/datahub-frontend-react:${DATAHUB_VERSION} #${DATAHUB_VERSION:-head} #TODO update
+    hostname: ${DATAHUB_FRONTEND_TYPE}
+    image: linkedin/${DATAHUB_FRONTEND_TYPE}:${DATAHUB_VERSION} #${DATAHUB_VERSION:-head} #TODO update
     ports:
     - 9002:9002
 

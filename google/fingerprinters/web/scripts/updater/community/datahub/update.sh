@@ -33,21 +33,26 @@ FINGERPRINTS_PATH="${TMP_DATA}/fingerprints"
 JSON_DATA="${FINGERPRINTS_PATH}/fingerprint.json"
 # Binary proto data of the final result.
 BIN_DATA="${FINGERPRINTS_PATH}/fingerprint.binproto"
-# Read all the versions to be fingerprinted.
+# Read all the versions of the new react frontend to be fingerprinted.
 readarray -t ALL_VERSIONS < "${SCRIPT_PATH}/versions.txt"
+BIN_DATA="${FINGERPRINTS_PATH}/fingerprint.binproto"
+# Read all the versions  of the old frontend to be fingerprinted.
+readarray -t ALL_VERSIONS_OLD_FRONTEND < "${SCRIPT_PATH}/versions_old_frontend.txt"
 mkdir -p "${FINGERPRINTS_PATH}"
 
 startDataHub() {
   local version="$1"
+  local frontend_type="$2"
   pushd "${DATAHUB_APP_PATH}" >/dev/null
-    DATAHUB_VERSION="${version}" docker-compose up -d
+    DATAHUB_VERSION="${version}" DATAHUB_FRONTEND_TYPE="${frontend_type}" docker-compose up -d
   popd >/dev/null
 }
 
 stopDataHub() {
   local version="$1"
+  local frontend_type="$2"
   pushd "${DATAHUB_APP_PATH}" >/dev/null
-    DATAHUB_VERSION="${version}" docker-compose down --volumes --remove-orphans
+    DATAHUB_VERSION="${version}" DATAHUB_FRONTEND_TYPE="${frontend_type}" docker-compose down --volumes --remove-orphans
   popd >/dev/null
 }
 
@@ -62,14 +67,15 @@ if [[ ! -d "${GIT_REPO}" ]] ; then
 fi
 
 # Update for all the versions listed in versions.txt file.
+# Newer datahub versions use a react frontend. This is fingerprinted here:
 for datahub_version in "${ALL_VERSIONS[@]}"; do
   echo "Fingerprinting Datahub version ${datahub_version} ..."
 
   # Start a live instance of DataHub.
-  startDataHub "${datahub_version}"
+  startDataHub "${datahub_version}" "datahub-frontend-react"
   # Arbitrarily chosen so that DataHub is up and running.
   echo "Waiting for DataHub ${datahub_version} to be ready ..."
-  sleep 10
+  sleep 30
 
   # Checkout the repository to the correct tag.
   checkOutRepo "${GIT_REPO}" "${datahub_version}"
@@ -82,7 +88,32 @@ for datahub_version in "${ALL_VERSIONS[@]}"; do
     "http://localhost:9002"
 
   # Stop the live instance of DataHub.
-  stopDataHub "${datahub_version}"
+  stopDataHub "${datahub_version}" "datahub-frontend-react"
+done
+
+# Update for all the versions listed in versions_old_frontend.txt file.
+# Here the fingerprints for the old frontend are created
+for datahub_version in "${ALL_VERSIONS_OLD_FRONTEND[@]}"; do
+  echo "Fingerprinting Datahub version ${datahub_version} ..."
+
+  # Start a live instance of DataHub.
+  startDataHub "${datahub_version}" "datahub-frontend"
+  # Arbitrarily chosen so that DataHub is up and running.
+  echo "Waiting for DataHub ${datahub_version} to be ready ..."
+  sleep 30
+
+  # Checkout the repository to the correct tag.
+  checkOutRepo "${GIT_REPO}" "${datahub_version}"
+
+  updateFingerprint \
+    "datahub" \
+    "${datahub_version}" \
+    "${FINGERPRINTS_PATH}" \
+    "${GIT_REPO}" \
+    "http://localhost:9002"
+
+  # Stop the live instance of DataHub.
+  stopDataHub "${datahub_version}" "datahub-frontend"
 done
 
 convertFingerprint "${JSON_DATA}" "${BIN_DATA}"
