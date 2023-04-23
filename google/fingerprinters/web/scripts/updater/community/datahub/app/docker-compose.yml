@@ -26,8 +26,6 @@ services:
     image: linkedin/datahub-frontend-react:${DATAHUB_VERSION} #${DATAHUB_VERSION:-head} #TODO update
     ports:
     - 9002:9002
-    volumes:
-    - ./datahub_home/.datahub/plugins:/etc/datahub/plugins
 
   broker:
     container_name: broker
