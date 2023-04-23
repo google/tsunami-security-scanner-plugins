@@ -54,13 +54,23 @@ Add **generated fingerprint binary proto** to https://github.com/google/tsunami-
   Using Zabbix as an example:
 
   ```
+  # Change into the fingerprinter directory
+  cd google/fingerprinters/web/
+  
+  # Run the fingerprinter to create a new fingerprint file
   ./gradlew :runFingerprintUpdater --args="\
-  --software-name=zabbix\
-  --fingerprint-data-path=/tmp/zabbix_fingerprints/fingerprints/fingerprint.json\
-  --local-repo-path=/tmp/zabbix_fingerprints/repo/frontends/php\
-  --remote-url=http://localhost:280\
-  --version=4.0.0\
+  --software-name=zabbix \
+  --fingerprint-data-path=/tmp/zabbix_fingerprints/fingerprints/fingerprint.json \
+  --local-repo-path=/tmp/zabbix_fingerprints/repo/frontends/php \
+  --remote-url=http://localhost:280 \
+  --version=4.0.0 \
   --init"
+
+  # Create a binproto file from your newly generated fingerprint.json file
+  source common.sh
+  convertFingerprint /tmp/zabbix_fingerprints/fingerprints/fingerprint.json /tmp/zabbix_fingerprints/fingerprints/fingerprint.binproto
+  # Move your binproto file into the same directory as specified in your update.sh BIN_DATA directory
+  mv /tmp/zabbix_fingerprints/fingerprints/fingerprint.binproto ./google/fingerprinters/web/src/main/resources/fingerprinters/web/data/google/zabbix.binproto
   ```
 
   `--local-repo-path` is the location where you git clone the application git repo; `--remote-url` points to the live instance of the application you are running locally; `--init` initializes the `/tmp/zabbix_fingerprints/fingerprints/fingerprint.json`.
