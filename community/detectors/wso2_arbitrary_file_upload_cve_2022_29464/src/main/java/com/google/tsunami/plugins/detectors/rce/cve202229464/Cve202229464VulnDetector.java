@@ -39,6 +39,7 @@ import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
+import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
@@ -62,6 +63,7 @@ import okhttp3.RequestBody;
 import okio.Buffer;
 
 /** A {@link VulnDetector} that detects the CVE-2022-29464 vulnerability. */
+@ForWebService
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "Cve202229464VulnDetector",
@@ -95,11 +97,6 @@ public final class Cve202229464VulnDetector implements VulnDetector {
         Resources.toString(Resources.getResource(this.getClass(), "requestBody.jsp"), UTF_8);
   }
 
-  private static boolean isTungstenHttpsService(NetworkService networkService) {
-    return NetworkServiceUtils.getServiceName(networkService).equals("ssl/tungsten-https")
-        || NetworkServiceUtils.getServiceName(networkService).equals("ssl/wso2esb-console");
-  }
-
   public static byte[] makeZip(String fileName, String content) throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     ZipOutputStream zos = new ZipOutputStream(baos);
@@ -119,7 +116,6 @@ public final class Cve202229464VulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(Cve202229464VulnDetector::isTungstenHttpsService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
