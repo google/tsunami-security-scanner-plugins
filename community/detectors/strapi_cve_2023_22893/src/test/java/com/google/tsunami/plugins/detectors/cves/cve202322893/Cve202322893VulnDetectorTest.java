@@ -134,7 +134,7 @@ public final class Cve202322893VulnDetectorTest {
                                         "A remote attacker could forge an ID token that is signed using the 'None' type algorithm "
                                             + "to bypass authentication and impersonate any user that use AWS Cognito for authentication."
                                             + " with the help of CVE-2023-22621 and CVE-2023-22894 attackers can gain "
-                                            + "Unauthenticated Remote Code Execution on this version of Strapi"))))
+                                            + "Unauthenticated Remote Code Execution on these versions of Strapi."))))
             .build();
     assertThat(actual).isEqualTo(expected);
   }
