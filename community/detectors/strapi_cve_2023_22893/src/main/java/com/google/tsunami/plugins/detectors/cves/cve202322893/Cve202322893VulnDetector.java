@@ -51,17 +51,14 @@ import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
 
-/**
- * A {@link VulnDetector} that detects the CVE-2023-22893 & missing auth vulnerability in InfluxDB.
- */
+/** A {@link VulnDetector} that detects the CVE-2023-22893. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "Cve202322893VulnDetector",
     version = "0.1",
     description =
-        "CVE-2019-20933: InfluxDB before 1.7.6 has an authentication bypass vulnerability because a"
-            + " JWT token may have an empty SharedSecret (aka shared secret). Missing auth:"
-            + " authentication is not enabled for InfluxDB",
+        "CVE-2023-22893: Strapi through 4.5.5 does not verify the access or ID tokens issued during the OAuth flow "
+            + "when the AWS Cognito login provider is used for authentication.",
     author = "Secureness",
     bootstrapModule = Cve202322893DetectorBootstrapModule.class)
 public final class Cve202322893VulnDetector implements VulnDetector {
@@ -168,7 +165,7 @@ public final class Cve202322893VulnDetector implements VulnDetector {
                 .setTitle("Authentication Bypass for AWS Cognito Login Provider")
                 .setDescription(
                     "Strapi through 4.5.5 does not verify the access or ID tokens issued during the OAuth flow "
-                        + "when the AWS Cognito login provider is used for authentication. ")
+                        + "when the AWS Cognito login provider is used for authentication.")
                 .setRecommendation("Upgrade to higher versions")
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
