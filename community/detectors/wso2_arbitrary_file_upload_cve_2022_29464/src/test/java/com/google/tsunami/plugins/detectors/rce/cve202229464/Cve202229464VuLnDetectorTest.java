@@ -128,7 +128,11 @@ public final class Cve202229464VuLnDetectorTest {
                                 + " upload an arbitrary file to a user controlled location of the"
                                 + " server. By leveraging the arbitrary file upload vulnerability,"
                                 + " it is further possible to gain remote code execution on the"
-                                + " server."))
+                                + " server.")
+                        .setRecommendation(
+                            "Update WSO2 API Manager to 4.2.0, Identity Server to"
+                                + " 6.1.0, Enterprise Integrator to 7.1.0, and"
+                                + " Open Banking AM and KM to 3.0.0."))
                 .build());
 
     Truth.assertThat(mockWebServer.getRequestCount()).isEqualTo(2);

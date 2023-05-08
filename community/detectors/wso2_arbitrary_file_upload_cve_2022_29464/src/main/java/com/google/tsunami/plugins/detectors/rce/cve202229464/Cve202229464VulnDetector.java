@@ -70,7 +70,7 @@ import okio.Buffer;
     description = "This detector checks wide range of WSO2 products RCE (CVE-2022-29464)",
     author = "yuradoc (yuradoc.research@gmail.com)",
     bootstrapModule = Cve202229464VulnDetectorBootstrapModule.class)
-public final class Cve202229464VulnDetector implements VulnDetector {
+public class Cve202229464VulnDetector implements VulnDetector {
   @VisibleForTesting
   static final String TEST_STR_RCE = Long.toHexString(Double.doubleToLongBits(Math.random()));
 
@@ -83,7 +83,7 @@ public final class Cve202229464VulnDetector implements VulnDetector {
       "../../../../repository/deployment/server/webapps/" + FILE_NAME;
   private static final String FUNC_OS_RCE = "echo " + TEST_STR_RCE;
   private static final String FUNC_OS_RCE_PLACEHOLDER = "{{CMD}}";
-  private static final int UNPACK_TIMEOUT = 18;
+  private static final Duration UNPACK_TIMEOUT = Duration.ofSeconds(18);
   private final HttpClient httpClient;
   private final Clock utcClock;
   private final String requestBodyTemplate;
@@ -165,7 +165,7 @@ public final class Cve202229464VulnDetector implements VulnDetector {
         return false;
       }
 
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(UNPACK_TIMEOUT));
+      Uninterruptibles.sleepUninterruptibly(UNPACK_TIMEOUT);
 
       response =
           httpClient.send(
@@ -210,7 +210,11 @@ public final class Cve202229464VulnDetector implements VulnDetector {
                         + " upload an arbitrary file to a user controlled location of the"
                         + " server. By leveraging the arbitrary file upload vulnerability,"
                         + " it is further possible to gain remote code execution on the"
-                        + " server."))
+                        + " server.")
+                .setRecommendation(
+                    "Update WSO2 API Manager to 4.2.0, Identity Server to"
+                        + " 6.1.0, Enterprise Integrator to 7.1.0, and"
+                        + " Open Banking AM and KM to 3.0.0."))
         .build();
   }
 }
