@@ -90,10 +90,7 @@ public final class Cve20121823Detector implements VulnDetector {
     try {
       HttpResponse response =
           httpClient.send(
-              post(NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + QUERY_STRING)
-                  .withEmptyHeaders()
-                  .setRequestBody(ByteString.copyFromUtf8("<? die('" + DETECTION_STRING + "') ?>"))
-                  .build(),
+              post(NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + QUERY_STRING).withEmptyHeaders().setRequestBody(ByteString.copyFromUtf8("<? die('" + DETECTION_STRING + "') ?>")).build(),
               networkService);
       return DETECTION_STRING.equals(response.bodyString().map(String::trim).orElseGet(() -> ""));
     } catch (IOException e) {
@@ -112,8 +109,7 @@ public final class Cve20121823Detector implements VulnDetector {
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
             Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2012_1823"))
+                .setMainId(VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2012_1823"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2012-1823")
                 .setDescription(
