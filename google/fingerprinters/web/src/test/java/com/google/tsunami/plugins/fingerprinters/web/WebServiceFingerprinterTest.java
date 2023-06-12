@@ -23,11 +23,15 @@ import static com.google.tsunami.common.data.NetworkEndpointUtils.forIp;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.COMMON_LIB;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.FINGERPRINT_DATA_1;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.FINGERPRINT_DATA_2;
+import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.FINGERPRINT_DATA_3;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_1_ICON;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_1_JQUERY;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_2_ICON;
+import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_3_CSS;
+import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_3_ZIP;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_IDENTITY_1;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_IDENTITY_2;
+import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_IDENTITY_3;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.fakeUrl;
 
 import com.google.common.collect.ImmutableList;
@@ -39,12 +43,14 @@ import com.google.inject.Guice;
 import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.tsunami.common.net.http.HttpClientModule;
+import com.google.tsunami.plugins.fingerprinters.web.WebServiceFingerprinterConfigs.WebServiceFingerprinterCliOptions;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.Crawler;
 import com.google.tsunami.plugins.fingerprinters.web.data.FingerprintData;
 import com.google.tsunami.plugins.fingerprinters.web.detection.VersionDetector;
 import com.google.tsunami.plugins.fingerprinters.web.proto.SoftwareIdentity;
 import com.google.tsunami.proto.CrawlConfig;
 import com.google.tsunami.proto.CrawlResult;
+import com.google.tsunami.proto.CrawlTarget;
 import com.google.tsunami.proto.FingerprintingReport;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.ServiceContext;
@@ -55,6 +61,7 @@ import com.google.tsunami.proto.Version.VersionType;
 import com.google.tsunami.proto.VersionSet;
 import com.google.tsunami.proto.WebServiceContext;
 import java.util.Collection;
+import java.util.List;
 import javax.inject.Inject;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,15 +73,19 @@ import org.junit.runners.JUnit4;
 public final class WebServiceFingerprinterTest {
 
   private final FakeCrawler fakeCrawler = new FakeCrawler();
+  private WebServiceFingerprinterCliOptions cliOptions;
+
   @Inject WebServiceFingerprinter fingerprinter;
 
   @Before
   public void setUp() {
+    cliOptions = new WebServiceFingerprinterCliOptions();
     Guice.createInjector(
             new AbstractModule() {
               @Override
               protected void configure() {
                 bind(Crawler.class).toInstance(fakeCrawler);
+                bind(WebServiceFingerprinterCliOptions.class).toInstance(cliOptions);
                 install(new FactoryModuleBuilder().build(VersionDetector.Factory.class));
                 install(new HttpClientModule.Builder().build());
               }
@@ -85,7 +96,9 @@ public final class WebServiceFingerprinterTest {
                     SOFTWARE_IDENTITY_1,
                     FINGERPRINT_DATA_1,
                     SOFTWARE_IDENTITY_2,
-                    FINGERPRINT_DATA_2);
+                    FINGERPRINT_DATA_2,
+                    SOFTWARE_IDENTITY_3,
+                    FINGERPRINT_DATA_3);
               }
             })
         .injectMembers(this);
@@ -113,7 +126,8 @@ public final class WebServiceFingerprinterTest {
                         networkService,
                         "/",
                         SOFTWARE_IDENTITY_1.getSoftware(),
-                        ImmutableList.of("1.0")))
+                        ImmutableList.of("1.0"),
+                        ImmutableList.of()))
                 .build());
   }
 
@@ -149,7 +163,8 @@ public final class WebServiceFingerprinterTest {
                         networkService,
                         "/subfolder/",
                         SOFTWARE_IDENTITY_1.getSoftware(),
-                        ImmutableList.of("1.0")))
+                        ImmutableList.of("1.0"),
+                        ImmutableList.of()))
                 .build());
   }
 
@@ -176,13 +191,15 @@ public final class WebServiceFingerprinterTest {
                         networkService,
                         "/",
                         SOFTWARE_IDENTITY_1.getSoftware(),
-                        ImmutableList.of("1.0")))
+                        ImmutableList.of("1.0"),
+                        ImmutableList.of()))
                 .addNetworkServices(
                     addServiceContext(
                         networkService,
                         "/",
                         SOFTWARE_IDENTITY_2.getSoftware(),
-                        ImmutableList.of("2.0", "2.1")))
+                        ImmutableList.of("2.0", "2.1"),
+                        ImmutableList.of()))
                 .build());
   }
 
@@ -205,10 +222,116 @@ public final class WebServiceFingerprinterTest {
     assertThat(fingerprintingReport)
         .isEqualTo(FingerprintingReport.newBuilder().addNetworkServices(networkService).build());
   }
-  // TODO(b/210549664): add tests for crawl results.
+
+  @Test
+  public void fingerprint_whenCrawlResultsWithZipContent_doNotRecordCrawlResult() {
+    fakeCrawler.setCrawlResults(ImmutableSet.of(SOFTWARE_3_CSS, SOFTWARE_3_ZIP));
+    NetworkService networkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(forHostname("localhost"))
+            .setServiceName("http")
+            .build();
+
+    FingerprintingReport fingerprintingReport =
+        fingerprinter.fingerprint(TargetInfo.getDefaultInstance(), networkService);
+
+    assertThat(fingerprintingReport)
+        .ignoringRepeatedFieldOrder()
+        .comparingExpectedFieldsOnly()
+        .isEqualTo(
+            FingerprintingReport.newBuilder()
+                .addNetworkServices(
+                    addServiceContext(
+                        networkService,
+                        "/",
+                        SOFTWARE_IDENTITY_3.getSoftware(),
+                        ImmutableList.of("2.1"),
+                        ImmutableList.of()))
+                .build());
+  }
+
+  @Test
+  public void fingerprint_defaultZipContentExclusion_doNotRecordCrawlResult() {
+    fakeCrawler.setCrawlResults(ImmutableSet.of(SOFTWARE_3_CSS, SOFTWARE_3_ZIP));
+    NetworkService networkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(forHostname("localhost"))
+            .setServiceName("http")
+            .build();
+
+    FingerprintingReport fingerprintingReport =
+        fingerprinter.fingerprint(TargetInfo.getDefaultInstance(), networkService);
+
+    assertThat(fingerprintingReport)
+        .ignoringRepeatedFieldOrder()
+        .comparingExpectedFieldsOnly()
+        .isEqualTo(
+            FingerprintingReport.newBuilder()
+                .addNetworkServices(
+                    addServiceContext(
+                        networkService,
+                        "/",
+                        SOFTWARE_IDENTITY_3.getSoftware(),
+                        ImmutableList.of("2.1"),
+                        ImmutableList.of(
+                            CrawlResult.newBuilder()
+                                .setCrawlTarget(
+                                    CrawlTarget.newBuilder()
+                                        .setUrl(fakeUrl("/file.css"))
+                                        .setHttpMethod("GET"))
+                                .setContentType("text/css")
+                                .build())))
+                .build());
+    assertThat(
+            fingerprintingReport
+                .getNetworkServices(0)
+                .getServiceContext()
+                .getWebServiceContext()
+                .getCrawlResultsList())
+        .doesNotContain(SOFTWARE_3_ZIP);
+  }
+
+  @Test
+  public void fingerprint_whenLimitContentSize_doNotRecordLargeCrawlResult() {
+    cliOptions.maxRecordingContentSize = 50L;
+    fakeCrawler.setCrawlResults(ImmutableSet.of(SOFTWARE_3_CSS, SOFTWARE_3_ZIP));
+    NetworkService networkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(forHostname("localhost"))
+            .setServiceName("http")
+            .build();
+
+    FingerprintingReport fingerprintingReport =
+        fingerprinter.fingerprint(TargetInfo.getDefaultInstance(), networkService);
+
+    assertThat(fingerprintingReport)
+        .ignoringRepeatedFieldOrder()
+        .comparingExpectedFieldsOnly()
+        .isEqualTo(
+            FingerprintingReport.newBuilder()
+                .addNetworkServices(
+                    addServiceContext(
+                        networkService,
+                        "/",
+                        SOFTWARE_IDENTITY_3.getSoftware(),
+                        ImmutableList.of("2.1"),
+                        ImmutableList.of()))
+                .build());
+    assertThat(
+            fingerprintingReport
+                .getNetworkServices(0)
+                .getServiceContext()
+                .getWebServiceContext()
+                .getCrawlResultsList())
+        .doesNotContain(SOFTWARE_3_CSS);
+  }
 
   private static NetworkService addServiceContext(
-      NetworkService networkService, String appRoot, String appName, Collection<String> versions) {
+      NetworkService networkService,
+      String appRoot,
+      String appName,
+      Collection<String> versions,
+      List<CrawlResult> crawlResults) {
     VersionSet versionSet =
         VersionSet.newBuilder()
             .addAllVersions(
@@ -228,7 +351,8 @@ public final class WebServiceFingerprinterTest {
                     WebServiceContext.newBuilder()
                         .setApplicationRoot(appRoot)
                         .setSoftware(Software.newBuilder().setName(appName))
-                        .setVersionSet(versionSet)))
+                        .setVersionSet(versionSet)
+                        .addAllCrawlResults(crawlResults)))
         .build();
   }
 

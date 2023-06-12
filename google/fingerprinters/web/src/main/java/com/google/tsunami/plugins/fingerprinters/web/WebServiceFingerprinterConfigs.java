@@ -19,14 +19,19 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import com.google.common.collect.ImmutableList;
 import com.google.tsunami.common.cli.CliOption;
 import com.google.tsunami.common.config.annotations.ConfigProperties;
+import java.util.List;
 import javax.inject.Inject;
 
 /** Configuration options for {@link WebServiceFingerprinter}. */
 public final class WebServiceFingerprinterConfigs {
   private static final int DEFAULT_MAX_FAILED_SIFTING_REQUEST = 20;
   private static final int DEFAULT_MAX_ALLOWED_SIFTING_REQUEST = 100;
+  private static final long DEFAULT_MAX_RECORDING_CONTENT_SIZE = 10240; // 0.1 MB
+  private static final ImmutableList<String> DEFAULT_FILE_EXTENSION_EXCLUSIONS =
+      ImmutableList.of("application/zip", "application/gzip");
 
   private final WebServiceFingerprinterCliOptions cliOptions;
   private final WebServiceFingerprinterConfigProperties configProperties;
@@ -70,6 +75,26 @@ public final class WebServiceFingerprinterConfigs {
     }
   }
 
+  public long getMaxRecordingContentSize() {
+    if (cliOptions.maxRecordingContentSize != null) {
+      return cliOptions.maxRecordingContentSize;
+    } else if (configProperties.maxRecordingContentSize != null) {
+      return configProperties.maxRecordingContentSize;
+    } else {
+      return DEFAULT_MAX_RECORDING_CONTENT_SIZE;
+    }
+  }
+
+  public List<String> getContentTypeExclusions() {
+    if (cliOptions.contentTypeExclusions != null) {
+      return cliOptions.contentTypeExclusions;
+    } else if (configProperties.contentTypeExclusions != null) {
+      return configProperties.contentTypeExclusions;
+    } else {
+      return DEFAULT_FILE_EXTENSION_EXCLUSIONS;
+    }
+  }
+
   @Parameters(separators = "=")
   static final class WebServiceFingerprinterCliOptions implements CliOption {
 
@@ -103,6 +128,26 @@ public final class WebServiceFingerprinterConfigs {
                 + " probes.")
     Integer maxFailedSiftingRequest;
 
+    @Parameter(
+        names = "--web-service-fingerprinter-crawl-result-recording-max-content-size",
+        description =
+            "The maximum content size in bytes the web fingerprinter stores as part of the"
+                + " crawl results in the final scan results. Large content size could increase"
+                + " memory usage when crawling web services hosting large static files and trigger"
+                + " OOM errors. The content larger than the limit are still hashed for service"
+                + " fingerprint, they are only excluded in the WebServiceContext for recording"
+                + " purpose. Default to 10KB. ")
+    Long maxRecordingContentSize;
+
+    @Parameter(
+        names = "--web-service-fingerprinter-crawl-result-recording-content-type-exclusions",
+        description =
+            "A comma separated list of content type to exclude when recording the crawled content"
+                + "in WebServiceContext. The excluded content are still used for hashing web "
+                + "fingerprints. They are only excluded in the WebServiceContext for recording "
+                + "purpose.")
+    List<String> contentTypeExclusions;
+
     @Override
     public void validate() {}
   }
@@ -128,5 +173,18 @@ public final class WebServiceFingerprinterConfigs {
      * CLI flag. See the CLI flag's description for more details.
      */
     Integer maxFailedSiftingRequest;
+
+    /**
+     * Configuration option for the @code --web-service-fingerprinter-max-recording-file-size} CLI
+     * flag. See the CLI flag's description for more details.
+     */
+    Long maxRecordingContentSize;
+
+    /**
+     * Configuration option for the @code
+     * --web-service-fingerprinter-crawl-result-recording-content-type-exclusions} CLI flag. See the
+     * CLI flag's description for more details.
+     */
+    List<String> contentTypeExclusions;
   }
 }
