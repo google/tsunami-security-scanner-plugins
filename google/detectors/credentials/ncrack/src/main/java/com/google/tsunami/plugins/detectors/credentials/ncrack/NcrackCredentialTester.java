@@ -68,6 +68,7 @@ final class NcrackCredentialTester extends CredentialTester {
           .put("ms-sql-s", TargetService.MSSQL)
           .put("mqtt", TargetService.MQTT)
           .put("mongod", TargetService.MONGODB)
+          .put("mongodb", TargetService.MONGODB)
           .put("winrm", TargetService.WINRM)
           .put("dicom", TargetService.DICOM)
           .build();
