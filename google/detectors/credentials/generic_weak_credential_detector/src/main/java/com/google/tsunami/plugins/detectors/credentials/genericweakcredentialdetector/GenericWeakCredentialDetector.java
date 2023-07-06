@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialde
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static com.google.tsunami.common.net.http.HttpRequest.get;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
@@ -31,7 +30,6 @@ import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
-import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -50,11 +48,9 @@ import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
-import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -63,9 +59,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 /**
  * The weak credentials plugins checks credentials on all the services supported by testers like
@@ -88,7 +81,6 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
   final ImmutableSet<CredentialProvider> providers;
   private final ImmutableSet<CredentialTester> testers;
   private final Clock utcClock;
-  private final HttpClient httpClient;
 
   // TODO(b/287138065): Abstract out service type, which could have multiple names like "mongod" &
   // "mongodb"
@@ -120,7 +112,6 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
     this.providers = checkNotNull(providers);
     this.testers = checkNotNull(testers);
     this.utcClock = checkNotNull(utcClock);
-    this.httpClient = checkNotNull(httpClient);
   }
 
   @Override
@@ -130,7 +121,7 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
     Stopwatch stopwatch = Stopwatch.createStarted();
     DetectionReportList.Builder detectionReportsBuilder = DetectionReportList.newBuilder();
 
-    doSimpleWebServiceDetection(matchedServices).stream()
+    matchedServices.stream()
         .filter(
             networkService -> testers.stream().anyMatch(tester -> tester.canAccept(networkService)))
         .forEach(
@@ -253,62 +244,4 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
         .build();
   }
 
-  // TODO(b/154006875): this is a temporary hack as the web fingerprinter is WIP.
-  private ImmutableList<NetworkService> doSimpleWebServiceDetection(
-      ImmutableList<NetworkService> networkServices) {
-    return networkServices.stream()
-        .map(
-            networkService ->
-                NetworkServiceUtils.isWebService(networkService)
-                    ? detectSoftware(networkService)
-                    : networkService)
-        .collect(toImmutableList());
-  }
-
-  // TODO(b/154006875): maybe add service detection for other supported web services like Joomla and
-  // OWA.
-  private NetworkService detectSoftware(NetworkService networkService) {
-    if (isWordPressService(networkService)) {
-      return NetworkService.newBuilder(networkService)
-          .setSoftware(Software.newBuilder().setName("WordPress"))
-          .build();
-    } else {
-      return networkService;
-    }
-  }
-
-  private boolean isWordPressService(NetworkService networkService) {
-    String wordPressLoginUrl =
-        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "wp-login.php";
-    try {
-      // This is a blocking call.
-      HttpResponse response =
-          httpClient.send(get(wordPressLoginUrl).withEmptyHeaders().build(), networkService);
-      return response.status().isSuccess()
-          && response
-              .bodyString()
-              .map(
-                  body ->
-                      // WordPress login page always has a login header pointing to homepage.
-                      body.contains("https://wordpress.org/")
-                          // Make sure the endpoint serves the login form exploitable by ncrack.
-                          && responseHasWordPressLoginForm(body))
-              .orElse(false);
-    } catch (IOException e) {
-      logger.atWarning().withCause(e).log("Unable to query '%s'.", wordPressLoginUrl);
-      return false;
-    }
-  }
-
-  private static boolean responseHasWordPressLoginForm(String body) {
-    // NCrack detects WordPress credentials by faking this form.
-    Elements loginForms = Jsoup.parse(body).select("form#loginform");
-    if (loginForms.isEmpty()) {
-      return false;
-    }
-
-    Element loginForm = loginForms.first();
-    return Ascii.equalsIgnoreCase(loginForm.attr("method"), "post")
-        && Ascii.toLowerCase(loginForm.attr("action")).contains("wp-login.php");
-  }
 }

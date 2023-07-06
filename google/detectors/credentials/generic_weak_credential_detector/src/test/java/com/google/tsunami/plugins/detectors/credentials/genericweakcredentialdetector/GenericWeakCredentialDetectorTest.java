@@ -42,7 +42,6 @@ import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
-import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
@@ -159,7 +158,7 @@ public final class GenericWeakCredentialDetectorTest {
                 .setNetworkEndpoint(
                     forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
                 .setTransportProtocol(TransportProtocol.TCP)
-                .setServiceName("http")
+                .setServiceName("wordpress")
                 .build()));
   }
 
@@ -175,8 +174,7 @@ public final class GenericWeakCredentialDetectorTest {
                 .setNetworkEndpoint(
                     forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
                 .setTransportProtocol(TransportProtocol.TCP)
-                .setServiceName("http")
-                .setSoftware(Software.newBuilder().setName("WordPress"))
+                .setServiceName("wordpress")
                 .build())
         .setDetectionTimestamp(Timestamps.fromMillis(FAKE_NOW.toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
@@ -291,41 +289,6 @@ public final class GenericWeakCredentialDetectorTest {
                                         .setUsername("username2")
                                         .setPassword("password2"))
                                 .build()))
-                .build());
-  }
-
-  @Test
-  public void run_whenNetworkServiceIsWordPress_performsFingerprintingAndTestWordPress() {
-    ArgumentCaptor<NetworkService> networkServiceCaptor =
-        ArgumentCaptor.forClass(NetworkService.class);
-    when(tester1.testValidCredentials(networkServiceCaptor.capture(), any()))
-        .thenReturn(ImmutableList.of());
-    when(tester2.testValidCredentials(networkServiceCaptor.capture(), any()))
-        .thenReturn(ImmutableList.of());
-    when(tester3.testValidCredentials(networkServiceCaptor.capture(), any()))
-        .thenReturn(ImmutableList.of());
-
-    NetworkService inputService =
-        NetworkService.newBuilder()
-            .setNetworkEndpoint(
-                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .setTransportProtocol(TransportProtocol.TCP)
-            .setServiceName("http")
-            .build();
-
-    runDetectOnMockWebServer();
-
-    // 3 distinct credentials so 3 calls to testValidCredentials
-    assertThat(networkServiceCaptor.getAllValues())
-        .containsExactly(
-            NetworkService.newBuilder(inputService)
-                .setSoftware(Software.newBuilder().setName("WordPress"))
-                .build(),
-            NetworkService.newBuilder(inputService)
-                .setSoftware(Software.newBuilder().setName("WordPress"))
-                .build(),
-            NetworkService.newBuilder(inputService)
-                .setSoftware(Software.newBuilder().setName("WordPress"))
                 .build());
   }
 }
