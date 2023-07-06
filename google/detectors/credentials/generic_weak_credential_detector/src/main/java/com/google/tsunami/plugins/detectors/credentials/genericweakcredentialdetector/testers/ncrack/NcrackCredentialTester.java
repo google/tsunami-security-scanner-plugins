@@ -26,10 +26,10 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.tsunami.common.command.CommandExecutionThreadPool;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.ncrack.NcrackClient;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.ncrack.NcrackClient.TargetService;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.ncrack.NcrackClient.TimingTemplate;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.ncrack.NcrackExcludedTargetServices;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.ncrack.data.NcrackRun;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.proto.TargetService;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
 import com.google.tsunami.proto.NetworkService;
@@ -47,6 +47,16 @@ import javax.inject.Provider;
 public final class NcrackCredentialTester extends CredentialTester {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
+  /**
+   * Each target is a dedicated module located <a
+   * href="https://github.com/nmap/ncrack/tree/master/modules">here</a>. * *
+   *
+   * <p>For extra documentation on each module, its expected performance and extra flags it
+   * supports, check <a herf="https://nmap.org/ncrack/man.html">modules documentation</a>.
+   *
+   * <p>IMPORTANT: list of supported modules is actively updated. Check Github link above to see the
+   * * list of current modules. Experimental modules, like Web Form are not added to the list.
+   */
   private static final ImmutableMap<String, TargetService> SERVICE_MAP =
       ImmutableMap.<String, TargetService>builder()
           // Missing from TargetService: JOOMLA, HTTP, OWA
@@ -64,7 +74,6 @@ public final class NcrackCredentialTester extends CredentialTester {
           .put("vnc", TargetService.VNC)
           .put("sip", TargetService.SIP)
           .put("redis", TargetService.REDIS)
-          .put("postgresql", TargetService.PSQL)
           .put("mysql", TargetService.MYSQL)
           .put("ms-sql-s", TargetService.MSSQL)
           .put("mqtt", TargetService.MQTT)
@@ -113,9 +122,6 @@ public final class NcrackCredentialTester extends CredentialTester {
       NetworkService networkService, List<TestCredential> credentials) {
     if (!canAccept(networkService)) {
       return ImmutableList.of();
-      // TODO(b/145315535): reenable this once Tsunami has plugin matching functionality.
-      // throw new UnsupportedTargetOrServiceException(
-      //     String.format("Service %s is not supported", service.serviceName()));
     }
 
     try {

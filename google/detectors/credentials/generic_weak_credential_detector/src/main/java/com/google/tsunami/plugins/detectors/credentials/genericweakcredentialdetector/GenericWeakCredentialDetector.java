@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack;
+package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
@@ -34,11 +37,14 @@ import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.composer.WeakCredentialComposer;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.proto.CredentialType;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.CredentialProvider;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack.NcrackCredentialTester;
 import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.Credential;
+import com.google.tsunami.proto.Credentials;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -51,7 +57,10 @@ import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import org.jsoup.Jsoup;
@@ -59,45 +68,53 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 /**
- * The weak credentials plugins checks credentials on all the services supported by {@link
- * NcrackCredentialTester}. See the {@link CredentialProvider}s registered in {@link
- * NcrackWeakCredentialDetectorBootstrapModule} for the list of passwords checked by the detector.
+ * The weak credentials plugins checks credentials on all the services supported by testers like
+ * {@link NcrackCredentialTester}. See the {@link CredentialProvider}s registered in {@link
+ * GenericWeakCredentialDetectorBootstrapModule} for the list of passwords checked by the detector.
  * Add additional {@link CredentialProvider} to test more credentials.
  */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "NcrackWeakCredentialDetectorPlugin",
+    name = "GenericCredentialDetectorPlugin",
     version = "0.1",
-    description = "Checks for weak credentials using ncrack (https://nmap.org/ncrack/).",
+    description = "Checks for weak credentials using tools like ncrack (https://nmap.org/ncrack/).",
     author = "Tsunami Team (tsunami-dev@google.com)",
-    bootstrapModule = NcrackWeakCredentialDetectorBootstrapModule.class)
-public final class NcrackWeakCredentialDetector implements VulnDetector {
+    bootstrapModule = GenericWeakCredentialDetectorBootstrapModule.class)
+public final class GenericWeakCredentialDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final Severity DEFAULT_SEVERITY = Severity.CRITICAL;
 
   @VisibleForTesting
   final ImmutableSet<CredentialProvider> providers;
-  private final ImmutableList<CredentialTester> testers;
+  private final ImmutableSet<CredentialTester> testers;
   private final Clock utcClock;
   private final HttpClient httpClient;
 
+  // TODO(b/287138065): Abstract out service type, which could have multiple names like "mongod" &
+  // "mongodb"
+  // By default, a cred tester uses all the credentials provided by all the providers.
+  // If a tester prefer faster scanning, explicitly specify the types of credentials to be used.
+  private static final ImmutableMultimap<String, CredentialType>
+      SERVICE_SPECIFIC_CREDENTIALS_OVERRIDE =
+          ImmutableMultimap.of("postgresql", CredentialType.SERVICE_DEFAULT);
+
   @Inject
-  NcrackWeakCredentialDetector(
+  GenericWeakCredentialDetector(
       Set<CredentialProvider> providers,
-      CredentialTester tester,
+      Set<CredentialTester> testers,
       @UtcClock Clock utcClock,
       HttpClient httpClient) {
     this(
         ImmutableSet.copyOf(checkNotNull(providers)),
-        ImmutableList.of(checkNotNull(tester)),
+        ImmutableSet.copyOf(checkNotNull(testers)),
         utcClock,
         httpClient);
   }
 
   @VisibleForTesting
-  NcrackWeakCredentialDetector(
+  GenericWeakCredentialDetector(
       ImmutableSet<CredentialProvider> providers,
-      ImmutableList<CredentialTester> testers,
+      ImmutableSet<CredentialTester> testers,
       Clock utcClock,
       HttpClient httpClient) {
     this.providers = checkNotNull(providers);
@@ -109,24 +126,18 @@ public final class NcrackWeakCredentialDetector implements VulnDetector {
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
-    logger.atInfo().log("Starting weak credential detection using ncrack.");
+    logger.atInfo().log("Starting weak credential detection.");
     Stopwatch stopwatch = Stopwatch.createStarted();
     DetectionReportList.Builder detectionReportsBuilder = DetectionReportList.newBuilder();
 
     doSimpleWebServiceDetection(matchedServices).stream()
-        // Disable scanner on postgresql due to
-        // https://github.com/nmap/ncrack/issues/49#issuecomment-1064651415
-        // We could also do this in NcrackCredentialTester but this is more visible.
-        .filter(
-            networkService ->
-                !NetworkServiceUtils.getServiceName(networkService).equals("postgresql"))
         .filter(
             networkService -> testers.stream().anyMatch(tester -> tester.canAccept(networkService)))
         .forEach(
             networkService ->
                 testServiceAndAddDetectionReport(
                     targetInfo, networkService, detectionReportsBuilder));
-    logger.atInfo().log("Ncrack weak credential detection finished in %s.", stopwatch.stop());
+    logger.atInfo().log("Weak credential detection finished in %s.", stopwatch.stop());
     return detectionReportsBuilder.build();
   }
 
@@ -134,41 +145,49 @@ public final class NcrackWeakCredentialDetector implements VulnDetector {
       TargetInfo targetInfo,
       NetworkService networkService,
       DetectionReportList.Builder detectionReportsBuilder) {
-    testers.stream()
-        .filter(tester -> tester.canAccept(networkService))
-        .forEach(
-            tester ->
-                runTesterAndAddFinding(
-                    targetInfo, networkService, tester, detectionReportsBuilder));
+    ImmutableList<TestCredential> weakCredentials =
+        testers.stream()
+            .filter(tester -> tester.canAccept(networkService))
+            .map(tester -> runTesterAndAddFinding(networkService, tester))
+            .flatMap(Collection::stream)
+            .collect(toImmutableList());
+
+    if (!weakCredentials.isEmpty()) {
+      addFindingForCredential(targetInfo, networkService, weakCredentials, detectionReportsBuilder);
+    }
   }
 
-  private void runTesterAndAddFinding(
-      TargetInfo targetInfo,
-      NetworkService networkService,
-      CredentialTester tester,
-      DetectionReportList.Builder detectionReportsBuilder) {
+  private ImmutableList<TestCredential> runTesterAndAddFinding(
+      NetworkService networkService, CredentialTester tester) {
 
     // Multiple providers could give the same credentials, so create
     // a set to dedupe them before testing.
     HashSet<TestCredential> credentials = new HashSet<>();
 
-    for (CredentialProvider provider : providers) {
+    String serviceName = NetworkServiceUtils.getServiceName(networkService);
+
+    ImmutableSet<CredentialProvider> effectiveProvider = providers;
+    if (SERVICE_SPECIFIC_CREDENTIALS_OVERRIDE.containsKey(serviceName)) {
+      ImmutableCollection<CredentialType> credTypes =
+          SERVICE_SPECIFIC_CREDENTIALS_OVERRIDE.get(serviceName);
+      effectiveProvider =
+          providers.stream()
+              .filter(provider -> credTypes.contains(provider.type()))
+              .collect(toImmutableSet());
+    }
+
+    for (CredentialProvider provider : effectiveProvider) {
       provider.generateTestCredentials(networkService).forEachRemaining(credentials::add);
     }
 
-    ImmutableList<TestCredential> validCredentials =
-        new WeakCredentialComposer(ImmutableList.copyOf(credentials), tester).run(networkService);
-
-    validCredentials.forEach(
-        testCredential ->
-            addFindingForCredential(
-                targetInfo, networkService, testCredential, detectionReportsBuilder));
+    return new WeakCredentialComposer(ImmutableList.copyOf(credentials), tester)
+        .run(networkService);
   }
 
   private void addFindingForCredential(
       TargetInfo targetInfo,
       NetworkService networkService,
-      TestCredential testCredential,
+      ImmutableList<TestCredential> testCredentials,
       DetectionReportList.Builder detectionReportsBuilder) {
     detectionReportsBuilder.addDetectionReports(
         DetectionReport.newBuilder()
@@ -187,7 +206,7 @@ public final class NcrackWeakCredentialDetector implements VulnDetector {
                     .setCvssV3("7.5") // CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
                     .setDescription(buildDescription(networkService))
                     .setRecommendation("Change the password of all affected users to a strong one.")
-                    .addAdditionalDetails(buildCredentialDetail(testCredential)))
+                    .addAdditionalDetails(buildCredentialDetail(testCredentials)))
             .build());
   }
 
@@ -220,14 +239,17 @@ public final class NcrackWeakCredentialDetector implements VulnDetector {
         networkService.getNetworkEndpoint().getPort().getPortNumber());
   }
 
-  private static AdditionalDetail buildCredentialDetail(TestCredential testCredential) {
-    Credential.Builder credentialBuilder =
-        Credential.newBuilder().setUsername(testCredential.username());
-    testCredential.password().ifPresent(credentialBuilder::setPassword);
-
+  private static AdditionalDetail buildCredentialDetail(
+      ImmutableList<TestCredential> testCredentials) {
+    List<Credential> credentials = new ArrayList<>();
+    for (TestCredential cred : testCredentials) {
+      Credential.Builder credentialBuilder = Credential.newBuilder().setUsername(cred.username());
+      cred.password().ifPresent(credentialBuilder::setPassword);
+      credentials.add(credentialBuilder.build());
+    }
     return AdditionalDetail.newBuilder()
-        .setDescription("Identified credential")
-        .setCredential(credentialBuilder)
+        .setDescription("Identified credential(s)")
+        .setCredentials(Credentials.newBuilder().addAllCredential(credentials))
         .build();
   }
 

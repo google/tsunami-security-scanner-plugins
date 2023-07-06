@@ -30,6 +30,7 @@ import com.google.tsunami.common.command.CommandExecutorFactory;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.ncrack.data.NcrackRun;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.ncrack.parser.NormalParser;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.proto.TargetService;
 import com.google.tsunami.proto.NetworkEndpoint;
 import java.io.File;
 import java.io.FileInputStream;
@@ -78,48 +79,6 @@ import javax.inject.Inject;
  * </pre>
  */
 public class NcrackClient {
-
-  /**
-   * Target services supported by Ncrack. Each target is a dedicated module located <a
-   * href="https://github.com/nmap/ncrack/tree/master/modules">here</a>.
-   *
-   * <p>For extra documentation on each module, its expected performance and extra flags it
-   * supports, check <a herf="https://nmap.org/ncrack/man.html">modules documentation</a>.
-   *
-   * <p>IMPORTANT: list of supported modules is actively updated. Check Github link above to see the
-   * list of current modules. Experimental modules, like Web Form are not added to the list.
-   */
-  public enum TargetService {
-    SSH, // SSH (Encrypted Remote Administration Protocol)
-    RDP, // Remote Desktop Protocol (Graphical Remote Administration Protocol)
-    FTP, // File Transfer Protocol (Remote File Sharing)
-    TELNET, // Telnet (Cleartext Remote Administration Protocol)
-    WORDPRESS, // Content Management System (Web Application)
-    JOOMLA, // Content Management System (Web Application)
-    HTTP, // HTTP Form (Digest, Basic authentication modes)
-    POP3, // Post Office Protocol (Email Protocol)
-    IMAP, // Internet Message Access Protocol (Email Protocol)
-    CVS, // Concurrent Versioning System (Source Code Versioning)
-    SMB, // Server Message Block (File, Printer and serial ... port sharing protocol)
-    SMB2, // Server Message Block v2 (File, Printer and serial ... port sharing protocol)
-    VNC, // VNC (Graphical Remote Administration Protocol)
-    SIP, // Session Initiation Protocol (Telephony and VoIP protocol)
-    REDIS, // Redis (In-memory Database)
-    PSQL, // Postgres SQL (SQL Database)
-    MYSQL, // MySQL (SQL Database)
-    MSSQL, // Microsoft SQL (SQL Database)
-    MQTT, // Message Queueing Telemetry Transport (Pub/Sub M2M protocol)
-    MONGODB, // Mongo DB (NoSQL Database)
-    CASSANDRA, // Apache Cassandra (NoSQL Database)
-    WINRM, // Windows Remote Management (Remote Administration Protocol)
-    OWA, // Outlook Web App (Web Application)
-    DICOM; // Digital Imaging and Communications in Medicine (Healthcare Protocol)
-
-    String getFlag() {
-      return Ascii.toLowerCase(name());
-    }
-  }
-
   /**
    * Timing templates controlling min connection limit (cl), max connection limit (CL),
    * authentication attempts per connection (at), delay between each connection initiation (cd),
@@ -282,7 +241,7 @@ public class NcrackClient {
     flag.append(
         String.format(
             "%s://%s",
-            targetService.getFlag(), NetworkEndpointUtils.toUriAuthority(networkEndpoint)));
+            getFlag(targetService), NetworkEndpointUtils.toUriAuthority(networkEndpoint)));
     path.ifPresent(value -> flag.append(String.format(",path=%s", value)));
     domain.ifPresent(value -> flag.append(String.format(",domain=%s", value)));
     db.ifPresent(value -> flag.append(String.format(",db=%s", value)));
@@ -411,5 +370,9 @@ public class NcrackClient {
   public NcrackClient withTimingTemplate(TimingTemplate template) {
     this.timing = Optional.of(template);
     return this;
+  }
+
+  private static String getFlag(TargetService service) {
+    return Ascii.toLowerCase(service.name());
   }
 }

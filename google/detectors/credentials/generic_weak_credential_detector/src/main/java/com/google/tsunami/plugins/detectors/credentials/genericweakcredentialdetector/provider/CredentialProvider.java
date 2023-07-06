@@ -15,6 +15,7 @@
  */
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider;
 
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.proto.CredentialType;
 import com.google.tsunami.proto.NetworkService;
 import java.util.Iterator;
 
@@ -26,6 +27,8 @@ import java.util.Iterator;
  * <p>For examples of provider implementations, check the provider folder.
  */
 public abstract class CredentialProvider {
+
+  public abstract CredentialType type();
 
   public abstract String name();
 

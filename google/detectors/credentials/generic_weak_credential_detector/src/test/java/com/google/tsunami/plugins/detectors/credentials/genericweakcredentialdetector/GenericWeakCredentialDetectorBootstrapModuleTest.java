@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack;
+package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector;
 
 import static com.google.common.truth.Truth.assertThat;
 import static junit.framework.Assert.assertTrue;
@@ -25,7 +25,7 @@ import com.google.inject.Guice;
 import com.google.tsunami.common.command.CommandExecutorModule;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.SystemUtcClockModule;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.ncrack.NcrackClient.TargetService;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.proto.TargetService;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.CredentialProvider;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.DefaultCredentials;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.Top100Passwords;
@@ -35,17 +35,17 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Tests for {@link NcrackWeakCredentialDetectorBootstrapModule}. */
+/** Tests for {@link GenericWeakCredentialDetectorBootstrapModule}. */
 @RunWith(JUnit4.class)
-public final class NcrackWeakCredentialDetectorBootstrapModuleTest {
+public final class GenericWeakCredentialDetectorBootstrapModuleTest {
 
-  @Inject private NcrackWeakCredentialDetector detector;
-  private final NcrackWeakCredentialDetectorBootstrapModule module =
-      new NcrackWeakCredentialDetectorBootstrapModule();
-  private final NcrackWeakCredentialDetectorConfigs configs =
-      new NcrackWeakCredentialDetectorConfigs();
-  private final NcrackWeakCredentialDetectorCliOptions cliOptions =
-      new NcrackWeakCredentialDetectorCliOptions();
+  @Inject private GenericWeakCredentialDetector detector;
+  private final GenericWeakCredentialDetectorBootstrapModule module =
+      new GenericWeakCredentialDetectorBootstrapModule();
+  private final GenericWeakCredentialDetectorConfigs configs =
+      new GenericWeakCredentialDetectorConfigs();
+  private final GenericWeakCredentialDetectorCliOptions cliOptions =
+      new GenericWeakCredentialDetectorCliOptions();
 
   @Before
   public void setUp() {
@@ -57,8 +57,8 @@ public final class NcrackWeakCredentialDetectorBootstrapModuleTest {
             new AbstractModule() {
               @Override
               protected void configure() {
-                bind(NcrackWeakCredentialDetectorConfigs.class).toInstance(configs);
-                bind(NcrackWeakCredentialDetectorCliOptions.class).toInstance(cliOptions);
+                bind(GenericWeakCredentialDetectorConfigs.class).toInstance(configs);
+                bind(GenericWeakCredentialDetectorCliOptions.class).toInstance(cliOptions);
               }
             })
         .injectMembers(this);

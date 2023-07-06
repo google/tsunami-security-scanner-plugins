@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack;
+package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector;
 
 import com.google.tsunami.common.config.annotations.ConfigProperties;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.ncrack.NcrackClient.TargetService;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.proto.TargetService;
 import java.util.List;
 
 @ConfigProperties("plugins.google.detectors.credentials.ncrack")
-final class NcrackWeakCredentialDetectorConfigs {
+final class GenericWeakCredentialDetectorConfigs {
   // Path to the ncrack binary.
   String ncrackBinaryPath;
 
-  /** String value of {@link TargetService} to exclude from ncrack scanning. */
+  /** String value of {@link TargetService} to exclude from scanning. */
   List<String> excludedTargetServices;
 }

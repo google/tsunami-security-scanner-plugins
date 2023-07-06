@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialde
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.tsunami.common.data.NetworkServiceUtils;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.proto.CredentialType;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.proto.DefaultCredentialsData;
 import com.google.tsunami.proto.NetworkService;
 import java.util.Iterator;
@@ -35,6 +36,11 @@ public final class DefaultCredentials extends CredentialProvider {
   @Inject
   DefaultCredentials(DefaultCredentialsData defaultCredentialsData) {
     this.defaultCredentialsData = defaultCredentialsData;
+  }
+
+  @Override
+  public CredentialType type() {
+    return CredentialType.SERVICE_DEFAULT;
   }
 
   @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Google LLC
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack;
+package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,6 +36,7 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
 import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.Credential;
+import com.google.tsunami.proto.Credentials;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -68,9 +68,9 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
-/** Tests for {@link NcrackWeakCredentialDetector}. */
+/** Tests for {@link GenericWeakCredentialDetector}. */
 @RunWith(JUnit4.class)
-public final class NcrackWeakCredentialDetectorTest {
+public final class GenericWeakCredentialDetectorTest {
   @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
   private static final Instant FAKE_NOW = Instant.parse("2020-01-01T00:00:00.00Z");
@@ -89,7 +89,7 @@ public final class NcrackWeakCredentialDetectorTest {
   @Mock private CredentialTester tester1;
   @Mock private CredentialTester tester2;
   @Mock private CredentialTester tester3;
-  private NcrackWeakCredentialDetector plugin;
+  private GenericWeakCredentialDetector plugin;
   private FakeUtcClock fakeUtcClock;
   private final MockWebServer mockWebServer = new MockWebServer();
   @Inject private HttpClient httpClient;
@@ -135,9 +135,9 @@ public final class NcrackWeakCredentialDetectorTest {
     Guice.createInjector(new HttpClientModule.Builder().build()).injectMembers(this);
 
     plugin =
-        new NcrackWeakCredentialDetector(
+        new GenericWeakCredentialDetector(
             ImmutableSet.of(provider1, provider2),
-            ImmutableList.of(tester1, tester2, tester3),
+            ImmutableSet.of(tester1, tester2, tester3),
             fakeUtcClock,
             httpClient);
   }
@@ -252,16 +252,19 @@ public final class NcrackWeakCredentialDetectorTest {
         .containsExactly(
             generateDetectionReport(
                     AdditionalDetail.newBuilder()
-                        .setDescription("Identified credential")
-                        .setCredential(
-                            Credential.newBuilder()
-                                .setUsername("username1")
-                                .setPassword("password1")))
+                        .setDescription("Identified credential(s)")
+                        .setCredentials(
+                            Credentials.newBuilder()
+                                .addCredential(
+                                    Credential.newBuilder()
+                                        .setUsername("username1")
+                                        .setPassword("password1"))
+                                .build()))
                 .build());
   }
 
   @Test
-  public void run_whenMultipleTestersReportValidCredential_returnsMultipleFindings() {
+  public void run_whenMultipleTestersReportValidCredential_returnsSingleFinding() {
     when(tester1.testValidCredentials(any(), any()))
         .thenReturn(ImmutableList.of(TestCredential.create("username1", Optional.of("password1"))))
         .thenReturn(ImmutableList.of());
@@ -276,25 +279,23 @@ public final class NcrackWeakCredentialDetectorTest {
         .containsExactly(
             generateDetectionReport(
                     AdditionalDetail.newBuilder()
-                        .setDescription("Identified credential")
-                        .setCredential(
-                            Credential.newBuilder()
-                                .setUsername("username1")
-                                .setPassword("password1")))
-                .build(),
-            generateDetectionReport(
-                    AdditionalDetail.newBuilder()
-                        .setDescription("Identified credential")
-                        .setCredential(
-                            Credential.newBuilder()
-                                .setUsername("username2")
-                                .setPassword("password2")))
+                        .setDescription("Identified credential(s)")
+                        .setCredentials(
+                            Credentials.newBuilder()
+                                .addCredential(
+                                    Credential.newBuilder()
+                                        .setUsername("username1")
+                                        .setPassword("password1"))
+                                .addCredential(
+                                    Credential.newBuilder()
+                                        .setUsername("username2")
+                                        .setPassword("password2"))
+                                .build()))
                 .build());
   }
 
   @Test
   public void run_whenNetworkServiceIsWordPress_performsFingerprintingAndTestWordPress() {
-
     ArgumentCaptor<NetworkService> networkServiceCaptor =
         ArgumentCaptor.forClass(NetworkService.class);
     when(tester1.testValidCredentials(networkServiceCaptor.capture(), any()))
@@ -326,29 +327,5 @@ public final class NcrackWeakCredentialDetectorTest {
             NetworkService.newBuilder(inputService)
                 .setSoftware(Software.newBuilder().setName("WordPress"))
                 .build());
-  }
-
-@Test
-  public void detect_onPostgresService_returnsEmptyList() {
-
-    DetectionReportList detectionReports =
-        plugin.detect(
-            TargetInfo.newBuilder()
-                .addNetworkEndpoints(
-                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-                .build(),
-            ImmutableList.of(
-                NetworkService.newBuilder()
-                    .setNetworkEndpoint(
-                        forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-                    .setTransportProtocol(TransportProtocol.TCP)
-                    .setServiceName("postgresql")
-                    .build()));
-
-    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    // Assert postgres is filtered out beffore any testers see it
-    verify(tester1, never()).canAccept(any());
-    verify(tester2, never()).canAccept(any());
-    verify(tester3, never()).canAccept(any());
   }
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack;
+package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
@@ -22,7 +22,7 @@ import java.util.List;
 
 /** Command line arguments for the Ncrack weak credential detector plugin. */
 @Parameters(separators = "=")
-public final class NcrackWeakCredentialDetectorCliOptions implements CliOption {
+public final class GenericWeakCredentialDetectorCliOptions implements CliOption {
   @Parameter(
       names = "--ncrack-excluded-target-services",
       description =
