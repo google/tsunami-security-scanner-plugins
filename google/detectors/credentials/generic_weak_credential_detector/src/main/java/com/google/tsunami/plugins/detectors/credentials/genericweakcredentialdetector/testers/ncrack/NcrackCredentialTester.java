@@ -74,7 +74,6 @@ public final class NcrackCredentialTester extends CredentialTester {
           .put("vnc", TargetService.VNC)
           .put("sip", TargetService.SIP)
           .put("redis", TargetService.REDIS)
-          .put("mysql", TargetService.MYSQL)
           .put("ms-sql-s", TargetService.MSSQL)
           .put("mqtt", TargetService.MQTT)
           .put("mongod", TargetService.MONGODB)
