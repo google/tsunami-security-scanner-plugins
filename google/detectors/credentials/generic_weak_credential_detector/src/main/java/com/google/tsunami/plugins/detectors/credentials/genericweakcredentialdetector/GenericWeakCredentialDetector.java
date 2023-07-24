@@ -87,8 +87,7 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
   // By default, a cred tester uses all the credentials provided by all the providers.
   // If a tester prefer faster scanning, explicitly specify the types of credentials to be used.
   private static final ImmutableMultimap<String, CredentialType>
-      SERVICE_SPECIFIC_CREDENTIALS_OVERRIDE =
-          ImmutableMultimap.of("postgresql", CredentialType.SERVICE_DEFAULT);
+      SERVICE_SPECIFIC_CREDENTIALS_OVERRIDE = ImmutableMultimap.of();
 
   @Inject
   GenericWeakCredentialDetector(
