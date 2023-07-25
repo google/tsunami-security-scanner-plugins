@@ -15,8 +15,8 @@ repositories {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 
     jar.manifest {
         attributes('Implementation-Title': name,
@@ -69,6 +69,7 @@ dependencies {
     implementation "com.google.protobuf:protobuf-javalite:${protobufVersion}"
     implementation "com.google.protobuf:protobuf-java-util:${protobufVersion}"
     implementation "com.google.tsunami:tsunami-common:${tsunamiVersion}"
+    implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
     implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
     implementation "javax.inject:javax.inject:${javaxInjectVersion}"
     implementation "org.jsoup:jsoup:${jsoupVersion}"
