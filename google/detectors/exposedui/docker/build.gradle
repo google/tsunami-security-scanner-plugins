@@ -69,7 +69,6 @@ dependencies {
     implementation "com.google.protobuf:protobuf-javalite:${protobufVersion}"
     implementation "com.google.protobuf:protobuf-java-util:${protobufVersion}"
     implementation "com.google.tsunami:tsunami-common:${tsunamiVersion}"
-    implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
     implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
     implementation "javax.inject:javax.inject:${javaxInjectVersion}"
     implementation "org.jsoup:jsoup:${jsoupVersion}"
