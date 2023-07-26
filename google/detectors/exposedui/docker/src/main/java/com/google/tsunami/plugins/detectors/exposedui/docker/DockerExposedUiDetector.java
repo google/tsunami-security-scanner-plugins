@@ -24,6 +24,7 @@ import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
@@ -99,37 +100,11 @@ public final class DockerExposedUiDetector implements VulnDetector {
     return detectionReports;
   }
 
-  // TODO(b/292575587): refactor this to NetworkServiceUtils class
-  private String getNetworkServiceEndpoint(NetworkService networkService) {
-    var endpoint = networkService.getNetworkEndpoint();
-    String host;
-    if (endpoint.hasHostname()) {
-      host = endpoint.getHostname().getName();
-    } else if (endpoint.hasIpAddress()) {
-      host = endpoint.getIpAddress().getAddress();
-    } else {
-      logger.atSevere().log("Need IP or hostname!");
-      return "";
-    }
-
-    int port;
-    if (endpoint.hasPort()) {
-      port = endpoint.getPort().getPortNumber();
-    } else {
-      logger.atWarning().log("No port given, using default port (2376)");
-      port = 2376;
-    }
-    return String.format("http://%s:%d/", host, port);
-  }
-
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String targetUri = getNetworkServiceEndpoint(networkService);
-
-    if (targetUri.isEmpty()) {
-      return false;
-    }
-
-    targetUri += "version";
+    String targetUri =
+        String.format(
+            "http://%s/version",
+            NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint()));
     try {
       HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build());
       if (response.status().isSuccess() && response.bodyString().isPresent()) {

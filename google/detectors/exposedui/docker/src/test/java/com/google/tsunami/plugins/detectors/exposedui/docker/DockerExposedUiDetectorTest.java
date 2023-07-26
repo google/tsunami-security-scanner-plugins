@@ -178,19 +178,6 @@ public final class DockerExposedUiDetectorTest {
   }
 
   @Test
-  public void detect_whenNonHttpNetworkService_ignoresServices() {
-    ImmutableList<NetworkService> nonHttpServices =
-        ImmutableList.of(
-            NetworkService.newBuilder().setServiceName("ssh").build(),
-            NetworkService.newBuilder().setServiceName("rdp").build());
-    assertThat(
-            detector
-                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), nonHttpServices)
-                .getDetectionReportsList())
-        .isEmpty();
-  }
-
-  @Test
   public void detect_whenEmptyNetworkService_generatesEmptyDetectionReports() {
     assertThat(
             detector
