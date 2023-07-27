@@ -140,7 +140,6 @@ class Cve202222963Detector(tsunami_plugin.VulnDetector):
 
   def _BuildUrl(self, network_service: tsunami_plugin.NetworkService) -> str:
     """Build the vulnerable target path for RCE injection."""
-    url = ''
     if network_service_utils.is_web_service(network_service):
       url = network_service_utils.build_web_application_root_url(
           network_service
