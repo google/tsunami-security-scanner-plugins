@@ -34,6 +34,7 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.DefaultCredentials;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.Top100Passwords;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.jenkins.JenkinsCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.mysql.MysqlCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack.NcrackCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.postgres.PostgresCredentialTester;
@@ -54,6 +55,7 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
 
     Multibinder<CredentialTester> credentialTesterrBinder =
         Multibinder.newSetBinder(binder(), CredentialTester.class);
+    credentialTesterrBinder.addBinding().to(JenkinsCredentialTester.class);
     credentialTesterrBinder.addBinding().to(MysqlCredentialTester.class);
     credentialTesterrBinder.addBinding().to(NcrackCredentialTester.class);
     credentialTesterrBinder.addBinding().to(PostgresCredentialTester.class);

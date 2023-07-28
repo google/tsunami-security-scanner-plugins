@@ -213,6 +213,10 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
             .addScopes(ScopeUtils.fromUrl(seedingUrl))
             .setShouldEnforceScopeCheck(shouldEnforceScopeCheck)
             .addSeedingUrls(seedingUrl)
+            // TODO: b/293337245 This is a Temporary change to include jenkins login url in seeding
+            // urls. This will be replaced by making seeding url configurable through cli options
+            // instead.
+            .addSeedingUrls(seedingUrl + "/login?from=%2F")
             .setMaxDepth(3)
             .setNetworkEndpoint(networkService.getNetworkEndpoint())
             .build();
