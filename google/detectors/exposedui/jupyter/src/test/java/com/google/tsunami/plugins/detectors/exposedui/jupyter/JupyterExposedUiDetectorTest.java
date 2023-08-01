@@ -77,41 +77,16 @@ public final class JupyterExposedUiDetectorTest {
 
   @Test
   public void detect_whenJupyterDoesNotRedirectToLogin_reportsVuln() throws IOException {
-    startMockWebServer(
-        "/terminals/1",
-        HttpStatus.OK.code(),
+    assetReportVuln(
         "Fake Jupyter Notebook terminal page that connect WebSocket to /terminals/websocket/1");
-    ImmutableList<NetworkService> httpServices =
-        ImmutableList.of(
-            NetworkService.newBuilder()
-                .setNetworkEndpoint(
-                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-                .setTransportProtocol(TransportProtocol.TCP)
-                .setSoftware(Software.newBuilder().setName("Jupyter Notebook"))
-                .setServiceName("http")
-                .build());
+  }
 
-    assertThat(
-            detector
-                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), httpServices)
-                .getDetectionReportsList())
-        .containsExactly(
-            DetectionReport.newBuilder()
-                .setTargetInfo(buildTargetInfo(forHostname(mockWebServer.getHostName())))
-                .setNetworkService(httpServices.get(0))
-                .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
-                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("JUPYTER_NOTEBOOK_EXPOSED_UI"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Jupyter Notebook Exposed Ui")
-                        .setDescription("Jupyter Notebook is not password or token protected")
-                        .setRecommendation(FINDING_RECOMMENDATION_TEXT))
-                .build());
+  @Test
+  public void detect_whenNewVersionOfJupyterWebApp_reportsVuln() throws IOException {
+    assetReportVuln(
+        "<title>Jupyter Notebook - Terminal</title><div class=\"lm-Widget jp-Terminal\""
+            + " data-term-theme=\"inherit\" role=\"region\" aria-label=\"notebook content\""
+            + " id=\"jp-Terminal-0\" tabindex=\"-1\">");
   }
 
   @Test
@@ -176,6 +151,41 @@ public final class JupyterExposedUiDetectorTest {
                     buildTargetInfo(forHostname(mockWebServer.getHostName())), ImmutableList.of())
                 .getDetectionReportsList())
         .isEmpty();
+  }
+
+  private void assetReportVuln(String bodyText) throws IOException {
+    startMockWebServer("/terminals/1", HttpStatus.OK.code(), bodyText);
+    ImmutableList<NetworkService> httpServices =
+        ImmutableList.of(
+            NetworkService.newBuilder()
+                .setNetworkEndpoint(
+                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+                .setTransportProtocol(TransportProtocol.TCP)
+                .setSoftware(Software.newBuilder().setName("Jupyter Notebook"))
+                .setServiceName("http")
+                .build());
+
+    assertThat(
+            detector
+                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), httpServices)
+                .getDetectionReportsList())
+        .containsExactly(
+            DetectionReport.newBuilder()
+                .setTargetInfo(buildTargetInfo(forHostname(mockWebServer.getHostName())))
+                .setNetworkService(httpServices.get(0))
+                .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
+                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                .setVulnerability(
+                    Vulnerability.newBuilder()
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("GOOGLE")
+                                .setValue("JUPYTER_NOTEBOOK_EXPOSED_UI"))
+                        .setSeverity(Severity.CRITICAL)
+                        .setTitle("Jupyter Notebook Exposed Ui")
+                        .setDescription("Jupyter Notebook is not password or token protected")
+                        .setRecommendation(FINDING_RECOMMENDATION_TEXT))
+                .build());
   }
 
   private void startMockWebServer(String url, int responseCode, String response)

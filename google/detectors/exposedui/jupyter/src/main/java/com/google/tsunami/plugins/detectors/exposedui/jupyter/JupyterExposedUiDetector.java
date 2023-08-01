@@ -100,11 +100,14 @@ public final class JupyterExposedUiDetector implements VulnDetector {
       return response.status().isSuccess()
           // TODO(b/147455413): checking Jupyter Notebook string is not needed once we have plugin
           // matching logic.
+          // Newer version of Jupyter no longer has websocket in the body.
           && response
               .bodyString()
               .map(
                   body ->
-                      body.contains("Jupyter Notebook") && body.contains("terminals/websocket/1"))
+                      body.contains("Jupyter Notebook")
+                          && (body.contains("terminals/websocket/1")
+                              || body.contains("jp-Terminal-0")))
               .orElse(false);
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
