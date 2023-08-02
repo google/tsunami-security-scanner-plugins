@@ -107,7 +107,8 @@ public final class JupyterExposedUiDetector implements VulnDetector {
                   body ->
                       body.contains("Jupyter Notebook")
                           && (body.contains("terminals/websocket/1")
-                              || body.contains("jp-Terminal-0")))
+                              || body.contains("jupyter-config-data"))
+                          && !body.contains("authentication is enabled"))
               .orElse(false);
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);

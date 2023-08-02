@@ -84,30 +84,18 @@ public final class JupyterExposedUiDetectorTest {
   @Test
   public void detect_whenNewVersionOfJupyterWebApp_reportsVuln() throws IOException {
     assetReportVuln(
-        "<title>Jupyter Notebook - Terminal</title><div class=\"lm-Widget jp-Terminal\""
-            + " data-term-theme=\"inherit\" role=\"region\" aria-label=\"notebook content\""
-            + " id=\"jp-Terminal-0\" tabindex=\"-1\">");
+        "><script id=\"jupyter-config-data\" type=\"application/json\">...\"appName\": \"Jupyter"
+            + " Notebook\"");
   }
 
   @Test
   public void detect_whenJupyterRedirectsToLoginPage_doesNotReportVuln() throws IOException {
-    startMockWebServer(
-        "/terminals/1", HttpStatus.FOUND.code(), "Fake Jupyter Notebook login page.");
-    ImmutableList<NetworkService> httpServices =
-        ImmutableList.of(
-            NetworkService.newBuilder()
-                .setNetworkEndpoint(
-                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-                .setTransportProtocol(TransportProtocol.TCP)
-                .setSoftware(Software.newBuilder().setName("Jupyter Notebook"))
-                .setServiceName("http")
-                .build());
+    assetDoesNotReportVuln("Fake Jupyter Notebook login page.");
+  }
 
-    assertThat(
-            detector
-                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), httpServices)
-                .getDetectionReportsList())
-        .isEmpty();
+  @Test
+  public void detect_whenJupyterRedirectsToTokenPage_doesNotReportVuln() throws IOException {
+    assetDoesNotReportVuln("Token authentication is enabled.");
   }
 
   @Test
@@ -186,6 +174,25 @@ public final class JupyterExposedUiDetectorTest {
                         .setDescription("Jupyter Notebook is not password or token protected")
                         .setRecommendation(FINDING_RECOMMENDATION_TEXT))
                 .build());
+  }
+
+  private void assetDoesNotReportVuln(String bodyTest) throws IOException {
+    startMockWebServer("/terminals/1", HttpStatus.FOUND.code(), bodyTest);
+    ImmutableList<NetworkService> httpServices =
+        ImmutableList.of(
+            NetworkService.newBuilder()
+                .setNetworkEndpoint(
+                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+                .setTransportProtocol(TransportProtocol.TCP)
+                .setSoftware(Software.newBuilder().setName("Jupyter Notebook"))
+                .setServiceName("http")
+                .build());
+
+    assertThat(
+            detector
+                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), httpServices)
+                .getDetectionReportsList())
+        .isEmpty();
   }
 
   private void startMockWebServer(String url, int responseCode, String response)
