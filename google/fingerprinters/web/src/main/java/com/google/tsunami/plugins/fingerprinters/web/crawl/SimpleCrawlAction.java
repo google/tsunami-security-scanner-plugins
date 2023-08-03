@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.fingerprinters.web.crawl;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.tsunami.plugins.fingerprinters.web.common.CrawlUtils.buildCrawlResult;
+import static com.google.tsunami.plugins.fingerprinters.web.crawl.CrawlTargetUtils.normalizeHost;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
@@ -148,6 +149,8 @@ final class SimpleCrawlAction extends RecursiveAction {
                     .orElse(Stream.empty()))
             // Ignore invalid CrawlTarget urls.
             .filter(SimpleCrawlAction::isValidCrawlTarget)
+            // Map CrawlTarget with `localhost` host to the one matching the crawl scope.
+            .map(crawlTarget -> normalizeHost(crawlConfig, crawlTarget))
             // Ignore out-of-scope URLs.
             .filter(crawlTarget -> CrawlConfigUtils.isCrawlTargetInScope(crawlConfig, crawlTarget))
             .map(this::newCrawlAction)

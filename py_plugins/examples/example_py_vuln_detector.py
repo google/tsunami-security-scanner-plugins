@@ -16,15 +16,37 @@ from absl import logging
 
 from google3.google.protobuf import timestamp_pb2
 from google3.third_party.java_src.tsunami.plugin_server.py import tsunami_plugin
+from google3.third_party.java_src.tsunami.plugin_server.py.common.net.http.http_client import HttpClient
+from google3.third_party.java_src.tsunami.plugin_server.py.plugin.payload.payload_generator import PayloadGenerator
 from google3.third_party.java_src.tsunami.proto import detection_pb2
 from google3.third_party.java_src.tsunami.proto import plugin_representation_pb2
 from google3.third_party.java_src.tsunami.proto import vulnerability_pb2
+
 
 PluginInfo = plugin_representation_pb2.PluginInfo
 
 
 class ExamplePyVulnDetector(tsunami_plugin.VulnDetector):
   """Example Python vulnerability detector class."""
+
+  def __init__(
+      self, http_client: HttpClient, payload_generator: PayloadGenerator):
+    """Constructor for ExamplePyVulnDetector.
+
+    The python plugin server supplies the inherited VulnDetector with the
+    HttpClient and the PayloadGenerator.
+
+    Args:
+      http_client: The configured HttpClient used to send request to vulnerable
+        target.
+      payload_generator: The payload generator provides pre-templated payloads
+        for RCE injection.
+
+    Returns:
+      ExamplePyVulnDetector used to detect vulnerabibility in the target host.
+    """
+    self.http_client = http_client
+    self.payload_generator = payload_generator
 
   def GetPluginDefinition(self) -> tsunami_plugin.PluginDefinition:
     """The PluginDefinition for your VulnDetector, derived by your PluginInfo.
@@ -41,9 +63,11 @@ class ExamplePyVulnDetector(tsunami_plugin.VulnDetector):
         info=PluginInfo(
             type=PluginInfo.VULN_DETECTION,
             name='ExamplePyVulnDetector',
-            version='0.1',
+            version='1.0',
             description='This is an example python plugin',
-            author='Alice (alice@company.com)'))
+            author='Alice (alice@company.com)',
+        )
+    )
 
   def Detect(
       self,
@@ -81,20 +105,24 @@ class ExamplePyVulnDetector(tsunami_plugin.VulnDetector):
         target_info=target,
         network_service=vulnerable_service,
         detection_timestamp=timestamp_pb2.Timestamp().GetCurrentTime(),
-        detection_status=detection_pb2.VULNERABILITY_VERIFIED,
+        detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
         vulnerability=vulnerability_pb2.Vulnerability(
             main_id=vulnerability_pb2.VulnerabilityId(
-                publisher='vulnerability_id_publisher',
-                value='VULNERABILITY_ID'),
-            severity=vulnerability_pb2.CRITICAL,
+                publisher='vulnerability_id_publisher', value='VULNERABILITY_ID'
+            ),
+            severity=vulnerability_pb2.Severity.CRITICAL,
             title='Vulnerability Title',
             description='Verbose description of the issue',
             recommendation='Verbose recommended solution',
             additional_details=[
                 vulnerability_pb2.AdditionalDetail(
                     text_data=vulnerability_pb2.TextData(
-                        text='Some additional technical details.'))
-            ]))
+                        text='Some additional technical details.'
+                    )
+                )
+            ],
+        ),
+    )
 
   def IsServiceVulnerable(self) -> bool:
     """Checks whether a given network service is vulnerable.

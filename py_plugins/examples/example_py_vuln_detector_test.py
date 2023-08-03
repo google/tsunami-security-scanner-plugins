@@ -13,10 +13,15 @@
 # limitations under the License.
 """Tests for example_py_vuln_detector."""
 
+import unittest.mock as umock
 from absl.testing import absltest
-
 from google3.google.protobuf import timestamp_pb2
 from google3.third_party.java_src.tsunami.plugin_server.py import tsunami_plugin
+from google3.third_party.java_src.tsunami.plugin_server.py.common.net.http.requests_http_client import RequestsHttpClientBuilder
+from google3.third_party.java_src.tsunami.plugin_server.py.plugin.payload.payload_generator import PayloadGenerator
+from google3.third_party.java_src.tsunami.plugin_server.py.plugin.payload.payload_secret_generator import PayloadSecretGenerator
+from google3.third_party.java_src.tsunami.plugin_server.py.plugin.payload.payload_utility import get_parsed_payload
+from google3.third_party.java_src.tsunami.plugin_server.py.plugin.tcs_client import TcsClient
 from google3.third_party.java_src.tsunami.proto import detection_pb2
 from google3.third_party.java_src.tsunami.proto import network_service_pb2
 from google3.third_party.java_src.tsunami.proto import reconnaissance_pb2
@@ -24,11 +29,32 @@ from google3.third_party.java_src.tsunami.proto import vulnerability_pb2
 from google3.third_party.tsunami_plugins.py_plugins.examples import example_py_vuln_detector
 
 
+# Callback server
+_CBID = '04041e8898e739ca33a250923e24f59ca41a8373f8cf6a45a1275f3b'
+_IP_ADDRESS = '127.0.0.1'
+_PORT = 8000
+_SECRET = 'a3d9ed89deadbeef'
+_CALLBACK_URL = 'http://%s:%s/%s' % (_IP_ADDRESS, _PORT, _CBID)
+
+
 class ExamplePyVulnDetectorTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
-    self.detector = example_py_vuln_detector.ExamplePyVulnDetector()
+    # payload generator and client with callback
+    request_client = RequestsHttpClientBuilder().build()
+    self.psg = PayloadSecretGenerator()
+    self.psg.generate = umock.MagicMock(return_value=_SECRET)
+    callback_client = TcsClient(
+        _IP_ADDRESS, _PORT, _CALLBACK_URL, request_client
+    )
+    self.payloads = get_parsed_payload()
+    self.payload_generator = PayloadGenerator(
+        self.psg, self.payloads, callback_client
+    )
+    self.detector = example_py_vuln_detector.ExamplePyVulnDetector(
+        request_client, self.payload_generator
+    )
 
   def test_get_plugin_definition_always_returns_example_plugin_definition(self):
     self.assertEqual(
@@ -36,10 +62,13 @@ class ExamplePyVulnDetectorTest(absltest.TestCase):
             info=example_py_vuln_detector.PluginInfo(
                 type=example_py_vuln_detector.PluginInfo.VULN_DETECTION,
                 name='ExamplePyVulnDetector',
-                version='0.1',
+                version='1.0',
                 description='This is an example python plugin',
-                author='Alice (alice@company.com)')),
-        self.detector.GetPluginDefinition())
+                author='Alice (alice@company.com)',
+            )
+        ),
+        self.detector.GetPluginDefinition(),
+    )
 
   def test_detect_always_returns_vulnerability(self):
     target = reconnaissance_pb2.TargetInfo()
@@ -51,20 +80,27 @@ class ExamplePyVulnDetectorTest(absltest.TestCase):
             target_info=target,
             network_service=service,
             detection_timestamp=timestamp_pb2.Timestamp().GetCurrentTime(),
-            detection_status=detection_pb2.VULNERABILITY_VERIFIED,
+            detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
             vulnerability=vulnerability_pb2.Vulnerability(
                 main_id=vulnerability_pb2.VulnerabilityId(
                     publisher='vulnerability_id_publisher',
-                    value='VULNERABILITY_ID'),
-                severity=vulnerability_pb2.CRITICAL,
+                    value='VULNERABILITY_ID',
+                ),
+                severity=vulnerability_pb2.Severity.CRITICAL,
                 title='Vulnerability Title',
                 description='Verbose description of the issue',
                 recommendation='Verbose recommended solution',
                 additional_details=[
                     vulnerability_pb2.AdditionalDetail(
                         text_data=vulnerability_pb2.TextData(
-                            text='Some additional technical details.'))
-                ])), detection_reports.detection_reports[0])
+                            text='Some additional technical details.'
+                        )
+                    )
+                ],
+            ),
+        ),
+        detection_reports.detection_reports[0],
+    )
 
 
 if __name__ == '__main__':

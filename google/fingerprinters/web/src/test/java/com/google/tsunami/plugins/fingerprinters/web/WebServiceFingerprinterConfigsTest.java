@@ -17,6 +17,7 @@ package com.google.tsunami.plugins.fingerprinters.web;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.tsunami.plugins.fingerprinters.web.WebServiceFingerprinterConfigs.WebServiceFingerprinterCliOptions;
@@ -87,5 +88,65 @@ public final class WebServiceFingerprinterConfigsTest {
     cliOptions.enforceCrawlingScopeCheck = null;
     configProperties.enforceCrawlingScopeCheck = null;
     assertThat(configs.shouldEnforceCrawlingScopeCheck()).isTrue();
+  }
+
+  @Test
+  public void maxRecordingContentSize_whenCliOptionSet_returnsCliOptionSetting() {
+    cliOptions.maxRecordingContentSize = 1L;
+    assertThat(configs.getMaxRecordingContentSize()).isEqualTo(1L);
+  }
+
+  @Test
+  public void maxRecordingContentSize_whenConfigPropertySet_returnsConfigPropertySetting() {
+    configProperties.maxRecordingContentSize = 2L;
+    assertThat(configs.getMaxRecordingContentSize()).isEqualTo(2L);
+  }
+
+  @Test
+  public void maxRecordingContentSize_whenBothCliAndConfigAreSet_cliOptionTakesPrecedence() {
+    cliOptions.maxRecordingContentSize = 1L;
+    configProperties.maxRecordingContentSize = 2L;
+    assertThat(configs.getMaxRecordingContentSize()).isEqualTo(1L);
+  }
+
+  @Test
+  public void maxRecordingContentSize_whenBothCliAndConfigAreNotSet_returnsDefaultValue() {
+    cliOptions.maxRecordingContentSize = null;
+    configProperties.maxRecordingContentSize = null;
+    assertThat(configs.getMaxRecordingContentSize()).isEqualTo(10240L);
+  }
+
+  @Test
+  public void contentTypeExclusions_whenCliOptionSet_returnsCliOptionSetting() {
+    cliOptions.contentTypeExclusions = ImmutableList.of("text/css", "application/octet-stream");
+    assertThat(configs.getContentTypeExclusions())
+        .containsExactly("text/css", "application/octet-stream")
+        .inOrder();
+  }
+
+  @Test
+  public void contentTypeExclusions_whenConfigPropertySet_returnsConfigPropertySetting() {
+    configProperties.contentTypeExclusions = ImmutableList.of("image/gif", "application/json");
+    assertThat(configs.getContentTypeExclusions())
+        .containsExactly("image/gif", "application/json")
+        .inOrder();
+  }
+
+  @Test
+  public void contentTypeExclusions_whenBothCliAndConfigAreSet_cliOptionTakesPrecedence() {
+    cliOptions.contentTypeExclusions = ImmutableList.of("text/css", "application/octet-stream");
+    configProperties.contentTypeExclusions = ImmutableList.of("image/gif", "application/json");
+    assertThat(configs.getContentTypeExclusions())
+        .containsExactly("text/css", "application/octet-stream")
+        .inOrder();
+  }
+
+  @Test
+  public void contentTypeExclusions_whenBothCliAndConfigAreNotSet_returnsDefaultValue() {
+    cliOptions.contentTypeExclusions = null;
+    configProperties.contentTypeExclusions = null;
+    assertThat(configs.getContentTypeExclusions())
+        .containsExactly("application/zip", "application/gzip")
+        .inOrder();
   }
 }
