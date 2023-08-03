@@ -147,7 +147,7 @@ public final class Cve202338646Detector implements VulnDetector {
     return null;
   }
 
-  private void sendRequest(NetworkService networkService, String Payload) {
+  private void sendRequest(NetworkService networkService, String payload) {
     HttpHeaders httpHeaders =
         HttpHeaders.builder().addHeader(CONTENT_TYPE, "application/json").build();
 
@@ -157,7 +157,7 @@ public final class Cve202338646Detector implements VulnDetector {
       httpClient.send(
           post(targetVulnerabilityUrl)
               .setHeaders(httpHeaders)
-              .setRequestBody(ByteString.copyFromUtf8(Payload))
+              .setRequestBody(ByteString.copyFromUtf8(payload))
               .build(),
           networkService);
     } catch (IOException | AssertionError e) {
