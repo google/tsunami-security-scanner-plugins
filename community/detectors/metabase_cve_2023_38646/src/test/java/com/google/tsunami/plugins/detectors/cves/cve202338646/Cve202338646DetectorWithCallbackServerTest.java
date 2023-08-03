@@ -17,6 +17,7 @@ package com.google.tsunami.plugins.detectors.cves.cve202338646;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.inject.Guice;
