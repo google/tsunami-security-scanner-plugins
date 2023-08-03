@@ -64,9 +64,10 @@ final class TestHelper {
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Metabase Pre-Authentication RCE (CVE-2023-38646)")
                 .setDescription(
-                    "Metabase open source before 0.46.6.1 and Metabase Enterprise before 1.46.6.1 has a vulnerability "
-                        + "that allows attackers to execute arbitrary commands on the server, at the server's privilege level."
-                        + " Authentication is not required for exploitation"))
+                    "Metabase open source before 0.46.6.1 and Metabase Enterprise before 1.46.6.1"
+                        + " has a vulnerability that allows attackers to execute arbitrary commands"
+                        + " on the server, at the server's privilege level. Authentication is not"
+                        + " required for exploitation"))
         .build();
   }
 }
