@@ -67,7 +67,10 @@ final class TestHelper {
                     "Metabase open source before 0.46.6.1 and Metabase Enterprise before 1.46.6.1"
                         + " has a vulnerability that allows attackers to execute arbitrary commands"
                         + " on the server, at the server's privilege level. Authentication is not"
-                        + " required for exploitation"))
+                        + " required for exploitation")
+                .setRecommendation(
+                    "Please upgrade Metabase to patched versions: v0.46.6.4, v1.46.6.4, v0.45.4.3,"
+                        + " v1.45.4.3, v0.44.7.3, v1.44.7.3, v0.43.7.3 or v1.43.7.3."))
         .build();
   }
 }
