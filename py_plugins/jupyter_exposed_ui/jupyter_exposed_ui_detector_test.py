@@ -55,8 +55,52 @@ class JupyterExposedUiDetectorTest(absltest.TestCase):
   def test_detect_when_jupyter_does_not_redirect_to_login_returns_vuln(
       self, mock):
     body = (
-        '<img src=\'mock_image\' alt=\'Jupyter Notebook\'/>'
-        ' data-ws-path=\'terminals/websocket/1\''
+        "<img src='mock_image' alt='Jupyter Notebook'/>"
+        " data-ws-path='terminals/websocket/1'"
+        )
+    mock.register_uri(
+        'GET',
+        'http://%s/%s' % (_TARGET_URL, _TARGET_PATH),
+        content=body.encode('utf-8'),
+        status_code=200,
+    )
+    network_service = network_service_pb2.NetworkService(
+        network_endpoint=network_endpoint_utils.for_hostname_and_port(
+            _TARGET_URL, _TARGET_PORT
+        ),
+        transport_protocol=network_pb2.TransportProtocol.TCP,
+        software=software_pb2.Software(name='Jupyter Notebook'),
+        service_name='http',
+    )
+    target_info = reconnaissance_pb2.TargetInfo(
+        network_endpoints=[network_service.network_endpoint]
+    )
+    detection_reports = self.detector.Detect(target_info, [network_service])
+    self.assertEqual(
+        detection_pb2.DetectionReport(
+            target_info=target_info,
+            network_service=network_service,
+            detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
+            vulnerability=vulnerability_pb2.Vulnerability(
+                main_id=vulnerability_pb2.VulnerabilityId(
+                    publisher='GOOGLE', value='JUPYTER_NOTEBOOK_EXPOSED_UI'
+                ),
+                severity=vulnerability_pb2.Severity.CRITICAL,
+                title='Jupyter Notebook Exposed Ui',
+                recommendation=_VULN_REMEDIATION,
+                description=('Jupyter Notebook is not password or token'
+                             ' protected'),
+            ),
+        ),
+        detection_reports.detection_reports[0],
+    )
+
+  @requests_mock.mock()
+  def test_detect_when_jupyter_latest_v_does_not_redirect_to_login_returns_vuln(
+      self, mock):
+    body = (
+        "<img src='mock_image' alt='Jupyter Notebook'/>"
+        " data-ws-path='jupyter-config-data'"
         )
     mock.register_uri(
         'GET',
@@ -97,6 +141,28 @@ class JupyterExposedUiDetectorTest(absltest.TestCase):
 
   @requests_mock.mock()
   def test_detect_when_jupyter_redirects_to_login_returns_no_vuln(self, mock):
+    body = 'Token authentication is enabled'
+    mock.register_uri(
+        'GET',
+        'http://%s/%s' % (_TARGET_URL, _TARGET_PATH),
+        content=body.encode('utf-8'),
+        status_code=200,
+    )
+    network_service = network_service_pb2.NetworkService(
+        network_endpoint=network_endpoint_utils.for_hostname_and_port(
+            _TARGET_URL, _TARGET_PORT
+        ),
+        transport_protocol=network_pb2.TransportProtocol.TCP,
+        software=software_pb2.Software(name='Jupyter Notebook'),
+    )
+    target_info = reconnaissance_pb2.TargetInfo(
+        network_endpoints=[network_service.network_endpoint]
+    )
+    detection_reports = self.detector.Detect(target_info, [network_service])
+    self.assertEmpty(detection_reports.detection_reports)
+
+  @requests_mock.mock()
+  def test_detect_when_jupyter_is_token_protected_returns_no_vuln(self, mock):
     body = 'Jupyter Notebook login page.'
     mock.register_uri(
         'GET',
