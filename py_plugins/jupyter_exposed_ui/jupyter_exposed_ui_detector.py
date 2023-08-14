@@ -107,7 +107,11 @@ class JupyterExposedUiDetector(tsunami_plugin.VulnDetector):
       )
       return response.status == HttpStatus.OK and (
           'Jupyter Notebook' in response.body_string()
-          and 'terminals/websocket/1' in response.body_string()
+          and (
+              'terminals/websocket/1' in response.body_string()
+              or 'jupyter-config-data' in response.body_string()
+          )
+          and 'authentication is enabled' not in response.body_string()
       )
     except Exception:  # pylint: disable=broad-exception-caught
       logging.exception('Unable to query %s', url)

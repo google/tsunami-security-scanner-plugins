@@ -56,7 +56,8 @@ public final class Top100Passwords extends CredentialProvider {
           "ansible",
           "ec2-user",
           "vagrant",
-          "azureuser");
+          "azureuser",
+          "cisco");
 
   private static final ImmutableList<String> TOP_100_PASSWORDS =
       ImmutableList.of(

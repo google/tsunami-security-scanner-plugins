@@ -38,6 +38,7 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.mysql.MysqlCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack.NcrackCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.postgres.PostgresCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.wordpress.WordpressCredentialTester;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -59,6 +60,7 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
     credentialTesterrBinder.addBinding().to(MysqlCredentialTester.class);
     credentialTesterrBinder.addBinding().to(NcrackCredentialTester.class);
     credentialTesterrBinder.addBinding().to(PostgresCredentialTester.class);
+    credentialTesterrBinder.addBinding().to(WordpressCredentialTester.class);
 
     Multibinder<CredentialProvider> credentialProviderBinder =
         Multibinder.newSetBinder(binder(), CredentialProvider.class);
