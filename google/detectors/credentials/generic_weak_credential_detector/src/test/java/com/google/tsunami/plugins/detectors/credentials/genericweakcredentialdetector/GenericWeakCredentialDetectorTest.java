@@ -41,11 +41,14 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.ServiceContext;
 import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
+import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -91,6 +94,9 @@ public final class GenericWeakCredentialDetectorTest {
   private GenericWeakCredentialDetector plugin;
   private FakeUtcClock fakeUtcClock;
   private final MockWebServer mockWebServer = new MockWebServer();
+
+  private NetworkService wpNetworkService;
+  private NetworkService wpWebService;
   @Inject private HttpClient httpClient;
 
   @Captor private ArgumentCaptor<List<TestCredential>> listCaptor1;
@@ -131,6 +137,28 @@ public final class GenericWeakCredentialDetectorTest {
     mockWebServer.setDispatcher(dispatcher);
     mockWebServer.start();
 
+    wpNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setServiceName("wordpress")
+            .build();
+    wpWebService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setServiceName("http")
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(
+                        WebServiceContext.newBuilder()
+                            .setSoftware(Software.newBuilder().setName("wordpress").build())
+                            .build())
+                    .build())
+            .build();
+
     Guice.createInjector(new HttpClientModule.Builder().build()).injectMembers(this);
 
     plugin =
@@ -162,20 +190,24 @@ public final class GenericWeakCredentialDetectorTest {
                 .build()));
   }
 
+  @CanIgnoreReturnValue
+  private DetectionReportList runDetectOnMockWebServerAgainstWebService() {
+    return plugin.detect(
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .build(),
+        ImmutableList.of(wpWebService));
+  }
+
   private DetectionReport.Builder generateDetectionReport(
-      AdditionalDetail.Builder additionalDetailBuilder) {
+      NetworkService networkService, AdditionalDetail.Builder additionalDetailBuilder) {
     return DetectionReport.newBuilder()
         .setTargetInfo(
             TargetInfo.newBuilder()
                 .addNetworkEndpoints(
                     forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort())))
-        .setNetworkService(
-            NetworkService.newBuilder()
-                .setNetworkEndpoint(
-                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-                .setTransportProtocol(TransportProtocol.TCP)
-                .setServiceName("wordpress")
-                .build())
+        .setNetworkService(networkService)
         .setDetectionTimestamp(Timestamps.fromMillis(FAKE_NOW.toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
@@ -237,7 +269,7 @@ public final class GenericWeakCredentialDetectorTest {
   }
 
   @Test
-  public void run_whenATestersReportsValidCredential_returnsFinding() {
+  public void run_whenATesterReportsValidCredential_returnsFinding() {
     when(tester1.testValidCredentials(any(), any()))
         .thenReturn(ImmutableList.of(TestCredential.create("username1", Optional.of("password1"))))
         .thenReturn(ImmutableList.of());
@@ -249,6 +281,7 @@ public final class GenericWeakCredentialDetectorTest {
     assertThat(detectionReports.getDetectionReportsList())
         .containsExactly(
             generateDetectionReport(
+                    wpNetworkService,
                     AdditionalDetail.newBuilder()
                         .setDescription("Identified credential(s)")
                         .setCredentials(
@@ -276,6 +309,7 @@ public final class GenericWeakCredentialDetectorTest {
     assertThat(detectionReports.getDetectionReportsList())
         .containsExactly(
             generateDetectionReport(
+                    wpNetworkService,
                     AdditionalDetail.newBuilder()
                         .setDescription("Identified credential(s)")
                         .setCredentials(
@@ -288,6 +322,32 @@ public final class GenericWeakCredentialDetectorTest {
                                     Credential.newBuilder()
                                         .setUsername("username2")
                                         .setPassword("password2"))
+                                .build()))
+                .build());
+  }
+
+  @Test
+  public void run_whenTestersReportsValidCredentialForWebService_returnsFinding() {
+    when(tester1.testValidCredentials(any(), any()))
+        .thenReturn(ImmutableList.of(TestCredential.create("username1", Optional.of("password1"))))
+        .thenReturn(ImmutableList.of());
+    when(tester2.testValidCredentials(any(), any())).thenReturn(ImmutableList.of());
+    when(tester3.testValidCredentials(any(), any())).thenReturn(ImmutableList.of());
+
+    DetectionReportList detectionReports = runDetectOnMockWebServerAgainstWebService();
+
+    assertThat(detectionReports.getDetectionReportsList())
+        .containsExactly(
+            generateDetectionReport(
+                    wpWebService,
+                    AdditionalDetail.newBuilder()
+                        .setDescription("Identified credential(s)")
+                        .setCredentials(
+                            Credentials.newBuilder()
+                                .addCredential(
+                                    Credential.newBuilder()
+                                        .setUsername("username1")
+                                        .setPassword("password1"))
                                 .build()))
                 .build());
   }

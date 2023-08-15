@@ -56,11 +56,13 @@ public final class DefaultCredentials extends CredentialProvider {
   @Override
   public Iterator<TestCredential> generateTestCredentials(NetworkService networkService) {
     String serviceName = NetworkServiceUtils.getServiceName(networkService);
+    String webServiceName = NetworkServiceUtils.getWebServiceName(networkService);
 
     return defaultCredentialsData.getServiceDefaultCredentialsList().stream()
         .filter(
             serviceDefaultCredentials ->
-                serviceDefaultCredentials.getServiceName().equals(serviceName))
+                serviceDefaultCredentials.getServiceName().equals(serviceName)
+                    || serviceDefaultCredentials.getServiceName().equals(webServiceName))
         .flatMap(
             serviceDefaultCredentials ->
                 Lists.cartesianProduct(

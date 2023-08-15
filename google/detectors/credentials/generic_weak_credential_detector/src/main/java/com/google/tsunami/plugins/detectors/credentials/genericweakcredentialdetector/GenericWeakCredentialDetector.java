@@ -170,7 +170,8 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
       provider.generateTestCredentials(networkService).forEachRemaining(credentials::add);
     }
 
-    return new WeakCredentialComposer(ImmutableList.copyOf(credentials), tester)
+    return new WeakCredentialComposer(
+            ImmutableList.sortedCopyOf(TestCredential.comparator(), credentials), tester)
         .run(networkService);
   }
 
@@ -201,17 +202,22 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
   }
 
   private static String buildVulnerabilityId(NetworkService networkService) {
-    return "WEAK_CREDENTIALS_FOR_"
-        + Ascii.toUpperCase(NetworkServiceUtils.getServiceName(networkService));
+    return "WEAK_CREDENTIALS_FOR_" + Ascii.toUpperCase(getServiceName(networkService));
+  }
+
+  private static String getServiceName(NetworkService networkService) {
+    String webServiceName = NetworkServiceUtils.getWebServiceName(networkService);
+    return webServiceName.isEmpty()
+        ? NetworkServiceUtils.getServiceName(networkService)
+        : webServiceName;
   }
 
   private static String buildTitle(NetworkService networkService) {
-    return String.format(
-        "Weak '%s' service credential", NetworkServiceUtils.getServiceName(networkService));
+    return String.format("Weak '%s' service credential", getServiceName(networkService));
   }
 
   private static String buildDescription(NetworkService networkService) {
-    String affectedService = NetworkServiceUtils.getServiceName(networkService);
+    String affectedService = getServiceName(networkService);
     String affectedPort =
         networkService.getNetworkEndpoint().hasPort()
             ? String.valueOf(networkService.getNetworkEndpoint().getPort().getPortNumber())
@@ -219,14 +225,6 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
     return String.format(
         "Well known or weak credentials are detected for '%s' service on port '%s'.",
         affectedService, affectedPort);
-  }
-
-  static String formatNetworkService(NetworkService networkService) {
-    return String.format(
-        "%s (%s, port %d)",
-        NetworkServiceUtils.getServiceName(networkService),
-        networkService.getTransportProtocol(),
-        networkService.getNetworkEndpoint().getPort().getPortNumber());
   }
 
   private static AdditionalDetail buildCredentialDetail(

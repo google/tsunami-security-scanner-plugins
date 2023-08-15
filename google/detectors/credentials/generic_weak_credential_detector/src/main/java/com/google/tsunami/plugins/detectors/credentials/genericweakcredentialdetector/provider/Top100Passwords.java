@@ -62,6 +62,8 @@ public final class Top100Passwords extends CredentialProvider {
   private static final ImmutableList<String> TOP_100_PASSWORDS =
       ImmutableList.of(
           "",
+          "root",
+          "test",
           "123456",
           "password",
           "Password",

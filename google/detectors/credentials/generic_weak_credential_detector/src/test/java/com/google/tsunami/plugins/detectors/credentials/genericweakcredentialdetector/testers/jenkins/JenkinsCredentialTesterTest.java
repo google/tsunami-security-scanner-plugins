@@ -18,11 +18,13 @@ package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialde
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.tsunami.common.net.db.ConnectionProviderInterface;
 import com.google.tsunami.common.net.http.HttpClientModule;
@@ -63,6 +65,8 @@ public class JenkinsCredentialTesterTest {
       TestCredential.create("root", Optional.of("pass"));
   private static final TestCredential WRONG_CRED_1 =
       TestCredential.create("wrong", Optional.of("pass"));
+
+  private static final TestCredential EMPTY_CRED = TestCredential.create("", Optional.of(""));
   private static final String WEAK_CRED_AUTH_1 = "Authorization: basic dXNlcjoxMjM0";
   private static final String WEAK_CRED_AUTH_2 = "Authorization: basic cm9vdDpwYXNz";
   private static final ServiceContext.Builder jenkinsServiceContext =
@@ -78,7 +82,11 @@ public class JenkinsCredentialTesterTest {
 
   @Test
   public void detect_weakCredentialsExists_returnsWeakCredentials() throws Exception {
-    startMockWebServer("/login", 200, "OK");
+    startMockWebServer(
+        "/view/all/newJob",
+        200,
+        Resources.toString(
+            Resources.getResource(this.getClass(), "testdata/enUsNewJobPage.html"), UTF_8));
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
@@ -94,8 +102,12 @@ public class JenkinsCredentialTesterTest {
   }
 
   @Test
-  public void detect_weakCredentialssExist_returnsAllWeakCredentials() throws Exception {
-    startMockWebServer("/login", 200, "OK");
+  public void detect_weakCredentialsExist_returnsFirstWeakCredentials() throws Exception {
+    startMockWebServer(
+        "/view/all/newJob",
+        200,
+        Resources.toString(
+            Resources.getResource(this.getClass(), "testdata/enUsNewJobPage.html"), UTF_8));
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
@@ -107,12 +119,55 @@ public class JenkinsCredentialTesterTest {
     assertThat(
             tester.testValidCredentials(
                 targetNetworkService, ImmutableList.of(WEAK_CRED_1, WEAK_CRED_2)))
-        .containsExactly(WEAK_CRED_1, WEAK_CRED_2);
+        .containsExactly(WEAK_CRED_1);
+  }
+
+  @Test
+  public void detect_weakCredentialsExistAndJenkinsInForeignLanguage_returnsFirstWeakCredentials()
+      throws Exception {
+    startMockWebServer(
+        "/view/all/newJob",
+        200,
+        Resources.toString(
+            Resources.getResource(this.getClass(), "testdata/deChNewJobPage.html"), UTF_8));
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setServiceName("http")
+            .setServiceContext(jenkinsServiceContext)
+            .build();
+
+    assertThat(
+            tester.testValidCredentials(
+                targetNetworkService, ImmutableList.of(WEAK_CRED_1, WEAK_CRED_2)))
+        .containsExactly(WEAK_CRED_1);
+  }
+
+  @Test
+  public void detect_noAuthConfigured_reportsVuln() throws Exception {
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setResponseCode(200)
+            .setBody(
+                Resources.toString(
+                    Resources.getResource(this.getClass(), "testdata/enUsNewJobPage.html"),
+                    UTF_8)));
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setServiceName("http")
+            .setServiceContext(jenkinsServiceContext)
+            .build();
+
+    assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(EMPTY_CRED)))
+        .containsExactly(EMPTY_CRED);
   }
 
   @Test
   public void detect_noWeakCredentials_returnsNoCredentials() throws Exception {
-    startMockWebServer("/login", 200, "OK");
+    startMockWebServer("/view/all/newJob", 200, "OK");
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
@@ -161,7 +216,7 @@ public class JenkinsCredentialTesterTest {
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
-      if (recordedRequest.getPath().startsWith("/login?from=%2F")
+      if (recordedRequest.getPath().startsWith("/view/all/newJob")
           && (recordedRequest.getHeaders().toString().contains(WEAK_CRED_AUTH_1)
               || recordedRequest.getHeaders().toString().contains(WEAK_CRED_AUTH_2))) {
         return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(loginPageResponse);

@@ -15,8 +15,11 @@
  */
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider;
 
+import static java.util.Comparator.comparing;
+
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import java.util.Comparator;
 import java.util.Optional;
 
 /** Pair of username and password. */
@@ -32,4 +35,12 @@ public abstract class TestCredential {
     // We do not check for empty strings as they might be valid attempts.
     return new AutoValue_TestCredential(username, password);
   }
+
+  public static Comparator<TestCredential> comparator() {
+    return COMPARATOR;
+  }
+
+  private static final Comparator<TestCredential> COMPARATOR =
+      comparing(TestCredential::username)
+          .thenComparing((TestCredential left) -> left.password().orElse(""));
 }

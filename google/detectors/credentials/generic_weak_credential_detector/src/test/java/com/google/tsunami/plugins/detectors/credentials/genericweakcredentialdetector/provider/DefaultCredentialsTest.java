@@ -21,6 +21,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.proto.DefaultCredentialsData;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.proto.ServiceDefaultCredentials;
 import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.ServiceContext;
+import com.google.tsunami.proto.Software;
+import com.google.tsunami.proto.WebServiceContext;
 import java.util.Optional;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,7 +64,7 @@ public final class DefaultCredentialsTest {
   }
 
   @Test
-  public void genereateTestCredentials_withWordpressServer_returnsExpectedCredentials() {
+  public void generateTestCredentials_withWordpressServer_returnsExpectedCredentials() {
     ImmutableList<TestCredential> generatedCredentials =
         ImmutableList.copyOf(
             provider.generateTestCredentials(
@@ -72,7 +75,27 @@ public final class DefaultCredentialsTest {
   }
 
   @Test
-  public void genereateTestCredentials_withMultiplePairs_returnsExpectedCredentials() {
+  public void generateTestCredentials_withWordpressHttpServer_returnsExpectedCredentials() {
+    ImmutableList<TestCredential> generatedCredentials =
+        ImmutableList.copyOf(
+            provider.generateTestCredentials(
+                NetworkService.newBuilder()
+                    .setServiceName("http")
+                    .setServiceContext(
+                        ServiceContext.newBuilder()
+                            .setWebServiceContext(
+                                WebServiceContext.newBuilder()
+                                    .setSoftware(Software.newBuilder().setName("wordpress").build())
+                                    .build())
+                            .build())
+                    .build()));
+
+    assertThat(generatedCredentials)
+        .containsExactly(TestCredential.create("admin", Optional.of("password")));
+  }
+
+  @Test
+  public void generateTestCredentials_withMultiplePairs_returnsExpectedCredentials() {
     ImmutableList<TestCredential> generatedCredentials =
         ImmutableList.copyOf(
             provider.generateTestCredentials(
@@ -89,7 +112,7 @@ public final class DefaultCredentialsTest {
   }
 
   @Test
-  public void genereateTestCredentials_withUnsupportedService_returnsEmpty() {
+  public void generateTestCredentials_withUnsupportedService_returnsEmpty() {
     ImmutableList<TestCredential> generatedCredentials =
         ImmutableList.copyOf(provider.generateTestCredentials(NetworkService.getDefaultInstance()));
 
