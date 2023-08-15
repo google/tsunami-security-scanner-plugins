@@ -176,7 +176,7 @@ public class WordpressCredentialTesterTest {
           && recordedRequest.getHeaders().toString().contains("path=/wp-admin;")
           && recordedRequest.getHeaders().toString().contains("path=/;")
           && recordedRequest.getHeaders().toString().contains("path=/wp-content/plugins;")) {
-        return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(loginPageResponse);
+        return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("wp-admin-bar-new-content");
       }
       return new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code());
     }

@@ -110,6 +110,7 @@ public final class WordpressCredentialTester extends CredentialTester {
       }
       return false;
     } catch (IOException e) {
+      // TODO: b/295948996 wordpress scanner has random connection issues
       logger.atWarning().withCause(e).log("Unable to query '%s'.", url);
       return false;
     }
@@ -138,18 +139,21 @@ public final class WordpressCredentialTester extends CredentialTester {
   }
 
   boolean wordpressCheckAuth(HttpResponse response, String host, int port) throws IOException {
-    if (response.headers().getAll("Set-Cookie") != null) {
+    if (!response.headers().getAll("Set-Cookie").isEmpty()) {
       response = httpClient.send(wordpressGetCookie(response, host, port));
-        return response.status().code() == 200;
+      return (response.status().code() == 200
+          && response.bodyBytes().get().toStringUtf8().contains("wp-admin-bar-new-content"));
     }
     return false;
   }
 
   HttpRequest wordpressGetCookie(HttpResponse response, String host, int port) {
     HttpHeaders.Builder cookieHeader = HttpHeaders.builder();
+    String cookieParam = "";
     for (String element : response.headers().getAll("Set-Cookie")) {
-      cookieHeader.addHeader("Cookie", element);
+      cookieParam += element.substring(0, element.indexOf(";")) + ";";
     }
+    cookieHeader.addHeader("Cookie", cookieParam);
     return get(String.format("http://%s:%d/", host, port) + "wp-admin/")
             .setHeaders(cookieHeader.build())
             .build();
