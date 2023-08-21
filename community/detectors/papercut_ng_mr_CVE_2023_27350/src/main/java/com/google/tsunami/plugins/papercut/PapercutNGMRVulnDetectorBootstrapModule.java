@@ -17,14 +17,10 @@ package com.google.tsunami.plugins.papercut;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-public final class PayloadNGMRVulnDetectorWithPayloadBootstrapModule extends PluginBootstrapModule {
+public final class PapercutNGMRVulnDetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    // Tsunami relies heavily on Guice (https://github.com/google/guice). All Guice bindings for
-    // your plugin should be implemented here.
-
-    // registerPlugin method is required in order for the Tsunami scanner to identify your plugin.
-    registerPlugin(PayloadNGMRVulnDetectorWithPayload.class);
+    registerPlugin(PapercutNGMRVulnDetector.class);
   }
 }
