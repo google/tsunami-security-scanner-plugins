@@ -43,19 +43,19 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
     description = "Detects papercut versions that are vulnerable to authentication bypass and RCE.",
     author = "Isaac_GC (isaac@nu-that.us)",
     // How should Tsunami scanner bootstrap your plugin.
-    bootstrapModule = PapercutNGMRVulnDetectorBootstrapModule.class)
+    bootstrapModule = PapercutNGMFVulnDetectorBootstrapModule.class)
 // Optionally, each VulnDetector can be annotated by service filtering annotations. For example, if
 // the VulnDetector should only be executed when the scan target is running Jenkins, then add the
 // following @ForSoftware annotation.
 // @ForSoftware(name = "Jenkins")
-public final class PapercutNGMRVulnDetector implements VulnDetector {
+public final class PapercutNGMFVulnDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final Clock utcClock;
   private final HttpClient httpClient;
 
   @Inject
-  PapercutNGMRVulnDetector(
+  PapercutNGMFVulnDetector(
       @UtcClock Clock utcClock, HttpClient httpClient) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();

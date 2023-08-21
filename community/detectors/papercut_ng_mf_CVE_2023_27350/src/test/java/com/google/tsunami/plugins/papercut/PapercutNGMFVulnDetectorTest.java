@@ -39,18 +39,18 @@ import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 
 /**
- * Unit tests for {@link PapercutNGMRVulnDetectorTest}, showing how to test a detector which
+ * Unit tests for {@link PapercutNGMFVulnDetectorTest}, showing how to test a detector which
  * utilizes the payload generator framework.
  */
 @RunWith(JUnit4.class)
-public final class PapercutNGMRVulnDetectorTest {
+public final class PapercutNGMFVulnDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
   private MockWebServer mockWebServer;
   private NetworkService papercutService;
-  @Inject private PapercutNGMRVulnDetector detector;
+  @Inject private PapercutNGMFVulnDetector detector;
 
   private DetectionReport detectorReport;
 
@@ -70,7 +70,7 @@ public final class PapercutNGMRVulnDetectorTest {
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
-            new PapercutNGMRVulnDetectorBootstrapModule()
+            new PapercutNGMFVulnDetectorBootstrapModule()
     ).injectMembers(this);
 
     detectorReport =
@@ -160,7 +160,7 @@ public final class PapercutNGMRVulnDetectorTest {
   // Helper function load additional resources used in the tests
   private static String loadResource(String file) throws IOException {
     return Resources.toString(
-      Resources.getResource(PapercutNGMRVulnDetectorTest.class, file),
+      Resources.getResource(PapercutNGMFVulnDetectorTest.class, file),
         StandardCharsets.UTF_8
       ).strip();
   }

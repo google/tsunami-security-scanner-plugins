@@ -17,10 +17,10 @@ package com.google.tsunami.plugins.papercut;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-public final class PapercutNGMRVulnDetectorBootstrapModule extends PluginBootstrapModule {
+public final class PapercutNGMFVulnDetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    registerPlugin(PapercutNGMRVulnDetector.class);
+    registerPlugin(PapercutNGMFVulnDetector.class);
   }
 }
