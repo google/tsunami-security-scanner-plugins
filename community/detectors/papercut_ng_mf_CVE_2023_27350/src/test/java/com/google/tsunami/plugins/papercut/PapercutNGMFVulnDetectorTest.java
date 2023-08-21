@@ -89,12 +89,13 @@ public final class PapercutNGMFVulnDetectorTest {
                   .setTitle("Papercut NG/MF Authentication Bypass and RCE")
                   .setDescription(
                     "This vulnerability allows remote attackers to bypass authentication" +
-                    " on affected installations of PaperCut NG 22.0.5 (Build 63914)." +
+                    " on affected installations of PaperCut NG/MF." +
                     " Authentication is not required to exploit this vulnerability." +
-                    " The specific flaw exists within the SetupCompleted class." +
-                    " The issue results from improper access control." +
+                    " The specific flaw exists within the SetupCompleted class and the" +
+                    " issue results from improper access control." +
                     " An attacker can leverage this vulnerability to bypass authentication" +
-                    " and execute arbitrary code in the context of SYSTEM."
+                    " and execute arbitrary code in the context of SYSTEM (Windows) " +
+                    "or Root/Papercut User (Linux)."
                   )
                   .setRecommendation("Update to versions that are at least 20.1.7, 21.2.11, 22.0.9, or any later version.")
               ).build();
