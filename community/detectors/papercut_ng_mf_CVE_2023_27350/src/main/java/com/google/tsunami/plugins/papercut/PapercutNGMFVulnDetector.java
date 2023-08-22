@@ -15,6 +15,9 @@
  */
 package com.google.tsunami.plugins.papercut;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
@@ -25,16 +28,12 @@ import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.proto.*;
-
-import javax.inject.Inject;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
+import javax.inject.Inject;
 
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
