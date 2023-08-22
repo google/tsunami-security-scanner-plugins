@@ -45,7 +45,7 @@ import org.junit.runners.JUnit4;
 public final class PapercutNGMFVulnDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
-      FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
+          FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
   private MockWebServer mockWebServer;
   private NetworkService papercutService;
@@ -58,57 +58,57 @@ public final class PapercutNGMFVulnDetectorTest {
     mockWebServer = new MockWebServer();
 
     papercutService =
-        NetworkService.newBuilder()
-            .setNetworkEndpoint(
-                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .setTransportProtocol(TransportProtocol.TCP)
-            .setSoftware(Software.newBuilder().setName("Papercut MF"))
-            .setServiceName("http")
-            .build();
+            NetworkService.newBuilder()
+                    .setNetworkEndpoint(
+                            forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+                    .setTransportProtocol(TransportProtocol.TCP)
+                    .setSoftware(Software.newBuilder().setName("Papercut MF"))
+                    .setServiceName("http")
+                    .build();
 
     Guice.createInjector(
-            new FakeUtcClockModule(fakeUtcClock),
-            new HttpClientModule.Builder().build(),
-            new PapercutNGMFVulnDetectorBootstrapModule())
-        .injectMembers(this);
+                    new FakeUtcClockModule(fakeUtcClock),
+                    new HttpClientModule.Builder().build(),
+                    new PapercutNGMFVulnDetectorBootstrapModule())
+            .injectMembers(this);
 
     detectorReport =
-        DetectionReport.newBuilder()
-            .setTargetInfo(TargetInfo.getDefaultInstance())
-            .setNetworkService(papercutService)
-            .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
-            .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-            .setVulnerability(
-                Vulnerability.newBuilder()
-                    .setMainId(
-                        VulnerabilityId.newBuilder()
-                            .setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("CVE_2023_27350"))
-                    .setSeverity(Severity.CRITICAL)
-                    .setTitle("Papercut NG/MF Authentication Bypass and RCE")
-                    .setDescription(
-                        "This vulnerability allows remote attackers to bypass authentication"
-                            + " on affected installations of PaperCut NG/MF."
-                            + " Authentication is not required to exploit this vulnerability."
-                            + " The specific flaw exists within the SetupCompleted class and the"
-                            + " issue results from improper access control."
-                            + " An attacker can leverage this vulnerability to bypass authentication"
-                            + " and execute arbitrary code in the context of SYSTEM (Windows) "
-                            + "or Root/Papercut User (Linux).")
-                    .setRecommendation(
-                        "Update to versions that are at least 20.1.7, 21.2.11, 22.0.9, or any later version."))
-            .build();
+            DetectionReport.newBuilder()
+                    .setTargetInfo(TargetInfo.getDefaultInstance())
+                    .setNetworkService(papercutService)
+                    .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                    .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                    .setVulnerability(
+                            Vulnerability.newBuilder()
+                                    .setMainId(
+                                            VulnerabilityId.newBuilder()
+                                                    .setPublisher("TSUNAMI_COMMUNITY")
+                                                    .setValue("CVE_2023_27350"))
+                                    .setSeverity(Severity.CRITICAL)
+                                    .setTitle("Papercut NG/MF Authentication Bypass and RCE")
+                                    .setDescription(
+                                            "This vulnerability allows remote attackers to bypass authentication on"
+                                                    + " affected installations of PaperCut NG/MF. Authentication is not"
+                                                    + " required to exploit this vulnerability. The specific flaw exists"
+                                                    + " within the SetupCompleted class and the issue results from improper"
+                                                    + " access control. An attacker can leverage this vulnerability to"
+                                                    + " bypass authentication and execute arbitrary code in the context of"
+                                                    + " SYSTEM (Windows) or Root/Papercut User (Linux).")
+                                    .setRecommendation(
+                                            "Update to versions that are at least 20.1.7, 21.2.11, 22.0.9, or any later"
+                                                    + " version."))
+                    .build();
   }
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
     // Set up the mock webserver
     mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody(loadResource("vulnerable_page.html")));
+            new MockResponse().setResponseCode(200).setBody(loadResource("vulnerable_page.html")));
     mockWebServer.url("/app");
 
     DetectionReportList detectionReportList =
-        detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(papercutService));
+            detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(papercutService));
 
     assertThat(detectionReportList.getDetectionReportsList()).containsExactly(detectorReport);
   }
@@ -123,24 +123,24 @@ public final class PapercutNGMFVulnDetectorTest {
 
     // Load the login page
     mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody(loadResource("nonvulnerable_page.html")));
+            new MockResponse().setResponseCode(200).setBody(loadResource("nonvulnerable_page.html")));
     mockWebServer.url("/app");
 
     assertThat(
-        detector
-            .detect(
-                TargetInfo.newBuilder()
-                    .addNetworkEndpoints(
-                        forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-                    .build(),
-                ImmutableList.of(papercutService))
-            .getDetectionReportsList());
+            detector
+                    .detect(
+                            TargetInfo.newBuilder()
+                                    .addNetworkEndpoints(
+                                            forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+                                    .build(),
+                            ImmutableList.of(papercutService))
+                    .getDetectionReportsList());
   }
 
   // Helper function load additional resources used in the tests
   private static String loadResource(String file) throws IOException {
     return Resources.toString(
-            Resources.getResource(PapercutNGMFVulnDetectorTest.class, file), StandardCharsets.UTF_8)
-        .strip();
+                    Resources.getResource(PapercutNGMFVulnDetectorTest.class, file), StandardCharsets.UTF_8)
+            .strip();
   }
 }
