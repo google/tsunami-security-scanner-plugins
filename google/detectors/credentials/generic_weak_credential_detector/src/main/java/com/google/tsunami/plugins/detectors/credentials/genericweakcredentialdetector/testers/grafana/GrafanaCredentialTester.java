@@ -153,12 +153,7 @@ public final class GrafanaCredentialTester extends CredentialTester {
                                             .getBytes(UTF_8)))
             .build();
 
-    logger.atInfo().log("sending user e pass in headers " + headers + " to urls " + url);
-    return httpClient.send(
-            get(url)
-                    .setHeaders(headers)
-
-                    .build());
+    return httpClient.send(get(url).setHeaders(headers).build());
   }
 
   //Check if the response contains elements in a page after a successful login via Basic Authentication
