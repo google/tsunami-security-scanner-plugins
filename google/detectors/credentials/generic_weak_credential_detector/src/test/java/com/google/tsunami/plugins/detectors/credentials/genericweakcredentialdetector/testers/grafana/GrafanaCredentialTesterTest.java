@@ -126,7 +126,7 @@ public class GrafanaCredentialTesterTest {
 
   @Test
   public void detect_noWeakCredentials_returnsNoCredentials() throws Exception {
-    startMockWebServer("/dashboard", 200,
+    startMockWebServer("/dashboards", 200,
             Resources.toString(
                     Resources.getResource(this.getClass(), "testdata/dashboardsPage.html"), UTF_8)
     );
