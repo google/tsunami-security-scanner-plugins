@@ -72,7 +72,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
 
   @VisibleForTesting
   static final String VULNERABILITY_REPORT_DESCRIPTION =
-      "The scanner detected that a Kubernetes service allows annonymous access. This allows"
+      "The scanner detected that a Kubernetes service allows anonymous access. This allows"
           + " attackers to execute arbitrary code by creating a new pod. A kubernetes cluster could"
           + " be configured to allow open access by creating a role to  allow anonymous users"
           + " (system:anonymous) to perform any action in a cluster with: \n"
@@ -84,8 +84,8 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
           + "Details on the scanner logic:\n"
           + " The scanner was able to create a pod using /api/v1/namespaces/default/pods API"
           + " endpoint without authentication. By bringing up a pod with container command:\n"
-          + " `curl` that sents a request to a callback server to confirm RCE.\n"
-          + " Note that that the scanner subsequently cleaned up the created container with DELETE"
+          + " `curl` that sends a request to a callback server to confirm RCE.\n"
+          + " Note that the scanner subsequently cleaned up the created container with DELETE"
           + " request to the /api/v1/namespaces/default/pods/tsunami-rce-pod API endpoint.";
 
   @VisibleForTesting

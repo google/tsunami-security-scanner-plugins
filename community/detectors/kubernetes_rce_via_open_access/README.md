@@ -1,6 +1,6 @@
 # Kubernetes Open Access Remote Code Execution
 
-The scanner detected that a Kubernetes service allows annonymous access. 
+The scanner detected that a Kubernetes service allows anonymous access. 
 This allows attackers to execute arbitrary code by creating a new pod if excessive permissions
 have been added to the system:anonymous user. 
 
@@ -13,7 +13,7 @@ The plugin creates a pod using the API endpoint without authentication:
 
 `/api/v1/namespaces/default/pods`
 
-By bringing up a pod with a container command: `curl` that sents a request to a callback server to confirm RCE.
+By bringing up a pod with a container command: `curl` that sends a request to a callback server to confirm RCE.
 
 Note that that the scanner subsequently cleaned up the created container with DELETE request to the endpoint:
 
