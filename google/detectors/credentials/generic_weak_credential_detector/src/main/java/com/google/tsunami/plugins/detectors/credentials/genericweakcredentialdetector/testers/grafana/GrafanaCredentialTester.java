@@ -61,6 +61,23 @@ public final class GrafanaCredentialTester extends CredentialTester {
     return "Grafana credential tester.";
   }
 
+  private static String buildTargetUrl(NetworkService networkService, String path) {
+    StringBuilder targetUrlBuilder = new StringBuilder();
+
+    if (NetworkServiceUtils.isWebService(networkService)) {
+      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
+
+    } else {
+      // Default to HTTP protocol when the scanner cannot identify the actual service.
+      targetUrlBuilder
+              .append("http://")
+              .append(NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint()))
+              .append("/");
+    }
+    targetUrlBuilder.append(path);
+    return targetUrlBuilder.toString();
+  }
+
   /**
    * Determines if this tester can accept the {@link NetworkService} based on the name of the service or a custom fingerprint.
    * The fingerprint is necessary since nmap doesn't recognize a grafana instance correctly.
@@ -70,12 +87,10 @@ public final class GrafanaCredentialTester extends CredentialTester {
   @Override
   public boolean canAccept(NetworkService networkService) {
 
-    String uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
-
     boolean canAcceptByNmapReport = NetworkServiceUtils.getWebServiceName(networkService).equals(GRAFANA_SERVICE);
     boolean canAcceptByCustomFingerprint = false;
 
-    var url = String.format("http://%s/", uriAuthority);
+    var url = buildTargetUrl(networkService, "");
     try {
       logger.atInfo().log("probing Grafana home - custom fingerprint phase");
 
@@ -121,8 +136,7 @@ public final class GrafanaCredentialTester extends CredentialTester {
 
 
   private boolean isGrafanaAccessible(NetworkService networkService, TestCredential credential) {
-    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
-    var url = String.format("http://%s/", uriAuthority) + "dashboards";
+    var url = buildTargetUrl(networkService, "dashboards");
     try {
       logger.atInfo().log(
               "url: %s, username: %s, password: %s",
