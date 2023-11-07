@@ -30,8 +30,12 @@ import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.proto.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Arrays;
 import javax.inject.Inject;
+
+import okhttp3.Headers;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.After;
@@ -41,11 +45,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for {@link PapercutNGMFVulnDetectorTest}, showing how to test a detector which
+ * Unit tests for {@link PapercutNGMFVulnDetectorWithPayloadTest}, showing how to test a detector which
  * utilizes the payload generator framework.
  */
 @RunWith(JUnit4.class)
-public final class PapercutNGMFVulnDetectorTest {
+public final class PapercutNGMFVulnDetectorWithPayloadTest {
 
   private final FakeUtcClock fakeUtcClock =
           FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
@@ -53,14 +57,37 @@ public final class PapercutNGMFVulnDetectorTest {
   private MockWebServer mockWebServer = new MockWebServer();
   private MockWebServer mockCallbackServer  = new MockWebServer();
   private NetworkService papercutService;
-  @Inject private PapercutNGMFVulnDetector detector;
+  @Inject private PapercutNGMFVulnDetectorWithPayload detector;
 
   private DetectionReport detectorReport;
+  private TargetInfo targetInfo;
+
+  private final SecureRandom testSecureRandom =
+          new SecureRandom() {
+            @Override
+            public void nextBytes(byte[] bytes) {
+              Arrays.fill(bytes, (byte) 0xFF);
+            }
+          };
+
 
   @Before
   public void setUp() throws IOException{
     mockWebServer.start();
     mockCallbackServer.start();
+
+
+
+    Guice.createInjector(
+        new FakeUtcClockModule(fakeUtcClock),
+        new HttpClientModule.Builder().build(),
+
+        FakePayloadGeneratorModule.builder()
+                .setCallbackServer(mockCallbackServer)
+                .setSecureRng(testSecureRandom)
+                .build(),
+        new PapercutNGMFVulnDetectorWithPayloadBootstrapModule()
+    ).injectMembers(this);
 
     papercutService =
             NetworkService.newBuilder()
@@ -71,18 +98,13 @@ public final class PapercutNGMFVulnDetectorTest {
                     .setServiceName("http")
                     .build();
 
-    Guice.createInjector(
-                    new FakeUtcClockModule(fakeUtcClock),
-                    new HttpClientModule.Builder().build(),
-                    FakePayloadGeneratorModule.builder()
-                            .setCallbackServer(mockCallbackServer)
-                            .build(),
-                    new PapercutNGMFVulnDetectorBootstrapModule())
-            .injectMembers(this);
+    targetInfo = TargetInfo.newBuilder()
+            .addNetworkEndpoints(papercutService.getNetworkEndpoint())
+            .build();
 
     detectorReport =
             DetectionReport.newBuilder()
-                    .setTargetInfo(TargetInfo.getDefaultInstance())
+                    .setTargetInfo(targetInfo)
                     .setNetworkService(papercutService)
                     .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                     .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
@@ -116,29 +138,45 @@ public final class PapercutNGMFVulnDetectorTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
+    Headers.Builder headerBuilder = new Headers.Builder();
+    Headers jsessionHeader = headerBuilder.set("Set-Cookie", "JSESSIONID=abcde12345;").build();
 
-    // Stage 0
-    mockWebServer.enqueue(
-            new MockResponse().setResponseCode(200).setBody(loadResource("vulnerable_page.html")));
     mockWebServer.url("/app");
 
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200)); // Stage 1a
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200)); // Stage 1b
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200)); // Stage 1c
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200)); // Stage 1d
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200)); // Stage 2a
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200)); // Stage 2b
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200)); // Stage 2c
+    mockWebServer.enqueue(
+            new MockResponse()
+                    .setResponseCode(200)
+                    .setHeaders(jsessionHeader)
+                    .setBody(loadResource("vulnerable_page.html"))
+                    );
 
-    mockWebServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse()); // Stage 2d
+    // Pass the "SetupCompleted" page and "log in"
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
 
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200)); // Stage 3a
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200)); // Stage 3b
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200)); // Stage 3c
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200)); // Stage 3d
+    // Change settings necessary for RCE
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
+    // Prepare for RCE delivery (navigate to the required page)
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
+    // Deliver the RCE
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
+
+    // Revert settings previously changed
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
 
     DetectionReportList detectionReportList =
-            detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(papercutService));
+            detector.detect(targetInfo, ImmutableList.of(papercutService));
 
     assertThat(detectionReportList.getDetectionReportsList()).containsExactly(detectorReport);
   }
@@ -156,28 +194,12 @@ public final class PapercutNGMFVulnDetectorTest {
             new MockResponse().setResponseCode(200).setBody(loadResource("nonvulnerable_page.html")));
     mockWebServer.url("/app");
 
-    mockWebServer.enqueue(new MockResponse().setResponseCode(401)); // Stage 1a
-    mockWebServer.enqueue(new MockResponse().setResponseCode(401)); // Stage 1b
-    mockWebServer.enqueue(new MockResponse().setResponseCode(401)); // Stage 1c
-    mockWebServer.enqueue(new MockResponse().setResponseCode(401)); // Stage 1d
-    mockWebServer.enqueue(new MockResponse().setResponseCode(401)); // Stage 2a
-    mockWebServer.enqueue(new MockResponse().setResponseCode(401)); // Stage 2b
-    mockWebServer.enqueue(new MockResponse().setResponseCode(401)); // Stage 2c
-
-    mockWebServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse()); // Stage 2d
-
-    mockWebServer.enqueue(new MockResponse().setResponseCode(401)); // Stage 3a
-    mockWebServer.enqueue(new MockResponse().setResponseCode(401)); // Stage 3b
-    mockWebServer.enqueue(new MockResponse().setResponseCode(401)); // Stage 3c
-    mockWebServer.enqueue(new MockResponse().setResponseCode(401)); // Stage 3d
+    mockWebServer.enqueue(new MockResponse().setResponseCode(401));
 
     assertThat(
             detector
                     .detect(
-                            TargetInfo.newBuilder()
-                                    .addNetworkEndpoints(
-                                            forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-                                    .build(),
+                            targetInfo,
                             ImmutableList.of(papercutService))
                     .getDetectionReportsList());
   }
@@ -185,7 +207,7 @@ public final class PapercutNGMFVulnDetectorTest {
   // Helper function load additional resources used in the tests
   private static String loadResource(String file) throws IOException {
     return Resources.toString(
-                    Resources.getResource(PapercutNGMFVulnDetectorTest.class, file), StandardCharsets.UTF_8)
+                    Resources.getResource(PapercutNGMFVulnDetectorWithPayloadTest.class, file), StandardCharsets.UTF_8)
             .strip();
   }
 }
