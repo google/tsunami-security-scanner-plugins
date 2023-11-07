@@ -160,6 +160,7 @@ public class WordpressCredentialTesterTest {
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
+      String cookieHeader = recordedRequest.getHeaders().get("Cookie").toString();
       if (recordedRequest.getPath().startsWith("/wp-login.php")
           && (recordedRequest.getBody().toString().contains("log=user&pwd=1234&wp-submit=Log+In")
               || recordedRequest
@@ -173,10 +174,12 @@ public class WordpressCredentialTesterTest {
             .addHeader("Set-Cookie", "path=/wp-content/plugins;")
             .setBody(loginPageResponse);
       } else if (recordedRequest.getPath().startsWith("/wp-admin/")
-          && recordedRequest.getHeaders().toString().contains("path=/wp-admin;")
-          && recordedRequest.getHeaders().toString().contains("path=/;")
-          && recordedRequest.getHeaders().toString().contains("path=/wp-content/plugins;")) {
-        return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("wp-admin-bar-new-content");
+          && cookieHeader.contains("path=/wp-admin;")
+          && cookieHeader.contains("path=/;")
+          && cookieHeader.contains("path=/wp-content/plugins;")) {
+        return new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody("wp-admin-bar-new-content");
       }
       return new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code());
     }
