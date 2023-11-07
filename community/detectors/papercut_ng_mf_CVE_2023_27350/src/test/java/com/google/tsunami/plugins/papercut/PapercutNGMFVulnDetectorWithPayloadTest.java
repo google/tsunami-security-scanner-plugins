@@ -34,7 +34,6 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Arrays;
 import javax.inject.Inject;
-
 import okhttp3.Headers;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -53,15 +52,6 @@ public final class PapercutNGMFVulnDetectorWithPayloadTest {
 
   private final FakeUtcClock fakeUtcClock =
           FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
-
-  private MockWebServer mockWebServer = new MockWebServer();
-  private MockWebServer mockCallbackServer  = new MockWebServer();
-  private NetworkService papercutService;
-  @Inject private PapercutNGMFVulnDetectorWithPayload detector;
-
-  private DetectionReport detectorReport;
-  private TargetInfo targetInfo;
-
   private final SecureRandom testSecureRandom =
           new SecureRandom() {
             @Override
@@ -69,7 +59,19 @@ public final class PapercutNGMFVulnDetectorWithPayloadTest {
               Arrays.fill(bytes, (byte) 0xFF);
             }
           };
+  private final MockWebServer mockWebServer = new MockWebServer();
+  private final MockWebServer mockCallbackServer  = new MockWebServer();
+  private NetworkService papercutService;
+  @Inject private PapercutNGMFVulnDetectorWithPayload detector;
+  private DetectionReport detectorReport;
+  private TargetInfo targetInfo;
 
+  // Helper function load additional resources used in the tests
+  private static String loadResource(String file) throws IOException {
+    return Resources.toString(
+                    Resources.getResource(PapercutNGMFVulnDetectorWithPayloadTest.class, file), StandardCharsets.UTF_8)
+            .strip();
+  }
 
   @Before
   public void setUp() throws IOException{
@@ -202,12 +204,5 @@ public final class PapercutNGMFVulnDetectorWithPayloadTest {
                             targetInfo,
                             ImmutableList.of(papercutService))
                     .getDetectionReportsList());
-  }
-
-  // Helper function load additional resources used in the tests
-  private static String loadResource(String file) throws IOException {
-    return Resources.toString(
-                    Resources.getResource(PapercutNGMFVulnDetectorWithPayloadTest.class, file), StandardCharsets.UTF_8)
-            .strip();
   }
 }
