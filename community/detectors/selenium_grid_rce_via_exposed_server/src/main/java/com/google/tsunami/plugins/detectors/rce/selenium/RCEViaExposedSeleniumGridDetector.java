@@ -285,7 +285,7 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
         HttpResponse response =
             httpClient.send(get(statusUri).withEmptyHeaders().build(), networkService);
 
-        if (response.status().isSuccess() || response.bodyJson().isPresent()) {
+        if (response.status().isSuccess() && response.bodyJson().isPresent()) {
           JsonObject jsonResponse = (JsonObject) response.bodyJson().get();
           JsonObject value = (JsonObject) jsonResponse.get("value");
           JsonPrimitive readyPrimitive = value.getAsJsonPrimitive("ready");
@@ -354,7 +354,6 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
   // Reads a file with file:// browser protocol.
   // Returns the contents of the file read, or null if not successful / not found.
   private String readFileViaSelenium(NetworkService networkService, String filePath) {
-    String targetUri = buildTargetUrl(networkService, SELENIUM_GRID_SERVICE_PATH + "/session");
     String seleniumSessionId = null;
 
     // Get Selenium Session ID
@@ -366,7 +365,7 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
     }
 
     // Request file to read via file:// protocol
-    targetUri =
+    String targetUri =
         buildTargetUrl(
             networkService, SELENIUM_GRID_SERVICE_PATH + "/session/" + seleniumSessionId + "/url");
     String fileUri = "file://" + filePath;
@@ -410,7 +409,7 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
     try {
       HttpResponse response = httpClient.send(req, networkService);
 
-      if (response.status().isSuccess() || response.bodyJson().isPresent()) {
+      if (response.status().isSuccess() && response.bodyJson().isPresent()) {
         JsonObject jsonResponse = (JsonObject) response.bodyJson().get();
         JsonPrimitive value = jsonResponse.getAsJsonPrimitive("value");
         if (value != null) {
@@ -453,7 +452,7 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
     try {
       HttpResponse response = httpClient.send(req, networkService);
 
-      if (response.status().isSuccess() || response.bodyJson().isPresent()) {
+      if (response.status().isSuccess() && response.bodyJson().isPresent()) {
         JsonObject jsonResponse = (JsonObject) response.bodyJson().get();
         JsonObject value = (JsonObject) jsonResponse.get("value");
         JsonPrimitive sessionPrimitive = value.getAsJsonPrimitive("sessionId");

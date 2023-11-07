@@ -189,7 +189,7 @@ public final class RCEViaExposedSeleniumGridDetectorWithOutCallbackServerTest {
   public void detect_whenNotVulnerable_doesNotReportVulnerability()
       throws IOException, InterruptedException {
 
-    // One failed response, for creating RCE pod.
+    // One failed response
     mockSeleniumGridService.enqueue(
         new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code()));
 
@@ -209,7 +209,7 @@ public final class RCEViaExposedSeleniumGridDetectorWithOutCallbackServerTest {
   public void detect_whenSeleniumRequiresAuthentication_doesNotReportVulnerability()
       throws IOException, InterruptedException {
     NetworkService service = TestHelper.createSeleniumGridService(mockSeleniumGridService);
-    // One auth required response, for creating RCE pod.
+    // Auth required response
     // HTTP/1.1 401 Unauthorized
     // WWW-Authenticate: Basic realm="selenium-server"
     mockSeleniumGridService.enqueue(
