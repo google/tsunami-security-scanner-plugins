@@ -99,7 +99,7 @@ public final class GrafanaCredentialTester extends CredentialTester {
     String title = doc.title();
 
     if (title.toLowerCase().contains(GRAFANA_PAGE_TITLE)) {
-      logger.atInfo().log("Grafana instance probably found");
+      logger.atInfo().log("Found Grafana endpoint (GRAFANA_PAGE_TITLE string present in the title)");
       return true;
     } else {
       return false;
@@ -167,7 +167,7 @@ public final class GrafanaCredentialTester extends CredentialTester {
     if (!responseBody.contains(successfulLoginInfo)) {
       return false;
     } else {
-      logger.atInfo().log("Successful login in grafana");
+      logger.atInfo().log("Successfully logged in to Grafana");
       return true;
     }
   }
