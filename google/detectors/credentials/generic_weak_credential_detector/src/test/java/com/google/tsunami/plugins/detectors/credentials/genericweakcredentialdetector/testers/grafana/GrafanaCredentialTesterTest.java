@@ -15,6 +15,11 @@
  */
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.grafana;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.google.inject.Guice;
@@ -26,6 +31,10 @@ import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.ServiceContext;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.WebServiceContext;
+import java.io.IOException;
+import java.sql.Connection;
+import java.util.Optional;
+import javax.inject.Inject;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -38,17 +47,6 @@ import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
-
-import javax.inject.Inject;
-import java.io.IOException;
-import java.sql.Connection;
-import java.util.Optional;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.truth.Truth.assertThat;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 
 /** Tests for {@link GrafanaCredentialTester}. */
 @RunWith(JUnit4.class)
@@ -123,13 +121,13 @@ public class GrafanaCredentialTesterTest {
     mockWebServer.shutdown();
   }
 
-
   @Test
   public void detect_noWeakCredentials_returnsNoCredentials() throws Exception {
-    startMockWebServer("/dashboards", 200,
-            Resources.toString(
-                    Resources.getResource(this.getClass(), "testdata/dashboardsPage.html"), UTF_8)
-    );
+    startMockWebServer(
+        "/dashboards",
+        200,
+        Resources.toString(
+            Resources.getResource(this.getClass(), "testdata/dashboardsPage.html"), UTF_8));
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
@@ -143,8 +141,6 @@ public class GrafanaCredentialTesterTest {
 
     mockWebServer.shutdown();
   }
-
-
 
   private void startMockWebServer(String url, int responseCode, String response)
       throws IOException {
@@ -164,13 +160,10 @@ public class GrafanaCredentialTesterTest {
     public MockResponse dispatch(RecordedRequest recordedRequest) {
       if (recordedRequest.getPath().startsWith("/dashboards")
           && (recordedRequest.getHeaders().toString().contains(WEAK_CRED_AUTH_1)
-              || recordedRequest.getHeaders().toString().contains(WEAK_CRED_AUTH_2))
-      ) {
+              || recordedRequest.getHeaders().toString().contains(WEAK_CRED_AUTH_2))) {
         return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(dashboardsPage);
       }
       return new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code());
     }
   }
 }
-
-
