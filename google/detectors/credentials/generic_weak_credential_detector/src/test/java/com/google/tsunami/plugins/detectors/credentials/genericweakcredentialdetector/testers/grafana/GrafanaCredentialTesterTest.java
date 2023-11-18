@@ -80,10 +80,10 @@ public class GrafanaCredentialTesterTest {
   @Test
   public void detect_weakCredentialsExists_returnsWeakCredentials() throws Exception {
     startMockWebServer(
-        "/dashboards",
-        200,
+        "/",
         Resources.toString(
-            Resources.getResource(this.getClass(), "testdata/dashboardsPage.html"), UTF_8));
+            Resources.getResource(this.getClass(), "testdata/successfulAuthdResponse.json"),
+            UTF_8));
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
@@ -101,10 +101,10 @@ public class GrafanaCredentialTesterTest {
   @Test
   public void detect_weakCredentialsExist_returnsAllWeakCredentials() throws Exception {
     startMockWebServer(
-        "/dashboards",
-        200,
+        "/",
         Resources.toString(
-            Resources.getResource(this.getClass(), "testdata/dashboardsPage.html"), UTF_8));
+            Resources.getResource(this.getClass(), "testdata/successfulAuthdResponse.json"),
+            UTF_8));
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
@@ -124,10 +124,10 @@ public class GrafanaCredentialTesterTest {
   @Test
   public void detect_noWeakCredentials_returnsNoCredentials() throws Exception {
     startMockWebServer(
-        "/dashboards",
-        200,
+        "/",
         Resources.toString(
-            Resources.getResource(this.getClass(), "testdata/dashboardsPage.html"), UTF_8));
+            Resources.getResource(this.getClass(), "testdata/successfulAuthdResponse.json"),
+            UTF_8));
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
@@ -142,26 +142,25 @@ public class GrafanaCredentialTesterTest {
     mockWebServer.shutdown();
   }
 
-  private void startMockWebServer(String url, int responseCode, String response)
-      throws IOException {
-    mockWebServer.setDispatcher(new RespondWithDashboardsPageDispatcher(response));
+  private void startMockWebServer(String url, String response) throws IOException {
+    mockWebServer.setDispatcher(new RespondUserInfoResponseDispatcher(response));
     mockWebServer.start();
     mockWebServer.url(url);
   }
 
-  static final class RespondWithDashboardsPageDispatcher extends Dispatcher {
-    private final String dashboardsPage;
+  static final class RespondUserInfoResponseDispatcher extends Dispatcher {
+    private final String userInfoResponse;
 
-    RespondWithDashboardsPageDispatcher(String dashboardPageResponse) {
-      this.dashboardsPage = checkNotNull(dashboardPageResponse);
+    RespondUserInfoResponseDispatcher(String authenticatedUserResponse) {
+      this.userInfoResponse = checkNotNull(authenticatedUserResponse);
     }
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
-      if (recordedRequest.getPath().startsWith("/dashboards")
+      if (recordedRequest.getPath().startsWith("/api/user")
           && (recordedRequest.getHeaders().toString().contains(WEAK_CRED_AUTH_1)
               || recordedRequest.getHeaders().toString().contains(WEAK_CRED_AUTH_2))) {
-        return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(dashboardsPage);
+        return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(userInfoResponse);
       }
       return new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code());
     }

@@ -22,6 +22,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -144,7 +146,7 @@ public final class GrafanaCredentialTester extends CredentialTester {
   }
 
   private boolean isGrafanaAccessible(NetworkService networkService, TestCredential credential) {
-    var url = buildTargetUrl(networkService, "dashboards");
+    var url = buildTargetUrl(networkService, "api/user");
     try {
       logger.atInfo().log(
           "url: %s, username: %s, password: %s",
@@ -183,19 +185,25 @@ public final class GrafanaCredentialTester extends CredentialTester {
   // Authentication
   private static boolean bodyContainsSuccessfulLoginElements(String responseBody) {
 
-    // Calling the dashboard path with successful authentication will return a "
-    // window.grafanaBootData = {...}" json object
-    // This method looks for the string "isSignedIn":true to check for access. In case of enabled
-    // anonymous access the response will contain "isSignedIn":false;
-    // in case of a successful login via Basic Authentication the responseBody will contain
-    // "isSignedIn":true
+    try {
+      JsonObject response = JsonParser.parseString(responseBody).getAsJsonObject();
 
-    String successfulLoginInfo = "\"isSignedIn\":true";
-    if (!responseBody.contains(successfulLoginInfo)) {
+      // A successful authenticated request to the /api/user endpoint returns a JSON
+      // with at least the following keys:
+      // {"id":1,"email":"admin@localhost","name":"","login":"admin","theme":"","orgId":1,"isGrafanaAdmin":true}
+      if (response.has("id")
+          && response.has("email")
+          && response.has("login")
+          && response.has("isGrafanaAdmin")) {
+        logger.atInfo().log("Successfully logged in to Grafana");
+        return true;
+      } else {
+        return false;
+      }
+    } catch (Exception e) {
+      logger.atWarning().withCause(e).log(
+          "An error occurred while parsing the json response: " + responseBody);
       return false;
-    } else {
-      logger.atInfo().log("Successfully logged in to Grafana");
-      return true;
     }
   }
 }
