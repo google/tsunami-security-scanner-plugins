@@ -44,6 +44,8 @@ public final class GrafanaCredentialTester extends CredentialTester {
 
   private static final String GRAFANA_SERVICE = "grafana";
   private static final String GRAFANA_PAGE_TITLE = "grafana";
+  private static final String GRAFANA_LOADING = "Loading Grafana";
+  private static final String GRAFANA_BOOT_DATA = "window.grafanaBootData";
 
   @Inject
   GrafanaCredentialTester(HttpClient httpClient) {
@@ -115,10 +117,13 @@ public final class GrafanaCredentialTester extends CredentialTester {
   private static boolean bodyContainsGrafanaElements(String responseBody) {
     Document doc = Jsoup.parse(responseBody);
     String title = doc.title();
+    String body = doc.body().toString();
 
-    if (title.toLowerCase().contains(GRAFANA_PAGE_TITLE)) {
+    if (title.toLowerCase().contains(GRAFANA_PAGE_TITLE)
+        && body.contains(GRAFANA_LOADING)
+        && body.contains(GRAFANA_BOOT_DATA)) {
       logger.atInfo().log(
-          "Found Grafana endpoint (GRAFANA_PAGE_TITLE string present in the title)");
+          "Found Grafana endpoint (GRAFANA_PAGE_TITLE, GRAFANA_LOADING, and GRAFANA_BOOT_DATA strings present in the page)");
       return true;
     } else {
       return false;
