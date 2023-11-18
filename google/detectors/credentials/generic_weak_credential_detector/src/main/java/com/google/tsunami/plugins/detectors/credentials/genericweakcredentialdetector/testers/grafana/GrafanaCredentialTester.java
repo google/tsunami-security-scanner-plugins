@@ -101,12 +101,25 @@ public final class GrafanaCredentialTester extends CredentialTester {
       logger.atInfo().log("probing Grafana home - custom fingerprint phase");
 
       HttpResponse response = httpClient.send(get(url).withEmptyHeaders().build());
+
+      // the endpoint /api/health is one of the available unauthenticated endpoint - see
+      // https://grafana.com/docs/grafana/latest/developers/http_api/other/#health-api
+      var healthApiUrl = buildTargetUrl(networkService, "api/health");
+      HttpResponse apiHealthResponse =
+          httpClient.send(get(healthApiUrl).withEmptyHeaders().build());
+
       canAcceptByCustomFingerprint =
           response.status().isSuccess()
               && response
                   .bodyString()
                   .map(GrafanaCredentialTester::bodyContainsGrafanaElements)
+                  .orElse(false)
+              && apiHealthResponse.status().isSuccess()
+              && apiHealthResponse
+                  .bodyString()
+                  .map(GrafanaCredentialTester::bodyContainsHealthApiResponse)
                   .orElse(false);
+
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", url);
       return false;
@@ -128,6 +141,25 @@ public final class GrafanaCredentialTester extends CredentialTester {
           "Found Grafana endpoint (GRAFANA_PAGE_TITLE, GRAFANA_LOADING, and GRAFANA_BOOT_DATA strings present in the page)");
       return true;
     } else {
+      return false;
+    }
+  }
+
+  private static boolean bodyContainsHealthApiResponse(String responseBody) {
+    try {
+      JsonObject response = JsonParser.parseString(responseBody).getAsJsonObject();
+
+      // The json response from the health endpoint is: {"commit": "81d85ce802", "database": "ok",
+      // "version": "10.0.0"}
+
+      if (response.has("commit") && response.has("database") && response.has("version")) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (Exception e) {
+      logger.atWarning().withCause(e).log(
+          "An error occurred while parsing the json response: " + responseBody);
       return false;
     }
   }
