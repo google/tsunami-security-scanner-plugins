@@ -145,27 +145,8 @@ public final class SimpleCrawlActionTest {
   }
 
   @Test
-  public void compute_whenSeedingUrlReturnsValidHtmlPage_followsAllLinksOnPage()
-      throws IOException {
-    String body =
-        Resources.toString(
-            Resources.getResource(this.getClass(), "testdata/pageWithLinks.html"), UTF_8);
-    mockWebServer.setDispatcher(new FakeServerDispatcher(body));
-
-    ForkJoinPool.commonPool()
-        .invoke(
-            new SimpleCrawlAction(
-                0,
-                httpClient,
-                dataBuilder.buildCrawlConfig(),
-                dataBuilder.buildCrawlTargetForSeedPath("/"),
-                crawlerResults));
-
-    assertThat(crawlerResults.getFinalResults())
-        .containsExactly(
-            dataBuilder.buildCrawlResult(0, "/", body),
-            dataBuilder.buildCrawlResult(1, "/anchor-link", "anchor-link-response"),
-            dataBuilder.buildCrawlResult(1, "/img-src", "img-src-response"));
+  public void compute_whenSeedingUrlReturnsValidHtmlPage_followsAllLinksOnPage() throws Exception {
+    assetCrawlResults("testdata/pageWithLinks.html");
   }
 
   @Test
@@ -209,5 +190,31 @@ public final class SimpleCrawlActionTest {
 
     assertThat(crawlerResults.getFinalResults())
         .containsExactly(dataBuilder.buildCrawlResult(0, "/", body));
+  }
+
+  @Test
+  public void compute_whenTargetUrlContainLocalHost_normalizeHost() throws Exception {
+    assetCrawlResults("testdata/pageWithLocalhostLinks.html");
+  }
+
+  private void assetCrawlResults(String testdataResourceName) throws Exception {
+    String body =
+        Resources.toString(Resources.getResource(this.getClass(), testdataResourceName), UTF_8);
+    mockWebServer.setDispatcher(new FakeServerDispatcher(body));
+
+    ForkJoinPool.commonPool()
+        .invoke(
+            new SimpleCrawlAction(
+                0,
+                httpClient,
+                dataBuilder.buildCrawlConfig(),
+                dataBuilder.buildCrawlTargetForSeedPath("/"),
+                crawlerResults));
+
+    assertThat(crawlerResults.getFinalResults())
+        .containsExactly(
+            dataBuilder.buildCrawlResult(0, "/", body),
+            dataBuilder.buildCrawlResult(1, "/anchor-link", "anchor-link-response"),
+            dataBuilder.buildCrawlResult(1, "/img-src", "img-src-response"));
   }
 }

@@ -35,6 +35,7 @@ import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.ForServiceName;
+import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
@@ -53,6 +54,7 @@ import java.time.Instant;
 import javax.inject.Inject;
 
 /** Detects Consul enable script checks RCE */
+@ForWebService
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "ConsulEnableScriptChecksCommandExecutionDetector",
