@@ -100,7 +100,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
   private final String payloadFormatString;
-  private final String RCE_POD_NAME =
+  private final String rcePodName =
       "tsunami-rce-pod-" + Long.toHexString(Double.doubleToLongBits(Math.random()));
 
   @Inject
@@ -119,7 +119,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
         String.format(
             Resources.toString(
                 Resources.getResource(this.getClass(), "payloadFormatString.json"), UTF_8),
-            RCE_POD_NAME,
+            rcePodName,
             "%s"); // Placeholder for the command payload
   }
 
@@ -166,7 +166,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
     boolean isVulnerable = false;
 
     // Create a new Kubernetes Pod with RCE payload in container command args
-    isPodCreated = createPod(networkService, RCE_POD_NAME, reqPayload);
+    isPodCreated = createPod(networkService, rcePodName, reqPayload);
     if (!isPodCreated) {
       logger.atInfo().log("Failed to create a pod. Not vulnerable.");
       return false;
@@ -191,7 +191,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
     }
 
     // Cleanup by removing the created pod
-    deletePod(networkService, RCE_POD_NAME);
+    deletePod(networkService, rcePodName);
 
     return isVulnerable;
   }
