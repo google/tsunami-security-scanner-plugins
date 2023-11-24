@@ -43,6 +43,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+
 /** Unit tests for {@link RCEInKubernetesClusterWithOpenAccessDetector}. */
 @RunWith(JUnit4.class)
 public final class RCEInKubernetesClusterWithOpenAccessDetectorWithCallbackServerTest {
@@ -58,8 +59,12 @@ public final class RCEInKubernetesClusterWithOpenAccessDetectorWithCallbackServe
 
   public RCEInKubernetesClusterWithOpenAccessDetectorWithCallbackServerTest() throws IOException {
     this.validRceResponse =
-        Resources.toString(Resources.getResource(this.getClass(), "validRCEResponse.json"), UTF_8);
+        String.format(
+            Resources.toString(Resources.getResource(this.getClass(), "validRCEResponse.json"), UTF_8), 
+                RCEInKubernetesClusterWithOpenAccessDetector.RCE_POD_NAME
+            );
   }
+
 
   @Before
   public void setUp() throws IOException {
@@ -104,7 +109,8 @@ public final class RCEInKubernetesClusterWithOpenAccessDetectorWithCallbackServe
     RecordedRequest req = mockKubernetesService.takeRequest();
     assertThat(req.getPath()).contains("/api/v1/namespaces/default/pods");
     req = mockKubernetesService.takeRequest();
-    assertThat(req.getPath()).contains("/api/v1/namespaces/default/pods/tsunami-rce-pod");
+    assertThat(req.getPath()).contains("/api/v1/namespaces/default/pods/" + 
+        RCEInKubernetesClusterWithOpenAccessDetector.RCE_POD_NAME);
   }
 
   @Test

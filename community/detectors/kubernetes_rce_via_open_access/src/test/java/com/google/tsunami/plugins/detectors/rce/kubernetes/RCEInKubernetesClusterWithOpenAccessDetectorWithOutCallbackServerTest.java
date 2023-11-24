@@ -68,7 +68,10 @@ public final class RCEInKubernetesClusterWithOpenAccessDetectorWithOutCallbackSe
   public RCEInKubernetesClusterWithOpenAccessDetectorWithOutCallbackServerTest()
       throws IOException {
     this.validRceResponse =
-        Resources.toString(Resources.getResource(this.getClass(), "validRCEResponse.json"), UTF_8);
+        String.format(
+            Resources.toString(Resources.getResource(this.getClass(), "validRCEResponse.json"), UTF_8),
+                RCEInKubernetesClusterWithOpenAccessDetector.RCE_POD_NAME
+            );
   }
 
   @Before

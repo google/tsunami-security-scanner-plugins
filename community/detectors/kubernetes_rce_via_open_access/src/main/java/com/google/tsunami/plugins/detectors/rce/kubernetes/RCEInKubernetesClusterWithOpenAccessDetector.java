@@ -100,7 +100,8 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
   private final String payloadFormatString;
-  private final String rcePodName =
+
+  @VisibleForTesting static final String RCE_POD_NAME =
       "tsunami-rce-pod-" + Long.toHexString(Double.doubleToLongBits(Math.random()));
 
   @Inject
@@ -119,7 +120,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
         String.format(
             Resources.toString(
                 Resources.getResource(this.getClass(), "payloadFormatString.json"), UTF_8),
-            rcePodName,
+            RCE_POD_NAME,
             "%s"); // Placeholder for the command payload
   }
 
@@ -163,7 +164,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
     boolean isVulnerable = false;
 
     // Create a new Kubernetes Pod with RCE payload in container command args
-    isPodCreated = createPod(networkService, rcePodName, reqPayload);
+    isPodCreated = createPod(networkService, RCE_POD_NAME, reqPayload);
     if (!isPodCreated) {
       logger.atInfo().log("Failed to create a pod. Not vulnerable.");
       return false;
@@ -188,7 +189,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
     }
 
     // Cleanup by removing the created pod
-    deletePod(networkService, rcePodName);
+    deletePod(networkService, RCE_POD_NAME);
 
     return isVulnerable;
   }
@@ -223,12 +224,12 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
     try {
       HttpResponse response = this.httpClient.send(req, networkService);
       if (response.status().code() == HttpStatus.CREATED.code()
-          && response.bodyString().map(body -> body.contains("tsunami-rce-pod")).orElse(false)) {
+          && response.bodyString().map(body -> body.contains(RCE_POD_NAME)).orElse(false)) {
         logger.atInfo().log("Pod '%s' created.", podName);
         return true;
       } else {
         logger.atInfo().log(
-            "Unable to create pod '%s' (status: %d).", podName, response.status().code());
+            "Unable to create pod '%s' (status: %d and body: %s).", podName, response.status().code(), response.bodyString());
         return false;
       }
 
@@ -251,7 +252,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
     try {
       HttpResponse response = this.httpClient.send(req, networkService);
       if (response.status().isSuccess()
-          && response.bodyString().map(body -> body.contains("tsunami-rce-pod")).orElse(false)) {
+          && response.bodyString().map(body -> body.contains(RCE_POD_NAME)).orElse(false)) {
         logger.atInfo().log("Pod '%s' deleted.", podName);
         return true;
       } else {
