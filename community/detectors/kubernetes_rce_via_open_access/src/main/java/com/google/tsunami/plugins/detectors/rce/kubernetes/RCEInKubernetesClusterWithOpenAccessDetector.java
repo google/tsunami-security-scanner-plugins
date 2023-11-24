@@ -135,9 +135,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
                 // TODO: This filter doesn't trigger this detector.
                 // .filter(NetworkServiceUtils::isWebService)
 
-                // Check individual NetworkService whether it is vulnerable.
                 .filter(this::isServiceVulnerable)
-                // Build DetectionReport message for vulnerable services.
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
@@ -146,7 +144,6 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
   // Checks whether a given Kubernetes service is exposed and vulnerable.
   private boolean isServiceVulnerable(NetworkService networkService) {
 
-    // Tell the PayloadGenerator what kind of vulnerability we are detecting
     PayloadGeneratorConfig config =
         PayloadGeneratorConfig.newBuilder()
             .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
