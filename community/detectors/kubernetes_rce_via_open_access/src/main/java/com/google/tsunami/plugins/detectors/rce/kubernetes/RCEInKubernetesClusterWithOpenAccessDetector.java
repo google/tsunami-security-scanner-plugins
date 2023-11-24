@@ -39,6 +39,7 @@ import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
+import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -46,6 +47,7 @@ import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.PayloadGeneratorConfig;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
@@ -93,6 +95,11 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
       "Disable anonymous access to the api by starting kube-apiserver with --anonymous-auth=false."
           + " Plus remove excessive privileges from the system:anonymous user."
           + " https://goteleport.com/blog/kubernetes-api-access-security/";
+
+  
+  @VisibleForTesting
+  static final String VULNERABILITY_REPORT_DETAILS =
+      "Attacker can create new Kubernetes pods which can allow them to execute system commands";
 
   // This plugin sets the severity to High if a pod was created, or raises it to Critical
   // if the RCE payload was executed on the target
@@ -290,7 +297,16 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
                 .setSeverity(vulnSeverity)
                 .setTitle(VULNERABILITY_REPORT_TITLE)
                 .setDescription(VULNERABILITY_REPORT_DESCRIPTION)
-                .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION))
+                .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION)
+                .addAdditionalDetails(
+                    AdditionalDetail.newBuilder()
+                        .setTextData(
+                            TextData.newBuilder()
+                                .setText(VULNERABILITY_REPORT_DETAILS))))
         .build();
+
+ 
+
+
   }
 }

@@ -19,6 +19,7 @@ import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAnd
 
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
+import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
@@ -26,6 +27,7 @@ import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
@@ -73,7 +75,13 @@ final class TestHelper {
                     RCEInKubernetesClusterWithOpenAccessDetector.VULNERABILITY_REPORT_DESCRIPTION)
                 .setRecommendation(
                     RCEInKubernetesClusterWithOpenAccessDetector
-                        .VULNERABILITY_REPORT_RECOMMENDATION))
+                        .VULNERABILITY_REPORT_RECOMMENDATION)
+                .addAdditionalDetails(
+                    AdditionalDetail.newBuilder()
+                        .setTextData(
+                            TextData.newBuilder()
+                                .setText(RCEInKubernetesClusterWithOpenAccessDetector
+                                .VULNERABILITY_REPORT_DETAILS))))
         .build();
   }
 
@@ -100,7 +108,13 @@ final class TestHelper {
                     RCEInKubernetesClusterWithOpenAccessDetector.VULNERABILITY_REPORT_DESCRIPTION)
                 .setRecommendation(
                     RCEInKubernetesClusterWithOpenAccessDetector
-                        .VULNERABILITY_REPORT_RECOMMENDATION))
+                        .VULNERABILITY_REPORT_RECOMMENDATION)
+                .addAdditionalDetails(
+                    AdditionalDetail.newBuilder()
+                        .setTextData(
+                            TextData.newBuilder()
+                                .setText(RCEInKubernetesClusterWithOpenAccessDetector
+                                .VULNERABILITY_REPORT_DETAILS))))    
         .build();
   }  
   
