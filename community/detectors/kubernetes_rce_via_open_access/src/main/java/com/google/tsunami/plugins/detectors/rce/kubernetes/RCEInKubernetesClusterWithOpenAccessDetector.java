@@ -94,6 +94,10 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
           + " Plus remove excessive privileges from the system:anonymous user."
           + " https://goteleport.com/blog/kubernetes-api-access-security/";
 
+  // This plugin sets the severity to High if a pod was created, or raises it to Critical
+  // if the RCE payload was executed on the target
+  Severity vulnSeverity = Severity.HIGH;
+
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final Clock utcClock;
@@ -168,14 +172,15 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
     if (!isPodCreated) {
       logger.atInfo().log("Failed to create a pod. Not vulnerable.");
       return false;
+    } else {
+      logger.atInfo().log("Pod %s created on the target", RCE_POD_NAME);
+      // Report as vulnerable with High severity
+      isVulnerable = true;
     }
 
-    // Created a pod, appears vulnerable. Use callback for RCE confirmation if enabled
+    // Use callback for RCE confirmation and raise severity on success
     if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
-      logger.atWarning().log("Pod created, appears vulnerable, but callback server is disabled.");
-      // NOTE: Set to false if only executed payloads/confirmed RCE cases should be reported
-      isVulnerable = true;
-
+      logger.atWarning().log("Target vulnerable, but callback server is disabled to confirm RCE");
     } else {
       // If there is an RCE, the execution isn't immediate
       logger.atInfo().log("Waiting for RCE callback.");
@@ -184,8 +189,11 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
       } catch (InterruptedException e) {
         logger.atWarning().withCause(e).log("Failed to wait for RCE result");
       }
-      // Check if callback server received the request
-      isVulnerable = payload.checkIfExecuted();
+      // Raise the severity to Critical
+      if (payload.checkIfExecuted()) {
+        logger.atInfo().log("RCE payload executed! (Critical)");
+        vulnSeverity = Severity.CRITICAL;
+      }
     }
 
     // Cleanup by removing the created pod
@@ -213,7 +221,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
 
   private boolean createPod(NetworkService networkService, String podName, String payload) {
     String targetUri = buildTargetUrl(networkService, "api/v1/namespaces/default/pods");
-    logger.atInfo().log("Sending a request to Kubernetes service '%s' to trigger RCE", targetUri);
+    logger.atInfo().log("Creating pod via Kubernetes service at '%s'", targetUri);
 
     HttpRequest req =
         HttpRequest.post(targetUri)
@@ -242,7 +250,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
   private boolean deletePod(NetworkService networkService, String podName) {
     String targetUri = buildTargetUrl(networkService, "api/v1/namespaces/default/pods/" + podName);
 
-    logger.atInfo().log("Sending a request to Kubernetes service '%s' to trigger RCE", targetUri);
+    logger.atInfo().log("Deleting Kubernetes pod at '%s'", targetUri);
 
     HttpRequest req =
         HttpRequest.delete(targetUri)
@@ -279,7 +287,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
                     VulnerabilityId.newBuilder()
                         .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
                         .setValue(VULNERABILITY_REPORT_ID))
-                .setSeverity(Severity.CRITICAL)
+                .setSeverity(vulnSeverity)
                 .setTitle(VULNERABILITY_REPORT_TITLE)
                 .setDescription(VULNERABILITY_REPORT_DESCRIPTION)
                 .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION))

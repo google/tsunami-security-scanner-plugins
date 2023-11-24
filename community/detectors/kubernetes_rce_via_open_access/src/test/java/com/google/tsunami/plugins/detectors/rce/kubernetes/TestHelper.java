@@ -50,8 +50,36 @@ final class TestHelper {
     return TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint).build();
   }
 
-  static DetectionReport buildValidDetectionReport(
+  static DetectionReport buildValidDetectionReportHigh(
       TargetInfo target, NetworkService service, FakeUtcClock fakeUtcClock) {
+
+    return DetectionReport.newBuilder()
+        .setTargetInfo(target)
+        .setNetworkService(service)
+        .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+        .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+        .setVulnerability(
+            Vulnerability.newBuilder()
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher(
+                            RCEInKubernetesClusterWithOpenAccessDetector
+                                .VULNERABILITY_REPORT_PUBLISHER)
+                        .setValue(
+                            RCEInKubernetesClusterWithOpenAccessDetector.VULNERABILITY_REPORT_ID))
+                .setSeverity(Severity.HIGH)
+                .setTitle(RCEInKubernetesClusterWithOpenAccessDetector.VULNERABILITY_REPORT_TITLE)
+                .setDescription(
+                    RCEInKubernetesClusterWithOpenAccessDetector.VULNERABILITY_REPORT_DESCRIPTION)
+                .setRecommendation(
+                    RCEInKubernetesClusterWithOpenAccessDetector
+                        .VULNERABILITY_REPORT_RECOMMENDATION))
+        .build();
+  }
+
+  static DetectionReport buildValidDetectionReportCritical(
+      TargetInfo target, NetworkService service, FakeUtcClock fakeUtcClock) {
+
     return DetectionReport.newBuilder()
         .setTargetInfo(target)
         .setNetworkService(service)
@@ -74,5 +102,6 @@ final class TestHelper {
                     RCEInKubernetesClusterWithOpenAccessDetector
                         .VULNERABILITY_REPORT_RECOMMENDATION))
         .build();
-  }
+  }  
+  
 }

@@ -104,8 +104,9 @@ public final class RCEInKubernetesClusterWithOpenAccessDetectorWithCallbackServe
 
     DetectionReportList detectionReports = detector.detect(target, ImmutableList.of(service));
 
+    // The plugin should report the vuln as Critical with callback RCE confirmation
     assertThat(detectionReports.getDetectionReportsList())
-        .contains(TestHelper.buildValidDetectionReport(target, service, fakeUtcClock));
+        .contains(TestHelper.buildValidDetectionReportCritical(target, service, fakeUtcClock));
     RecordedRequest req = mockKubernetesService.takeRequest();
     assertThat(req.getPath()).contains("/api/v1/namespaces/default/pods");
     req = mockKubernetesService.takeRequest();

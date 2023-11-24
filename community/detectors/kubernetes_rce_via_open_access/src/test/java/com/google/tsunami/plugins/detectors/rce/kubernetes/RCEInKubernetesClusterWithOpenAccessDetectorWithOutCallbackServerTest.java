@@ -108,8 +108,9 @@ public final class RCEInKubernetesClusterWithOpenAccessDetectorWithOutCallbackSe
 
     DetectionReportList detectionReports = detector.detect(target, ImmutableList.of(service));
 
+    // The plugin should report the vuln as High severity if no callback is used to confirm RCE
     assertThat(detectionReports.getDetectionReportsList())
-        .contains(TestHelper.buildValidDetectionReport(target, service, fakeUtcClock));
+        .contains(TestHelper.buildValidDetectionReportHigh(target, service, fakeUtcClock));
     RecordedRequest req = mockKubernetesService.takeRequest();
     assertThat(req.getPath()).contains("/api/v1/namespaces/default/pods");
     req = mockKubernetesService.takeRequest();
