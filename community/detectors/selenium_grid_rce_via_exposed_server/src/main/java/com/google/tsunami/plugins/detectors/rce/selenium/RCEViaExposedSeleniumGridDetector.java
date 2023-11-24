@@ -95,7 +95,7 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
   private final String seleniumUrlPayload;
   private final String seleniumSessionSettings;
   private static final String SELENIUM_GRID_SERVICE_PATH = "wd/hub";
-  private final String RCE_TEST_FILE_PATH = "/tmp/tsunami-selenium-rce";
+  private static final String RCE_TEST_FILE_PATH = "/tmp/tsunami-selenium-rce";
 
   @VisibleForTesting
   static final String RCE_TEST_STRING =
@@ -103,8 +103,8 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
 
   // Selenium Grid ready state wait timeout. It's set to 310s (~5min) here.
   // Default Selenium Grid in uses 300s timeouts so it should be more than this.
-  private final int POLLING_RATE = 10000; // 10s
-  private final int POLLING_ATTEMPTS = 31;
+  private static final int POLLING_RATE = 10000; // 10s
+  private static final int POLLING_ATTEMPTS = 31;
 
   // Tsunami scanner relies heavily on Guice framework. So all the utility dependencies of your
   // plugin must be injected through the constructor of the detector. Notably, the Payload
