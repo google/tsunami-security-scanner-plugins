@@ -159,7 +159,7 @@ public final class GrafanaCredentialTester extends CredentialTester {
       }
     } catch (Exception e) {
       logger.atWarning().withCause(e).log(
-          "An error occurred while parsing the json response: " + responseBody);
+          "An error occurred while parsing the json response: %s", responseBody);
       return false;
     }
   }
@@ -234,7 +234,7 @@ public final class GrafanaCredentialTester extends CredentialTester {
       }
     } catch (Exception e) {
       logger.atWarning().withCause(e).log(
-          "An error occurred while parsing the json response: " + responseBody);
+              "An error occurred while parsing the json response: %s", responseBody);
       return false;
     }
   }
