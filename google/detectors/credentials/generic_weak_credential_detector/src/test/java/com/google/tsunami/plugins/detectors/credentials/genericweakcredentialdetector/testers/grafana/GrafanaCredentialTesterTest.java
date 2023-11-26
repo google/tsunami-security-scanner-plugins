@@ -62,10 +62,8 @@ public class GrafanaCredentialTesterTest {
       TestCredential.create("root", Optional.of("pass"));
   private static final TestCredential WRONG_CRED_1 =
       TestCredential.create("wrong", Optional.of("pass"));
-
-  private static final TestCredential EMPTY_CRED = TestCredential.create("", Optional.of(""));
-  private static final String WEAK_CRED_AUTH_1 = "Authorization: Basic dXNlcjoxMjM0";
-  private static final String WEAK_CRED_AUTH_2 = "Authorization: Basic cm9vdDpwYXNz";
+  private static final String WEAK_CRED_AUTH_1 = "Basic dXNlcjoxMjM0";
+  private static final String WEAK_CRED_AUTH_2 = "Basic cm9vdDpwYXNz";
   private static final ServiceContext.Builder grafanaServiceContext =
       ServiceContext.newBuilder()
           .setWebServiceContext(
@@ -157,9 +155,13 @@ public class GrafanaCredentialTesterTest {
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
-      if (recordedRequest.getPath().startsWith("/api/user")
-          && (recordedRequest.getHeaders().toString().contains(WEAK_CRED_AUTH_1)
-              || recordedRequest.getHeaders().toString().contains(WEAK_CRED_AUTH_2))) {
+
+      var isUserEndpoint = recordedRequest.getPath().startsWith("/api/user");
+      var authHeader = recordedRequest.getHeaders().get("Authorization").toString();
+      var hasWeakCred1 = authHeader.contains(WEAK_CRED_AUTH_1);
+      var hasWeakCred2 = authHeader.contains(WEAK_CRED_AUTH_2);
+
+      if (isUserEndpoint && (hasWeakCred1 || hasWeakCred2)) {
         return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(userInfoResponse);
       }
       return new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code());
