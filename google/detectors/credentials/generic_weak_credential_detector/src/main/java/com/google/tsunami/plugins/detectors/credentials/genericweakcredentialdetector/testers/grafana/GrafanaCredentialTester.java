@@ -94,6 +94,11 @@ public final class GrafanaCredentialTester extends CredentialTester {
 
     boolean canAcceptByNmapReport =
         NetworkServiceUtils.getWebServiceName(networkService).equals(GRAFANA_SERVICE);
+
+    if (canAcceptByNmapReport) {
+      return true;
+    }
+
     boolean canAcceptByCustomFingerprint = false;
 
     var url = buildTargetUrl(networkService, "");
@@ -125,7 +130,7 @@ public final class GrafanaCredentialTester extends CredentialTester {
       return false;
     }
 
-    return canAcceptByNmapReport || canAcceptByCustomFingerprint;
+    return canAcceptByCustomFingerprint;
   }
 
   // Checks if the response body contains elements of a grafana page - custom fingerprinting phase
@@ -234,7 +239,7 @@ public final class GrafanaCredentialTester extends CredentialTester {
       }
     } catch (Exception e) {
       logger.atWarning().withCause(e).log(
-              "An error occurred while parsing the json response: %s", responseBody);
+          "An error occurred while parsing the json response: %s", responseBody);
       return false;
     }
   }
