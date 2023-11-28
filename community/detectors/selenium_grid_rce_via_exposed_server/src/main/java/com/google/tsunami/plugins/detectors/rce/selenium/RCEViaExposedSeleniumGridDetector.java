@@ -84,8 +84,8 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
 
   @VisibleForTesting
   static final String VULNERABILITY_REPORT_RECOMMENDATION =
-      "Restrict access to the exposed Selenium Grid by adding --username and --password parameters";
-          + " to selenium-server.jar command line, or within the [router] section in
+      "Restrict access to the exposed Selenium Grid by adding --username and --password parameters"
+          + " to selenium-server.jar command line, or within the [router] section in"
           + " the Selenium Grid config file (/opt/selenium/config.toml).\n"
           + "See: https://www.selenium.dev/documentation/grid/configuration/cli_options/#router";
 
