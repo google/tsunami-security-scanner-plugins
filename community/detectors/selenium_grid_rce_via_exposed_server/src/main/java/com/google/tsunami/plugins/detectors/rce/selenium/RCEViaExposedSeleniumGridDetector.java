@@ -184,7 +184,7 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
 
     // Confirm RCE with the callback server if available
     if (payload.getPayloadAttributes().getUsesCallbackServer()) {
-      executeCommandViaChrome(networkService, commandToInject);
+      var unused = executeCommandViaChrome(networkService, commandToInject);
       logger.atInfo().log("Confirming Selenium Grid RCE with the callback server");
       return payload.checkIfExecuted();
     }
@@ -197,7 +197,7 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
     // Example trace log contents:
     // == Info: Could not resolve host: tsunami-selenium-rce-executed
     commandToInject = String.format("curl --trace %s %s", RCE_TEST_FILE_PATH, RCE_TEST_STRING);
-    executeCommandViaChrome(networkService, commandToInject);
+    var unused = executeCommandViaChrome(networkService, commandToInject);
 
     // Check if the RCE test file got created and contains our RCE test string/needle
     String rceTestFileContents;
@@ -214,7 +214,7 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
       // /usr/bin/chrome file as the injected command gets prepended before path/arguments.
       logger.atInfo().log("Cleaning up created RCE test file.");
       commandToInject = String.format("curl -o %s file:///dev/null", RCE_TEST_FILE_PATH);
-      executeCommandViaChrome(networkService, commandToInject);
+      unused = executeCommandViaChrome(networkService, commandToInject);
       return true;
 
     } else {
@@ -325,7 +325,7 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
     String reqPayload = String.format(payloadFormatString, command);
     boolean hasTabCrashed;
 
-    logger.atInfo().log("Executing command via Selenium: " + command);
+    logger.atInfo().log("Executing command via Selenium: %s", command);
     HttpRequest req =
         HttpRequest.post(targetUri)
             .setHeaders(HttpHeaders.builder().addHeader(CONTENT_TYPE, "application/json").build())
@@ -388,7 +388,7 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
 
     if (!fileRequestSubmitted) {
       logger.atInfo().log("Selenium request to the %s URI failed.", fileUri);
-      closeSeleniumSession(networkService, seleniumSessionId);
+      var unused = closeSeleniumSession(networkService, seleniumSessionId);
       return null;
     }
 
@@ -433,7 +433,7 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
     }
 
     // Close previously created Selenium session and return the file contents
-    closeSeleniumSession(networkService, seleniumSessionId);
+    var unused = closeSeleniumSession(networkService, seleniumSessionId);
     return fileContents;
   }
 
