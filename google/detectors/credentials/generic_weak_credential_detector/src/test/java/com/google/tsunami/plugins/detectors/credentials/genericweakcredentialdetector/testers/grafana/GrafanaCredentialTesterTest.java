@@ -23,7 +23,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.google.inject.Guice;
-import com.google.tsunami.common.net.db.ConnectionProviderInterface;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
@@ -32,7 +31,6 @@ import com.google.tsunami.proto.ServiceContext;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
-import java.sql.Connection;
 import java.util.Optional;
 import javax.inject.Inject;
 import okhttp3.mockwebserver.Dispatcher;
@@ -40,20 +38,13 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 
 /** Tests for {@link GrafanaCredentialTester}. */
 @RunWith(JUnit4.class)
 public class GrafanaCredentialTesterTest {
-  @Rule public MockitoRule rule = MockitoJUnit.rule();
-  @Mock private ConnectionProviderInterface mockConnectionProvider;
-  @Mock private Connection mockConnection;
   @Inject private GrafanaCredentialTester tester;
   private MockWebServer mockWebServer;
   private static final TestCredential WEAK_CRED_1 =
