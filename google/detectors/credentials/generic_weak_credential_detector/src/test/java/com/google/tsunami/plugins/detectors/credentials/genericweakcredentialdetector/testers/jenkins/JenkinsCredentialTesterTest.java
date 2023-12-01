@@ -67,8 +67,8 @@ public class JenkinsCredentialTesterTest {
       TestCredential.create("wrong", Optional.of("pass"));
 
   private static final TestCredential EMPTY_CRED = TestCredential.create("", Optional.of(""));
-  private static final String WEAK_CRED_AUTH_1 = "Authorization: basic dXNlcjoxMjM0";
-  private static final String WEAK_CRED_AUTH_2 = "Authorization: basic cm9vdDpwYXNz";
+  private static final String WEAK_CRED_AUTH_1 = "basic dXNlcjoxMjM0";
+  private static final String WEAK_CRED_AUTH_2 = "basic cm9vdDpwYXNz";
   private static final ServiceContext.Builder jenkinsServiceContext =
       ServiceContext.newBuilder()
           .setWebServiceContext(
@@ -216,14 +216,13 @@ public class JenkinsCredentialTesterTest {
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
+      String authorizationHeader = recordedRequest.getHeaders().get("Authorization").toString();
       if (recordedRequest.getPath().startsWith("/view/all/newJob")
-          && (recordedRequest.getHeaders().toString().contains(WEAK_CRED_AUTH_1)
-              || recordedRequest.getHeaders().toString().contains(WEAK_CRED_AUTH_2))) {
+          && (authorizationHeader.contains(WEAK_CRED_AUTH_1)
+              || authorizationHeader.contains(WEAK_CRED_AUTH_2))) {
         return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(loginPageResponse);
       }
       return new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code());
     }
   }
 }
-
-
