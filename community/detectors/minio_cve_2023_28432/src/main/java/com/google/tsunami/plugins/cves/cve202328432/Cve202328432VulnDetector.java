@@ -20,7 +20,8 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static com.google.tsunami.common.net.http.HttpClient.TSUNAMI_USER_AGENT;
-
+HttpResponse
+    
 import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -29,6 +30,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
+import com.google.tsunami.common.net.http.HttpClient;
+import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
