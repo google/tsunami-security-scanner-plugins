@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.cves.cve202328432.minio;
 import com.google.common.escape.Escaper;
 import com.google.common.net.UrlEscapers;
 
+/** Amazon S3 Compatible Cloud Storage escaper.*/
 public class S3Escaper {
     private static final Escaper ESCAPER = UrlEscapers.urlPathSegmentEscaper();
 
