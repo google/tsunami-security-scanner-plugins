@@ -30,6 +30,7 @@ import com.google.gson.JsonObject;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
+import com.google.tsunami.common.net.http.HttpMethod;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.time.UtcClock;
