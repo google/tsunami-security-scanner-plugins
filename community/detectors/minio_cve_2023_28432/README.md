@@ -7,11 +7,11 @@ The plugin also checks for cluster instances were no key/secret is set and the [
 
 The following cases are detected:
 
-Fixed instance with default credentials
-Vulnerable instance with default credentials (no environment variable set)
-Vulnerable instance with (deprecated) MINIO_ACCESS_KEY environment variable
-Vulnerable instance with MINIO_ROOT_PASSWORD environment variable
-Docker compose files for each case can be found [here](https://github.com/h0ng10/CVE-2023-28432_docker).
+- Fixed instance with default credentials
+- Vulnerable instance with default credentials (no environment variable set)
+- Vulnerable instance with (deprecated) MINIO_ACCESS_KEY environment variable
+- Vulnerable instance with MINIO_ROOT_PASSWORD environment variable
+- Docker compose files for each case can be found [here](https://github.com/h0ng10/CVE-2023-28432_docker).
 
 For authentication, this plugin uses code from the [MinIO Java SDK](https://github.com/minio/minio-java), which is licensed under Apache 2.0 license. The code has been minimized and adjusted to work with Tsunamis own httpclient instead of okhttp.
 
