@@ -56,8 +56,8 @@ public class RabbitMQCredentialTesterTest {
   private static final TestCredential WRONG_CRED_1 =
       TestCredential.create("wrong", Optional.of("pass"));
 
-  private static final String WEAK_CRED_AUTH_1 = "Authorization: Basic dXNlcjoxMjM0";
-  private static final String WEAK_CRED_AUTH_2 = "Authorization: Basic cm9vdDpwYXNz";
+  private static final String WEAK_CRED_AUTH_1 = "Basic dXNlcjoxMjM0";
+  private static final String WEAK_CRED_AUTH_2 = "Basic cm9vdDpwYXNz";
   private static final ServiceContext.Builder rabbitmqServiceContext =
       ServiceContext.newBuilder()
           .setWebServiceContext(
