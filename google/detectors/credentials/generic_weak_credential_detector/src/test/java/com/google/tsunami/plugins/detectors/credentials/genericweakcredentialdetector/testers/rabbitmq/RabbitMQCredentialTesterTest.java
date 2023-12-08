@@ -46,10 +46,7 @@ import org.junit.runners.JUnit4;
 /** Tests for {@link RabbitMQCredentialTester}. */
 @RunWith(JUnit4.class)
 public class RabbitMQCredentialTesterTest {
-  @Rule public MockitoRule rule = MockitoJUnit.rule();
-  @Mock private ConnectionProviderInterface mockConnectionProvider;
-  @Mock private Connection mockConnection;
-  @Inject private RabbitMqCredentialTester tester;
+  @Inject private RabbitMQCredentialTester tester;
   private MockWebServer mockWebServer;
 
   private static final TestCredential WEAK_CRED_1 =
@@ -59,7 +56,6 @@ public class RabbitMQCredentialTesterTest {
   private static final TestCredential WRONG_CRED_1 =
       TestCredential.create("wrong", Optional.of("pass"));
 
-  private static final TestCredential EMPTY_CRED = TestCredential.create("", Optional.of(""));
   private static final String WEAK_CRED_AUTH_1 = "Authorization: Basic dXNlcjoxMjM0";
   private static final String WEAK_CRED_AUTH_2 = "Authorization: Basic cm9vdDpwYXNz";
   private static final ServiceContext.Builder rabbitmqServiceContext =
