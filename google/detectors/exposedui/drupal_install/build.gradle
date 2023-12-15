@@ -61,7 +61,6 @@ ext {
 }
 
 dependencies {
-    compile             "com.google.auto.value:auto-value-annotations:${autoValueVersion}"
     annotationProcessor "com.google.auto.value:auto-value:${autoValueVersion}"
     implementation "com.google.flogger:flogger:${floggerVersion}"
     implementation "com.google.flogger:google-extensions:${floggerVersion}"
