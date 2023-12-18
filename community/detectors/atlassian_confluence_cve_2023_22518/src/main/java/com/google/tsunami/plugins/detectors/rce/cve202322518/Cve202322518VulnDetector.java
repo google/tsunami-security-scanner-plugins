@@ -126,9 +126,8 @@ public class Cve202322518VulnDetector implements VulnDetector {
                   .build(),
               networkService);
 
-      String body;
       if (response.bodyString().isPresent()) {
-        body = response.bodyString().get();
+        String body = response.bodyString().get();
         if (response.status().code() == HttpStatus.OK.code()
             && body.contains("The zip file did not contain an entry")
             && body.contains("exportDescriptor.properties")) {
