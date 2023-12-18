@@ -57,7 +57,7 @@ public final class Cve202322518VuLnDetectorTest {
       FakeUtcClock.create().setNow(Instant.parse("2023-12-03T00:00:00.00Z"));
 
   private final MockWebServer mockWebServer = new MockWebServer();
-  ;
+
   private NetworkService service;
   private TargetInfo targetInfo;
   @Inject private Cve202322518VulnDetector detector;
