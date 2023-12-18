@@ -124,12 +124,10 @@ public final class Cve202322518VuLnDetectorTest {
                         .setTitle(
                             "Atlassian Confluence Data Center Improper Authorization CVE-2023-22515")
                         .setDescription(
-                            "All versions of Confluence Data Center and Server are affected by this vulnerability."
-                                + " This Improper Authorization vulnerability allows an unauthenticated attacker"
+                            "This Improper Authorization vulnerability allows an unauthenticated attacker"
                                 + " to reset Confluence and create a Confluence instance administrator account.")
                         .setRecommendation(
-                            "Atlassian recommends that you patch each of your affected installations "
-                                + "to one of the listed fixed versions (or the latest version) below.\n"
+                            "Patch the confluence version to one of the following versions: "
                                 + "7.19.16, 8.3.4, 8.4.4, 8.5.3, 8.6.1"))
                 .build());
   }

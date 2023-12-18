@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
+import static com.google.tsunami.common.data.NetworkServiceUtils.buildWebApplicationRootUrl;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -66,6 +67,11 @@ public class Cve202322518VulnDetector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   @VisibleForTesting static final String FILE_UPLOAD_PATH = "json/setup-restore.action";
+  @VisibleForTesting static final String RANDOM_ZIP_FILE_NAME = "fiw7rai5kp9ue42r";
+
+  @VisibleForTesting
+  static final String RANDOM_ZIP_FILE_CONTENT = "fi1242fsd3w7rfd2sf2ai5kfs2d4p9ue4fd2sf2r";
+
   private final HttpClient httpClient;
   private final Clock utcClock;
 
@@ -91,7 +97,7 @@ public class Cve202322518VulnDetector implements VulnDetector {
 
   @VisibleForTesting
   String buildRootUri(NetworkService networkService) {
-    return String.format("http://%s/", toUriAuthority(networkService.getNetworkEndpoint()));
+    return buildWebApplicationRootUrl(networkService);
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
@@ -105,8 +111,8 @@ public class Cve202322518VulnDetector implements VulnDetector {
               .addFormDataPart("buildIndex", "false")
               .addFormDataPart(
                   "file",
-                  "someRandomStr14212134.zip",
-                  RequestBody.create(MediaType.parse("application/zip"), "someRandomStr14212134"))
+                  RANDOM_ZIP_FILE_NAME + ".zip",
+                  RequestBody.create(MediaType.parse("application/zip"), RANDOM_ZIP_FILE_CONTENT))
               .addFormDataPart("edit", "Upload and import")
               .build();
 
@@ -160,12 +166,10 @@ public class Cve202322518VulnDetector implements VulnDetector {
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Atlassian Confluence Data Center Improper Authorization CVE-2023-22515")
                 .setDescription(
-                    "All versions of Confluence Data Center and Server are affected by this vulnerability."
-                        + " This Improper Authorization vulnerability allows an unauthenticated attacker"
+                    "This Improper Authorization vulnerability allows an unauthenticated attacker"
                         + " to reset Confluence and create a Confluence instance administrator account.")
                 .setRecommendation(
-                    "Atlassian recommends that you patch each of your affected installations "
-                        + "to one of the listed fixed versions (or the latest version) below.\n"
+                    "Patch the confluence version to one of the following versions: "
                         + "7.19.16, 8.3.4, 8.4.4, 8.5.3, 8.6.1"))
         .build();
   }
