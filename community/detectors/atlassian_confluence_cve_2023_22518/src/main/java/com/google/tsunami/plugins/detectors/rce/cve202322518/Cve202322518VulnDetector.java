@@ -59,7 +59,7 @@ import okio.Buffer;
     name = "Cve202322518VulnDetector",
     version = "0.1",
     description =
-        "This detector checks CVE-2023-22515 Atlassian Confluence Data Center Improper Authorization",
+        "This detector checks CVE-2023-22518 Atlassian Confluence Data Center Improper Authorization",
     author = "amammad",
     bootstrapModule = Cve202322518VulnDetectorBootstrapModule.class)
 public class Cve202322518VulnDetector implements VulnDetector {
