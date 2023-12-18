@@ -1,3 +1,2 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Error><Code>AllAccessDisabled</Code><Message>All access to this resource has been disabled.</Message><Resource>/minio/bootstrap/v1/verify</Resource><RequestId></RequestId><HostId></HostId>
-  
