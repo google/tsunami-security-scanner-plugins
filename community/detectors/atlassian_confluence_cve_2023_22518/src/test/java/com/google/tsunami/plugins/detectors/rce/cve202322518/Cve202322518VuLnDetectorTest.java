@@ -95,7 +95,6 @@ public final class Cve202322518VuLnDetectorTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws InterruptedException {
-
     mockWebServer.enqueue(
         new MockResponse()
             .setResponseCode(200)
