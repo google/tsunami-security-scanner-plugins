@@ -139,9 +139,7 @@ public class Cve202322518VulnDetector implements VulnDetector {
       }
 
     } catch (Exception e) {
-      logger.atWarning().log("Failed to send request.");
-      logger.atWarning().log(e.toString());
-      logger.atWarning().log(e.getMessage());
+      logger.atWarning().log("Failed to send request: %s", e.getMessage());
       return false;
     }
     return false;
