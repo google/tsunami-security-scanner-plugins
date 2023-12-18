@@ -88,7 +88,7 @@ public class Digest {
   }
 
   /** Updated MessageDigest with bytes read from file and stream. */
-  private static int updateDigests(
+  private static void updateDigests(
       Object inputStream, int len, MessageDigest sha256Digest, MessageDigest md5Digest)
       throws IOException, Exception {
     RandomAccessFile file = null;
@@ -148,7 +148,5 @@ public class Digest {
     } else {
       stream.reset();
     }
-
-    return totalBytesRead;
   }
 }
