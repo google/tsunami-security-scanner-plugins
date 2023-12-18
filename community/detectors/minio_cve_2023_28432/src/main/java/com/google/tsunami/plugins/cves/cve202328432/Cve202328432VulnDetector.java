@@ -117,7 +117,7 @@ public final class Cve202328432VulnDetector implements VulnDetector {
         DetectionReportList.newBuilder()
             .addAllDetectionReports(
                 matchedServices.stream()
-                    .filter(NetworkServiceUtils::isPlainHttp)
+                    .filter(Cve202328432VulnDetector::isWebServiceOrUnknownService)
                     .map(this::checkEndpointForNetworkService)
                     .filter(EndpointProbingResult::isVulnerable)
                     .map(probingResult -> buildDetectionReport(targetInfo, probingResult))
@@ -128,6 +128,13 @@ public final class Cve202328432VulnDetector implements VulnDetector {
         "CVE202328432 (MinIO cluster disclosure) finished, detected '%d' vulns.",
         detectionReports.getDetectionReportsCount());
     return detectionReports;
+  }
+
+  private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
+    return networkService.getServiceName().isEmpty()
+        || NetworkServiceUtils.isWebService(networkService)
+        || NetworkServiceUtils.getServiceName(networkService).equals("unknown")
+        || NetworkServiceUtils.getServiceName(networkService).equals("cslistener");
   }
 
   private EndpointProbingResult checkEndpointForNetworkService(NetworkService networkService) {
