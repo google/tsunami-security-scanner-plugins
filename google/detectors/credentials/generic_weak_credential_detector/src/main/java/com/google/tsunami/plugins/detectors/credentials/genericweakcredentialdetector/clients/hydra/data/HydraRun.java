@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.ncrack.data;
+package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.hydra.data;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -23,20 +23,16 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import java.util.Collection;
 
 /**
- * Ncrack brute force run results.
+ * Hydra brute force run results.
  *
- * <p>Ncrack output contains limited data and only the discovered credentials are of interest. XML
- * format has not been used as ncrack do not dump the identified credentials in the XML file.
- *
- * <p>NOTE: It is preferable in the future to switch to the XML format and use a DTD file maintained
- * by nrack to extract results.
+ * <p>Hydra output contains limited data and only the discovered credentials are of interest.
  */
 @AutoValue
-public abstract class NcrackRun {
+public abstract class HydraRun {
   public abstract ImmutableList<DiscoveredCredential> discoveredCredentials();
 
-  public static NcrackRun create(Collection<DiscoveredCredential> discoveredCredentials) {
+  public static HydraRun create(Collection<DiscoveredCredential> discoveredCredentials) {
     checkNotNull(discoveredCredentials);
-    return new AutoValue_NcrackRun(ImmutableList.copyOf(discoveredCredentials));
+    return new AutoValue_HydraRun(ImmutableList.copyOf(discoveredCredentials));
   }
 }

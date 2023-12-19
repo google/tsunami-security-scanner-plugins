@@ -178,8 +178,8 @@ public class NcrackClient {
    */
   public NcrackRun run(Executor executor)
       throws IOException, InterruptedException, ExecutionException {
-    ArrayList<String> arrayList = buildRunCommandArgs();
-    String[] args = arrayList.toArray(new String[0]);
+    List<String> argList = buildRunCommandArgs();
+    String[] args = argList.toArray(new String[0]);
     CommandExecutor commandExecutor = CommandExecutorFactory.create(args);
     Process currentProcess = commandExecutor.execute(executor);
     currentProcess.waitFor();
@@ -210,7 +210,7 @@ public class NcrackClient {
     return passwordList;
   }
 
-  public ArrayList<String> buildRunCommandArgs() {
+  public List<String> buildRunCommandArgs() {
     ArrayList<String> runCommandArgs = Lists.newArrayList();
     runCommandArgs.add(ncrackBinaryPath);
     timing.ifPresent(value -> runCommandArgs.add(value.getFlag()));
