@@ -199,7 +199,7 @@ public class NmapPortScannerTest {
   }
 
   @Test
-  public void run_whenNmapRunHasHttpWithSslVersions_returnsSslVersions() throws Exception {
+  public void run_whenNmapRunHasScripts_returnsSslVersionsAndHttpMethods() throws Exception {
     doReturn(loadNmapRun("testdata/localhostHttpsWithSslVersionsAndMethods.xml"))
         .when(nmapClient)
         .run(any());
@@ -224,7 +224,31 @@ public class NmapPortScannerTest {
                         .addSupportedSslVersions("TLSV1.0")
                         .addSupportedSslVersions("TLSV1.1")
                         .addSupportedSslVersions("TLSV1.2")
+                        .addSupportedHttpMethods("POST")
+                        .addSupportedHttpMethods("OPTIONS")
+                        .addSupportedHttpMethods("HEAD")
+                        .addSupportedHttpMethods("GET")
                         .setServiceName("ssl/http"))
+                .build());
+  }
+
+  @Test
+  public void run_whenNmapRunHasScriptsButOptionsUnsupported_returnsHttpMethods() throws Exception {
+    doReturn(loadNmapRun("testdata/localhostHttpWithoutMethods.xml"))
+        .when(nmapClient)
+        .run(any());
+    NetworkEndpoint networkEndpoint = NetworkEndpointUtils.forIp("127.0.0.1");
+    assertThat(
+            portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
+        .isEqualTo(
+            PortScanningReport.newBuilder()
+                .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint))
+                .addNetworkServices(
+                    NetworkService.newBuilder()
+                        .setNetworkEndpoint(NetworkEndpointUtils.forIpAndPort("127.0.0.1", 8090))
+                        .setTransportProtocol(TransportProtocol.TCP)
+                        .addSupportedHttpMethods("GET")
+                        .setServiceName("opsmessaging"))
                 .build());
   }
 
