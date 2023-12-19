@@ -34,6 +34,7 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.DefaultCredentials;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.Top100Passwords;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.grafana.GrafanaCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.jenkins.JenkinsCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.rabbitmq.RabbitMQCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.mysql.MysqlCredentialTester;
@@ -63,6 +64,7 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
     credentialTesterrBinder.addBinding().to(PostgresCredentialTester.class);
     credentialTesterrBinder.addBinding().to(WordpressCredentialTester.class);
     credentialTesterrBinder.addBinding().to(RabbitMQCredentialTester.class);
+    credentialTesterrBinder.addBinding().to(GrafanaCredentialTester.class);
 
     Multibinder<CredentialProvider> credentialProviderBinder =
         Multibinder.newSetBinder(binder(), CredentialProvider.class);
