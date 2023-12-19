@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.rabbitmq;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -39,6 +40,7 @@ import javax.inject.Inject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
+/** Credential tester specifically for rabbitmq management portal. */
 public final class RabbitMQCredentialTester extends CredentialTester {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private final HttpClient httpClient;
