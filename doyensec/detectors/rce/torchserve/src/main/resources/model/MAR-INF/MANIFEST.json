@@ -1,0 +1,12 @@
+{
+    "runtime": "python",
+    "model": {
+      "modelName": "somerandomname",
+      "serializedFile": "serialized.pt",
+      "handler": "model.py",
+      "modelVersion": "1.0"
+    },
+    "modelServerVersion": "1.0",
+    "implementationVersion": "1.0",
+    "specificationVersion": "1.0"
+}
