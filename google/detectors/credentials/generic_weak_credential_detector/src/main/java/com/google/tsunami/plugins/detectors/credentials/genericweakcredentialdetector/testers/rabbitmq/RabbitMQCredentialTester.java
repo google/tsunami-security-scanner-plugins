@@ -120,11 +120,16 @@ public final class RabbitMQCredentialTester extends CredentialTester {
           response.status().isSuccess()
               && response.headers().get("server").isPresent()
               && response.headers().get("server").get().trim().equals(RABBITMQ_SERVER_HEADER)
-              && response.bodyString().map(RabbitMQCredentialTester::bodyContainsRabbitMQElements).orElse(false);
+              && response
+                  .bodyString()
+                  .map(RabbitMQCredentialTester::bodyContainsRabbitMQElements)
+                  .orElse(false);
       url = buildTargetUrl(networkService, "api/overview");
       response = httpClient.send(get(url).withEmptyHeaders().build());
-      canAcceptByCustomFingerprint = canAcceptByCustomFingerprint && response.headers().get("www-authenticate").isPresent() 
-      && response.headers().get("www-authenticate").get().equals(RABBITMQ_WWW_HEADER);
+      canAcceptByCustomFingerprint =
+          canAcceptByCustomFingerprint
+              && response.headers().get("www-authenticate").isPresent()
+              && response.headers().get("www-authenticate").get().equals(RABBITMQ_WWW_HEADER);
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", url);
       return false;
