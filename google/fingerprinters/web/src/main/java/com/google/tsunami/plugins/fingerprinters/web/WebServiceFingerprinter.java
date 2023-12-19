@@ -17,6 +17,7 @@ package com.google.tsunami.plugins.fingerprinters.web;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.collect.ImmutableMap;
@@ -105,6 +106,17 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
 
     ImmutableMap<DetectedSoftware, DetectedVersion> versionsBySoftware =
         detectSoftwareVersions(detectedSoftware, networkService);
+
+    ImmutableSet<CrawlResult> crawlResultsUnderRecordingLimit =
+        crawlResults.stream()
+            .filter(
+                crawlResult ->
+                    crawlResult.getContent().size() < configs.getMaxRecordingContentSize())
+            .filter(
+                crawlResult ->
+                    !configs.getContentTypeExclusions().contains(crawlResult.getContentType()))
+            .collect(toImmutableSet());
+
     if (versionsBySoftware.isEmpty()) {
       logger.atInfo().log(
           "WebServiceFingerprinter failed to confirm running web application on '%s'.",
@@ -112,7 +124,10 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
       return FingerprintingReport.newBuilder()
           .addNetworkServices(
               addWebServiceContext(
-                  networkService, Optional.empty(), Optional.empty(), crawlResults))
+                  networkService,
+                  Optional.empty(),
+                  Optional.empty(),
+                  crawlResultsUnderRecordingLimit))
           .build();
     } else {
       logger.atInfo().log(
@@ -127,7 +142,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
                               networkService,
                               Optional.of(entry.getKey()),
                               Optional.of(entry.getValue()),
-                              crawlResults))
+                              crawlResultsUnderRecordingLimit))
                   .collect(toImmutableList()))
           .build();
     }
@@ -198,6 +213,10 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
             .addScopes(ScopeUtils.fromUrl(seedingUrl))
             .setShouldEnforceScopeCheck(shouldEnforceScopeCheck)
             .addSeedingUrls(seedingUrl)
+            // TODO: b/293337245 This is a Temporary change to include jenkins login url in seeding
+            // urls. This will be replaced by making seeding url configurable through cli options
+            // instead.
+            .addSeedingUrls(seedingUrl + "/login?from=%2F")
             .setMaxDepth(3)
             .setNetworkEndpoint(networkService.getNetworkEndpoint())
             .build();

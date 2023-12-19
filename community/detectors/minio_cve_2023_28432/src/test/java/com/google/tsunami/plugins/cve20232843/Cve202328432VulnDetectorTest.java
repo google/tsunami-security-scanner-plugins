@@ -17,7 +17,6 @@ package com.google.tsunami.plugins.cve20232843;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.google.inject.Guice;
@@ -56,8 +55,7 @@ public final class Cve202328432VulnDetectorTest {
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
   @Inject private Cve202328432VulnDetector detector;
-
-
+  
   private MockWebServer mockMinIOWebService;
   private NetworkService minIONetworkService;
 
@@ -66,166 +64,206 @@ public final class Cve202328432VulnDetectorTest {
 
     mockMinIOWebService = new MockWebServer();
     minIONetworkService =
-            NetworkService.newBuilder()
-                    .setNetworkEndpoint(
-                            forHostnameAndPort(mockMinIOWebService.getHostName(), mockMinIOWebService.getPort()))
-                    .setTransportProtocol(TransportProtocol.TCP)
-                    .setSoftware(Software.newBuilder().setName("MinIO"))
-                    .setServiceName("http")
-                    .build();
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(
+                    mockMinIOWebService.getHostName(), mockMinIOWebService.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setSoftware(Software.newBuilder().setName("MinIO"))
+            .setServiceName("http")
+            .build();
     Guice.createInjector(
-            new FakeUtcClockModule(fakeUtcClock), new HttpClientModule.Builder().build(), new Cve202328432VulnDetectorBootstrapModule())
+            new FakeUtcClockModule(fakeUtcClock),
+            new HttpClientModule.Builder().build(),
+            new Cve202328432VulnDetectorBootstrapModule())
         .injectMembers(this);
   }
-
 
   @Test
   public void buildSignedHttpRequest_whenValidKey_signedHttpRequest() {
 
-    String uri= "http://foo.bar:9000/";
+    String uri = "http://foo.bar:9000/";
     String requestDate = "20230405T175634Z";
     String accessKey = "this_is_the_access_key";
     String accessSecret = "this_is_the_password";
 
-    HttpRequest signedRequest = detector.buildSignedHttpRequest(uri, requestDate, accessKey, accessSecret);
+    HttpRequest signedRequest =
+        detector.buildSignedHttpRequest(uri, requestDate, accessKey, accessSecret);
+
     assertEquals(signedRequest.url().toString(), uri);
     assertEquals(signedRequest.method().toString(), "GET");
     assertEquals(signedRequest.headers().names().size(), 5);
     assertEquals(signedRequest.headers().get("Host").get(), "foo.bar:9000");
-    assertEquals(signedRequest.headers().get("x-amz-content-sha256").get(), Digest.ZERO_SHA256_HASH);
+    assertEquals(
+        signedRequest.headers().get("x-amz-content-sha256").get(), Digest.ZERO_SHA256_HASH);
     assertEquals(signedRequest.headers().get("x-amz-date").get(), requestDate);
-    assertEquals(signedRequest.headers().get("Authorization").get(), "AWS4-HMAC-SHA256 Credential=this_is_the_access_key/20230405/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=7c8a3b72959c706663af9b6fe03c42e56410b63931a971e9d2e5ce8e422333b5");
+    assertEquals(
+        signedRequest.headers().get("Authorization").get(),
+        "AWS4-HMAC-SHA256 Credential=this_is_the_access_key/20230405/us-east-1/s3/aws4_request,"
+            + " SignedHeaders=host;x-amz-content-sha256;x-amz-date,"
+            + " Signature=7c8a3b72959c706663af9b6fe03c42e56410b63931a971e9d2e5ce8e422333b5");
     assertEquals(signedRequest.requestBody(), Optional.empty());
   }
+
   @Test
   public void detect_whenMinIOIsVulnerableKey_reportsVuln() throws IOException {
-    String failedAuthResponse = Resources.toString(Resources.getResource(this.getClass(), "failedAuthResponse.xml"), UTF_8);
-    String vulnerableResponseKey = Resources.toString(Resources.getResource(this.getClass(), "vulnerableResponseKey.json"), UTF_8);
-    String successfulAuthResponse = Resources.toString(Resources.getResource(this.getClass(), "successfulAuthResponse.xml"), UTF_8);
+    String failedAuthResponse =
+        Resources.toString(Resources.getResource(this.getClass(), "failedAuthResponse.xml"), UTF_8);
+    String vulnerableResponseKey =
+        Resources.toString(
+            Resources.getResource(this.getClass(), "vulnerableResponseKey.json"), UTF_8);
+    String successfulAuthResponse =
+        Resources.toString(
+            Resources.getResource(this.getClass(), "successfulAuthResponse.xml"), UTF_8);
 
-    mockMinIOWebService.enqueue(new MockResponse().setResponseCode(200).setBody(failedAuthResponse));
-    mockMinIOWebService.enqueue(new MockResponse().setResponseCode(200).setBody(vulnerableResponseKey));
-    mockMinIOWebService.enqueue(new MockResponse().setResponseCode(200).setBody(successfulAuthResponse));
+    mockMinIOWebService.enqueue(
+        new MockResponse().setResponseCode(200).setBody(failedAuthResponse));
+    mockMinIOWebService.enqueue(
+        new MockResponse().setResponseCode(200).setBody(vulnerableResponseKey));
+    mockMinIOWebService.enqueue(
+        new MockResponse().setResponseCode(200).setBody(successfulAuthResponse));
 
     DetectionReportList detectionReports =
-            detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(minIONetworkService));
+        detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(minIONetworkService));
 
     assertThat(detectionReports.getDetectionReportsList())
-            .containsExactly(buildExpectedDetectionReport(minIONetworkService,false, true, vulnerableResponseKey));
-
+        .containsExactly(
+            buildExpectedDetectionReport(minIONetworkService, false, true, vulnerableResponseKey));
   }
 
   @Test
   public void detect_whenMinIOIsVulnerablePassword_reportsVuln() throws IOException {
-    String failedAuthResponse = Resources.toString(Resources.getResource(this.getClass(), "failedAuthResponse.xml"), UTF_8);
-    String vulnerableResponsePassword = Resources.toString(Resources.getResource(this.getClass(), "vulnerableResponsePassword.json"), UTF_8);
-    String successfulAuthResponse = Resources.toString(Resources.getResource(this.getClass(), "successfulAuthResponse.xml"), UTF_8);
+    String failedAuthResponse =
+        Resources.toString(Resources.getResource(this.getClass(), "failedAuthResponse.xml"), UTF_8);
+    String vulnerableResponsePassword =
+        Resources.toString(
+            Resources.getResource(this.getClass(), "vulnerableResponsePassword.json"), UTF_8);
+    String successfulAuthResponse =
+        Resources.toString(
+            Resources.getResource(this.getClass(), "successfulAuthResponse.xml"), UTF_8);
 
-    mockMinIOWebService.enqueue(new MockResponse().setResponseCode(200).setBody(failedAuthResponse));
-    mockMinIOWebService.enqueue(new MockResponse().setResponseCode(200).setBody(vulnerableResponsePassword));
-    mockMinIOWebService.enqueue(new MockResponse().setResponseCode(200).setBody(successfulAuthResponse));
+    mockMinIOWebService.enqueue(
+        new MockResponse().setResponseCode(200).setBody(failedAuthResponse));
+    mockMinIOWebService.enqueue(
+        new MockResponse().setResponseCode(200).setBody(vulnerableResponsePassword));
+    mockMinIOWebService.enqueue(
+        new MockResponse().setResponseCode(200).setBody(successfulAuthResponse));
 
     DetectionReportList detectionReports =
-            detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(minIONetworkService));
+        detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(minIONetworkService));
 
     assertThat(detectionReports.getDetectionReportsList())
-            .containsExactly(buildExpectedDetectionReport(
-                    minIONetworkService,
-                    false,
-                    true,
-                    vulnerableResponsePassword));
-
+        .containsExactly(
+            buildExpectedDetectionReport(
+                minIONetworkService, false, true, vulnerableResponsePassword));
   }
 
   @Test
   public void detect_whenMinIOUsesDefaultPassword_reportsVuln() throws IOException {
-    String successfulAuthResponse = Resources.toString(Resources.getResource(this.getClass(), "successfulAuthResponse.xml"), UTF_8);
-    String saveResponse = Resources.toString(Resources.getResource(this.getClass(), "secureResponse.json"), UTF_8);
+    String successfulAuthResponse =
+        Resources.toString(
+            Resources.getResource(this.getClass(), "successfulAuthResponse.xml"), UTF_8);
+    String saveResponse =
+        Resources.toString(Resources.getResource(this.getClass(), "secureResponse.json"), UTF_8);
 
-    mockMinIOWebService.enqueue(new MockResponse().setResponseCode(200).setBody(successfulAuthResponse));
+    mockMinIOWebService.enqueue(
+        new MockResponse().setResponseCode(200).setBody(successfulAuthResponse));
     mockMinIOWebService.enqueue(new MockResponse().setResponseCode(200).setBody(saveResponse));
-    mockMinIOWebService.enqueue(new MockResponse().setResponseCode(200).setBody(successfulAuthResponse));
+    mockMinIOWebService.enqueue(
+        new MockResponse().setResponseCode(200).setBody(successfulAuthResponse));
 
     DetectionReportList detectionReports =
-            detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(minIONetworkService));
+        detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(minIONetworkService));
 
     assertThat(detectionReports.getDetectionReportsList())
-            .containsExactly(buildExpectedDetectionReport(minIONetworkService,true, true, saveResponse));
-
+        .containsExactly(
+            buildExpectedDetectionReport(minIONetworkService, true, true, saveResponse));
   }
 
   @Test
   public void detect_whenMinIOIsNotVulnerable_doesNotReportVuln() throws IOException {
-    String failedAuthResponse = Resources.toString(Resources.getResource(this.getClass(), "failedAuthResponse.xml"), UTF_8);
-    String saveResponse = Resources.toString(Resources.getResource(this.getClass(), "secureResponse.json"), UTF_8);
+    String failedAuthResponse =
+        Resources.toString(Resources.getResource(this.getClass(), "failedAuthResponse.xml"), UTF_8);
+    String saveResponse =
+        Resources.toString(Resources.getResource(this.getClass(), "secureResponse.json"), UTF_8);
 
-    mockMinIOWebService.enqueue(new MockResponse().setResponseCode(403).setBody(failedAuthResponse));
+    mockMinIOWebService.enqueue(
+        new MockResponse().setResponseCode(403).setBody(failedAuthResponse));
     mockMinIOWebService.enqueue(new MockResponse().setResponseCode(200).setBody(saveResponse));
-    mockMinIOWebService.enqueue(new MockResponse().setResponseCode(403).setBody(failedAuthResponse));
+    mockMinIOWebService.enqueue(
+        new MockResponse().setResponseCode(403).setBody(failedAuthResponse));
 
     DetectionReportList detectionReports =
-            detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(minIONetworkService));
+        detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(minIONetworkService));
 
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
 
   @Test
   public void detect_whenFixedMinIOUsesDefaultPassword_doesReportVuln() throws IOException {
-    String successfulAuthResponse = Resources.toString(Resources.getResource(this.getClass(), "successfulAuthResponse.xml"), UTF_8);
-    String blockedNotifyResponse = Resources.toString(Resources.getResource(this.getClass(), "blockedNotify.xml"), UTF_8);
+    String successfulAuthResponse =
+        Resources.toString(
+            Resources.getResource(this.getClass(), "successfulAuthResponse.xml"), UTF_8);
+    String blockedNotifyResponse =
+        Resources.toString(Resources.getResource(this.getClass(), "blockedNotify.xml"), UTF_8);
 
-    mockMinIOWebService.enqueue(new MockResponse().setResponseCode(200).setBody(successfulAuthResponse));
-    mockMinIOWebService.enqueue(new MockResponse().setResponseCode(403).setBody(blockedNotifyResponse));
+    mockMinIOWebService.enqueue(
+        new MockResponse().setResponseCode(200).setBody(successfulAuthResponse));
+    mockMinIOWebService.enqueue(
+        new MockResponse().setResponseCode(403).setBody(blockedNotifyResponse));
 
     DetectionReportList detectionReports =
-            detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(minIONetworkService));
+        detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(minIONetworkService));
 
     assertThat(detectionReports.getDetectionReportsList())
-            .containsExactly(buildExpectedDetectionReport(minIONetworkService,true, true, blockedNotifyResponse));
-
-
+        .containsExactly(
+            buildExpectedDetectionReport(minIONetworkService, true, true, blockedNotifyResponse));
   }
 
   @Test
   public void detect_whenNoMinIOEnvironment_doesNotReportVuln() throws IOException {
-
-    mockMinIOWebService.enqueue(new MockResponse().setResponseCode(200).setBody("{\"random\": {}}"));
-    mockMinIOWebService.enqueue(new MockResponse().setResponseCode(200).setBody("more-random-stuff"));
+    mockMinIOWebService.enqueue(
+        new MockResponse().setResponseCode(200).setBody("{\"random\": {}}"));
+    mockMinIOWebService.enqueue(
+        new MockResponse().setResponseCode(200).setBody("more-random-stuff"));
     DetectionReportList detectionReports =
-            detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(minIONetworkService));
+        detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(minIONetworkService));
 
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
 
   private DetectionReport buildExpectedDetectionReport(
-          NetworkService minIOService,
-          Boolean usesDefaultPassword,
-          Boolean authenticationSuccessful,
-          String content) {
+      NetworkService minIOService,
+      Boolean usesDefaultPassword,
+      Boolean authenticationSuccessful,
+      String content) {
     return DetectionReport.newBuilder()
-            .setTargetInfo(TargetInfo.getDefaultInstance())
-            .setNetworkService(minIOService)
-            .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
-            .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-            .setVulnerability(
-                    Vulnerability.newBuilder()
-                            .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY").setValue("MINIO_INFORMATION_DISCLOSURE_CLUSTER_ENVIRONMENT"))
-                            .setSeverity(Severity.CRITICAL)
-                            .setTitle("MinIO Information Disclosure in Cluster Environment")
-                            .setDescription(DESCRIPTION)
-                            .setRecommendation(RECOMMENDATION)
-                            .addAdditionalDetails(
-                                    AdditionalDetail.newBuilder()
-                                            .setTextData(
-                                                    TextData.newBuilder()
-                                                            .setText(
-                                                                    String.format(
-                                                                            "Access with default credentials (minioadmin:minioadmin): %s\n"
-                                                                            + "Authentication Successful %s\n"
-                                                                            + "Notify Endpoint Response:\n%s",
-                                                                            usesDefaultPassword,
-                                                                            authenticationSuccessful,
-                                                                            content)))))
-            .build();
+        .setTargetInfo(TargetInfo.getDefaultInstance())
+        .setNetworkService(minIOService)
+        .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+        .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+        .setVulnerability(
+            Vulnerability.newBuilder()
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("TSUNAMI_COMMUNITY")
+                        .setValue("MINIO_INFORMATION_DISCLOSURE_CLUSTER_ENVIRONMENT"))
+                .setSeverity(Severity.CRITICAL)
+                .setTitle("MinIO Information Disclosure in Cluster Environment")
+                .setDescription(DESCRIPTION)
+                .setRecommendation(RECOMMENDATION)
+                .addAdditionalDetails(
+                    AdditionalDetail.newBuilder()
+                        .setTextData(
+                            TextData.newBuilder()
+                                .setText(
+                                    String.format(
+                                        "Access with default credentials (minioadmin:minioadmin):"
+                                            + " %s\n"
+                                            + "Authentication Successful %s\n"
+                                            + "Notify Endpoint Response:\n"
+                                            + "%s",
+                                        usesDefaultPassword, authenticationSuccessful, content)))))
+        .build();
   }
 }
