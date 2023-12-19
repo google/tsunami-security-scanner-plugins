@@ -22,6 +22,7 @@ import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAnd
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.BaseEncoding;
 import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.tsunami.common.net.http.HttpClientModule;
@@ -58,7 +59,7 @@ public class RabbitMQCredentialTesterTest {
 
   private static final String WEAK_CRED_AUTH_1 = "Basic dXNlcjoxMjM0";
   private static final String WEAK_CRED_AUTH_2 = "Basic cm9vdDpwYXNz";
-  private static final ServiceContext.Builder rabbitmqServiceContext =
+  private static final ServiceContext.Builder RABBITMQ_SERVICE_CONTEXT =
       ServiceContext.newBuilder()
           .setWebServiceContext(
               WebServiceContext.newBuilder()
@@ -82,7 +83,7 @@ public class RabbitMQCredentialTesterTest {
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
             .setServiceName("http")
-            .setServiceContext(rabbitmqServiceContext)
+            .setServiceContext(RABBITMQ_SERVICE_CONTEXT)
             .setSoftware(Software.newBuilder().setName("http"))
             .build();
 
@@ -103,7 +104,7 @@ public class RabbitMQCredentialTesterTest {
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
             .setServiceName("http")
-            .setServiceContext(rabbitmqServiceContext)
+            .setServiceContext(RABBITMQ_SERVICE_CONTEXT)
             .build();
     assertThat(
             tester.testValidCredentials(
@@ -124,7 +125,7 @@ public class RabbitMQCredentialTesterTest {
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
             .setServiceName("http")
-            .setServiceContext(rabbitmqServiceContext)
+            .setServiceContext(RABBITMQ_SERVICE_CONTEXT)
             .build();
     assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WRONG_CRED_1)))
         .isEmpty();
@@ -152,7 +153,8 @@ public class RabbitMQCredentialTesterTest {
       var hasWeakCred2 = authHeader.contains(WEAK_CRED_AUTH_2);
 
       if (isUserEndpoint && (hasWeakCred1 || hasWeakCred2)) {
-        return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(userInfoResponse);
+        String username = BaseEncoding.base64().decode(authHeader).toString().split(":")[0];
+        return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(userInfoResponse.replace("<PLACEHOLDER>", username));
       }
       return new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code());
     }
