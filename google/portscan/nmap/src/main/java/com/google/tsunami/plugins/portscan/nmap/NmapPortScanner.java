@@ -301,7 +301,7 @@ public final class NmapPortScanner implements PortScanner {
             script ->
                 Ascii.equalsIgnoreCase("fingerprint-strings", Strings.nullToEmpty(script.id())))
         .flatMap(script -> script.elems().stream())
-        .filter(elt -> Ascii.equalsIgnoreCase("GetRequest", elt.key()))
+        .filter(elt -> elt.key().contains("GetRequest"))
         .filter(elt -> elt.value().contains("HTTP/1."))
         .count();
 

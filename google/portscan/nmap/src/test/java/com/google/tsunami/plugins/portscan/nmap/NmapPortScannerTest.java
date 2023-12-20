@@ -253,6 +253,27 @@ public class NmapPortScannerTest {
   }
 
   @Test
+  public void run_whenNmapRunHasScriptsButOptionsUnsupportedMultiKeys_returnsHttpMethods()
+      throws Exception {
+    doReturn(loadNmapRun("testdata/localhostHttpWithoutMethodsMultiKeyString.xml"))
+        .when(nmapClient)
+        .run(any());
+    NetworkEndpoint networkEndpoint = NetworkEndpointUtils.forIp("127.0.0.1");
+    assertThat(
+            portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
+        .isEqualTo(
+            PortScanningReport.newBuilder()
+                .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint))
+                .addNetworkServices(
+                    NetworkService.newBuilder()
+                        .setNetworkEndpoint(NetworkEndpointUtils.forIpAndPort("127.0.0.1", 8090))
+                        .setTransportProtocol(TransportProtocol.TCP)
+                        .addSupportedHttpMethods("GET")
+                        .setServiceName("opsmessaging"))
+                .build());
+  }
+
+  @Test
   public void run_configHasPortTargets_scansAllTargets() throws Exception {
     configs.portTargets = "80,8080,T:15000-16000";
     doReturn(loadNmapRun("testdata/localhostSsh.xml")).when(nmapClient).run(any());
