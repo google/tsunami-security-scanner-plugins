@@ -44,7 +44,27 @@ public final class TorchServeManagementApiDetector implements VulnDetector {
   static final String REPORT_ID = "TORCHSERVE_MANAGEMENT_API_RCE";
   static final String REPORT_TITLE = "TorchServe Management API Remote Code Execution";
   static final String REPORT_RECOMMENDATION =
-      "Disable the TorchServe Management API or restrict access to it.";
+    "It is strongly recommended to restrict access to the TorchServe Management API, as " +
+    "public exposure poses significant security risks. The API allows potentially " +
+    "disruptive interactions with TorchServe, including modifying configurations, " +
+    "deleting models, and altering resource allocation, which could lead to Denial of " +
+    "Service (DoS) attacks. \n\n" +
+    "Particular attention should be given to the possibility of unauthorized code " +
+    "execution through model uploads. Users must ensure strict control over model " +
+    "creation to prevent unauthorized or malicious use. Implementing the 'allowed_urls' " +
+    "option in TorchServe's configuration is critical in this regard. This setting, " +
+    "detailed at https://pytorch.org/serve/configuration.html#:~:text=allowed_urls, " +
+    "limits the URLs from which models can be downloaded. \n\n" +
+    "It is essential to configure 'allowed_urls' as a comma-separated list of " +
+    "regular expressions that specifically allow only trusted sources. General " +
+    "whitelisting of large domains (such as entire AWS S3 or GCP buckets) is not " +
+    "secure. Care must be taken to ensure regex patterns are accurately defined " +
+    "(e.g., using 'https://models\\.my-domain\\.com/*' instead of " +
+    "'https://models.my-domain.com/*' to prevent unintended domain matches). \n\n" +
+    "Finally, be aware that the Management API discloses the original URLs of " +
+    "downloaded models. Attackers could exploit this information to identify " +
+    "vulnerable download sources or to host malicious models on similarly-named " +
+    "domains.";
 
   @Inject
   public TorchServeManagementApiDetector(TorchServeExploiter torchServeExploiter) {
