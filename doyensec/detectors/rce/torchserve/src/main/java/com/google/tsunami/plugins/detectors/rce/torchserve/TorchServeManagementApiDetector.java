@@ -67,7 +67,7 @@ public final class TorchServeManagementApiDetector implements VulnDetector {
     for (NetworkService service : matchedServices) {
       try {
         TorchServeExploiter.Details details = torchServeExploiter.isServiceVulnerable(service);
-        logger.atInfo().log("Looking at service %s", service);
+        logger.atInfo().log("Checking service %s", service);
         if (details != null) {
           logger.atInfo().log("Found vulnerable service %s", service);
           DetectionReport report = buildDetectionReport(targetInfo, service, details);
