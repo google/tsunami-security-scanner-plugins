@@ -1,7 +1,7 @@
 {
     "runtime": "python",
     "model": {
-      "modelName": "somerandomname",
+      "modelName": "tsunami-torch-rce-validator",
       "serializedFile": "serialized.pt",
       "handler": "model.py",
       "modelVersion": "1.0"
