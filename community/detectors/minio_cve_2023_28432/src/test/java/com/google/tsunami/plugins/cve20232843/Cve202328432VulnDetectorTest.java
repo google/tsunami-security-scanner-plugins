@@ -15,7 +15,14 @@
  */
 package com.google.tsunami.plugins.cve20232843;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth8.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static com.google.tsunami.plugins.cves.cve202328432.Cve202328432VulnDetector.DESCRIPTION;
+import static com.google.tsunami.plugins.cves.cve202328432.Cve202328432VulnDetector.RECOMMENDATION;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
@@ -28,19 +35,22 @@ import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugins.cves.cve202328432.Cve202328432VulnDetector;
 import com.google.tsunami.plugins.cves.cve202328432.Cve202328432VulnDetectorBootstrapModule;
 import com.google.tsunami.plugins.cves.cve202328432.minio.Digest;
-import com.google.tsunami.proto.*;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-
+import com.google.tsunami.proto.AdditionalDetail;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.Software;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TextData;
+import com.google.tsunami.proto.TransportProtocol;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Inject;
-
-import static com.google.tsunami.plugins.cves.cve202328432.Cve202328432VulnDetector.DESCRIPTION;
-import static com.google.tsunami.plugins.cves.cve202328432.Cve202328432VulnDetector.RECOMMENDATION;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
-
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.Before;
@@ -91,17 +101,17 @@ public final class Cve202328432VulnDetectorTest {
         detector.buildSignedHttpRequest(uri, requestDate, accessKey, accessSecret);
 
     assertEquals(signedRequest.url().toString(), uri);
-    assertEquals(signedRequest.method().toString(), "GET");
-    assertEquals(signedRequest.headers().names().size(), 5);
-    assertEquals(signedRequest.headers().get("Host").get(), "foo.bar:9000");
-    assertEquals(
-        signedRequest.headers().get("x-amz-content-sha256").get(), Digest.ZERO_SHA256_HASH);
+    assertEquals("GET", signedRequest.method().toString());
+    assertThat(signedRequest.headers().names()).hasSize(5);
+    assertThat(signedRequest.headers().get("Host")).hasValue("foo.bar:9000");
+    assertThat(signedRequest.headers().get("x-amz-content-sha256"))
+        .hasValue(Digest.ZERO_SHA256_HASH);
     assertEquals(signedRequest.headers().get("x-amz-date").get(), requestDate);
-    assertEquals(
-        signedRequest.headers().get("Authorization").get(),
-        "AWS4-HMAC-SHA256 Credential=this_is_the_access_key/20230405/us-east-1/s3/aws4_request,"
-            + " SignedHeaders=host;x-amz-content-sha256;x-amz-date,"
-            + " Signature=7c8a3b72959c706663af9b6fe03c42e56410b63931a971e9d2e5ce8e422333b5");
+    assertThat(signedRequest.headers().get("Authorization"))
+        .hasValue(
+            "AWS4-HMAC-SHA256 Credential=this_is_the_access_key/20230405/us-east-1/s3/aws4_request,"
+                + " SignedHeaders=host;x-amz-content-sha256;x-amz-date,"
+                + " Signature=7c8a3b72959c706663af9b6fe03c42e56410b63931a971e9d2e5ce8e422333b5");
     assertEquals(signedRequest.requestBody(), Optional.empty());
   }
 
@@ -237,6 +247,17 @@ public final class Cve202328432VulnDetectorTest {
       Boolean usesDefaultPassword,
       Boolean authenticationSuccessful,
       String content) {
+    String vulnerabilityDetail = "MinIO instances are vulnerable for the following reason(s):";
+    if (usesDefaultPassword) {
+      vulnerabilityDetail =
+          vulnerabilityDetail.concat(" Default credentials (minioadmin:minioadmin) are used.");
+    }
+    if (authenticationSuccessful) {
+      vulnerabilityDetail =
+          vulnerabilityDetail.concat(" Leaked credentials enabled authentication bypass.");
+    }
+    vulnerabilityDetail = vulnerabilityDetail.concat(" Endpoint Response: " + content);
+
     return DetectionReport.newBuilder()
         .setTargetInfo(TargetInfo.getDefaultInstance())
         .setNetworkService(minIOService)
@@ -254,16 +275,7 @@ public final class Cve202328432VulnDetectorTest {
                 .setRecommendation(RECOMMENDATION)
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
-                        .setTextData(
-                            TextData.newBuilder()
-                                .setText(
-                                    String.format(
-                                        "Access with default credentials (minioadmin:minioadmin):"
-                                            + " %s\n"
-                                            + "Authentication Successful %s\n"
-                                            + "Notify Endpoint Response:\n"
-                                            + "%s",
-                                        usesDefaultPassword, authenticationSuccessful, content)))))
+                        .setTextData(TextData.newBuilder().setText(vulnerabilityDetail))))
         .build();
   }
 }

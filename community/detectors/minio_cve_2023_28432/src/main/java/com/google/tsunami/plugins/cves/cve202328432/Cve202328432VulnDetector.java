@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpClient.TSUNAMI_USER_AGENT;
 
 import com.google.auto.value.AutoValue;
@@ -32,8 +33,8 @@ import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpMethod;
-import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpRequest;
+import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -56,21 +57,21 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import javax.inject.Inject;
 
 /** A VulnDetector plugin to find instances of CVE 2023-28432. */
 @PluginInfo(
-    type = PluginType.REMOTE_VULN_DETECTION,
+    type = PluginType.VULN_DETECTION,
     name = "CVE202328432MinIOCluster",
     version = "0.1",
     description =
         "In a vulnerable cluster deployment, MinIO returns all environment variables, including"
-            + " MINIO_SECRET_KEY\n"
-            + "and MINIO_ROOT_PASSWORD, resulting in information disclosure.\n"
-            + "This plugin also checks for unchanged default passwords, which might not be shown in"
-            + " the configuration",
+            + " MINIO_SECRET_KEY and MINIO_ROOT_PASSWORD, resulting in information disclosure."
+            + " This plugin also checks for unchanged default passwords, which might not be shown"
+            + " in the configuration",
     author = "Hans-Martin Münch (muench@mogwailabs.de)",
     bootstrapModule = Cve202328432VulnDetectorBootstrapModule.class)
 public final class Cve202328432VulnDetector implements VulnDetector {
@@ -85,25 +86,24 @@ public final class Cve202328432VulnDetector implements VulnDetector {
   @VisibleForTesting
   public static final String DESCRIPTION =
       "MinIO deployments have a default user with access to all actions and resources on the"
-          + " deployment, regardless of the configured identity manager.\n"
-          + "These credentials are set through environment variables that are checked on startup."
+          + " deployment, regardless of the configured identity manager."
+          + " These credentials are set through environment variables that are checked on startup."
           + " If the environment variables are not set, default credentials (minioadmin:minioadmin)"
-          + " are used \n"
-          + "Due to a vulnerability in an API endpoint, MinIO returns all environment variables,"
-          + " including MINIO_SECRET_KEY\n"
-          + "and MINIO_ROOT_PASSWORD, resulting in information disclosure.";
+          + " are used."
+          + " Due to a vulnerability in an API endpoint, MinIO returns all environment variables,"
+          + " including MINIO_SECRET_KEY and MINIO_ROOT_PASSWORD, resulting in information"
+          + " disclosure.";
 
   @VisibleForTesting
   public static final String RECOMMENDATION =
-      "Update to the latest MinIO version (>= RELEASE.2023-03-20T20-16-18Z).\n"
-          + "The MINIO_SECRET_KEY and / or MINIO_ROOT_PASSWORD of the affected MinIO instance must"
+      "Update to the latest MinIO version (>= RELEASE.2023-03-20T20-16-18Z)."
+          + " The MINIO_SECRET_KEY and / or MINIO_ROOT_PASSWORD of the affected MinIO instance must"
           + " be changed";
 
   private static final String MINIO_VERIFY_PATH = "minio/bootstrap/v1/verify";
 
   @Inject
   Cve202328432VulnDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
-
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
   }
@@ -137,32 +137,35 @@ public final class Cve202328432VulnDetector implements VulnDetector {
         || NetworkServiceUtils.getServiceName(networkService).equals("cslistener");
   }
 
+  private static String buildTargetUrl(NetworkService networkService) {
+    if (NetworkServiceUtils.isWebService(networkService)) {
+      return NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    }
+    // Assume the service uses HTTP protocol when the scanner cannot identify the actual service.
+    return "http://" + toUriAuthority(networkService.getNetworkEndpoint()) + "/";
+  }
+
   private EndpointProbingResult checkEndpointForNetworkService(NetworkService networkService) {
+    String baseUrl = buildTargetUrl(networkService);
+    String targetUri = String.format("%s%s", baseUrl, MINIO_VERIFY_PATH);
+    boolean usesDefaultPw = false;
 
-    String minIOUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    String targetUri = String.format("%s%s", minIOUrl, MINIO_VERIFY_PATH);
-
-    Boolean usesDefaultPW = false;
-    Boolean notifyEndpointReachable = false;
-    Boolean isVulnerable = false;
-    Boolean authenticationSuccessful = false;
     try {
       // Try the default user / password
       // this request always works, even if access to the VERIFY path is blocked
-      String requestDate = ZonedDateTime.now().format(Time.AMZ_DATE_FORMAT);
+      String requestDate = ZonedDateTime.now(ZoneOffset.UTC).format(Time.AMZ_DATE_FORMAT);
       HttpRequest signedRequest =
-          buildSignedHttpRequest(minIOUrl, requestDate, this.defaultUser, this.defaultPassword);
-
+          buildSignedHttpRequest(baseUrl, requestDate, this.defaultUser, this.defaultPassword);
       HttpResponse authResponse = this.httpClient.send((signedRequest));
       // Successful authentication through leaked or default credentials
       if (authResponse.status().isSuccess()
           && authResponse.bodyString().isPresent()
           && authResponse.bodyString().get().contains("ListAllMyBucketsResult")) {
-        usesDefaultPW = true;
+        usesDefaultPw = true;
       }
     } catch (java.io.IOException e) {
-      logger.atWarning().withCause(e).log("Unable to send request at %s", minIOUrl);
-      usesDefaultPW = false;
+      logger.atWarning().withCause(e).log("Unable to send request at %s", baseUrl);
+      usesDefaultPw = false;
     }
 
     try {
@@ -173,7 +176,6 @@ public final class Cve202328432VulnDetector implements VulnDetector {
         JsonObject jsonResponse = (JsonObject) response.bodyJson().get();
 
         if (jsonResponse.has("MinioEnv")) {
-          notifyEndpointReachable = true;
           JsonObject minioEnv = jsonResponse.getAsJsonObject("MinioEnv");
 
           // Older/mitigated MinIO instances used "MINIO_ACCESS_KEY" and "MINIO_SECRET_KEY"
@@ -193,19 +195,18 @@ public final class Cve202328432VulnDetector implements VulnDetector {
           if (minioAccessKey != null && minioSecretKey != null) {
             testKey = minioAccessKey.getAsString();
             testSecret = minioSecretKey.getAsString();
-          }
-          // Case 2:
-          // New instance with MINIO_ROOT_USER and MINIO_ROOT_PASSWORD
-          else if (minioRootUser != null && minioRootPassword != null) {
+          } else if (minioRootUser != null && minioRootPassword != null) {
+            // Case 2:
+            // New instance with MINIO_ROOT_USER and MINIO_ROOT_PASSWORD
             testKey = minioRootUser.getAsString();
             testSecret = minioRootPassword.getAsString();
           }
 
           // try to authenticate with the leaked credentials
           // or the default credentials of no creds were discovered
-          String requestDate = ZonedDateTime.now().format(Time.AMZ_DATE_FORMAT);
+          String requestDate = ZonedDateTime.now(ZoneOffset.UTC).format(Time.AMZ_DATE_FORMAT);
           HttpRequest signedRequest =
-              buildSignedHttpRequest(minIOUrl, requestDate, testKey, testSecret);
+              buildSignedHttpRequest(baseUrl, requestDate, testKey, testSecret);
 
           HttpResponse authResponse = this.httpClient.send((signedRequest));
 
@@ -216,7 +217,7 @@ public final class Cve202328432VulnDetector implements VulnDetector {
 
             return EndpointProbingResult.builder()
                 .setIsVulnerable(true)
-                .setUsesDefaultPassword(usesDefaultPW)
+                .setUsesDefaultPassword(usesDefaultPw)
                 .setAuthenticationSuccessful(true)
                 .setNetworkService(networkService)
                 .setVulnerableEndpointResponse(response)
@@ -228,10 +229,10 @@ public final class Cve202328432VulnDetector implements VulnDetector {
       // Were we able to authenticate with default credentials, but unable to access the verify
       // endpoint?
       // Mark it as vulnerable
-      if (usesDefaultPW) {
+      if (usesDefaultPw) {
         return EndpointProbingResult.builder()
             .setIsVulnerable(true)
-            .setUsesDefaultPassword(usesDefaultPW)
+            .setUsesDefaultPassword(usesDefaultPw)
             .setAuthenticationSuccessful(true)
             .setNetworkService(networkService)
             .setVulnerableEndpointResponse(response)
@@ -311,17 +312,24 @@ public final class Cve202328432VulnDetector implements VulnDetector {
 
   private static AdditionalDetail buildAdditionalDetail(EndpointProbingResult probingResult) {
     checkState(probingResult.vulnerableEndpointResponse().isPresent());
+
+    String vulnerabilityDetail = "MinIO instances are vulnerable for the following reason(s):";
+    if (probingResult.usesDefaultPassword()) {
+      vulnerabilityDetail =
+          vulnerabilityDetail.concat(" Default credentials (minioadmin:minioadmin) are used.");
+    }
+    if (probingResult.authenticationSuccessful()) {
+      vulnerabilityDetail =
+          vulnerabilityDetail.concat(" Leaked credentials enabled authentication bypass.");
+    }
+
+    vulnerabilityDetail =
+        vulnerabilityDetail.concat(
+            " Endpoint Response: "
+                + probingResult.vulnerableEndpointResponse().get().bodyString().get());
+
     return AdditionalDetail.newBuilder()
-        .setTextData(
-            TextData.newBuilder()
-                .setText(
-                    String.format(
-                        "Access with default credentials (minioadmin:minioadmin): %s\n"
-                            + "Authentication Successful %s\n"
-                            + "Notify Endpoint Response:\n%s",
-                        probingResult.usesDefaultPassword(),
-                        probingResult.authenticationSuccessful(),
-                        probingResult.vulnerableEndpointResponse().get().bodyString().get())))
+        .setTextData(TextData.newBuilder().setText(vulnerabilityDetail))
         .build();
   }
 
