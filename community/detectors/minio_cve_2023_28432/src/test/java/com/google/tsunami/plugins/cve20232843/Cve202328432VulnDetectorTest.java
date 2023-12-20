@@ -89,6 +89,7 @@ public final class Cve202328432VulnDetectorTest {
 
     HttpRequest signedRequest =
         detector.buildSignedHttpRequest(uri, requestDate, accessKey, accessSecret);
+
     assertEquals(signedRequest.url().toString(), uri);
     assertEquals(signedRequest.method().toString(), "GET");
     assertEquals(signedRequest.headers().names().size(), 5);
@@ -221,7 +222,6 @@ public final class Cve202328432VulnDetectorTest {
 
   @Test
   public void detect_whenNoMinIOEnvironment_doesNotReportVuln() throws IOException {
-
     mockMinIOWebService.enqueue(
         new MockResponse().setResponseCode(200).setBody("{\"random\": {}}"));
     mockMinIOWebService.enqueue(
