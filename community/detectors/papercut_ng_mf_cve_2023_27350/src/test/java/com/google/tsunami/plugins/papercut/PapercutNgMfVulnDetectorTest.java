@@ -17,6 +17,7 @@ package com.google.tsunami.plugins.papercut;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
@@ -27,9 +28,17 @@ import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
-import com.google.tsunami.proto.*;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.Software;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TransportProtocol;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Arrays;
@@ -43,12 +52,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for {@link PapercutNGMFVulnDetectorWithPayloadTest}, showing how to test a detector
- * which utilizes the payload generator framework.
- */
+/** Unit tests for {@link PapercutNgMfVulnDetector}. */
 @RunWith(JUnit4.class)
-public final class PapercutNGMFVulnDetectorWithPayloadTest {
+public final class PapercutNgMfVulnDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
@@ -62,15 +68,14 @@ public final class PapercutNGMFVulnDetectorWithPayloadTest {
   private final MockWebServer mockWebServer = new MockWebServer();
   private final MockWebServer mockCallbackServer = new MockWebServer();
   private NetworkService papercutService;
-  @Inject private PapercutNGMFVulnDetectorWithPayload detector;
+  @Inject private PapercutNgMfVulnDetector detector;
   private DetectionReport detectorReport;
   private TargetInfo targetInfo;
 
   // Helper function load additional resources used in the tests
   private static String loadResource(String file) throws IOException {
     return Resources.toString(
-            Resources.getResource(PapercutNGMFVulnDetectorWithPayloadTest.class, file),
-            StandardCharsets.UTF_8)
+            Resources.getResource(PapercutNgMfVulnDetectorTest.class, file), UTF_8)
         .strip();
   }
 
@@ -86,7 +91,7 @@ public final class PapercutNGMFVulnDetectorWithPayloadTest {
                 .setCallbackServer(mockCallbackServer)
                 .setSecureRng(testSecureRandom)
                 .build(),
-            new PapercutNGMFVulnDetectorWithPayloadBootstrapModule())
+            new PapercutNgMfVulnDetectorBootstrapModule())
         .injectMembers(this);
 
     papercutService =
@@ -194,6 +199,9 @@ public final class PapercutNGMFVulnDetectorWithPayloadTest {
     mockWebServer.enqueue(new MockResponse().setResponseCode(401));
 
     assertThat(
-        detector.detect(targetInfo, ImmutableList.of(papercutService)).getDetectionReportsList());
+            detector
+                .detect(targetInfo, ImmutableList.of(papercutService))
+                .getDetectionReportsList())
+        .isEmpty();
   }
 }

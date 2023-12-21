@@ -3,6 +3,7 @@ package com.google.tsunami.plugins.papercut;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.flogger.GoogleLogger;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.ByteString;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -17,23 +18,23 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class PapercutNGMFHelper {
+/** A helper class for managing jsessionId based web session. */
+public final class PapercutNgMfHelper {
+  private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final NetworkService networkService;
-  private final GoogleLogger logger;
   private final HttpClient httpClient;
-  public String JSESSION_ID = "";
-  private String root_url = "";
-  private String base_app_url = "";
+  public String jsessionId = "";
+  private String rootUrl = "";
+  private String baseAppUrl = "";
   private HttpHeaders headers;
   private String previousUrl = "";
 
-  PapercutNGMFHelper(NetworkService networkService, GoogleLogger logger, HttpClient httpClient) {
+  PapercutNgMfHelper(NetworkService networkService, HttpClient httpClient) {
     this.networkService = checkNotNull(networkService);
-    this.logger = checkNotNull(logger);
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
-    this.root_url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    this.base_app_url = this.root_url + "app";
+    this.rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    this.baseAppUrl = this.rootUrl + "app";
     buildHeaders(false);
   }
 
@@ -45,7 +46,7 @@ public class PapercutNGMFHelper {
           Pattern.compile("JSESSIONID=[a-zA-Z0-9.]+;", Pattern.CASE_INSENSITIVE)
               .matcher(setCookiesHeader);
       if (jsessionIdMatcher.find()) {
-        JSESSION_ID = jsessionIdMatcher.group();
+        jsessionId = jsessionIdMatcher.group();
       }
     }
   }
@@ -54,49 +55,56 @@ public class PapercutNGMFHelper {
     HttpHeaders.Builder headers = HttpHeaders.builder();
 
     // Default headers
-    headers.addHeader("Origin", this.root_url);
+    headers.addHeader("Origin", this.rootUrl);
     headers.addHeader("Accept", "*/*");
 
     // Add content-type helper
-    if (isPostRequest) headers.addHeader("Content-Type", "application/x-www-form-urlencoded");
+    if (isPostRequest) {
+      headers.addHeader("Content-Type", "application/x-www-form-urlencoded");
+    }
 
     // The initial request won't have a referer to use, so don't set it
-    if (!this.previousUrl.isEmpty()) headers.addHeader("Referer", this.previousUrl);
+    if (!this.previousUrl.isEmpty()) {
+      headers.addHeader("Referer", this.previousUrl);
+    }
 
     // Add or update the JSESSION_ID if a value is present
-    if (!JSESSION_ID.isEmpty()) headers.addHeader("Cookie", JSESSION_ID);
+    if (!jsessionId.isEmpty()) {
+      headers.addHeader("Cookie", jsessionId);
+    }
 
     this.headers = headers.build();
   }
 
+  @CanIgnoreReturnValue
   public HttpResponse sendGetRequest(String path) {
     buildHeaders(false); // Rebuild the headers
-    HttpRequest request =
-        HttpRequest.get(this.base_app_url + "?" + path).setHeaders(this.headers).build();
+    HttpRequest request = HttpRequest.get(baseAppUrl + "?" + path).setHeaders(headers).build();
     HttpResponse response = null;
     try {
-      response = this.httpClient.send(request, this.networkService);
-      this.updateJsessionId(response); // Update JSESSION_ID if needed
-      this.previousUrl = (this.base_app_url + "?" + path);
+      response = httpClient.send(request, this.networkService);
+      updateJsessionId(response); // Update JSESSION_ID if needed
+      previousUrl = baseAppUrl + "?" + path;
     } catch (Exception err) {
       logger.atWarning().withCause(err).log();
     }
     return response;
   }
 
+  @CanIgnoreReturnValue
   public HttpResponse sendPostRequest(String bodyContent) {
     buildHeaders(true); // Rebuild the headers
     HttpRequest request =
-        HttpRequest.post(this.base_app_url)
-            .setHeaders(this.headers)
+        HttpRequest.post(baseAppUrl)
+            .setHeaders(headers)
             .setRequestBody(ByteString.copyFrom(bodyContent, StandardCharsets.UTF_8))
             .build();
 
     HttpResponse response = null;
     try {
-      response = this.httpClient.send(request, this.networkService);
+      response = httpClient.send(request, networkService);
       this.updateJsessionId(response); // Update JSESSION_ID if needed
-      this.previousUrl = (this.base_app_url);
+      previousUrl = baseAppUrl;
     } catch (Exception err) {
       logger.atWarning().withCause(err).log();
     }
@@ -107,8 +115,11 @@ public class PapercutNGMFHelper {
     StringBuilder result = new StringBuilder();
     boolean first = true;
     for (Map.Entry<String, String> entry : params.entrySet()) {
-      if (first) first = false;
-      else result.append("&");
+      if (first) {
+        first = false;
+      } else {
+        result.append("&");
+      }
       result.append(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8));
       result.append("=");
       result.append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8));
@@ -117,14 +128,14 @@ public class PapercutNGMFHelper {
   }
 
   public void changeSettingForPayload(String settingName, Boolean enable) {
-    HashMap<String, String> settingNav = new HashMap<String, String>();
+    HashMap<String, String> settingNav = new HashMap<>();
     settingNav.put("service", "direct/1/ConfigEditor/quickFindForm");
     settingNav.put("sp", "S0");
     settingNav.put("Form0", "$TextField,doQuickFind,clear");
     settingNav.put("$TextField", settingName);
     settingNav.put("doQuickFind", "Go");
 
-    HashMap<String, String> settingAction = new HashMap<String, String>();
+    HashMap<String, String> settingAction = new HashMap<>();
     settingAction.put("service", "direct/1/ConfigEditor/$Form");
     settingAction.put("sp", "S1");
     settingAction.put("Form1", "$TextField$0,$Submit,$Submit$0");

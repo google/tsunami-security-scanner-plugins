@@ -17,11 +17,11 @@ package com.google.tsunami.plugins.papercut;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-public final class PapercutNGMFVulnDetectorWithPayloadBootstrapModule
-    extends PluginBootstrapModule {
+/** A Guice module that bootstraps the {@link PapercutNgMfVulnDetector}. */
+public final class PapercutNgMfVulnDetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    registerPlugin(PapercutNGMFVulnDetectorWithPayload.class);
+    registerPlugin(PapercutNgMfVulnDetector.class);
   }
 }
