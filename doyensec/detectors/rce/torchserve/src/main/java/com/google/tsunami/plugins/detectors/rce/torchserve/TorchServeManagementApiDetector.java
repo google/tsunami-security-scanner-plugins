@@ -17,11 +17,6 @@ package com.google.tsunami.plugins.detectors.rce.torchserve;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.time.Clock;
-import java.time.Instant;
-
-import javax.inject.Inject;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
@@ -32,6 +27,9 @@ import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.proto.*;
 import com.google.tsunami.proto.NetworkService;
+import java.time.Clock;
+import java.time.Instant;
+import javax.inject.Inject;
 
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
@@ -49,31 +47,32 @@ public final class TorchServeManagementApiDetector implements VulnDetector {
   public static final String REPORT_ID = "TORCHSERVE_MANAGEMENT_API_RCE";
   public static final String REPORT_TITLE = "TorchServe Management API Remote Code Execution";
   public static final String REPORT_RECOMMENDATION =
-    "It is strongly recommended to restrict access to the TorchServe Management API, as " +
-    "public exposure poses significant security risks. The API allows potentially " +
-    "disruptive interactions with TorchServe, including modifying configurations, " +
-    "deleting models, and altering resource allocation, which could lead to Denial of " +
-    "Service (DoS) attacks. \n\n" +
-    "Particular attention should be given to the possibility of unauthorized code " +
-    "execution through model uploads. Users must ensure strict control over model " +
-    "creation to prevent unauthorized or malicious use. Implementing the 'allowed_urls' " +
-    "option in TorchServe's configuration is critical in this regard. This setting, " +
-    "detailed at https://pytorch.org/serve/configuration.html#:~:text=allowed_urls, " +
-    "limits the URLs from which models can be downloaded. \n\n" +
-    "It is essential to configure 'allowed_urls' as a comma-separated list of " +
-    "regular expressions that specifically allow only trusted sources. General " +
-    "whitelisting of large domains (such as entire AWS S3 or GCP buckets) is not " +
-    "secure. Care must be taken to ensure regex patterns are accurately defined " +
-    "(e.g., using 'https://models\\.my-domain\\.com/*' instead of " +
-    "'https://models.my-domain.com/*' to prevent unintended domain matches). \n\n" +
-    "Finally, be aware that the Management API discloses the original URLs of " +
-    "downloaded models. Attackers could exploit this information to identify " +
-    "vulnerable download sources or to host malicious models on similarly-named " +
-    "domains.";
+      "It is strongly recommended to restrict access to the TorchServe Management API, as "
+          + "public exposure poses significant security risks. The API allows potentially "
+          + "disruptive interactions with TorchServe, including modifying configurations, "
+          + "deleting models, and altering resource allocation, which could lead to Denial of "
+          + "Service (DoS) attacks. \n\n"
+          + "Particular attention should be given to the possibility of unauthorized code "
+          + "execution through model uploads. Users must ensure strict control over model "
+          + "creation to prevent unauthorized or malicious use. Implementing the 'allowed_urls' "
+          + "option in TorchServe's configuration is critical in this regard. This setting, "
+          + "detailed at https://pytorch.org/serve/configuration.html#:~:text=allowed_urls, "
+          + "limits the URLs from which models can be downloaded. \n\n"
+          + "It is essential to configure 'allowed_urls' as a comma-separated list of "
+          + "regular expressions that specifically allow only trusted sources. General "
+          + "whitelisting of large domains (such as entire AWS S3 or GCP buckets) is not "
+          + "secure. Care must be taken to ensure regex patterns are accurately defined "
+          + "(e.g., using 'https://models\\.my-domain\\.com/*' instead of "
+          + "'https://models.my-domain.com/*' to prevent unintended domain matches). \n\n"
+          + "Finally, be aware that the Management API discloses the original URLs of "
+          + "downloaded models. Attackers could exploit this information to identify "
+          + "vulnerable download sources or to host malicious models on similarly-named "
+          + "domains.";
   private final Clock utcClock;
 
   @Inject
-  public TorchServeManagementApiDetector(TorchServeExploiter torchServeExploiter, @UtcClock Clock utcClock) {
+  public TorchServeManagementApiDetector(
+      TorchServeExploiter torchServeExploiter, @UtcClock Clock utcClock) {
     this.utcClock = checkNotNull(utcClock);
     this.torchServeExploiter = checkNotNull(torchServeExploiter);
   }
