@@ -62,7 +62,6 @@ public final class NcrackCredentialTester extends CredentialTester {
           // Missing from TargetService: JOOMLA, HTTP, OWA
           .put("cassandra", TargetService.CASSANDRA)
           .put("ssh", TargetService.SSH)
-          .put("ms-wbt-server", TargetService.RDP)
           .put("ftp", TargetService.FTP)
           .put("wordpress", TargetService.WORDPRESS)
           .put("telnet", TargetService.TELNET)
@@ -113,6 +112,11 @@ public final class NcrackCredentialTester extends CredentialTester {
     String serviceName = NetworkServiceUtils.getServiceName(networkService);
     return SERVICE_MAP.containsKey(serviceName)
         && !excludedTargetServices.contains(SERVICE_MAP.get(serviceName));
+  }
+
+  @Override
+  public boolean batched() {
+    return true;
   }
 
   @Override

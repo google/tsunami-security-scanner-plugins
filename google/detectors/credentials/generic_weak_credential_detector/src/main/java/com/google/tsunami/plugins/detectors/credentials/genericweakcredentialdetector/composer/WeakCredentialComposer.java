@@ -69,12 +69,15 @@ public final class WeakCredentialComposer {
       return ImmutableList.of();
     }
 
-    Iterator<List<TestCredential>> credentialPartitions =
-        Iterators.partition(credentials.iterator(), this.batchSize);
+    if (tester.batched()) {
+      Iterator<List<TestCredential>> credentialPartitions =
+          Iterators.partition(credentials.iterator(), this.batchSize);
 
-    return stream(credentialPartitions)
-        .map(batchCredentials -> tester.testValidCredentials(networkService, batchCredentials))
-        .flatMap(ImmutableList::stream)
-        .collect(toImmutableList());
+      return stream(credentialPartitions)
+          .map(batchCredentials -> tester.testValidCredentials(networkService, batchCredentials))
+          .flatMap(ImmutableList::stream)
+          .collect(toImmutableList());
+    }
+    return tester.testValidCredentials(networkService, credentials);
   }
 }

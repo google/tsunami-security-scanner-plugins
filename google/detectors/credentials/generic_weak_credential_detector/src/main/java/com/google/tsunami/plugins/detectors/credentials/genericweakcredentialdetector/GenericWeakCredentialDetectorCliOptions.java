@@ -31,6 +31,13 @@ public final class GenericWeakCredentialDetectorCliOptions implements CliOption 
               + " enum. ")
   public List<String> excludedTargetServices;
 
+  @Parameter(
+      names = "--enable-hydra",
+      description =
+          "Enable hydra for weak credential scanning, given that hydra is installed in the"
+              + " environment.")
+  public boolean enableHydra;
+
   @Override
   public void validate() {}
 }

@@ -35,6 +35,9 @@ public abstract class CredentialTester {
   /** Indicates if the current provider can test the specified service. */
   public abstract boolean canAccept(NetworkService networkService);
 
+  /** Indicates if testing should be performaed in the batched mode. */
+  public abstract boolean batched();
+
   /**
    * Tests a set of credentials against provided service.
    *

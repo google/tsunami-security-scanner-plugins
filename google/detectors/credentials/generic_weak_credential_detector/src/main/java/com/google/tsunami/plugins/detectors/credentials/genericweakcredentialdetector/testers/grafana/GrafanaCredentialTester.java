@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.gson.JsonObject;
@@ -133,13 +134,18 @@ public final class GrafanaCredentialTester extends CredentialTester {
     return canAcceptByCustomFingerprint;
   }
 
+  @Override
+  public boolean batched() {
+    return true;
+  }
+
   // Checks if the response body contains elements of a grafana page - custom fingerprinting phase
   private static boolean bodyContainsGrafanaElements(String responseBody) {
     Document doc = Jsoup.parse(responseBody);
     String title = doc.title();
     String body = doc.body().toString();
 
-    if (title.toLowerCase().contains(GRAFANA_PAGE_TITLE)
+    if (Ascii.toLowerCase(title).contains(GRAFANA_PAGE_TITLE)
         && body.contains(GRAFANA_LOADING)
         && body.contains(GRAFANA_BOOT_DATA)) {
       logger.atInfo().log(
