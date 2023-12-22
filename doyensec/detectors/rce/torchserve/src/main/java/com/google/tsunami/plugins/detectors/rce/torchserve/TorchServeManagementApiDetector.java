@@ -17,6 +17,9 @@ package com.google.tsunami.plugins.detectors.rce.torchserve;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.time.Clock;
+import java.time.Instant;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
@@ -27,6 +30,8 @@ import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.proto.*;
 import com.google.tsunami.proto.NetworkService;
 import javax.inject.Inject;
+import java.time.Clock;
+import com.google.tsunami.common.time.UtcClock;
 
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
@@ -40,10 +45,10 @@ public final class TorchServeManagementApiDetector implements VulnDetector {
   private final TorchServeExploiter torchServeExploiter;
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  static final String REPORT_PUBLISHER = "DOYENSEC";
-  static final String REPORT_ID = "TORCHSERVE_MANAGEMENT_API_RCE";
-  static final String REPORT_TITLE = "TorchServe Management API Remote Code Execution";
-  static final String REPORT_RECOMMENDATION =
+  public static final String REPORT_PUBLISHER = "DOYENSEC";
+  public static final String REPORT_ID = "TORCHSERVE_MANAGEMENT_API_RCE";
+  public static final String REPORT_TITLE = "TorchServe Management API Remote Code Execution";
+  public static final String REPORT_RECOMMENDATION =
     "It is strongly recommended to restrict access to the TorchServe Management API, as " +
     "public exposure poses significant security risks. The API allows potentially " +
     "disruptive interactions with TorchServe, including modifying configurations, " +
@@ -65,9 +70,11 @@ public final class TorchServeManagementApiDetector implements VulnDetector {
     "downloaded models. Attackers could exploit this information to identify " +
     "vulnerable download sources or to host malicious models on similarly-named " +
     "domains.";
+  private final Clock utcClock;
 
   @Inject
-  public TorchServeManagementApiDetector(TorchServeExploiter torchServeExploiter) {
+  public TorchServeManagementApiDetector(TorchServeExploiter torchServeExploiter, @UtcClock Clock utcClock) {
+    this.utcClock = checkNotNull(utcClock);
     this.torchServeExploiter = checkNotNull(torchServeExploiter);
   }
 
@@ -149,7 +156,7 @@ public final class TorchServeManagementApiDetector implements VulnDetector {
         DetectionReport.newBuilder()
             .setTargetInfo(targetInfo)
             .setNetworkService(service)
-            .setDetectionTimestamp(Timestamps.fromMillis(System.currentTimeMillis()))
+            .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
             .setDetectionStatus(
                 verified
                     ? DetectionStatus.VULNERABILITY_VERIFIED
