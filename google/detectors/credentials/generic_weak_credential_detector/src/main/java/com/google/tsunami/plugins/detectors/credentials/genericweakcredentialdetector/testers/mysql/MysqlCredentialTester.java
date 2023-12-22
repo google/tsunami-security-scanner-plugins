@@ -63,6 +63,11 @@ public final class MysqlCredentialTester extends CredentialTester {
   }
 
   @Override
+  public boolean batched() {
+    return true;
+  }
+
+  @Override
   public ImmutableList<TestCredential> testValidCredentials(
       NetworkService networkService, List<TestCredential> credentials) {
     if (!canAccept(networkService)) {

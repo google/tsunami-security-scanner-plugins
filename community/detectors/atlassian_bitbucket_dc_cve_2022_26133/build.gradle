@@ -49,7 +49,7 @@ java {
 ext {
     guavaVersion = '28.2-jre'
     okhttpVersion = '3.12.0'
-    tsunamiVersion = '0.0.14'
+    tsunamiVersion = 'latest.release'
 
     junitVersion = '4.13'
     mockitoVersion = '2.28.2'
