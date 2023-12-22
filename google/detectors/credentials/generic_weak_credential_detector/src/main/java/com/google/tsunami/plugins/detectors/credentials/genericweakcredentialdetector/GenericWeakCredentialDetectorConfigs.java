@@ -19,11 +19,18 @@ import com.google.tsunami.common.config.annotations.ConfigProperties;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.proto.TargetService;
 import java.util.List;
 
+// TODO(b/316472486): Remove ncrack from the config property
 @ConfigProperties("plugins.google.detectors.credentials.ncrack")
 final class GenericWeakCredentialDetectorConfigs {
   // Path to the ncrack binary.
   String ncrackBinaryPath;
 
+  // Path to the hydra binary
+  String hydraBinaryPath;
+
   /** String value of {@link TargetService} to exclude from scanning. */
   List<String> excludedTargetServices;
+
+  // Whether hydra is enabled
+  boolean enableHydra;
 }

@@ -22,7 +22,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.net.InetAddresses;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.ncrack.data.DiscoveredCredential;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.common.DiscoveredCredential;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.ncrack.data.NcrackRun;
 import com.google.tsunami.proto.NetworkEndpoint;
 import java.io.BufferedReader;

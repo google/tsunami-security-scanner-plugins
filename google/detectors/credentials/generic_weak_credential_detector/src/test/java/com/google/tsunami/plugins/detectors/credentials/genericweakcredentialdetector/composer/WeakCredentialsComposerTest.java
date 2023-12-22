@@ -54,6 +54,7 @@ public final class WeakCredentialsComposerTest {
     when(tester.testValidCredentials(any(), any()))
         .thenReturn(ImmutableList.of(TestCredential.create("username1", Optional.of("password1"))))
         .thenReturn(ImmutableList.of());
+    when(tester.batched()).thenReturn(true);
     composer = new WeakCredentialComposer(TEST_CREDENTIALS, tester, BATCH_SIZE);
   }
 
