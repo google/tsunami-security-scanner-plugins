@@ -153,7 +153,8 @@ public class RabbitMQCredentialTesterTest {
       var hasWeakCred2 = authHeader.contains(WEAK_CRED_AUTH_2);
 
       if (isUserEndpoint && (hasWeakCred1 || hasWeakCred2)) {
-        String username = BaseEncoding.base64().decode(authHeader).toString().split(":")[0];
+        String b64 = authHeader.split("Basic")[1].trim();
+        String username = BaseEncoding.base64().decode(b64).toString().split(":")[0];
         return new MockResponse()
             .setResponseCode(HttpStatus.OK.code())
             .setBody(userInfoResponse.replace("<PLACEHOLDER>", username));
