@@ -20,18 +20,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.time.Clock;
 import java.time.Instant;
 
+import javax.inject.Inject;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.proto.*;
 import com.google.tsunami.proto.NetworkService;
-import javax.inject.Inject;
-import java.time.Clock;
-import com.google.tsunami.common.time.UtcClock;
 
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
