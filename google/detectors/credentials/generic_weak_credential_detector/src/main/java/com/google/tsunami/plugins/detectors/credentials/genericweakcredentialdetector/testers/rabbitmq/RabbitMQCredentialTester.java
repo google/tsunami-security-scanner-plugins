@@ -40,7 +40,7 @@ import javax.inject.Inject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
-/** Credential tester specifically for rabbitmq management portal. */
+/** Credential tester for RabbitMQ Management Portal. */
 public final class RabbitMQCredentialTester extends CredentialTester {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private final HttpClient httpClient;
@@ -184,13 +184,15 @@ public final class RabbitMQCredentialTester extends CredentialTester {
     return httpClient.send(get(url).setHeaders(headers).build());
   }
 
+  /**
+   * A successful authenticated request to the /api/whoami endpoint 
+   * returns a JSON with at least the following keys:
+   * {"name":"username","tags":["roles"]}
+  */
   private static boolean bodyContainsSuccessfulLoginElements(String responseBody) {
     try {
       JsonObject response = JsonParser.parseString(responseBody).getAsJsonObject();
 
-      // A successful authenticated request to the /api/whoami endpoint returns a JSON
-      // with at least the following keys:
-      // {"name":"username","tags":["roles"]}
       if (response.has("name") && response.has("tags")) {
         logger.atInfo().log("Successfully logged in to RabbitMQ Management Portal");
         return true;
