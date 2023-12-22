@@ -82,8 +82,8 @@ public final class RabbitMQCredentialTester extends CredentialTester {
     return targetUrlBuilder.toString();
   }
 
-  // Checks if the response body contains elements of a rabbitmq management page - custom
-  // fingerprint phase
+  // Checks if the response body contains the title element of rabbitmq management page.
+  // Custom Fingerprint phase.
   private static boolean bodyContainsRabbitMQElements(String responseBody) {
     Document doc = Jsoup.parse(responseBody);
     String title = doc.title();
