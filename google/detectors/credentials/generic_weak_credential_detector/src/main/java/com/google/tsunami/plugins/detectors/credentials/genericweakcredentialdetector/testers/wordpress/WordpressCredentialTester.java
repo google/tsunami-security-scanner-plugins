@@ -65,6 +65,11 @@ public final class WordpressCredentialTester extends CredentialTester {
   }
 
   @Override
+  public boolean batched() {
+    return true;
+  }
+
+  @Override
   public ImmutableList<TestCredential> testValidCredentials(
       NetworkService networkService, List<TestCredential> credentials) {
     return credentials.stream()

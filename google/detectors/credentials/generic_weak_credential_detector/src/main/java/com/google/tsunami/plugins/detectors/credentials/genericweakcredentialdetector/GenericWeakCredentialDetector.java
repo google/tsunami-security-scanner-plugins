@@ -24,6 +24,7 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
@@ -88,6 +89,9 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
   // If a tester prefer faster scanning, explicitly specify the types of credentials to be used.
   private static final ImmutableMultimap<String, CredentialType>
       SERVICE_SPECIFIC_CREDENTIALS_OVERRIDE = ImmutableMultimap.of();
+
+  private static final ImmutableMap<String, String> FINDING_SERVICE_OVERRIDE =
+      ImmutableMap.of("ms-wbt-server", "rdp");
 
   @Inject
   GenericWeakCredentialDetector(
@@ -206,10 +210,13 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
   }
 
   private static String getServiceName(NetworkService networkService) {
+    String serviceName = NetworkServiceUtils.getServiceName(networkService);
+    if (FINDING_SERVICE_OVERRIDE.containsKey(serviceName)) {
+      return FINDING_SERVICE_OVERRIDE.get(serviceName);
+    }
+
     String webServiceName = NetworkServiceUtils.getWebServiceName(networkService);
-    return webServiceName.isEmpty()
-        ? NetworkServiceUtils.getServiceName(networkService)
-        : webServiceName;
+    return webServiceName.isEmpty() ? serviceName : webServiceName;
   }
 
   private static String buildTitle(NetworkService networkService) {

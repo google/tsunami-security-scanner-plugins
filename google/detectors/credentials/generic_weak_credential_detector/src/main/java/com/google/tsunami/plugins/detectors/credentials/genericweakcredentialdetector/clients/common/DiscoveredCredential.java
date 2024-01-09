@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.ncrack.data;
+package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.clients.common;
 
 import com.google.auto.value.AutoValue;
 import com.google.tsunami.proto.NetworkEndpoint;
@@ -28,10 +28,13 @@ import java.util.Optional;
 @AutoValue
 public abstract class DiscoveredCredential {
   public abstract NetworkEndpoint networkEndpoint();
+
   public abstract String service();
+
   // Empty credentials or simply empty password may exist if the service don't have authentication
   // enabled or only accepts a single secret value.
   public abstract Optional<String> username();
+
   public abstract Optional<String> password();
 
   public static Builder builder() {
@@ -42,10 +45,15 @@ public abstract class DiscoveredCredential {
   @AutoValue.Builder
   public abstract static class Builder {
     public abstract Builder setNetworkEndpoint(NetworkEndpoint networkEndpoint);
+
     public abstract Builder setService(String service);
+
     public abstract Builder setUsername(Optional<String> username);
+
     public abstract Builder setUsername(String username);
+
     public abstract Builder setPassword(Optional<String> password);
+
     public abstract Builder setPassword(String password);
 
     public abstract DiscoveredCredential build();

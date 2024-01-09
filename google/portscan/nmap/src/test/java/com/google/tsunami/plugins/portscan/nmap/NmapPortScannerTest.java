@@ -40,6 +40,9 @@ import com.google.tsunami.proto.ScanTarget;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
+import com.google.tsunami.proto.Version;
+import com.google.tsunami.proto.Version.VersionType;
+import com.google.tsunami.proto.VersionSet;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -192,6 +195,81 @@ public class NmapPortScannerTest {
                         .setSoftware(
                             Software.newBuilder().setName("Oracle WebLogic admin httpd").build())
                         .addCpes("cpe:/a:oracle:weblogic_server"))
+                .build());
+  }
+
+  @Test
+  public void run_whenNmapRunHasScripts_returnsSslVersionsAndHttpMethods() throws Exception {
+    doReturn(loadNmapRun("testdata/localhostHttpsWithSslVersionsAndMethods.xml"))
+        .when(nmapClient)
+        .run(any());
+    NetworkEndpoint networkEndpoint = NetworkEndpointUtils.forIp("127.0.0.1");
+    assertThat(
+            portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
+        .isEqualTo(
+            PortScanningReport.newBuilder()
+                .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint))
+                .addNetworkServices(
+                    NetworkService.newBuilder()
+                        .setNetworkEndpoint(NetworkEndpointUtils.forIpAndPort("127.0.0.1", 443))
+                        .setTransportProtocol(TransportProtocol.TCP)
+                        .setSoftware(Software.newBuilder().setName("Apache httpd").build())
+                        .setVersionSet(
+                            VersionSet.newBuilder()
+                                .addVersions(
+                                    Version.newBuilder()
+                                        .setType(VersionType.NORMAL)
+                                        .setFullVersionString("2.4.56")))
+                        .addCpes("cpe:/a:apache:http_server:2.4.56")
+                        .addSupportedSslVersions("TLSV1.0")
+                        .addSupportedSslVersions("TLSV1.1")
+                        .addSupportedSslVersions("TLSV1.2")
+                        .addSupportedHttpMethods("POST")
+                        .addSupportedHttpMethods("OPTIONS")
+                        .addSupportedHttpMethods("HEAD")
+                        .addSupportedHttpMethods("GET")
+                        .setServiceName("ssl/http"))
+                .build());
+  }
+
+  @Test
+  public void run_whenNmapRunHasScriptsButOptionsUnsupported_returnsHttpMethods() throws Exception {
+    doReturn(loadNmapRun("testdata/localhostHttpWithoutMethods.xml"))
+        .when(nmapClient)
+        .run(any());
+    NetworkEndpoint networkEndpoint = NetworkEndpointUtils.forIp("127.0.0.1");
+    assertThat(
+            portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
+        .isEqualTo(
+            PortScanningReport.newBuilder()
+                .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint))
+                .addNetworkServices(
+                    NetworkService.newBuilder()
+                        .setNetworkEndpoint(NetworkEndpointUtils.forIpAndPort("127.0.0.1", 8090))
+                        .setTransportProtocol(TransportProtocol.TCP)
+                        .addSupportedHttpMethods("GET")
+                        .setServiceName("opsmessaging"))
+                .build());
+  }
+
+  @Test
+  public void run_whenNmapRunHasScriptsButOptionsUnsupportedMultiKeys_returnsHttpMethods()
+      throws Exception {
+    doReturn(loadNmapRun("testdata/localhostHttpWithoutMethodsMultiKeyString.xml"))
+        .when(nmapClient)
+        .run(any());
+    NetworkEndpoint networkEndpoint = NetworkEndpointUtils.forIp("127.0.0.1");
+    assertThat(
+            portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
+        .isEqualTo(
+            PortScanningReport.newBuilder()
+                .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint))
+                .addNetworkServices(
+                    NetworkService.newBuilder()
+                        .setNetworkEndpoint(NetworkEndpointUtils.forIpAndPort("127.0.0.1", 8090))
+                        .setTransportProtocol(TransportProtocol.TCP)
+                        .addSupportedHttpMethods("GET")
+                        .setServiceName("opsmessaging"))
                 .build());
   }
 

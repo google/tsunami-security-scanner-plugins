@@ -65,6 +65,11 @@ public final class JenkinsCredentialTester extends CredentialTester {
   }
 
   @Override
+  public boolean batched() {
+    return true;
+  }
+
+  @Override
   public ImmutableList<TestCredential> testValidCredentials(
       NetworkService networkService, List<TestCredential> credentials) {
     // Always return 1st weak credential to gracefully handle no auth configured case, where we
