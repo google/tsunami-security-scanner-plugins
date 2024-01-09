@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
@@ -65,19 +64,14 @@ public final class RabbitMQCredentialTester extends CredentialTester {
     return "RabbitMQ credential tester.";
   }
 
+  @Override
+  public boolean batched() {
+    return false;
+  }
+
   private static String buildTargetUrl(NetworkService networkService, String path) {
     StringBuilder targetUrlBuilder = new StringBuilder();
-
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-
-    } else {
-      // Default to HTTP protocol when the scanner cannot identify the actual service.
-      targetUrlBuilder
-          .append("http://")
-          .append(NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
+    targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
     targetUrlBuilder.append(path);
     return targetUrlBuilder.toString();
   }
@@ -107,10 +101,9 @@ public final class RabbitMQCredentialTester extends CredentialTester {
    */
   @Override
   public boolean canAccept(NetworkService networkService) {
-    boolean canAcceptByNmapReport =
-        NetworkServiceUtils.getWebServiceName(networkService).equals(RABBITMQ_SERVICE);
-    if (canAcceptByNmapReport) {
-      return true;
+    boolean isWebService = NetworkServiceUtils.isWebService(networkService);
+    if (!isWebService) {
+      return false;
     }
     boolean canAcceptByCustomFingerprint = false;
 
@@ -144,11 +137,11 @@ public final class RabbitMQCredentialTester extends CredentialTester {
       NetworkService networkService, List<TestCredential> credentials) {
 
     return credentials.stream()
-        .filter(cred -> isRabbitMQAccessible(networkService, cred))
+        .filter(cred -> isCredentialValid(networkService, cred))
         .collect(toImmutableList());
   }
 
-  private boolean isRabbitMQAccessible(NetworkService networkService, TestCredential credential) {
+  private boolean isCredentialValid(NetworkService networkService, TestCredential credential) {
     var url = buildTargetUrl(networkService, "api/whoami");
     try {
       logger.atInfo().log(
@@ -185,10 +178,9 @@ public final class RabbitMQCredentialTester extends CredentialTester {
   }
 
   /**
-   * A successful authenticated request to the /api/whoami endpoint 
-   * returns a JSON with at least the following keys:
-   * {"name":"username","tags":["roles"]}
-  */
+   * A successful authenticated request to the /api/whoami endpoint returns a JSON with at least the
+   * following keys: {"name":"username","tags":["roles"]}
+   */
   private static boolean bodyContainsSuccessfulLoginElements(String responseBody) {
     try {
       JsonObject response = JsonParser.parseString(responseBody).getAsJsonObject();
