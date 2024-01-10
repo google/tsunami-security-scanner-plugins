@@ -1,4 +1,4 @@
-# Downloaded and slimmed down from https://raw.githubusercontent.com/datahub-project/datahub/master/docker/quickstart/docker-compose-without-neo4j-m1.quickstart.yml 
+# Downloaded and slimmed down from https://raw.githubusercontent.com/datahub-project/datahub/master/docker/quickstart/docker-compose-without-neo4j-m1.quickstart.yml
 
 networks:
   default:
