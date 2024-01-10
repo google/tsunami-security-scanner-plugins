@@ -97,19 +97,29 @@ public final class HydraCredentialTester extends CredentialTester {
       HydraRun result =
           hydraClientProvider
               .get()
-              .withQuitCrackingAfterOneFound()
               .withNetworkEndpoint(networkService.getNetworkEndpoint())
               .usingUsernamePasswordPair(credentials)
               .onTargetService(getTargetService(networkService))
               .run();
 
-      return result.discoveredCredentials().stream()
-          .filter(discoveredCredential -> discoveredCredential.username().isPresent())
-          .map(
-              discoveredCredential ->
-                  TestCredential.create(
-                      discoveredCredential.username().get(), discoveredCredential.password()))
-          .collect(toImmutableList());
+      ImmutableList<TestCredential> weakCreds =
+          result.discoveredCredentials().stream()
+              .filter(discoveredCredential -> discoveredCredential.username().isPresent())
+              .map(
+                  discoveredCredential ->
+                      TestCredential.create(
+                          discoveredCredential.username().get(), discoveredCredential.password()))
+              .collect(toImmutableList());
+
+      // TODO(b/311336843): Temporary hack to filter out false positives when scanning xrdp service
+      // More info see: https://github.com/vanhauser-thc/thc-hydra/issues/923
+      // 5 is an arbitrary number, it just need to be sufficiently large to indicate there's a
+      // potential issue. This hack also misses rdp service without auth.
+      if (weakCreds.size() > 5) {
+        return ImmutableList.of();
+      } else {
+        return weakCreds;
+      }
     } catch (IOException | InterruptedException | ExecutionException e) {
       logger.atSevere().withCause(e).log("Error executing hydra.");
       return ImmutableList.of();

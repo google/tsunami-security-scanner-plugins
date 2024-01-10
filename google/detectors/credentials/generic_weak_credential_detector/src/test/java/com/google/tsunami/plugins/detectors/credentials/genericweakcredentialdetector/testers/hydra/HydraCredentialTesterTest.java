@@ -205,4 +205,33 @@ public final class HydraCredentialTesterTest {
     assertThat(tester.testValidCredentials(networkService, ImmutableList.of()))
         .containsExactly(TestCredential.create("root", Optional.of("toor")));
   }
+
+  // TODO(b/311336843): Remove after xrdp issue is resolved
+  @Test
+  public void testValidCredentials_whenHydraReportsAllValidCredentials_returnsNoCredential()
+      throws IOException {
+    try (BufferedWriter writer =
+        Files.newBufferedWriter(report.toPath(), Charset.defaultCharset())) {
+      writer.write("[3389][rdp] host: 1.1.1.1   login: root   password: toor\n");
+      writer.write("[3389][rdp] host: 1.1.1.1   login: root   password: admin\n");
+      writer.write("[3389][rdp] host: 1.1.1.1   login: root   password: test\n");
+      writer.write("[3389][rdp] host: 1.1.1.1   login: admin   password: toor\n");
+      writer.write("[3389][rdp] host: 1.1.1.1   login: test   password: toor\n");
+      writer.write("[3389][rdp] host: 1.1.1.1   login: user   password: toor\n");
+    }
+    NetworkService networkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(forIpAndPort("1.1.1.1", 3389))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setServiceName("ms-wbt-server")
+            .setVersionSet(
+                VersionSet.newBuilder()
+                    .addVersions(
+                        Version.newBuilder()
+                            .setType(VersionType.NORMAL)
+                            .setFullVersionString("1.1")))
+            .build();
+
+    assertThat(tester.testValidCredentials(networkService, ImmutableList.of())).isEmpty();
+  }
 }
