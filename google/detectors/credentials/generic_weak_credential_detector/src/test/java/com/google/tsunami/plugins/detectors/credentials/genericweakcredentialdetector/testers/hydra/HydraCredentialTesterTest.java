@@ -234,4 +234,24 @@ public final class HydraCredentialTesterTest {
 
     assertThat(tester.testValidCredentials(networkService, ImmutableList.of())).isEmpty();
   }
+
+  // TODO(b/311336843): Remove after xrdp issue is resolved
+  @Test
+  public void testValidCredentials_whenXdrpService_returnsNoCredential() {
+    NetworkService networkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(forIpAndPort("1.1.1.1", 3389))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setSoftware(Software.newBuilder().setName("xrdp").build())
+            .setServiceName("ms-wbt-server")
+            .setVersionSet(
+                VersionSet.newBuilder()
+                    .addVersions(
+                        Version.newBuilder()
+                            .setType(VersionType.NORMAL)
+                            .setFullVersionString("1.1")))
+            .build();
+
+    assertThat(tester.testValidCredentials(networkService, ImmutableList.of())).isEmpty();
+  }
 }

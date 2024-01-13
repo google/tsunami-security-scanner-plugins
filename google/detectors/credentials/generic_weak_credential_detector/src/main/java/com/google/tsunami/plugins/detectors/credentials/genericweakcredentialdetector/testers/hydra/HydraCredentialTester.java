@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialde
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.GoogleLogger;
@@ -31,6 +32,7 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.proto.NetworkService;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -74,7 +76,10 @@ public final class HydraCredentialTester extends CredentialTester {
       return false;
     }
     String serviceName = NetworkServiceUtils.getServiceName(networkService);
-    return SERVICE_MAP.containsKey(serviceName);
+    String softwareName = Ascii.toLowerCase(networkService.getSoftware().getName());
+
+    // TODO(b/311336843): Temporary hack to filter out false positives when scanning xrdp service
+    return SERVICE_MAP.containsKey(serviceName) && !Objects.equals(softwareName, "xrdp");
   }
 
   // Hydra performs better by managing the threads internally to enforce the rate limit
@@ -113,9 +118,9 @@ public final class HydraCredentialTester extends CredentialTester {
 
       // TODO(b/311336843): Temporary hack to filter out false positives when scanning xrdp service
       // More info see: https://github.com/vanhauser-thc/thc-hydra/issues/923
-      // 5 is an arbitrary number, it just need to be sufficiently large to indicate there's a
+      // 3 is an arbitrary number, it just need to be sufficiently large to indicate there's a
       // potential issue. This hack also misses rdp service without auth.
-      if (weakCreds.size() > 5) {
+      if (weakCreds.size() > 3) {
         return ImmutableList.of();
       } else {
         return weakCreds;
