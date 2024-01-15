@@ -31,7 +31,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Key;
 import com.google.inject.multibindings.OptionalBinder;
+import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.callbackserver.proto.PollingResult;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpHeaders;
@@ -140,8 +142,10 @@ public final class Cve202346604DetectorTest {
             .setSoftware(Software.newBuilder().setName("ActiveMQ"))
             .build();
     TargetInfo targetInfo = TargetInfo.getDefaultInstance();
+    PollingResult log = PollingResult.newBuilder().setHasHttpInteraction(true).build();
+    String body = JsonFormat.printer().preservingProtoFieldNames().print(log);
     mockCallbackServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("Tsunami"));
+        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(body));
 
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
 
@@ -206,21 +210,5 @@ public final class Cve202346604DetectorTest {
     when(socketFactoryMock.createSocket(anyString(), anyInt())).thenReturn(socket);
     when(socket.getOutputStream()).thenReturn(new ByteArrayOutputStream());
     when(socket.getInputStream()).thenReturn(new ByteArrayInputStream(response.getBytes(UTF_8)));
-    doAnswer(
-            invocation -> {
-              // Capture the input URL and simulate a request to trigger OOB.
-              ByteArrayOutputStream outputStream =
-                  (ByteArrayOutputStream) ((Socket) invocation.getMock()).getOutputStream();
-              String request = outputStream.toString(UTF_8);
-              String uri = request.substring(request.indexOf("http"), request.indexOf("xml") + 3);
-              HttpClient httpClient =
-                  Guice.createInjector(new HttpClientModule.Builder().build())
-                      .getInstance(HttpClient.class);
-              httpClient.send(
-                  HttpRequest.get(uri).setHeaders(HttpHeaders.builder().build()).build());
-              return null;
-            })
-        .when(socket)
-        .close();
   }
 }
