@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.cves.cve202322893;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.cves.cve202322893.Cve202322893VulnDetector.DETECTION_STRING_BY_STATUS;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.MediaType;
@@ -95,13 +94,13 @@ public final class Cve202322893VulnDetectorTest {
   }
 
   @Test
-  public void detectWhenVulnerable() {
+  public void detect_whenVulnerable_returnsDetection() {
     MockResponse response =
         new MockResponse()
             .setBody(
                 "{\"jwt\":\"a jwt\n"
                     + "token\",\"user\":{\"id\":2,\"username\":\"auth-bypass-example\",\"email\":\"notexists@notexist.com\",\"provider\":\"cognito\",\"confirmed\":true,\"blocked\":false,\"createdAt\":\"2023-04-28T06:56:20.344Z\",\"updatedAt\":\"2023-04-28T06:56:20.344Z\"}}")
-            .setResponseCode(DETECTION_STRING_BY_STATUS)
+            .setResponseCode(200)
             .setHeader(CONTENT_TYPE, MediaType.JSON_UTF_8.toString());
     mockWebServer.enqueue(response);
 
@@ -121,26 +120,21 @@ public final class Cve202322893VulnDetectorTest {
                             .setPublisher("TSUNAMI_COMMUNITY")
                             .setValue("CVE_2023_22893"))
                     .setSeverity(Severity.CRITICAL)
-                    .setTitle("Authentication Bypass for AWS Cognito Login Provider")
+                    .setTitle("Authentication Bypass For Strapi AWS Cognito Login Provider")
                     .setDescription(
-                        "Strapi through 4.5.5 does not verify the access or ID tokens issued during the OAuth flow "
-                            + "when the AWS Cognito login provider is used for authentication.")
-                    .setRecommendation("Upgrade to higher versions")
-                    .addAdditionalDetails(
-                        AdditionalDetail.newBuilder()
-                            .setTextData(
-                                TextData.newBuilder()
-                                    .setText(
-                                        "A remote attacker could forge an ID token that is signed using the 'None' type algorithm "
-                                            + "to bypass authentication and impersonate any user that use AWS Cognito for authentication."
-                                            + " with the help of CVE-2023-22621 and CVE-2023-22894 attackers can gain "
-                                            + "Unauthenticated Remote Code Execution on this version of Strapi"))))
+                        "Strapi before 4.5.5 does not verify the access or ID tokens issued during the OAuth flow "
+                            + "when the AWS Cognito login provider is used for authentication."
+                            + "A remote attacker could forge an ID token that is signed using the 'None' type algorithm "
+                            + "to bypass authentication and impersonate any user that use AWS Cognito for authentication."
+                            + " with the help of CVE-2023-22621 and CVE-2023-22894 attackers can gain "
+                            + "Unauthenticated Remote Code Execution on this version of Strapi")
+                    .setRecommendation("Upgrade to version 4.5.6 and higher"))
             .build();
     assertThat(actual).isEqualTo(expected);
   }
 
   @Test
-  public void detectWhenNotVulnerableReturnsNoVulnerability() {
+  public void detect_whenNotVulnerable_returnsNoVulnerability() {
     mockWebServer.url("/notexistpath123321");
     MockResponse response =
         new MockResponse().setBody("NotExistDetectionString").setResponseCode(400);
@@ -148,6 +142,6 @@ public final class Cve202322893VulnDetectorTest {
 
     DetectionReportList findings = detector.detect(targetInfo, ImmutableList.of(strapiService));
 
-    assert (findings.getDetectionReportsList().isEmpty());
+    assertThat(findings.getDetectionReportsList()).isEmpty();
   }
 }

