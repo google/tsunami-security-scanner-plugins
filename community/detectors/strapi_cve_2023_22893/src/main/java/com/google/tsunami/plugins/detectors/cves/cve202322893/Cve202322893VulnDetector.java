@@ -62,6 +62,10 @@ public final class Cve202322893VulnDetector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
+  /*
+  ** This JWT token uses HS256 and defines the cognito username to tsunami-security-scanner and
+  ** the email to tsunami-security-scanner@google.com.
+  */
   @VisibleForTesting
   static final String VULNERABLE_REQUEST_PATH =
       "api/auth/cognito/callback?access_token=something&id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjb2duaXRvOnVzZXJuYW1lIjoidHN1bmFtaS1zZWN1cml0eS1zY2FubmVyIiwiZW1haWwiOiJ0c3VuYW1pLXNlY3VyaXR5LXNjYW5uZXJAZ29vZ2xlLmNvbSJ9.";
@@ -104,26 +108,7 @@ public final class Cve202322893VulnDetector implements VulnDetector {
     try {
       HttpResponse httpResponse =
           httpClient.send(get(targetUrl).setHeaders(httpHeaders).build(), networkService);
-      /*
-      if the target is vulnerable, we expect
-      ```
-      {"jwt":"a jwt
-      token","user":{"id":2,"username":"tsunami-security-scanner","email":"tsunami-security-scanner@google.com"
-      ,"provider":"cognito","confirmed":true,"blocked":false,"createdAt":"current date"
-      ,"updatedAt":"current date"}}
-      ```
-      otherwise the response will contain
-      ```
-      {"data":null,"error":{"status":400,"name":"ApplicationError","message":"Invalid
-      URL","details":{}}}
-      if no cognito authentication available
-      ```
-      or
-      ```
-      {"data":null,"error":{"status":400,"name":"ApplicationError","message":"This provider is
-      disabled","details":{}}}
-      ```
-      */
+      // if the target is vulnerable, we expect a JSON response that contains a JWT token.
       if (httpResponse.status().code() != 200 || httpResponse.bodyJson().isEmpty()) {
         return false;
       }
