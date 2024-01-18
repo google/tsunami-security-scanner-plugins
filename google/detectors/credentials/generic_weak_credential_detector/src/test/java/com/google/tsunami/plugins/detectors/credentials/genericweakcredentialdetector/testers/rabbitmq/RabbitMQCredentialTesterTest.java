@@ -34,6 +34,7 @@ import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.Arrays;
 import javax.inject.Inject;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
@@ -154,7 +155,7 @@ public class RabbitMQCredentialTesterTest {
 
       if (isUserEndpoint && (hasWeakCred1 || hasWeakCred2)) {
         String b64 = authHeader.split("Basic")[1].trim();
-        String username = BaseEncoding.base64().decode(b64).toString().split(":")[0];
+        String username = Arrays.toString(BaseEncoding.base64().decode(b64)).split(":")[0];
         return new MockResponse()
             .setResponseCode(HttpStatus.OK.code())
             .setBody(userInfoResponse.replace("<PLACEHOLDER>", username));
