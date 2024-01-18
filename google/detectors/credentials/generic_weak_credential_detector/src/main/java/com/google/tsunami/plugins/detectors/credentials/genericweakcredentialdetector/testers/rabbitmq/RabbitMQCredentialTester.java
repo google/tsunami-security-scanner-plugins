@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
@@ -44,7 +45,6 @@ public final class RabbitMQCredentialTester extends CredentialTester {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private final HttpClient httpClient;
 
-  private static final String RABBITMQ_SERVICE = "rabbitmq";
   private static final String RABBITMQ_PAGE_TITLE = "RabbitMQ Management";
   private static final String RABBITMQ_SERVER_HEADER = "Cowboy";
   private static final String RABBITMQ_WWW_HEADER = "Basic realm=\"RabbitMQ Management\"";
@@ -78,7 +78,7 @@ public final class RabbitMQCredentialTester extends CredentialTester {
 
   // Checks if the response body contains the title element of rabbitmq management page.
   // Custom fingerprint phase.
-  private static boolean bodyContainsRabbitMQElements(String responseBody) {
+  private static boolean bodyContainsRabbitMqElements(String responseBody) {
     Document doc = Jsoup.parse(responseBody);
     String title = doc.title();
 
@@ -117,7 +117,7 @@ public final class RabbitMQCredentialTester extends CredentialTester {
               && response.headers().get("server").get().trim().equals(RABBITMQ_SERVER_HEADER)
               && response
                   .bodyString()
-                  .map(RabbitMQCredentialTester::bodyContainsRabbitMQElements)
+                  .map(RabbitMQCredentialTester::bodyContainsRabbitMqElements)
                   .orElse(false);
       url = buildTargetUrl(networkService, "api/overview");
       response = httpClient.send(get(url).withEmptyHeaders().build());
@@ -191,7 +191,7 @@ public final class RabbitMQCredentialTester extends CredentialTester {
       } else {
         return false;
       }
-    } catch (Exception e) {
+    } catch (JsonSyntaxException e) {
       logger.atWarning().withCause(e).log(
           "An error occurred while parsing the json response: %s", responseBody);
       return false;
