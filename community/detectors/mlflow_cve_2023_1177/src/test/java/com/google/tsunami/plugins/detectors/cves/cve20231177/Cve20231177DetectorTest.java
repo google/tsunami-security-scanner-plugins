@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.rce.cve202322518;
+package com.google.tsunami.plugins.detectors.cves.cve20231177;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
-import static com.google.tsunami.plugins.detectors.rce.cve202322518.Cve202322518VulnDetector.FILE_UPLOAD_PATH;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import static com.google.tsunami.plugins.detectors.cves.cve20231177.Cve20231177Detector.CREATE_DETECTION_STRING;
+import static com.google.tsunami.plugins.detectors.cves.cve20231177.Cve20231177Detector.DETECTION_STRING;
+import static com.google.tsunami.plugins.detectors.cves.cve20231177.Cve20231177Detector.VULN_DESCRIPTION;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.truth.Truth;
 import com.google.inject.Guice;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
@@ -50,42 +49,25 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Unit tests for {@link Cve202322518VulnDetector}. */
+/** Unit tests for {@link Cve20231177Detector}. */
 @RunWith(JUnit4.class)
-public final class Cve202322518VuLnDetectorTest {
+public final class Cve20231177DetectorTest {
+
   private final FakeUtcClock fakeUtcClock =
-      FakeUtcClock.create().setNow(Instant.parse("2023-12-03T00:00:00.00Z"));
+      FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
-  private final MockWebServer mockWebServer = new MockWebServer();
+  @Inject private Cve20231177Detector detector;
 
-  private NetworkService service;
-  private TargetInfo targetInfo;
-  @Inject private Cve202322518VulnDetector detector;
+  private MockWebServer mockWebServer;
 
   @Before
-  public void setUp() throws IOException {
-    mockWebServer.start();
-    mockWebServer.url("/" + FILE_UPLOAD_PATH);
+  public void setUp() {
+    mockWebServer = new MockWebServer();
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
-            new HttpClientModule.Builder().build(),
-            new Cve202322518VulnDetectorBootstrapModule())
+            new Cve20231177DetectorBootstrapModule(),
+            new HttpClientModule.Builder().build())
         .injectMembers(this);
-
-    service =
-        NetworkService.newBuilder()
-            .setNetworkEndpoint(
-                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .setTransportProtocol(TransportProtocol.TCP)
-            .setSoftware(Software.newBuilder().setName("influxDB 1.6.6"))
-            .setServiceName("http")
-            .build();
-
-    targetInfo =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(
-                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .build();
   }
 
   @After
@@ -94,16 +76,22 @@ public final class Cve202322518VuLnDetectorTest {
   }
 
   @Test
-  public void detect_whenVulnerable_returnsVulnerability() throws InterruptedException {
-    mockWebServer.enqueue(
-        new MockResponse()
-            .setResponseCode(200)
-            .setBody(
-                "The zip file did not contain an entry" + "\n" + "exportDescriptor.properties"));
+  public void detect_whenVulnerable_returnsVulnerability() throws IOException {
+    mockWebResponse(DETECTION_STRING);
+    NetworkService service =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setSoftware(Software.newBuilder().setName("http"))
+            .setServiceName("http")
+            .build();
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
+            .build();
 
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
-
-    Truth.assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
 
     assertThat(detectionReports.getDetectionReportsList())
         .containsExactly(
@@ -118,32 +106,41 @@ public final class Cve202322518VuLnDetectorTest {
                         .setMainId(
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE-2023-22518"))
+                                .setValue("CVE_2023_1177"))
                         .setSeverity(Severity.CRITICAL)
-                        .setTitle(
-                            "Atlassian Confluence Data Center Improper Authorization"
-                                + " CVE-2023-22515")
-                        .setDescription(
-                            "This Improper Authorization vulnerability allows an unauthenticated"
-                                + " attacker to reset Confluence and create a Confluence instance"
-                                + " administrator account.")
+                        .setTitle("CVE-2023-1177 MLflow LFI/RFI")
                         .setRecommendation(
-                            "Patch the confluence version to one of the following versions: "
-                                + "7.19.16, 8.3.4, 8.4.4, 8.5.3, 8.6.1"))
+                            "1.Updated to version 2.2.1 or later\n2.Add authentication to MLflow "
+                                + "server\n")
+                        .setDescription(VULN_DESCRIPTION))
                 .build());
   }
 
   @Test
-  public void detect_whenNotVulnerable_returnsVulnerability() {
-    Cve202322518VulnDetector mock = spy(detector);
+  public void detect_whenNotVulnerable_returnsNoVulnerability() throws IOException {
+    mockWebResponse("Hello World");
+    ImmutableList<NetworkService> httpServices =
+        ImmutableList.of(
+            NetworkService.newBuilder()
+                .setNetworkEndpoint(
+                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+                .setTransportProtocol(TransportProtocol.TCP)
+                .setServiceName("http")
+                .build());
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
+            .build();
 
-    when(mock.buildRootUri(service))
-        .thenReturn(String.format("http://%s/", toUriAuthority(service.getNetworkEndpoint())));
+    DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
 
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
-
-    DetectionReportList detectionReports = mock.detect(targetInfo, ImmutableList.of(service));
-    Truth.assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  private void mockWebResponse(String body) throws IOException {
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(CREATE_DETECTION_STRING));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(CREATE_DETECTION_STRING));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(body));
+    mockWebServer.start();
   }
 }
