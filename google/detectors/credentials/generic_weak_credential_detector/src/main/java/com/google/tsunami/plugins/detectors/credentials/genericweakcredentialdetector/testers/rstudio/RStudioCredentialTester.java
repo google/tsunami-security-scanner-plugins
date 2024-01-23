@@ -78,6 +78,11 @@ public final class RStudioCredentialTester extends CredentialTester {
   }
 
   @Override
+  public boolean batched() {
+    return false;
+  }
+
+  @Override
   public String description() {
     return "RStudio credential tester.";
   }
