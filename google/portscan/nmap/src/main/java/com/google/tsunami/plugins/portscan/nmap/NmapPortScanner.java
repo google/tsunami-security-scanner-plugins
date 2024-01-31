@@ -110,7 +110,7 @@ public final class NmapPortScanner implements PortScanner {
               .withVersionDetectionIntensity(5)
               .withScript("banner")
               .withScript("ssl-enum-ciphers")
-              .withScript("http-methods")
+              .withScript("http-methods", "http.useragent=TsunamiSecurityScanner")
               .withTimingTemplate(TimingTemplate.AGGRESSIVE)
               .withTargetNetworkEndpoint(scanTarget.getNetworkEndpoint())
               .run(commandExecutor);
