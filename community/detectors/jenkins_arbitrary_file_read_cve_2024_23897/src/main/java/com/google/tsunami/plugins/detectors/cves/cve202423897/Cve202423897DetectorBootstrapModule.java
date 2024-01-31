@@ -17,7 +17,7 @@ package com.google.tsunami.plugins.detectors.cves.cve202423897;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-/** An CVE-2019-20933 Guice module that bootstraps the {@link Cve202423897Detector}. */
+/** An CVE-2024-23897 Guice module that bootstraps the {@link Cve202423897Detector}. */
 public final class Cve202423897DetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
