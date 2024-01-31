@@ -93,10 +93,6 @@ public final class Cve202423897Detector implements VulnDetector {
     this.utcClock = checkNotNull(utcClock);
   }
 
-  private static String buildTarget(NetworkService networkService) {
-    return buildWebApplicationRootUrl(networkService);
-  }
-
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
@@ -114,7 +110,7 @@ public final class Cve202423897Detector implements VulnDetector {
 
   private boolean isServiceVulnerable(NetworkService networkService) {
     Boolean result;
-    String targetUrl = buildTarget(networkService) + VULNERABLE_REQUEST_PATH;
+    String targetUrl = buildWebApplicationRootUrl(networkService) + VULNERABLE_REQUEST_PATH;
     String uuid = UUID.randomUUID().toString();
 
     ExecutorService executorService = Executors.newFixedThreadPool(2);
