@@ -40,7 +40,6 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.time.Clock;
