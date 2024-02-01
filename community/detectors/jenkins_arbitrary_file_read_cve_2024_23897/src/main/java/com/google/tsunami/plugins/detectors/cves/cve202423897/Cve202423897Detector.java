@@ -17,7 +17,8 @@ package com.google.tsunami.plugins.detectors.cves.cve202423897;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.net.HttpHeaders.*;
+import static com.google.common.net.HttpHeaders.ACCEPT_ENCODING;
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.tsunami.common.data.NetworkServiceUtils.buildWebApplicationRootUrl;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
@@ -27,7 +28,10 @@ import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
-import com.google.tsunami.common.net.http.*;
+import com.google.tsunami.common.net.http.HttpClient;
+import com.google.tsunami.common.net.http.HttpHeaders;
+import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -41,7 +45,9 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.regex.Pattern;
@@ -146,7 +152,6 @@ public final class Cve202423897Detector implements VulnDetector {
                         .build())
                 .setRequestBody(ByteString.copyFrom(PAYLOAD))
                 .build(), networkService);
-        logger.atInfo().log("the second response body %s", response.bodyString().get());
       } catch (Exception e) {
         logger.atWarning().log("failed to send the second request to target for %s.", e);
       }
