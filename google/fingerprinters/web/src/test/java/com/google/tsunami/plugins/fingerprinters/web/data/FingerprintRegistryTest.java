@@ -16,10 +16,10 @@
 package com.google.tsunami.plugins.fingerprinters.web.data;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth8.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.truth.Truth8;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Provides;
@@ -152,11 +152,11 @@ public final class FingerprintRegistryTest {
 
   @Test
   public void getFingerprints_whenEmptyFingerprintData_returnsEmpty() {
-    assertThat(
+    Truth8.assertThat(
             new FingerprintRegistry(ImmutableMap.of())
                 .getFingerprintData(SoftwareIdentity.getDefaultInstance()))
         .isEmpty();
-    assertThat(
+    Truth8.assertThat(
             new FingerprintRegistry(ImmutableMap.of())
                 .getFingerprintData(SoftwareIdentity.newBuilder().setSoftware("whatever").build()))
         .isEmpty();
@@ -164,14 +164,14 @@ public final class FingerprintRegistryTest {
 
   @Test
   public void getFingerprints_whenValidFingerprintDataAndNoMatchingSoftware_returnsEmpty() {
-    assertThat(registry.getFingerprintData(SoftwareIdentity.getDefaultInstance())).isEmpty();
+    Truth8.assertThat(registry.getFingerprintData(SoftwareIdentity.getDefaultInstance())).isEmpty();
   }
 
   @Test
   public void getFingerprints_whenValidFingerprintDataAndMatchingSoftware_returnsFingerprint() {
-    assertThat(registry.getFingerprintData(FINGERPRINTS_1.getSoftwareIdentity()))
+    Truth8.assertThat(registry.getFingerprintData(FINGERPRINTS_1.getSoftwareIdentity()))
         .hasValue(FingerprintData.fromProto(FINGERPRINTS_1));
-    assertThat(registry.getFingerprintData(FINGERPRINTS_2.getSoftwareIdentity()))
+    Truth8.assertThat(registry.getFingerprintData(FINGERPRINTS_2.getSoftwareIdentity()))
         .hasValue(FingerprintData.fromProto(FINGERPRINTS_2));
   }
 
