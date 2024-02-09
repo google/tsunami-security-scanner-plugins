@@ -44,12 +44,12 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 
@@ -240,6 +240,8 @@ public final class Cve202423897Detector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2024_23897"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2024-23897"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Jenkins Arbitrary File Read")
                 .setDescription(
