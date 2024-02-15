@@ -74,8 +74,7 @@ public final class Cve20236018DetectorTest {
   public static void setUpAll() throws IOException {
     vulnerableResponseBody =
         Resources.toString(
-            Resources.getResource("com/google/tsunami/plugins/cve20236018/data/response.json"),
-            UTF_8);
+            Resources.getResource(Cve20236018Detector.class, "response.json"), UTF_8);
   }
 
   @Before
