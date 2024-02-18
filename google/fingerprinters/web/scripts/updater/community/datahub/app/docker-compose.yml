@@ -7,8 +7,7 @@ services:
   datahub-frontend-X:
     container_name: ${DATAHUB_FRONTEND_TYPE}
     depends_on:
-#    - datahub-gms
-    - broker # Timo TODO
+    - broker
     environment:
     - DATAHUB_GMS_HOST=datahub-gms
     - DATAHUB_GMS_PORT=8080
@@ -23,7 +22,7 @@ services:
     - ELASTIC_CLIENT_HOST=elasticsearch
     - ELASTIC_CLIENT_PORT=9200
     hostname: ${DATAHUB_FRONTEND_TYPE}
-    image: linkedin/${DATAHUB_FRONTEND_TYPE}:${DATAHUB_VERSION} #${DATAHUB_VERSION:-head} #TODO update
+    image: linkedin/${DATAHUB_FRONTEND_TYPE}:${DATAHUB_VERSION}
     ports:
     - 9002:9002
 
