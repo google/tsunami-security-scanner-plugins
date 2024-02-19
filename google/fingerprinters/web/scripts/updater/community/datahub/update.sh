@@ -56,7 +56,7 @@ stopDataHub() {
   popd >/dev/null
 }
 
-# Create the fingerprint for a frontend. 
+# Create the fingerprint for a frontend.
 # First argument expects the datahub version
 # Second argument expects which kind of frontend we want:
 ## The new one: datahub-frontend-react
