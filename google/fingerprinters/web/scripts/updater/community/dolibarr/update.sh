@@ -72,7 +72,7 @@ for app_version in "${ALL_VERSIONS[@]}"; do
     "${app_version}" \
     "${FINGERPRINTS_PATH}" \
     "${GIT_REPO}" \
-    "http://localhost:8080"
+    "http://localhost/dolibarr/htdocs/index.php"
 
   # Stop the live instance
   docker stop adminer_${app_version}
