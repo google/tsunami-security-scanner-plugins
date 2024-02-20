@@ -53,12 +53,12 @@ readarray -t ALL_VERSIONS < "${SCRIPT_PATH}/versions.txt"
 # Update for all the versions listed in versions.txt file.
 for app_version in "${ALL_VERSIONS[@]}"; do
   echo "Fingerprinting dolibarr version ${app_version} ..."
-  docker run --rm -d --name adminer_${app_version} -p 8080:8080 dolibarr:${app_version}
+  docker run --rm -d --name dolibarr_${app_version} -p 8080:8080 dolibarr:${app_version}
 
   # Start docker container
   echo "Waiting for dolibarr ${app_version} to be ready ..."
 
-  until [[ $(docker ps -q -f name=adminer_${app_version}) ]]
+  until [[ $(docker ps -q -f name=dolibarr_${app_version}) ]]
   do
     echo -n "."
     sleep 5
@@ -75,7 +75,7 @@ for app_version in "${ALL_VERSIONS[@]}"; do
     "http://localhost/dolibarr/htdocs/index.php"
 
   # Stop the live instance
-  docker stop adminer_${app_version}
+  docker stop dolibarr_${app_version}
 
 done
 
