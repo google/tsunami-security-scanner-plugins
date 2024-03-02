@@ -1,0 +1,7 @@
+services:
+  teamcity:
+    container_name: teamcity
+    image: "jetbrains/teamcity-server:${APP_VERSION}"
+    restart: always
+    ports:
+      - "8080:8111"
