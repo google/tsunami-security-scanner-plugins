@@ -122,7 +122,7 @@ public final class Cve202348022DetectorTest {
                                 .setPublisher("GOOGLE")
                                 .setValue("CVE-2023-48022"))
                         .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2023-48022"))
+                        .setTitle("CVE-2023-48022 Arbitrary Code Execution in Ray"))
                 .build());
   }
 
