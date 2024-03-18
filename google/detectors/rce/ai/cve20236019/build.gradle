@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'Tsunami detector for CVE-2023-6091.'
+description = 'Tsunami detector for CVE-2023-6019.'
 group = 'com.google.tsunami'
 version = '0.0.1-SNAPSHOT'
 
