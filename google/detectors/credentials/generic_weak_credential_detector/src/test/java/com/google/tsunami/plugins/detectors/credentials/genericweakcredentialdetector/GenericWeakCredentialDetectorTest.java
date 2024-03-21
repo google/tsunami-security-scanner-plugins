@@ -75,6 +75,8 @@ import org.mockito.junit.MockitoRule;
 public final class GenericWeakCredentialDetectorTest {
   @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
+  private static final TestCredential HIGH_PRIORITY_CRED =
+      TestCredential.create("admin", Optional.of("admin"));
   private static final Instant FAKE_NOW = Instant.parse("2020-01-01T00:00:00.00Z");
   private static final ImmutableList<TestCredential> TEST_CREDENTIALS1 =
       ImmutableList.of(
@@ -86,8 +88,11 @@ public final class GenericWeakCredentialDetectorTest {
           TestCredential.create("username2", Optional.of("password2")),
           TestCredential.create("username3", Optional.of("password3")));
 
+  private static final ImmutableList<TestCredential> TEST_CREDENTIALS_HIGH_PRIORITY =
+      ImmutableList.of(HIGH_PRIORITY_CRED);
   @Mock private CredentialProvider provider1;
   @Mock private CredentialProvider provider2;
+  @Mock private CredentialProvider provider3;
   @Mock private CredentialTester tester1;
   @Mock private CredentialTester tester2;
   @Mock private CredentialTester tester3;
@@ -111,6 +116,11 @@ public final class GenericWeakCredentialDetectorTest {
         .thenAnswer(invocation -> TEST_CREDENTIALS1.iterator());
     when(provider2.generateTestCredentials(any()))
         .thenAnswer(invocation -> TEST_CREDENTIALS2.iterator());
+    when(provider3.generateTestCredentials(any()))
+        .thenAnswer(invocation -> TEST_CREDENTIALS_HIGH_PRIORITY.iterator());
+    when(provider1.priority()).thenReturn(2);
+    when(provider2.priority()).thenReturn(2);
+    when(provider3.priority()).thenReturn(1);
     when(tester1.canAccept(any())).thenReturn(true);
     when(tester2.canAccept(any())).thenReturn(true);
     when(tester3.canAccept(any())).thenReturn(true);
@@ -163,7 +173,7 @@ public final class GenericWeakCredentialDetectorTest {
 
     plugin =
         new GenericWeakCredentialDetector(
-            ImmutableSet.of(provider1, provider2),
+            ImmutableSet.of(provider1, provider2, provider3),
             ImmutableSet.of(tester1, tester2, tester3),
             fakeUtcClock,
             httpClient);
@@ -250,11 +260,14 @@ public final class GenericWeakCredentialDetectorTest {
     runDetectOnMockWebServer();
 
     verify(tester1).testValidCredentials(any(), listCaptor1.capture());
-    assertThat(listCaptor1.getValue()).hasSize(3);
+    assertThat(listCaptor1.getValue()).hasSize(4);
+    assertThat(listCaptor1.getValue().get(0)).isEqualTo(HIGH_PRIORITY_CRED);
     verify(tester2).testValidCredentials(any(), listCaptor2.capture());
-    assertThat(listCaptor2.getValue()).hasSize(3);
+    assertThat(listCaptor2.getValue()).hasSize(4);
+    assertThat(listCaptor2.getValue().get(0)).isEqualTo(HIGH_PRIORITY_CRED);
     verify(tester3).testValidCredentials(any(), listCaptor3.capture());
-    assertThat(listCaptor3.getValue()).hasSize(3);
+    assertThat(listCaptor3.getValue()).hasSize(4);
+    assertThat(listCaptor3.getValue().get(0)).isEqualTo(HIGH_PRIORITY_CRED);
   }
 
   @Test

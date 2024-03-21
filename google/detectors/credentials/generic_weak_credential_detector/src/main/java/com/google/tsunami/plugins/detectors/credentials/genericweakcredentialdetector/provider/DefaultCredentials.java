@@ -80,4 +80,9 @@ public final class DefaultCredentials extends CredentialProvider {
                     usernamePassworkPair.get(0), Optional.of(usernamePassworkPair.get(1))))
         .iterator();
   }
+
+  @Override
+  public int priority() {
+    return 1;
+  }
 }

@@ -200,4 +200,10 @@ public final class Top100Passwords extends CredentialProvider {
   public Iterator<TestCredential> generateTestCredentials(NetworkService unused) {
     return credentials.iterator();
   }
+
+  @Override
+  // Top 100 passwords are tested after default credentials.
+  public int priority() {
+    return 2;
+  }
 }
