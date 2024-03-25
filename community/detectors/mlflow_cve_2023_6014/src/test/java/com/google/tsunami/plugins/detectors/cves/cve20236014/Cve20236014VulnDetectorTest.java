@@ -46,7 +46,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Unit tests for {@link Cve20221388VulnDetector}. */
+/** Unit tests for {@link Cve20236014VulnDetector}. */
 @RunWith(JUnit4.class)
 public class Cve20236014VulnDetectorTest {
   private final FakeUtcClock fakeUtcClock =
