@@ -63,7 +63,7 @@ public final class Cve20236014VulnDetector implements VulnDetector {
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION =
-      "On MLflow versions prior to 2.8.0, unauthanticated users are able to arbitrarily create an"
+      "On MLflow versions prior to 2.8.0, unauthenticated users are able to arbitrarily create an"
           + " account in MLflow server or MLflow UI by bypassing any authentication requirement.\n";
 
   private final HttpClient httpClient;
