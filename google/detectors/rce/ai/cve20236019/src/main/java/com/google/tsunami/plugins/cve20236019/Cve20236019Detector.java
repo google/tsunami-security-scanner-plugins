@@ -154,9 +154,9 @@ public final class Cve20236019Detector implements VulnDetector {
                 .addRelatedId(
                     VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-6019"))
                 .setDescription(
-                    "An attacker can use the model upload functionality to load remote Linux"
-                        + " commands and gains code execution on the server hosting the ray"
-                        + " application.")
+                    "A command injection exists in Ray's cpu_profile URL parameter allowing"
+                        + " attackers to execute os commands on the system running the ray"
+                        + " dashboard remotely without authentication.")
                 .setRecommendation("Upgrade Ray to version 2.8.0. or later."))
         .build();
   }
