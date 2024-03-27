@@ -48,7 +48,7 @@ import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
 
-/** A {@link VulnDetector} that detects the CVE-2022-1388 vulnerability. */
+/** A {@link VulnDetector} that detects the CVE-2023-6014 vulnerability. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "CVE20236014VulnDetector",
