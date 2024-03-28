@@ -109,6 +109,10 @@ public class Cve20236014VulnDetectorTest {
                             "Update the MLflow instances to a version that provides a fix which is"
                                 + " newer than version 2.8.0, and check the user list for potential"
                                 + " users that were created by exploiting this vulnerability.")
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2023-6014"))
                         .setDescription(Cve20236014VulnDetector.VULN_DESCRIPTION))
                 .build());
   }
