@@ -126,6 +126,7 @@ public final class Cve20236014VulnDetector implements VulnDetector {
     try {
       String randomUsername = GenerateRandomString(10);
       String randomPassword = GenerateRandomString(10);
+
       logger.atInfo().log("Attempting to create a user (%s: %s)", randomUsername, randomPassword);
       String stringPayload = "username=" + randomUsername + "&password=" + randomPassword;
       ByteString bytePayload = ByteString.copyFromUtf8(stringPayload);
