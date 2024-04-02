@@ -40,14 +40,14 @@ mkdir -p "${FINGERPRINTS_PATH}"
 startSpark() {
   local version="$1"
   pushd "${SPARK_APP_PATH}" >/dev/null
-    ssh newhet SPARK_VERSION="${version}" docker compose up -d
+    SPARK_VERSION="${version}" docker compose up -d
   popd >/dev/null
 }
 
 stopSpark() {
   local version="$1"
   pushd "${SPARK_APP_PATH}" >/dev/null
-    ssh newhet SPARK_VERSION="${version}" docker compose down --volumes --remove-orphans
+    SPARK_VERSION="${version}" docker compose down --volumes --remove-orphans
   popd >/dev/null
 }
 
@@ -74,7 +74,7 @@ createFingerprintForWebUI() {
     "${spark_version}" \
     "${FINGERPRINTS_PATH}" \
     "${GIT_REPO}/core/src/main/resources/org/apache/spark/ui/static" \
-    "http://49.13.135.184:8080/"
+    "http://localhost:8080/"
 
   # Fingerprint of Worker UI
   updateFingerprint \
@@ -82,9 +82,9 @@ createFingerprintForWebUI() {
     "${spark_version}" \
     "${FINGERPRINTS_PATH}" \
     "${GIT_REPO}/core/src/main/resources/org/apache/spark/ui/static" \
-    "http://49.13.135.184:8081/"
+    "http://localhost:8081/"
 
-  ssh newhet docker exec -d spark-master /opt/spark/bin/spark-submit --master spark://spark-master:7077 /opt/spark/examples/src/main/python/fib.py
+  docker exec -d spark-master /opt/spark/bin/spark-submit --master spark://spark-master:7077 /opt/spark/examples/src/main/python/fib.py
   sleep 10
 
   # Fingerprint of Web Interface
@@ -93,7 +93,7 @@ createFingerprintForWebUI() {
     "${spark_version}" \
     "${FINGERPRINTS_PATH}" \
     "${GIT_REPO}/core/src/main/resources/org/apache/spark/ui/static" \
-    "http://49.13.135.184:4040/"
+    "http://localhost:4040/"
 
 
   # Stop the live instance of Spark.
