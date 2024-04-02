@@ -17,11 +17,8 @@ package com.google.tsunami.plugins.detectors.rce.apachesparksexposedapi;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-/**
- * A {@link PluginBootstrapModule} for {@link ApacheSparksExposedApiVulnDetector}.
- */
-public final class ApacheSparksExposedApiVulnDetectorBootstrapModule extends
-    PluginBootstrapModule {
+/** A {@link PluginBootstrapModule} for {@link ApacheSparksExposedApiVulnDetector}. */
+public final class ApacheSparksExposedApiVulnDetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
