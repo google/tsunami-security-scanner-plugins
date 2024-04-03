@@ -113,7 +113,8 @@ public class Cve202351449VulnDetectorTest {
                                 .setValue("CVE_2023_51449"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("CVE-2023-51449 Gradio File Traversal Vulnerability")
-                        .setRecommendation("Update the Gradio instances to version 4.11.0 or later.")
+                        .setRecommendation(
+                            "Update the Gradio instances to version 4.11.0 or later.")
                         .addRelatedId(
                             VulnerabilityId.newBuilder()
                                 .setPublisher("CVE")
@@ -123,7 +124,8 @@ public class Cve202351449VulnDetectorTest {
   }
 
   @Test
-  public void detect_whenNotVulnerable_secondRequestForbidden_returnsNoVulnerability() throws IOException {
+  public void detect_whenNotVulnerable_secondRequestForbidden_returnsNoVulnerability()
+      throws IOException {
     mockWebServer.enqueue(
         new MockResponse()
             .setResponseCode(200)
@@ -172,7 +174,8 @@ public class Cve202351449VulnDetectorTest {
   }
 
   @Test
-  public void detect_whenNotVulnerable_firstReqOkButNotVulnerable_returnsNoVulnerability() throws IOException {
+  public void detect_whenNotVulnerable_firstReqOkButNotVulnerable_returnsNoVulnerability()
+      throws IOException {
     mockWebServer.enqueue(
         new MockResponse()
             .setResponseCode(200)
