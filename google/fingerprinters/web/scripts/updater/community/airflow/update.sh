@@ -24,7 +24,7 @@ PROJECT_ROOT="$(cd -- "${SCRIPT_PATH}/../../../.." >/dev/null 2>&1 ; pwd -P)"
 # Path to the configurations for starting a live instance of Airflow.
 APP_PATH="${SCRIPT_PATH}/app"
 # Path to the temporary data holder.
-TMP_DATA="/root/airflow_fingerprints"
+TMP_DATA="/tmp/airflow_fingerprints"
 # Path to the local git repository for Airflow codebase.
 GIT_REPO="${TMP_DATA}/repo"
 # Path to the directory of all the updated fingerprints data.
@@ -32,7 +32,7 @@ FINGERPRINTS_PATH="${TMP_DATA}/fingerprints"
 # Json data of the final result.
 JSON_DATA="${FINGERPRINTS_PATH}/fingerprint.json"
 # Binary proto data of the final result.
-BIN_DATA="${FINGERPRINTS_PATH}/fingerprint.binproto"
+BIN_DATA="${FINGERPRINTS_PATH}/airflow.binproto"
 # Read all the versions to be fingerprinted.
 readarray -t ALL_VERSIONS < "${SCRIPT_PATH}/versions.txt"
 mkdir -p "${FINGERPRINTS_PATH}"
@@ -40,15 +40,14 @@ mkdir -p "${FINGERPRINTS_PATH}"
 startAirflow() {
   local version="$1"
   pushd "${APP_PATH}" >/dev/null
-    # add COMPOSE_HTTP_TIMEOUT to avoid docker-compose errors
-    SOLR_VERSION="${version}" COMPOSE_HTTP_TIMEOUT=200 docker-compose -f airflow-${version}.yaml up -d
+    COMPOSE_HTTP_TIMEOUT=200 docker-compose -f airflow-${version}.yaml up -d
   popd >/dev/null
 }
 
 stopAirflow() {
   local version="$1"
   pushd "${APP_PATH}" >/dev/null
-    SOLR_VERSION="${version}" COMPOSE_HTTP_TIMEOUT=200 docker-compose -f airflow-${version}.yaml down --volumes --remove-orphans
+    COMPOSE_HTTP_TIMEOUT=200 docker-compose -f airflow-${version}.yaml down --volumes --remove-orphans
   popd >/dev/null
 }
 
@@ -71,8 +70,9 @@ for version in "${ALL_VERSIONS[@]}"; do
   startAirflow "${version}"
   # Arbitrarily chosen so that Airflow is up and running.
   echo "Waiting for Airflow ${version} to be ready ..."
-  sleep 60 
+  sleep 60
   # No need to do other installation process for Airflow.
+  touch ${FINGERPRINTS_PATH}/fingerprint.${version}.json
 
   # Checkout the repository to the correct tag.
   checkOutRepo "${GIT_REPO}" "${version}"
@@ -92,5 +92,3 @@ convertFingerprint "${JSON_DATA}" "${BIN_DATA}"
 
 echo "Fingerprint updated for Airflow. Please commit the following file:"
 echo "  ${BIN_DATA}"
-
-
