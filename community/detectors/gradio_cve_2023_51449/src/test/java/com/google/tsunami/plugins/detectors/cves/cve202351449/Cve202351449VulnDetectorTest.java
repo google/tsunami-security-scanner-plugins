@@ -113,9 +113,7 @@ public class Cve202351449VulnDetectorTest {
                                 .setValue("CVE_2023_51449"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("CVE-2023-51449 Gradio File Traversal Vulnerability")
-                        .setRecommendation(
-                            "Update the Gradio instances to a version that provides a fix "
-                                + "which is newer than version 4.10.0")
+                        .setRecommendation("Update the Gradio instances to version 4.11.0 or later.")
                         .addRelatedId(
                             VulnerabilityId.newBuilder()
                                 .setPublisher("CVE")

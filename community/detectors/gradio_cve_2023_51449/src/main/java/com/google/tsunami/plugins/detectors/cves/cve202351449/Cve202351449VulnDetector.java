@@ -135,9 +135,10 @@ public final class Cve202351449VulnDetector implements VulnDetector {
 
   private String producePathTravesalPayload(String tmpFile) {
     Path tmpFilePath = Path.of(tmpFile);
-    int subdirCount = tmpFilePath.getParent().getNameCount();
+    Path parentDir = tmpFilePath.getParent();
+    int subdirCount = parentDir.getNameCount();
     StringBuilder payloadBuilder = new StringBuilder();
-    payloadBuilder.append(tmpFilePath.getParent().toString());
+    payloadBuilder.append(parentDir.toString());
     for (int i = 0; i < subdirCount; i++) {
       payloadBuilder.append("/..");
     }
@@ -197,9 +198,7 @@ public final class Cve202351449VulnDetector implements VulnDetector {
                         .setValue("CVE_2023_51449"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2023-51449 Gradio File Traversal Vulnerability")
-                .setRecommendation(
-                    "Update the Gradio instances to a version that provides a fix "
-                        + "which is newer than version 4.10.0")
+                .setRecommendation("Update the Gradio instances to version 4.11.0 or later.")
                 .addRelatedId(
                     VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-51449"))
                 .setDescription(VULN_DESCRIPTION))
