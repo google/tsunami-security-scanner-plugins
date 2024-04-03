@@ -123,7 +123,7 @@ public class Cve202351449VulnDetectorTest {
   }
 
   @Test
-  public void detect_whenNotVulnerable_firstReqIsOk_returnsNoVulnerability() throws IOException {
+  public void detect_whenNotVulnerable_secondRequestForbidden_returnsNoVulnerability() throws IOException {
     mockWebServer.enqueue(
         new MockResponse()
             .setResponseCode(200)
@@ -151,7 +151,33 @@ public class Cve202351449VulnDetectorTest {
 
   @Test
   public void detect_whenNotVulnerable_firstReqFails_returnsNoVulnerability() throws IOException {
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody("Hello world"));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(400).setBody("Bad request"));
+    mockWebServer.start();
+    ImmutableList<NetworkService> httpServices =
+        ImmutableList.of(
+            NetworkService.newBuilder()
+                .setNetworkEndpoint(
+                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+                .setTransportProtocol(TransportProtocol.TCP)
+                .setServiceName("http")
+                .build());
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
+            .build();
+
+    DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_whenNotVulnerable_firstReqOkButNotVulnerable_returnsNoVulnerability() throws IOException {
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setResponseCode(200)
+            .setHeaders(Headers.of("Content-Type", "application/json"))
+            .setBody("{\"foo\":\"bar\"}"));
     mockWebServer.start();
     ImmutableList<NetworkService> httpServices =
         ImmutableList.of(
