@@ -17,11 +17,11 @@ package com.google.tsunami.plugins.detectors.exposedui.argocd;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-/** A {@link PluginBootstrapModule} for {@link ExposedArgoworkflowDetector}. */
-public final class ExposedArgoworkflowDetectorBootstrapModule extends PluginBootstrapModule {
+/** A {@link PluginBootstrapModule} for {@link ExposedArgoCDDetector}. */
+public final class ExposedArgoCDDetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    registerPlugin(ExposedArgoworkflowDetector.class);
+    registerPlugin(ExposedArgoCDDetector.class);
   }
 }

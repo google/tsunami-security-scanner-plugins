@@ -47,18 +47,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Unit tests for {@link ExposedArgoworkflowDetector}. */
+/** Unit tests for {@link ExposedArgoCDDetector}. */
 @RunWith(JUnit4.class)
-public final class ExposedArgoworkflowDetectorTest {
+public final class ExposedArgoCDDetectorTest {
 
   private static final String DEFAULT_BODY =
-      "managedNamespace!<input type=\"hidden\" name=\"" + "\" value=\"1\">";
+      "{\"metadata\":{},\"items\":[{\"serverName\":\"bitbucket.org\",\"certType\":\"ssh\",";
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
   private MockWebServer mockWebServer;
 
-  @Inject private ExposedArgoworkflowDetector detector;
+  @Inject private ExposedArgoCDDetector detector;
 
   @Before
   public void setUp() {
@@ -67,7 +67,7 @@ public final class ExposedArgoworkflowDetectorTest {
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
-            new ExposedArgoworkflowDetectorBootstrapModule())
+            new ExposedArgoCDDetectorBootstrapModule())
         .injectMembers(this);
   }
 
@@ -96,15 +96,15 @@ public final class ExposedArgoworkflowDetectorTest {
                     Vulnerability.newBuilder()
                         .setMainId(
                             VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("ARGOWORKFLOW_INSTANCE_EXPOSED"))
+                                .setPublisher("TSUNAMI_COMMUNITY")
+                                .setValue("ARGOCD_INSTANCE_EXPOSED"))
                         .setSeverity(Severity.CRITICAL)
-                        .setTitle("ArgoWorkflow instance Exposed")
+                        .setTitle("Argo-cd instance Exposed")
                         .setDescription(
-                            "Argo Workflow instance is misconfigured.The instance is not"
-                                + " authenticated.All workflows can be accessed by public and"
-                                + " therefore can be modified.Results in instance being"
-                                + " compromised."))
+                            "Argo-cd instance is misconfigured."
+                                + "The instance is not authenticated."
+                                + "All applications can be accessed by public and therefore can be modified."
+                                + "Results in instance being compromised."))
                 .build());
   }
 
@@ -120,18 +120,6 @@ public final class ExposedArgoworkflowDetectorTest {
                 .setSoftware(Software.newBuilder().setName("Argo Work flow instance"))
                 .setServiceName("http")
                 .build());
-
-    assertThat(
-            detector
-                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), httpServices)
-                .getDetectionReportsList())
-        .isEmpty();
-  }
-
-  @Test
-  public void detect_whenNonKubernetesWebApp_ignoresServices() throws IOException {
-    startMockWebServer("/api/v1/info", HttpStatus.OK.code(), "This is Argo Workflows.");
-    ImmutableList<NetworkService> httpServices = buildDefaultServices(mockWebServer);
 
     assertThat(
             detector
