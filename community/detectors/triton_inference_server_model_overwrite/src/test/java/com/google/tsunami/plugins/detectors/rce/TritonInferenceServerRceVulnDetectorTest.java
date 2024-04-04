@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@ package com.google.tsunami.plugins.detectors.rce;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.*;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.Truth;
@@ -50,13 +48,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.mockito.Mockito;
 
 /** Unit tests for {@link TritonInferenceServerRceVulnDetector}. */
 @RunWith(JUnit4.class)
 public final class TritonInferenceServerRceVulnDetectorTest {
   private final FakeUtcClock fakeUtcClock =
-      FakeUtcClock.create().setNow(Instant.parse("2023-12-03T00:00:00.00Z"));
+      FakeUtcClock.create().setNow(Instant.parse("2024-12-03T00:00:00.00Z"));
 
   private MockWebServer mockWebServer;
   private MockWebServer mockCallbackServer;
