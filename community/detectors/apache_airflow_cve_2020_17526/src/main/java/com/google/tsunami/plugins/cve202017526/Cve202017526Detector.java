@@ -151,7 +151,7 @@ public final class Cve202017526Detector implements VulnDetector {
                     .setRequestBody(ByteString.copyFromUtf8(urlEncodedBody))
                     .build(), networkService);
 
-            Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(1));
+            Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(25));
             return payload.checkIfExecuted();
         } catch (IOException e) {
             logger.atWarning().withCause(e).log("Failed to send request.");
