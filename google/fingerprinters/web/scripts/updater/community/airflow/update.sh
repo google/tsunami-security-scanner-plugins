@@ -40,14 +40,14 @@ mkdir -p "${FINGERPRINTS_PATH}"
 startAirflow() {
   local version="$1"
   pushd "${APP_PATH}" >/dev/null
-    COMPOSE_HTTP_TIMEOUT=200 docker-compose -f airflow-${version}.yaml up -d
+    COMPOSE_HTTP_TIMEOUT=200 AIRFLOW_UID=65535 docker-compose -f airflow-${version}.yaml up -d
   popd >/dev/null
 }
 
 stopAirflow() {
   local version="$1"
   pushd "${APP_PATH}" >/dev/null
-    COMPOSE_HTTP_TIMEOUT=200 docker-compose -f airflow-${version}.yaml down --volumes --remove-orphans
+    COMPOSE_HTTP_TIMEOUT=200 AIRFLOW_UID=65535 docker-compose -f airflow-${version}.yaml down --volumes --remove-orphans
   popd >/dev/null
 }
 
