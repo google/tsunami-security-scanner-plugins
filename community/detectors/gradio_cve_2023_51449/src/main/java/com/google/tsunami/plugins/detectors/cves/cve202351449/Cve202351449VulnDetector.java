@@ -22,6 +22,7 @@ import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
@@ -38,18 +39,21 @@ import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Optional;
 import javax.inject.Inject;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -156,12 +160,12 @@ public final class Cve202351449VulnDetector implements VulnDetector {
             .build());
   }
 
-  private boolean isServiceVulnerable(NetworkService networkService) {
+  private DetectionResult checkIfServiceVulnerable(NetworkService networkService) {
     try {
       logger.atInfo().log("Attempting to upload a temporary file");
       HttpResponse uploadResponse = sendUploadRequest(networkService);
       if (uploadResponse.status().code() != HttpStatus.OK.code()) {
-        return false;
+        return DetectionResult.invulnerableForNetworkService(networkService);
       }
 
       JsonElement json = uploadResponse.bodyJson().get();
@@ -173,23 +177,27 @@ public final class Cve202351449VulnDetector implements VulnDetector {
       String body = getFileResponse.bodyString().get();
       if (getFileResponse.status().code() == HttpStatus.OK.code()
           && body.contains(DETECTION_STRING)) {
-        return true;
+        return DetectionResult.builder()
+            .setIsVulnerable(true)
+            .setNetworkService(networkService)
+            .setFetchedFileContent(body)
+            .build();
       }
 
-      return false;
+      return DetectionResult.invulnerableForNetworkService(networkService);
     } catch (IOException e) {
-      return false;
+      return DetectionResult.invulnerableForNetworkService(networkService);
     } catch (Exception e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
-      return false;
+      return DetectionResult.invulnerableForNetworkService(networkService);
     }
   }
 
   private DetectionReport buildDetectionReport(
-      TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
+      TargetInfo targetInfo, DetectionResult detectionResult) {
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
-        .setNetworkService(vulnerableNetworkService)
+        .setNetworkService(detectionResult.networkService())
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
@@ -203,7 +211,13 @@ public final class Cve202351449VulnDetector implements VulnDetector {
                 .setRecommendation("Update the Gradio instances to version 4.11.0 or later.")
                 .addRelatedId(
                     VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-51449"))
-                .setDescription(VULN_DESCRIPTION))
+                .setDescription(VULN_DESCRIPTION)
+                .addAdditionalDetails(
+                    AdditionalDetail.newBuilder()
+                        .setDescription("Contents of /etc/passwd")
+                        .setTextData(
+                            TextData.newBuilder()
+                                .setText(detectionResult.fetchedFileContent().get()))))
         .build();
   }
 
@@ -216,10 +230,39 @@ public final class Cve202351449VulnDetector implements VulnDetector {
             .addAllDetectionReports(
                 matchedServices.stream()
                     .filter(Cve202351449VulnDetector::isWebServiceOrUnknownService)
-                    .filter(this::isServiceVulnerable)
-                    .map(networkService -> buildDetectionReport(targetInfo, networkService))
+                    .map(this::checkIfServiceVulnerable)
+                    .filter(DetectionResult::isVulnerable)
+                    .map(result -> buildDetectionReport(targetInfo, result))
                     .collect(toImmutableList()))
             .build();
     return detectionReportList;
+  }
+
+  @AutoValue
+  abstract static class DetectionResult {
+    abstract boolean isVulnerable();
+
+    abstract NetworkService networkService();
+
+    abstract Optional<String> fetchedFileContent();
+
+    static Builder builder() {
+      return new AutoValue_Cve202351449VulnDetector_DetectionResult.Builder();
+    }
+
+    static DetectionResult invulnerableForNetworkService(NetworkService networkService) {
+      return builder().setIsVulnerable(false).setNetworkService(networkService).build();
+    }
+
+    @AutoValue.Builder
+    abstract static class Builder {
+      abstract Builder setIsVulnerable(boolean value);
+
+      abstract Builder setNetworkService(NetworkService value);
+
+      abstract Builder setFetchedFileContent(String value);
+
+      abstract DetectionResult build();
+    }
   }
 }

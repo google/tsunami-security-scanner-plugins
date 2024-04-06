@@ -25,16 +25,7 @@ import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
-import com.google.tsunami.proto.DetectionReport;
-import com.google.tsunami.proto.DetectionReportList;
-import com.google.tsunami.proto.DetectionStatus;
-import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
-import com.google.tsunami.proto.Software;
-import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
+import com.google.tsunami.proto.*;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -119,7 +110,13 @@ public class Cve202351449VulnDetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("CVE")
                                 .setValue("CVE-2023-51449"))
-                        .setDescription(Cve202351449VulnDetector.VULN_DESCRIPTION))
+                        .setDescription(Cve202351449VulnDetector.VULN_DESCRIPTION)
+                        .addAdditionalDetails(
+                            AdditionalDetail.newBuilder()
+                                .setDescription("Contents of /etc/passwd")
+                                .setTextData(
+                                    TextData.newBuilder()
+                                        .setText(Cve202351449VulnDetector.DETECTION_STRING))))
                 .build());
   }
 
