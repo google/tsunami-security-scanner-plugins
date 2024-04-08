@@ -6,6 +6,7 @@ import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
@@ -28,11 +29,10 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-import com.google.common.util.concurrent.Uninterruptibles;
 import java.io.IOException;
 import java.time.Clock;
-import java.time.Instant;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 
@@ -125,12 +125,12 @@ public final class ApacheSparksExposedApiVulnDetector implements VulnDetector {
                   .build(),
               networkService);
       if (response.status() == HttpStatus.OK && response.bodyString().isPresent()) {
-          String responseBody = response.bodyString().get();
-          if (VULNERABILITY_RESPONSE_PATTERN.matcher(responseBody).find()) {
-        	  Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
-        	    return payload.checkIfExecuted();
-          }
+        String responseBody = response.bodyString().get();
+        if (VULNERABILITY_RESPONSE_PATTERN.matcher(responseBody).find()) {
+          Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
+          return payload.checkIfExecuted();
         }
+      }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
     }
