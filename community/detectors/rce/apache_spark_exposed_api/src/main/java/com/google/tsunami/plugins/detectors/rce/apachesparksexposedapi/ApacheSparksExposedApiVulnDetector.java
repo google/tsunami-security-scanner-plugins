@@ -12,6 +12,7 @@ import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -27,9 +28,11 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
+import com.google.common.util.concurrent.Uninterruptibles;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.Duration;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 
@@ -121,11 +124,17 @@ public final class ApacheSparksExposedApiVulnDetector implements VulnDetector {
                   .setRequestBody(ByteString.copyFrom(finished_payload, "utf-8"))
                   .build(),
               networkService);
-
+      if (response.status() == HttpStatus.OK && response.bodyString().isPresent()) {
+          String responseBody = response.bodyString().get();
+          if (VULNERABILITY_RESPONSE_PATTERN.matcher(responseBody).find()) {
+        	  Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
+        	    return payload.checkIfExecuted();
+          }
+        }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
     }
-    return payload.checkIfExecuted();
+    return false;
   }
 
   private DetectionReport buildDetectionReport(
