@@ -27,3 +27,7 @@ This directory contains plugins contributed by community members.
 *   [CVE-2022-22965 Spring Framework RCE (CVE-2022-22965) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/spring_framework_cve_2022_22965)
 *   [Spring Cloud Function CVE-2022-22963 VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/spring_cloud_function_cve_2022_22963)
 *   [Apache Spark Exposed API VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/rce/apache_spark_exposed_api)
+
+#### Information Disclosure
+
+* [Apache Sparks exposed Web UI Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/apache_spark_exposed_webui)
