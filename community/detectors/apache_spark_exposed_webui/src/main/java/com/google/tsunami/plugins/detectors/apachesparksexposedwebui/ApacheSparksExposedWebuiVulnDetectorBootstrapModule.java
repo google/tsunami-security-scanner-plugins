@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.rce.apachesparksexposedwebui;
+package com.google.tsunami.plugins.detectors.apachesparksexposedwebui;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
 /** A {@link PluginBootstrapModule} for {@link ApacheSparksExposedWebuiVulnDetector}. */
-public final class ApacheSparksExposedWebuiVulnDetectorBootstrapModule extends PluginBootstrapModule {
+public final class ApacheSparksExposedWebuiVulnDetectorBootstrapModule
+    extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
