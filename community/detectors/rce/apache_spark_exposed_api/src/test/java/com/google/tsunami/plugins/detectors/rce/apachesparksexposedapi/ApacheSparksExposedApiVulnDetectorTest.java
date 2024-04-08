@@ -85,7 +85,10 @@ public final class ApacheSparksExposedApiVulnDetectorTest {
   @Test
   public void detect_ifVulnerable_reportsVuln() throws IOException {
     // returning a 200 OK from vulnerable server is enough
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody(" \"message\" : \"Driver successfully submitted as"));
     mockWebServer.start();
     mockWebServer.url(ApacheSparksExposedApiVulnDetector.VULNERABLE_PATH);
     // prepare a callbackserver response
