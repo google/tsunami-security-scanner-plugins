@@ -160,7 +160,7 @@ public final class Cve202351449VulnDetector implements VulnDetector {
             .build());
   }
 
-  private DetectionResult checkIfServiceVulnerable(NetworkService networkService) {
+  private DetectionResult getDetectionResult(NetworkService networkService) {
     try {
       logger.atInfo().log("Attempting to upload a temporary file");
       HttpResponse uploadResponse = sendUploadRequest(networkService);
@@ -230,7 +230,7 @@ public final class Cve202351449VulnDetector implements VulnDetector {
             .addAllDetectionReports(
                 matchedServices.stream()
                     .filter(Cve202351449VulnDetector::isWebServiceOrUnknownService)
-                    .map(this::checkIfServiceVulnerable)
+                    .map(this::getDetectionResult)
                     .filter(DetectionResult::isVulnerable)
                     .map(result -> buildDetectionReport(targetInfo, result))
                     .collect(toImmutableList()))
