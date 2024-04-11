@@ -187,7 +187,7 @@ public final class Cve202351449VulnDetector implements VulnDetector {
       return DetectionResult.invulnerableForNetworkService(networkService);
     } catch (IOException e) {
       return DetectionResult.invulnerableForNetworkService(networkService);
-    } catch (Exception e) {
+    } catch (RuntimeException e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
       return DetectionResult.invulnerableForNetworkService(networkService);
     }
