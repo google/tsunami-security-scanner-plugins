@@ -23,7 +23,7 @@ spec:
         - OOBPAYLOAD
       containers:
       - name: nginx
-        image: nginx:latest
+        image: nginx:1.24
         ports:
           - name: http
             containerPort: 80
