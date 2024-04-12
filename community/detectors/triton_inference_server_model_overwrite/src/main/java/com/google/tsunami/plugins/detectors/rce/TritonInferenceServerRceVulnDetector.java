@@ -154,18 +154,13 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    if (!payloadGenerator.isCallbackServerEnabled()) {
+    var payload = getTsunamiCallbackHttpPayload();
+    if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
+      logger.atWarning().log(
+          "The Tsunami callback server is not setup for this environment, so we cannot confirm the RCE callback");
       return false;
     }
-    PayloadGeneratorConfig config =
-        PayloadGeneratorConfig.newBuilder()
-            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
-            .setInterpretationEnvironment(
-                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
-            .setExecutionEnvironment(
-                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
-            .build();
-    Payload payload = payloadGenerator.generate(config);
+
     String cmd = payload.getPayload();
 
     final String rootUri = buildRootUri(networkService);
@@ -242,24 +237,30 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
       return false;
     }
 
-    if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
-      logger.atWarning().log("Target vulnerable, but callback server is disabled to confirm RCE");
-    } else {
-      // If there is an RCE, the execution isn't immediate
-      logger.atInfo().log("Waiting for RCE callback.");
-      try {
-        Thread.sleep(10000);
-      } catch (InterruptedException e) {
-        logger.atWarning().withCause(e).log("Failed to wait for RCE result");
-        return false;
-      }
-      // Raise the severity to Critical
-      if (payload.checkIfExecuted()) {
-        logger.atInfo().log("RCE payload executed!");
-        return true;
-      }
+    // If there is an RCE, the execution isn't immediate
+    logger.atInfo().log("Waiting for RCE callback.");
+    try {
+      Thread.sleep(10000);
+    } catch (InterruptedException e) {
+      logger.atWarning().withCause(e).log("Failed to wait for RCE result");
+      return false;
+    }
+    if (payload.checkIfExecuted()) {
+      logger.atInfo().log("RCE payload executed!");
+      return true;
     }
     return false;
+  }
+
+  private Payload getTsunamiCallbackHttpPayload() {
+    return this.payloadGenerator.generate(
+        PayloadGeneratorConfig.newBuilder()
+            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
+            .setInterpretationEnvironment(
+                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
+            .setExecutionEnvironment(
+                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+            .build());
   }
 
   private DetectionReport buildDetectionReport(
