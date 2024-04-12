@@ -17,7 +17,7 @@ spec:
     spec:
       initContainers:
       - name: download-tools
-        image: curlimages/curl:latest
+        image: curlimages/curl:7.78.0
         command: [/bin/sh, -c]
         args:
         - OOBPAYLOAD
