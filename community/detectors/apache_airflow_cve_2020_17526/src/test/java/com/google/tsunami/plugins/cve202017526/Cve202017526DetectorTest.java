@@ -130,7 +130,7 @@ public final class Cve202017526DetectorTest {
                         .setTitle(
                             "CVE-2020-17526 Authentication bypass lead to Arbitrary Code Execution in Apache Airflow prior to 1.10.14")
                         .setDescription(
-                            "An attacker can use a default DAG to execute arbitrary code on"
+                            "An attacker can bypass the authentication and then use a default DAG to execute arbitrary code on"
                                 + " the server hosting the apache airflow application.")
                         .setRecommendation(
                             "update to version 1.10.14. "
