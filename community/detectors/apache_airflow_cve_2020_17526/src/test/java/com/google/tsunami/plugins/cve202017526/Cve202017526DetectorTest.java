@@ -23,7 +23,6 @@ import com.google.common.truth.Truth;
 import com.google.inject.Guice;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
-import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
@@ -54,167 +53,178 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for the {@link Cve202017526Detector}.
- */
+/** Unit tests for the {@link Cve202017526Detector}. */
 @RunWith(JUnit4.class)
 public final class Cve202017526DetectorTest {
-    private final MockWebServer mockTargetService = new MockWebServer();
-    private final MockWebServer mockCallbackServer = new MockWebServer();
-    private final FakeUtcClock fakeUtcClock =
-            FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
-    private final SecureRandom testSecureRandom =
-            new SecureRandom() {
-                @Override
-                public void nextBytes(byte[] bytes) {
-                    Arrays.fill(bytes, (byte) 0xFF);
+  private final MockWebServer mockTargetService = new MockWebServer();
+  private final MockWebServer mockCallbackServer = new MockWebServer();
+  private final FakeUtcClock fakeUtcClock =
+      FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
+  private final SecureRandom testSecureRandom =
+      new SecureRandom() {
+        @Override
+        public void nextBytes(byte[] bytes) {
+          Arrays.fill(bytes, (byte) 0xFF);
+        }
+      };
+
+  @Inject private Cve202017526Detector detector;
+
+  @Before
+  public void setUp() throws IOException {
+    mockCallbackServer.start();
+
+    Guice.createInjector(
+            new FakeUtcClockModule(fakeUtcClock),
+            new HttpClientModule.Builder().build(),
+            FakePayloadGeneratorModule.builder()
+                .setCallbackServer(mockCallbackServer)
+                .setSecureRng(testSecureRandom)
+                .build(),
+            new Cve202017526DetectorModule())
+        .injectMembers(this);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    mockTargetService.shutdown();
+    mockCallbackServer.shutdown();
+  }
+
+  @Test
+  public void detect_withCallbackServer_onVulnerableTarget_returnsVulnerability()
+      throws IOException {
+    startMockWebServer();
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
+            .addSupportedHttpMethods("POST")
+            .build();
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
+            .build();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
+    assertThat(detectionReports.getDetectionReportsList())
+        .comparingExpectedFieldsOnly()
+        .containsExactly(
+            DetectionReport.newBuilder()
+                .setTargetInfo(targetInfo)
+                .setNetworkService(targetNetworkService)
+                .setDetectionTimestamp(
+                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                .setVulnerability(
+                    Vulnerability.newBuilder()
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("TSUNAMI_COMMUNITY")
+                                .setValue("CVE-2020-17526"))
+                        .setSeverity(Severity.CRITICAL)
+                        .setTitle(
+                            "CVE-2020-17526 Authentication bypass lead to Arbitrary Code Execution in Apache Airflow prior to 1.10.14")
+                        .setDescription(
+                            "An attacker can use a default DAG to execute arbitrary code on"
+                                + " the server hosting the apache airflow application.")
+                        .setRecommendation(
+                            "update to version 1.10.14. "
+                                + "Also, you can change the default value for the '[webserver] secret_key' config to a securely generated random value"
+                                + " to sign the cookies with a non-default secret key."))
+                .build());
+  }
+
+  @Test
+  public void detect_withCallbackServer_butNoCallback_returnsEmpty() throws IOException {
+    startMockWebServer();
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
+            .addSupportedHttpMethods("POST")
+            .build();
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
+            .build();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_withoutCallbackServer_returnsEmpty() throws IOException {
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
+            .addSupportedHttpMethods("POST")
+            .build();
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
+            .build();
+    Guice.createInjector(
+            new FakeUtcClockModule(fakeUtcClock),
+            new HttpClientModule.Builder().build(),
+            FakePayloadGeneratorModule.builder().build(),
+            new Cve202017526DetectorModule())
+        .injectMembers(this);
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  private void startMockWebServer() throws IOException {
+    final Dispatcher dispatcher =
+        new Dispatcher() {
+          final MockResponse unauthorizedResponse =
+              new MockResponse()
+                  .setResponseCode(401)
+                  .setBody(
+                      "You are not authenticated. "
+                          + "Please see https://www.mlflow.org/docs/latest/auth/index.html#authenticating-to-mlflow "
+                          + "on how to authenticate");
+
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            switch (request.getPath()) {
+              case "/admin/":
+                return new MockResponse()
+                    .setResponseCode(200)
+                    .addHeader("Set-Cookie: session=aaaaaa")
+                    .setBody("<title>Airflow - DAGs</title> \n var CSRF = \"bbbbbb\"");
+              case "/admin/airflow/paused?is_paused=true&dag_id=example_trigger_target_dag":
+                if (Objects.requireNonNull(request.getHeaders().get("X-CSRFToken")).equals("bbbbbb")
+                    && Objects.requireNonNull(request.getHeaders().get("Cookie"))
+                        .equals("session=aaaaaa")) {
+                  return new MockResponse().setResponseCode(200);
                 }
-            };
-
-    @Inject
-    private Cve202017526Detector detector;
-
-    @Before
-    public void setUp() throws IOException {
-        mockCallbackServer.start();
-
-        Guice.createInjector(
-                        new FakeUtcClockModule(fakeUtcClock),
-                        new HttpClientModule.Builder().build(),
-                        FakePayloadGeneratorModule.builder()
-                                .setCallbackServer(mockCallbackServer)
-                                .setSecureRng(testSecureRandom)
-                                .build(),
-                        new Cve202017526DetectorModule())
-                .injectMembers(this);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        mockTargetService.shutdown();
-        mockCallbackServer.shutdown();
-    }
-
-    @Test
-    public void detect_withCallbackServer_onVulnerableTarget_returnsVulnerability()
-            throws IOException {
-        startMockWebServer();
-        mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
-        NetworkService targetNetworkService =
-                NetworkService.newBuilder()
-                        .setNetworkEndpoint(
-                                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
-                        .addSupportedHttpMethods("POST")
-                        .build();
-        TargetInfo targetInfo =
-                TargetInfo.newBuilder()
-                        .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
-                        .build();
-
-        DetectionReportList detectionReports =
-                detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
-
-        Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
-        assertThat(detectionReports.getDetectionReportsList())
-                .comparingExpectedFieldsOnly()
-                .containsExactly(
-                        DetectionReport.newBuilder()
-                                .setTargetInfo(targetInfo)
-                                .setNetworkService(targetNetworkService)
-                                .setDetectionTimestamp(
-                                        Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
-                                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                                .setVulnerability(
-                                        Vulnerability.newBuilder()
-                                                .setMainId(
-                                                        VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                                                                .setValue("CVE-2020-17526"))
-                                                .setSeverity(Severity.CRITICAL)
-                                                .setTitle("CVE-2020-17526 Authentication bypass lead to Arbitrary Code Execution in Apache Airflow")
-                                                .setDescription(
-                                                        "An attacker can use a default DAG to execute arbitrary code on"
-                                                                + " the server hosting the apache airflow application.")
-                                                .setRecommendation(
-                                                        "update to higher versions or Change default value for [webserver] secret_key config"))
-                                .build());
-    }
-
-    @Test
-    public void detect_withCallbackServer_butNoCallback_returnsEmpty() throws IOException {
-        startMockWebServer();
-        NetworkService targetNetworkService =
-                NetworkService.newBuilder()
-                        .setNetworkEndpoint(
-                                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
-                        .addSupportedHttpMethods("POST")
-                        .build();
-        TargetInfo targetInfo =
-                TargetInfo.newBuilder()
-                        .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
-                        .build();
-
-        DetectionReportList detectionReports =
-                detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
-
-        assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    }
-
-    @Test
-    public void detect_withoutCallbackServer_returnsEmpty() throws IOException {
-        NetworkService targetNetworkService =
-                NetworkService.newBuilder()
-                        .setNetworkEndpoint(
-                                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
-                        .addSupportedHttpMethods("POST")
-                        .build();
-        TargetInfo targetInfo =
-                TargetInfo.newBuilder()
-                        .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
-                        .build();
-        Guice.createInjector(
-                        new FakeUtcClockModule(fakeUtcClock),
-                        new HttpClientModule.Builder().build(),
-                        FakePayloadGeneratorModule.builder().build(),
-                        new Cve202017526DetectorModule())
-                .injectMembers(this);
-
-        DetectionReportList detectionReports =
-                detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
-
-        assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    }
-
-    private void startMockWebServer()
-            throws IOException {
-        final Dispatcher dispatcher = new Dispatcher() {
-            final MockResponse unauthorizedResponse = new MockResponse().setResponseCode(401).setBody("You are not authenticated. "
-                    + "Please see https://www.mlflow.org/docs/latest/auth/index.html#authenticating-to-mlflow "
-                    + "on how to authenticate");
-
-            @Override
-            public MockResponse dispatch(RecordedRequest request) {
-                switch (request.getPath()) {
-                    case "/admin/":
-                        return new MockResponse().setResponseCode(200).addHeader("Set-Cookie: session=aaaaaa")
-                                .setBody("<title>Airflow - DAGs</title> \n var CSRF = \"bbbbbb\"");
-                    case "/admin/airflow/paused?is_paused=true&dag_id=example_trigger_target_dag":
-                        if (Objects.requireNonNull(request.getHeaders().get("X-CSRFToken")).equals("bbbbbb")
-                                && Objects.requireNonNull(request.getHeaders().get("Cookie")).equals("session=aaaaaa")) {
-                            return new MockResponse().setResponseCode(200);
-                        }
-                    case "/admin/airflow/trigger?dag_id=example_trigger_target_dag&origin=%2Fadmin%2Fairflow%2Ftree%3Fdag_id%3Dexample_trigger_target_dag":
-                        if (Objects.requireNonNull(request.getHeaders().get("X-CSRFToken")).equals("bbbbbb")
-                                && Objects.requireNonNull(request.getHeaders().get("Cookie")).equals("session=aaaaaa")
-                                && request.getBody().toString().contains("dag_id=example_trigger_target_dag&origin=")
-                        ) {
-                            return new MockResponse().setResponseCode(200);
-                        }
+              case "/admin/airflow/trigger?dag_id=example_trigger_target_dag&origin=%2Fadmin%2Fairflow%2Ftree%3Fdag_id%3Dexample_trigger_target_dag":
+                if (Objects.requireNonNull(request.getHeaders().get("X-CSRFToken")).equals("bbbbbb")
+                    && Objects.requireNonNull(request.getHeaders().get("Cookie"))
+                        .equals("session=aaaaaa")
+                    && request
+                        .getBody()
+                        .toString()
+                        .contains("dag_id=example_trigger_target_dag&origin=")) {
+                  return new MockResponse().setResponseCode(200);
                 }
-                return null;
             }
+            return null;
+          }
         };
-        mockTargetService.setDispatcher(dispatcher);
-        mockTargetService.start();
-        mockTargetService.url("/");
-    }
+    mockTargetService.setDispatcher(dispatcher);
+    mockTargetService.start();
+    mockTargetService.url("/");
+  }
 }
