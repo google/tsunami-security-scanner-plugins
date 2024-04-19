@@ -42,6 +42,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.List;
+import java.util.Base64;
 import java.util.Optional;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -62,10 +63,6 @@ public final class RStudioCredentialTester extends CredentialTester {
   private static final String RSTUDIO_UNSUPPORTED_BROWSER_TITLE = "RStudio: Browser Not Supported";
   private static final String RSTUDIO_UNSUPPORTED_BROWSER_P =
       "Your web browser is not supported by RStudio.";
-
-  private static final String B64MAP =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-  private static final char B64PAD = '=';
 
   @Inject
   RStudioCredentialTester(HttpClient httpClient) {
@@ -180,6 +177,7 @@ public final class RStudioCredentialTester extends CredentialTester {
       if (response.headers().get("Set-Cookie").isPresent()) {
         for (String s : response.headers().getAll("Set-Cookie")) {
           if (s.contains("user-id=" + credential.username())) {
+            logger.atInfo().log("Found valid credentials");
             return true;
           }
         }
@@ -201,24 +199,7 @@ public final class RStudioCredentialTester extends CredentialTester {
 
   // This function base64 encodes provided cipertext string in hex.
   private String hexToBase64(String hex) {
-    StringBuilder ret = new StringBuilder();
-
-    for (int i = 0; i + 3 <= hex.length(); i += 3) {
-      int c = Integer.parseInt(hex.substring(i, i + 3), 16);
-      ret.append(B64MAP.charAt(c >> 6)).append(B64MAP.charAt(c & 63));
-    }
-
-    int remaining = hex.length() % 3;
-
-    if (remaining == 1) {
-      int c = Integer.parseInt(hex.substring(hex.length() - 1), 16);
-      ret.append(B64MAP.charAt(c << 2)).append(B64MAP);
-    } else if (remaining == 2) {
-      int c = Integer.parseInt(hex.substring(hex.length() - 2), 16);
-      ret.append(B64MAP.charAt(c >> 2)).append(B64MAP.charAt((c & 3) << 4)).append(B64PAD);
-    }
-    ret.append(B64PAD);
-    return ret.toString();
+    return Base64.getEncoder().encodeToString(new BigInteger(hex, 16).toByteArray());
   }
 
   private HttpResponse sendRequestWithCredentials(
