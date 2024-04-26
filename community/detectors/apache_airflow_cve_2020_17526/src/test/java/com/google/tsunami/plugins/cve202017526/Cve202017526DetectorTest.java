@@ -35,14 +35,12 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 import javax.inject.Inject;
-
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -219,8 +217,9 @@ public final class Cve202017526DetectorTest {
                         .contains("dag_id=example_trigger_target_dag&origin=")) {
                   return new MockResponse().setResponseCode(200);
                 }
+              default:
+                return new MockResponse().setResponseCode(400);
             }
-            return null;
           }
         };
     mockTargetService.setDispatcher(dispatcher);

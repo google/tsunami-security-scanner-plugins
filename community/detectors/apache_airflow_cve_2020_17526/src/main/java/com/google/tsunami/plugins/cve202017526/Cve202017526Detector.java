@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.tsunami.plugins.cve202017526;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -46,7 +47,6 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-
 import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.URLEncoder;
@@ -74,6 +74,7 @@ public final class Cve202017526Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String SESSION_COOKIE =
       "session=eyJfZnJlc2giOmZhbHNlLCJfcGVybWFuZW50Ijp0cnVlLCJ1c2VyX2lkIjoiMSJ9.ZgdmZA.GDwzAupY1c9AXYDbLRvjSiZCVw0";
+  private static final Pattern CSRF_PATTERN = Pattern.compile("var CSRF = \"([\\d\\w-.]+)\"");
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -195,7 +196,6 @@ public final class Cve202017526Detector implements VulnDetector {
     }
     results.put("freshSessionCookieValue", freshSessionCookieValue);
 
-    Pattern CSRF_PATTERN = Pattern.compile("var CSRF = \"([\\d\\w-.]+)\"");
     Matcher m = CSRF_PATTERN.matcher(firstResponse.bodyString().get());
     if (!m.find()) {
       return null;
