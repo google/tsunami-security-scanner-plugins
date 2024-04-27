@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.tsunami.plugins.detectors.rce;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -49,7 +50,6 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
@@ -175,7 +175,7 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
       }
       JsonArray modelNamesJo =
           JsonParser.parseString(modelNames.bodyString().get()).getAsJsonArray();
-      if (modelNamesJo.isJsonNull() || modelNamesJo.isEmpty()) {
+      if (modelNamesJo.isJsonNull()) {
         return false;
       }
       String anExistingModelName = null;
