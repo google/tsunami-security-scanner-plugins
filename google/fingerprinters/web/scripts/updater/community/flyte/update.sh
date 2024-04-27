@@ -40,14 +40,14 @@ mkdir -p "${FINGERPRINTS_PATH}"
 startFlyteConsole() {
   local version="$1"
   pushd "${FLYTE_APP_PATH}" >/dev/null
-    ssh newhet FLYTE_CONSOLE_VERSION="${version}" docker compose up -d
+    FLYTE_CONSOLE_VERSION="${version}" docker compose up -d
   popd >/dev/null
 }
 
 stopFlyteConsole() {
   local version="$1"
   pushd "${FLYTE_APP_PATH}" >/dev/null
-    ssh newhet FLYTE_CONSOLE_VERSION="${version}" docker compose down --volumes --remove-orphans
+    FLYTE_CONSOLE_VERSION="${version}" docker compose down --volumes --remove-orphans
   popd >/dev/null
 }
 
@@ -69,7 +69,7 @@ createFingerprintForDashboard() {
     "${FLYTE_CONSOLE_VERSION}" \
     "${FINGERPRINTS_PATH}" \
     "${GIT_REPO}/website/console" \
-    "http://49.13.135.184:8080/console/"
+    "http://localhost:8080/console/"
 
   # Stop the live instance of Flyte.
   stopFlyteConsole "${FLYTE_CONSOLE_VERSION}"
