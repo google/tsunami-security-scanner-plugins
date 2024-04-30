@@ -105,11 +105,11 @@ public final class ApacheSparksExposedApiVulnDetector implements VulnDetector {
             .build();
     Payload payload = payloadGenerator.generate(config);
 
-    String interactionUri = String.format(interactionUriFormatString, payload.getPayload());
+    String interaction_uri = String.format(interactionUriFormatString, payload.getPayload());
 
     String finished_payload =
         String.format(
-            httpPayloadBodyFormatString, interactionUri, JAR_PAYLOAD_URI, JAR_PAYLOAD_URI);
+            httpPayloadBodyFormatString, interaction_uri, JAR_PAYLOAD_URI, JAR_PAYLOAD_URI);
 
     try {
 
