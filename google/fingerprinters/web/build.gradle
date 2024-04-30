@@ -122,3 +122,12 @@ task runFingerprintFileConverter(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'com.google.tsunami.plugins.fingerprinters.web.tools.FingerprintFileConverter'
 }
+
+// Force the JRE flavor of Guava for tasks that don't advertise themselves as targeting the JRE.
+// https://github.com/google/guava/releases/tag/v32.1.0
+// https://github.com/square/okio/issues/647
+configurations.all { configuration ->
+    if (name == "compileClasspath" || name == "runtimeClasspath" || name == "compileProtoPath" || name == "testCompileProtoPath" || name == "testCompileClasspath" || name == "testRuntimeClasspath") {
+        attributes.attribute(Attribute.of("org.gradle.jvm.environment", String), "standard-jvm")
+    }
+}
