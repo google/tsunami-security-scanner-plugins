@@ -13,7 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.mlflow;
+
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
@@ -34,18 +41,11 @@ import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
-
 import javax.inject.Inject;
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.Objects;
 import java.util.Optional;
-
-import static com.google.common.truth.Truth.assertThat;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 /**
  * Tests for {@link MlFlowCredentialTester}.
