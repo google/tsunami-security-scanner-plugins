@@ -62,7 +62,7 @@ public final class ApacheSparksExposedApiVulnDetector implements VulnDetector {
           + ",\"spark.eventLog.enabled\":\"true\",\"spark.submit.deployMode\":\"cluster\",\"spark.master\":\"spark://localhost:6066\"}}";
   // TODO change the following payload URI to the official Tsunami one
   private static final String JAR_PAYLOAD_URI =
-      "https://github.com/timoles/tsunami-security-scanner-plugins/raw/exposed_spark_ui_and_api/payloads/community/apache_spark_exposed_api/Tsunami_Apache_Spark_Exploit.jar";
+      "https://github.com/google/tsunami-security-scanner-plugins/raw/master/payloads/apache_spark_exposed_api/Tsunami_Apache_Spark_Exploit.jar";
   private static String interactionUriFormatString = "http://%s";
 
   @Inject
