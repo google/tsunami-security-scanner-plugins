@@ -2,7 +2,7 @@ plugins {
     id 'java'
 }
 
-description = 'Tsunami VulnDetector plugin to detect exposed Apache Spark API.'
+description = 'Tsunami VulnDetector plugin to detect an exposed Apache Spark API service.'
 group 'com.google.tsunami'
 version '1.0-SNAPSHOT'
 

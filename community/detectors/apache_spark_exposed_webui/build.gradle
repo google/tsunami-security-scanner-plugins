@@ -2,6 +2,7 @@ plugins {
     id 'java'
 }
 
+description = 'Tsunami VulnDetector plugin to detect an exposed Apache Spark Web UI.'
 group 'com.google.tsunami'
 version '1.0-SNAPSHOT'
 
