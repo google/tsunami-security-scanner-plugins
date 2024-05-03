@@ -117,6 +117,7 @@ public final class NmapPortScanner implements PortScanner {
               .withScript("http-methods", "http.useragent=" + httpClientCliOptions.userAgent)
               .withTimingTemplate(TimingTemplate.AGGRESSIVE)
               .withTargetNetworkEndpoint(scanTarget.getNetworkEndpoint())
+              .withExtraCommandLineOptions(cliOptions.nmapCmdOpts)
               .run(commandExecutor);
       logger.atInfo().log(
           "Finished nmap scan on target '%s' in %s.",
