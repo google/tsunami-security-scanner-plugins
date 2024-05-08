@@ -17,7 +17,6 @@
 package com.google.tsunami.plugins.detectors.rce;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 import static com.google.tsunami.plugins.detectors.rce.TritonInferenceServerRceVulnDetector.*;
 
@@ -26,7 +25,6 @@ import com.google.common.truth.Truth;
 import com.google.inject.Guice;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
-import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
@@ -36,9 +34,7 @@ import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
-import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
