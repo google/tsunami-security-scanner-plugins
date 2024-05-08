@@ -69,9 +69,13 @@ import javax.inject.Inject;
 public class TritonInferenceServerRceVulnDetector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-  private static final String UPLOAD_CONFIG_PAYLOAD =
+
+  @VisibleForTesting
+  static final String UPLOAD_CONFIG_PAYLOAD =
       "{\"parameters\":{\"config\" : \"{}\", \"file:config.pbtxt\" :\"%s\" }}";
-  private static final String UPLOAD_MODEL_PAYLOAD =
+
+  @VisibleForTesting
+  static final String UPLOAD_MODEL_PAYLOAD =
       "{\"parameters\":{\"config\" : \"{}\", \"file:1/model.py\" : \"%s\" }}";
 
   private final PayloadGenerator payloadGenerator;

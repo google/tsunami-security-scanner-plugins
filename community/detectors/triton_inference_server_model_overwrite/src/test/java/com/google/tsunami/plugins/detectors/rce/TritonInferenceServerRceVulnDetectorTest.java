@@ -17,7 +17,9 @@
 package com.google.tsunami.plugins.detectors.rce;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.*;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static com.google.tsunami.plugins.detectors.rce.TritonInferenceServerRceVulnDetector.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.Truth;
@@ -40,10 +42,18 @@ import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Objects;
 import javax.inject.Inject;
+
+import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,65 +66,54 @@ public final class TritonInferenceServerRceVulnDetectorTest {
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2024-12-03T00:00:00.00Z"));
 
-  private MockWebServer mockWebServer;
-  private MockWebServer mockCallbackServer;
+  private final MockWebServer mockTargetService = new MockWebServer();
+  private final MockWebServer mockCallbackServer = new MockWebServer();
 
-  private NetworkService service;
-  private TargetInfo targetInfo;
   @Inject private TritonInferenceServerRceVulnDetector detector;
+
+  TargetInfo targetInfo;
+  NetworkService targetNetworkService;
+  private final SecureRandom testSecureRandom =
+      new SecureRandom() {
+        @Override
+        public void nextBytes(byte[] bytes) {
+          Arrays.fill(bytes, (byte) 0xFF);
+        }
+      };
 
   @Before
   public void setUp() throws IOException {
-
-    mockWebServer = new MockWebServer();
-    mockCallbackServer = new MockWebServer();
     mockCallbackServer.start();
-
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
-            FakePayloadGeneratorModule.builder().setCallbackServer(mockCallbackServer).build(),
+            FakePayloadGeneratorModule.builder()
+                .setCallbackServer(mockCallbackServer)
+                .setSecureRng(testSecureRandom)
+                .build(),
             new TritonInferenceServerRceDetectorBootstrapModule())
         .injectMembers(this);
-
-    service =
-        NetworkService.newBuilder()
-            .setNetworkEndpoint(
-                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .setTransportProtocol(TransportProtocol.TCP)
-            .setSoftware(Software.newBuilder().setName("http"))
-            .setServiceName("http")
-            .build();
-
-    targetInfo =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
   }
 
   @After
-  public void tearDown() throws IOException {
-    mockWebServer.shutdown();
+  public void tearDown() throws Exception {
+    mockTargetService.shutdown();
     mockCallbackServer.shutdown();
   }
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody("[{\"name\":\"metasploit\"}]"));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    startMockWebServer(true);
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
-    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
 
     assertThat(detectionReports.getDetectionReportsList())
         .containsExactly(
             DetectionReport.newBuilder()
                 .setTargetInfo(targetInfo)
-                .setNetworkService(service)
+                .setNetworkService(targetNetworkService)
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
@@ -133,17 +132,85 @@ public final class TritonInferenceServerRceVulnDetectorTest {
                         .setRecommendation(
                             "don't use `--model-control explicit` option with public access"))
                 .build());
-    Truth.assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(5);
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
   }
 
   @Test
   public void detect_ifNotVulnerable_doesNotReportVuln() throws IOException {
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("Hello world!"));
-
-    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
+    startMockWebServer(false);
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    Truth.assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(1);
+  }
+
+  private void startMockWebServer(boolean withAnExistingModel) throws IOException {
+    final Dispatcher dispatcher =
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            // get an existing model name
+            if (withAnExistingModel
+                && Objects.equals(request.getPath(), "/v2/repository/index")
+                && request.getMethod().equals("POST")) {
+              return new MockResponse().setBody("[{\"name\":\"metasploit\"}]").setResponseCode(200);
+            }
+            // Attempting to unload model
+            if (Objects.equals(request.getPath(), "/v2/repository/models/metasploit/unload")) {
+              if (request.getMethod().equals("POST")) {
+                return new MockResponse().setResponseCode(200);
+              }
+            }
+            // Creating model repo layout: uploading the model
+            // Or Creating model repo layout: uploading model config
+            if (Objects.equals(request.getPath(), "/v2/repository/models/metasploit/load")) {
+              if (request.getMethod().equals("POST")
+                  && !request.getBody().readString(StandardCharsets.UTF_8).isEmpty()
+                  && Objects.requireNonNull(request.getHeaders().get("Content-Type"))
+                      .equals("application/json")
+                  && (Objects.equals(
+                          request.getBody().readString(StandardCharsets.UTF_8),
+                          String.format(
+                              UPLOAD_CONFIG_PAYLOAD,
+                              Base64.getEncoder()
+                                  .encodeToString(
+                                      String.format(MODEL_CONFIG, "metasploit").getBytes())))
+                      || request
+                          .getBody()
+                          .readString(StandardCharsets.UTF_8)
+                          .startsWith(
+                              String.format(
+                                  UPLOAD_MODEL_PAYLOAD,
+                                  Base64.getEncoder()
+                                      .encodeToString(
+                                          PYTHON_MODEL.substring(0, 20).getBytes()))))) {
+                return new MockResponse().setResponseCode(200);
+              }
+            }
+            // Loading model to trigger payload
+            if (Objects.equals(request.getPath(), "/v2/repository/models/metasploit/load")) {
+              if (request.getMethod().equals("POST")
+                  && request.getBody().readString(StandardCharsets.UTF_8).isEmpty()) {
+                return new MockResponse().setResponseCode(200);
+              }
+            }
+            return new MockResponse().setBody("[{}]").setResponseCode(200);
+          }
+        };
+    mockTargetService.setDispatcher(dispatcher);
+    mockTargetService.start();
+    mockTargetService.url("/");
+
+    targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
+            .addSupportedHttpMethods("POST")
+            .build();
+    targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
+            .build();
   }
 }
