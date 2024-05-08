@@ -39,6 +39,7 @@ import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.plugin.payload.NotImplementedException;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.DetectionReport;
@@ -159,9 +160,10 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
 
   private boolean isServiceVulnerable(NetworkService networkService) {
     var payload = getTsunamiCallbackHttpPayload();
-    if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
+    if (payload == null || !payload.getPayloadAttributes().getUsesCallbackServer()) {
       logger.atWarning().log(
-          "The Tsunami callback server is not setup for this environment, so we cannot confirm the RCE callback");
+          "Tsunami callback server is not setup for this environment, cannot run CVE-2020-17526"
+              + " Detector.");
       return false;
     }
 
@@ -257,14 +259,18 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
   }
 
   private Payload getTsunamiCallbackHttpPayload() {
-    return this.payloadGenerator.generate(
-        PayloadGeneratorConfig.newBuilder()
-            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
-            .setInterpretationEnvironment(
-                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
-            .setExecutionEnvironment(
-                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
-            .build());
+    try {
+      return this.payloadGenerator.generate(
+          PayloadGeneratorConfig.newBuilder()
+              .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
+              .setInterpretationEnvironment(
+                  PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
+              .setExecutionEnvironment(
+                  PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+              .build());
+    } catch (NotImplementedException n) {
+      return null;
+    }
   }
 
   private DetectionReport buildDetectionReport(
