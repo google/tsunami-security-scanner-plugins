@@ -162,8 +162,7 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
     var payload = getTsunamiCallbackHttpPayload();
     if (payload == null || !payload.getPayloadAttributes().getUsesCallbackServer()) {
       logger.atWarning().log(
-          "Tsunami callback server is not setup for this environment, cannot run CVE-2020-17526"
-              + " Detector.");
+          "The Tsunami callback server is not setup for this environment, so we cannot confirm the RCE callback");
       return false;
     }
 
