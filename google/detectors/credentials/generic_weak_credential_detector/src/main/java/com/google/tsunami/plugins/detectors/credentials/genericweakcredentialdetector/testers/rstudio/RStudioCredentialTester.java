@@ -156,7 +156,9 @@ public final class RStudioCredentialTester extends CredentialTester {
 
     return credentials.stream()
         .filter(cred -> isRStudioAccessible(networkService, cred))
-        .collect(toImmutableList());
+        .findFirst()
+        .map(ImmutableList::of)
+        .orElseGet(ImmutableList::of);
   }
 
   private boolean isRStudioAccessible(NetworkService networkService, TestCredential credential) {
