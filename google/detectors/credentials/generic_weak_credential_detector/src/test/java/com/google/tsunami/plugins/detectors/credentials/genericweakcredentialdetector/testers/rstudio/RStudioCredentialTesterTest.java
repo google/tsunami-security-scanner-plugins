@@ -91,7 +91,7 @@ public class RStudioCredentialTesterTest {
   }
 
   @Test
-  public void detect_weakCredentialsExist_returnsAllWeakCredentials() throws Exception {
+  public void detect_weakCredentialsExist_returnsFirstWeakCredentials() throws Exception {
     startMockWebServer("/", "");
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
@@ -104,7 +104,7 @@ public class RStudioCredentialTesterTest {
     assertThat(
             tester.testValidCredentials(
                 targetNetworkService, ImmutableList.of(WEAK_CRED_1, WEAK_CRED_2)))
-        .containsExactly(WEAK_CRED_1, WEAK_CRED_2);
+        .containsExactly(WEAK_CRED_1);
 
     mockWebServer.shutdown();
   }
