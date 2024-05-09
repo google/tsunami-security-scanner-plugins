@@ -20,16 +20,16 @@ public class TokenSigner implements Cloneable {
     this.sep = sep;
   }
 
-  public byte[] derive_key() throws DerivationException {
+  public byte[] derive_key() throws Exception {
     try {
       SecretKeySpec signingKey = new SecretKeySpec(secret_key, digestMethod);
       Mac mac = Mac.getInstance(digestMethod);
       mac.init(signingKey);
       return mac.doFinal(salt);
     } catch (NoSuchAlgorithmException e) {
-      throw new DerivationException("No such derivation algorithm");
+      throw new Exception("No such derivation algorithm");
     } catch (InvalidKeyException e) {
-      throw new DerivationException("Invalid derivation key");
+      throw new Exception("Invalid derivation key");
     }
   }
 
