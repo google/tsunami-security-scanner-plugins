@@ -27,6 +27,7 @@ import com.google.common.flogger.GoogleLogger;
 import com.google.tsunami.common.command.CommandExecutionThreadPool;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
+import com.google.tsunami.common.net.http.HttpClientCliOptions;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.PortScanner;
 import com.google.tsunami.plugin.annotations.PluginInfo;
@@ -79,6 +80,7 @@ public final class NmapPortScanner implements PortScanner {
   private final Executor commandExecutor;
   private final NmapPortScannerConfigs configs;
   private final NmapPortScannerCliOptions cliOptions;
+  private final HttpClientCliOptions httpClientCliOptions;
 
   private ScanTarget scanTarget;
 
@@ -87,11 +89,13 @@ public final class NmapPortScanner implements PortScanner {
       NmapClient nmapClient,
       @CommandExecutionThreadPool Executor commandExecutor,
       NmapPortScannerConfigs configs,
-      NmapPortScannerCliOptions cliOptions) {
+      NmapPortScannerCliOptions cliOptions,
+      HttpClientCliOptions httpClientCliOptions) {
     this.nmapClient = checkNotNull(nmapClient);
     this.commandExecutor = checkNotNull(commandExecutor);
     this.configs = checkNotNull(configs);
     this.cliOptions = checkNotNull(cliOptions);
+    this.httpClientCliOptions = checkNotNull(httpClientCliOptions);
   }
 
   @Override
@@ -110,9 +114,10 @@ public final class NmapPortScanner implements PortScanner {
               .withVersionDetectionIntensity(5)
               .withScript("banner")
               .withScript("ssl-enum-ciphers")
-              .withScript("http-methods")
+              .withScript("http-methods", "http.useragent=" + httpClientCliOptions.userAgent)
               .withTimingTemplate(TimingTemplate.AGGRESSIVE)
               .withTargetNetworkEndpoint(scanTarget.getNetworkEndpoint())
+              .withExtraCommandLineOptions(cliOptions.nmapCmdOpts)
               .run(commandExecutor);
       logger.atInfo().log(
           "Finished nmap scan on target '%s' in %s.",

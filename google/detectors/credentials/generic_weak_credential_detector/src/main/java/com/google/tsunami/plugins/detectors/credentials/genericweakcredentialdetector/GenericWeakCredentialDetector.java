@@ -57,6 +57,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
@@ -156,7 +157,7 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
 
     // Multiple providers could give the same credentials, so create
     // a set to dedupe them before testing.
-    HashSet<TestCredential> credentials = new HashSet<>();
+    HashSet<TestCredential> credentials = new LinkedHashSet<>();
 
     String serviceName = NetworkServiceUtils.getServiceName(networkService);
 
@@ -170,12 +171,14 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
               .collect(toImmutableSet());
     }
 
-    for (CredentialProvider provider : effectiveProvider) {
+    // Sort all providers according to their priorities
+    ImmutableList<CredentialProvider> prioritizedCredProviders =
+        ImmutableList.sortedCopyOf(CredentialProvider.comparator(), effectiveProvider);
+    for (CredentialProvider provider : prioritizedCredProviders) {
       provider.generateTestCredentials(networkService).forEachRemaining(credentials::add);
     }
 
-    return new WeakCredentialComposer(
-            ImmutableList.sortedCopyOf(TestCredential.comparator(), credentials), tester)
+    return new WeakCredentialComposer(ImmutableList.copyOf(credentials), tester)
         .run(networkService);
   }
 

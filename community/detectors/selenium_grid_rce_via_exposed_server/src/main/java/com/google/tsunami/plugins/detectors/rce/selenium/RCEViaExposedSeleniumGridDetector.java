@@ -150,8 +150,7 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                // TODO: isWebService filter doesn't run this detector.
-                // .filter(NetworkServiceUtils::isWebService)
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isSeleniumGridExposed)
                 .filter(this::isServiceVulnerable)
                 // Build DetectionReport message for vulnerable services.
@@ -357,11 +356,9 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
   // Reads a file with file:// browser protocol.
   // Returns the contents of the file read, or null if not successful / not found.
   private String readFileViaSelenium(NetworkService networkService, String filePath) {
-    String seleniumSessionId = null;
-
     // Get Selenium Session ID
     logger.atInfo().log("Creating a Selenium Grid session");
-    seleniumSessionId = createSeleniumSession(networkService);
+    String seleniumSessionId = createSeleniumSession(networkService);
     if (seleniumSessionId == null) {
       logger.atInfo().log("Failed to create a Selenium Grid session");
       return null;
@@ -400,7 +397,6 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
         buildTargetUrl(
             networkService,
             SELENIUM_GRID_SERVICE_PATH + "/session/" + seleniumSessionId + "/source");
-    boolean fileRead;
     String fileContents = null;
 
     req =

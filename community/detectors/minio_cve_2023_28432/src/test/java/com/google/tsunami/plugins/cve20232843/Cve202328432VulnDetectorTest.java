@@ -16,7 +16,6 @@
 package com.google.tsunami.plugins.cve20232843;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth8.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 import static com.google.tsunami.plugins.cves.cve202328432.Cve202328432VulnDetector.DESCRIPTION;
@@ -26,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
+import com.google.common.truth.Truth8;
 import com.google.inject.Guice;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
@@ -103,11 +103,11 @@ public final class Cve202328432VulnDetectorTest {
     assertEquals(signedRequest.url().toString(), uri);
     assertEquals("GET", signedRequest.method().toString());
     assertThat(signedRequest.headers().names()).hasSize(5);
-    assertThat(signedRequest.headers().get("Host")).hasValue("foo.bar:9000");
-    assertThat(signedRequest.headers().get("x-amz-content-sha256"))
+    Truth8.assertThat(signedRequest.headers().get("Host")).hasValue("foo.bar:9000");
+    Truth8.assertThat(signedRequest.headers().get("x-amz-content-sha256"))
         .hasValue(Digest.ZERO_SHA256_HASH);
     assertEquals(signedRequest.headers().get("x-amz-date").get(), requestDate);
-    assertThat(signedRequest.headers().get("Authorization"))
+    Truth8.assertThat(signedRequest.headers().get("Authorization"))
         .hasValue(
             "AWS4-HMAC-SHA256 Credential=this_is_the_access_key/20230405/us-east-1/s3/aws4_request,"
                 + " SignedHeaders=host;x-amz-content-sha256;x-amz-date,"
