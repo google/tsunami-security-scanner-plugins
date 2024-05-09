@@ -197,17 +197,20 @@ public final class Cve202017526DetectorTest {
           @Override
           public MockResponse dispatch(RecordedRequest request) {
             switch (request.getPath()) {
+                // fall through
               case "/admin/":
                 return new MockResponse()
                     .setResponseCode(200)
                     .addHeader("Set-Cookie: session=aaaaaa")
                     .setBody("<title>Airflow - DAGs</title> \n var CSRF = \"bbbbbb\"");
+                // fall through
               case "/admin/airflow/paused?is_paused=true&dag_id=example_trigger_target_dag":
                 if (Objects.requireNonNull(request.getHeaders().get("X-CSRFToken")).equals("bbbbbb")
                     && Objects.requireNonNull(request.getHeaders().get("Cookie"))
                         .equals("session=aaaaaa")) {
                   return new MockResponse().setResponseCode(200);
                 }
+                // fall through
               case "/admin/airflow/trigger?dag_id=example_trigger_target_dag&origin=%2Fadmin%2Fairflow%2Ftree%3Fdag_id%3Dexample_trigger_target_dag":
                 if (Objects.requireNonNull(request.getHeaders().get("X-CSRFToken")).equals("bbbbbb")
                     && Objects.requireNonNull(request.getHeaders().get("Cookie"))
@@ -218,6 +221,7 @@ public final class Cve202017526DetectorTest {
                         .contains("dag_id=example_trigger_target_dag&origin=")) {
                   return new MockResponse().setResponseCode(200);
                 }
+                // fall through
               default:
                 return new MockResponse().setResponseCode(400);
             }
