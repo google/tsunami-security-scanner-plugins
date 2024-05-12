@@ -12,7 +12,7 @@ public class FlaskSessionSigner {
     this.separator = new byte[] {(byte) '.'};
     this.payload = payload;
     this.timestamp = timestamp;
-    this.signer = new TokenSigner("HmacSHA1", secret.getBytes(), salt.getBytes(), this.separator);
+    this.signer = new TokenSigner(secret.getBytes(), salt.getBytes(), this.separator);
   }
 
   public String dumps() {

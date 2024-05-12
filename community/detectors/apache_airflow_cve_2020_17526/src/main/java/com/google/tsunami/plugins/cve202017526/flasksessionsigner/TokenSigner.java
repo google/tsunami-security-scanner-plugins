@@ -13,8 +13,8 @@ public class TokenSigner implements Cloneable {
   public byte[] salt;
   public byte[] sep;
 
-  public TokenSigner(String digestMethod, byte[] secret_key, byte[] salt, byte[] sep) {
-    this.digestMethod = digestMethod;
+  public TokenSigner(byte[] secret_key, byte[] salt, byte[] sep) {
+    this.digestMethod = "HmacSHA1";
     this.secret_key = secret_key;
     this.salt = salt;
     this.sep = sep;
