@@ -45,6 +45,7 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.postgres.PostgresCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.rabbitmq.RabbitMQCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.wordpress.WordpressCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.rstudio.RStudioCredentialTester;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -72,6 +73,7 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
     credentialTesterBinder.addBinding().to(PostgresCredentialTester.class);
     credentialTesterBinder.addBinding().to(WordpressCredentialTester.class);
     credentialTesterBinder.addBinding().to(GrafanaCredentialTester.class);
+    credentialTesterBinder.addBinding().to(RStudioCredentialTester.class);
     credentialTesterBinder.addBinding().to(RabbitMQCredentialTester.class);
 
     Multibinder<CredentialProvider> credentialProviderBinder =
