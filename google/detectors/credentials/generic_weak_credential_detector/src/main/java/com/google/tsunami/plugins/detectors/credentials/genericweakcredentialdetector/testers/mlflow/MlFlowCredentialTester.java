@@ -87,7 +87,7 @@ public final class MlFlowCredentialTester extends CredentialTester {
                 .contains(
                     "You are not authenticated. Please see "
                         + "https://www.mlflow.org/docs/latest/auth/index.html"
-                        + "#authenticating-to-mlflow"
+                        + "#authenticating-to-mlflow "
                         + "on how to authenticate");
       }
     } catch (IOException e) {
