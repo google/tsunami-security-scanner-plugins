@@ -70,9 +70,9 @@ public final class MlFlowCredentialTester extends CredentialTester {
     boolean canAcceptByCustomFingerprint = false;
     logger.atInfo().log("probing Mlflow ping - custom fingerprint phase");
 
-    // we want to test mlflow versions above 2.5 which has basic authentication module
-    // these versions returned a 401 status code and a link to documentation about how to
-    // authenticate.
+    // We want to test weak credentials against mlflow versions above 2.5 which has basic
+    // authentication module.these versions return a 401 status code and a link to documentation
+    // about how to authenticate.
     var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
     var pingApiUrl = String.format("http://%s/%s", uriAuthority, "ping");
     try {
@@ -85,8 +85,9 @@ public final class MlFlowCredentialTester extends CredentialTester {
                 .bodyString()
                 .get()
                 .contains(
-                    "You are not authenticated. "
-                        + "Please see https://www.mlflow.org/docs/latest/auth/index.html#authenticating-to-mlflow "
+                    "You are not authenticated. Please see "
+                        + "https://www.mlflow.org/docs/latest/auth/index.html"
+                        + "#authenticating-to-mlflow"
                         + "on how to authenticate");
       }
     } catch (IOException e) {
