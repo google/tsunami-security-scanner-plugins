@@ -38,6 +38,11 @@ public final class NmapPortScannerCliOptions implements CliOption {
   // Splitting and conversion is done by the NmapPortScanner itself.
   public String portRangesTarget;
 
+  @Parameter(
+      names = "--nmap-cmd-opts",
+      description = "Additional command line options for Nmap scanning.")
+  public List<String> nmapCmdOpts;
+
   @Override
   public void validate() {}
 }

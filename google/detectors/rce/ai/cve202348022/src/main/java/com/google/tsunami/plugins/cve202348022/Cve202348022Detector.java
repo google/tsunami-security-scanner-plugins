@@ -154,7 +154,7 @@ public final class Cve202348022Detector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE-2023-48022"))
                 .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2023-48022")
+                .setTitle("CVE-2023-48022 Arbitrary Code Execution in Ray")
                 .setDescription(
                     "An attacker can use the job upload functionality to execute arbitrary code on"
                         + " the server hosting the ray application.")
