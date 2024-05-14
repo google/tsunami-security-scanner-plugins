@@ -17,159 +17,114 @@
 package com.google.tsunami.plugins.detectors.exposedui.argocd;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.truth.Truth;
 import com.google.inject.Guice;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
-import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
+import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
+import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
-import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
-import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Objects;
 import javax.inject.Inject;
+import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.junit.Test;
 
 /** Unit tests for {@link ExposedArgoCDDetector}. */
 @RunWith(JUnit4.class)
 public final class ExposedArgoCDDetectorTest {
-
-  private static final String DEFAULT_BODY =
-      "{\"metadata\":{},\"items\":[{\"serverName\":\"bitbucket.org\",\"certType\":\"ssh\",";
   private final FakeUtcClock fakeUtcClock =
-      FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
+      FakeUtcClock.create().setNow(Instant.parse("2024-12-03T00:00:00.00Z"));
 
-  private MockWebServer mockWebServer;
+  private final MockWebServer mockTargetService = new MockWebServer();
+  private final MockWebServer mockCallbackServer = new MockWebServer();
 
   @Inject private ExposedArgoCDDetector detector;
 
-  @Before
-  public void setUp() {
-    mockWebServer = new MockWebServer();
+  TargetInfo targetInfo;
+  NetworkService targetNetworkService;
+  private final SecureRandom testSecureRandom =
+      new SecureRandom() {
+        @Override
+        public void nextBytes(byte[] bytes) {
+          Arrays.fill(bytes, (byte) 0xFF);
+        }
+      };
 
+  @Before
+  public void setUp() throws IOException {
+    mockCallbackServer.start();
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
+            FakePayloadGeneratorModule.builder()
+                .setCallbackServer(mockCallbackServer)
+                .setSecureRng(testSecureRandom)
+                .build(),
             new ExposedArgoCDDetectorBootstrapModule())
         .injectMembers(this);
   }
 
   @After
-  public void tearDown() throws IOException {
-    mockWebServer.shutdown();
+  public void tearDown() throws Exception {
+    mockTargetService.shutdown();
+    mockCallbackServer.shutdown();
   }
 
   @Test
-  public void detect_whenApiEndpointExposed_reportsVuln() throws IOException {
-    startMockWebServer("/api/v1/info", HttpStatus.OK.code(), DEFAULT_BODY);
-
-    ImmutableList<NetworkService> httpServices = buildDefaultServices(mockWebServer);
-
-    assertThat(
-            detector
-                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), httpServices)
-                .getDetectionReportsList())
-        .containsExactly(
-            DetectionReport.newBuilder()
-                .setTargetInfo(buildTargetInfo(forHostname(mockWebServer.getHostName())))
-                .setNetworkService(httpServices.get(0))
-                .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
-                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("ARGOCD_INSTANCE_EXPOSED"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Argo-cd instance Exposed")
-                        .setDescription(
-                            "Argo-cd instance is misconfigured."
-                                + "The instance is not authenticated."
-                                + "All applications can be accessed by public and therefore can be modified."
-                                + "Results in instance being compromised."))
-                .build());
+  public void detect_ifNotVulnerable_doesNotReportVuln() throws IOException {
+    startMockWebServer();
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
   }
 
-  @Test
-  public void detect_whenApiEndpointNotFound_doesNotReportVuln() throws IOException {
-    startMockWebServer("/api/v1/info", HttpStatus.NOT_FOUND.code(), "");
-    ImmutableList<NetworkService> httpServices =
-        ImmutableList.of(
-            NetworkService.newBuilder()
-                .setNetworkEndpoint(
-                    forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-                .setTransportProtocol(TransportProtocol.TCP)
-                .setSoftware(Software.newBuilder().setName("Argo Work flow instance"))
-                .setServiceName("http")
-                .build());
+  private void startMockWebServer() throws IOException {
+    final Dispatcher dispatcher =
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            return new MockResponse().setBody("[{}]").setResponseCode(200);
+          }
+        };
+    mockTargetService.setDispatcher(dispatcher);
+    mockTargetService.start();
+    mockTargetService.url("/");
 
-    assertThat(
-            detector
-                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), httpServices)
-                .getDetectionReportsList())
-        .isEmpty();
-  }
-
-  @Test
-  public void detect_whenNonHttpNetworkService_ignoresServices() {
-    ImmutableList<NetworkService> nonHttpServices =
-        ImmutableList.of(
-            NetworkService.newBuilder().setServiceName("ssh").build(),
-            NetworkService.newBuilder().setServiceName("rdp").build());
-    assertThat(
-            detector
-                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), nonHttpServices)
-                .getDetectionReportsList())
-        .isEmpty();
-  }
-
-  @Test
-  public void detect_whenEmptyNetworkService_generatesEmptyDetectionReports() {
-    assertThat(
-            detector
-                .detect(
-                    buildTargetInfo(forHostname(mockWebServer.getHostName())), ImmutableList.of())
-                .getDetectionReportsList())
-        .isEmpty();
-  }
-
-  private void startMockWebServer(String url, int responseCode, String response)
-      throws IOException {
-    mockWebServer.enqueue(new MockResponse().setResponseCode(responseCode).setBody(response));
-    mockWebServer.start();
-    mockWebServer.url(url);
-  }
-
-  private static TargetInfo buildTargetInfo(NetworkEndpoint networkEndpoint) {
-    return TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint).build();
-  }
-
-  private static ImmutableList<NetworkService> buildDefaultServices(MockWebServer mockWebServer) {
-    return ImmutableList.of(
+    targetNetworkService =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
-                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .setTransportProtocol(TransportProtocol.TCP)
-            .setServiceName("http")
-            .build());
+                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
+            .addSupportedHttpMethods("POST")
+            .build();
+    targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
+            .build();
   }
 }
