@@ -80,9 +80,6 @@ CreateFingerprintForMLflow() {
   StopMLflow "${mlflowVersion}"
 }
 
-# Convert the existing data file to a human-readable json file.
-# convertFingerprint "${BINPROTO}"  "${JSON_DATA}"
-
 # Fetch MLflow codebase.
 if [[ ! -d "${GIT_REPO}" ]] ; then
   git clone https://github.com/mlflow/mlflow "${GIT_REPO}"
