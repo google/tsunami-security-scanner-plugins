@@ -3,7 +3,7 @@ package com.google.tsunami.plugins.cve202017526.flasksessionsigner;
 import com.google.common.primitives.Bytes;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.Base64;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
