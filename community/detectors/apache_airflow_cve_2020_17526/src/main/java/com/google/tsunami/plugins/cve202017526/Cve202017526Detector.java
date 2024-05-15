@@ -48,7 +48,6 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-
 import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.URLEncoder;
