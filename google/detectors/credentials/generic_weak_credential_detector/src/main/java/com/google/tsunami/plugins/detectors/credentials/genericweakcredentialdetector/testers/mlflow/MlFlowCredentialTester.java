@@ -32,7 +32,6 @@ import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
-import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
 import com.google.tsunami.proto.NetworkService;
@@ -44,6 +43,8 @@ import javax.inject.Inject;
 /** Credential tester specifically for mlflow. */
 public final class MlFlowCredentialTester extends CredentialTester {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+  private static final String MLFLOW_SERVICE = "mlflow";
+
   private final HttpClient httpClient;
 
   @Inject
@@ -63,39 +64,7 @@ public final class MlFlowCredentialTester extends CredentialTester {
 
   @Override
   public boolean canAccept(NetworkService networkService) {
-    if (!NetworkServiceUtils.isWebService(networkService)) {
-      return false;
-    }
-
-    boolean canAcceptByCustomFingerprint = false;
-    logger.atInfo().log("probing Mlflow ping - custom fingerprint phase");
-
-    // We want to test weak credentials against mlflow versions above 2.5 which has basic
-    // authentication module.these versions return a 401 status code and a link to documentation
-    // about how to authenticate.
-    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
-    var pingApiUrl = String.format("http://%s/%s", uriAuthority, "ping");
-    try {
-      HttpResponse apiPingResponse = httpClient.send(get(pingApiUrl).withEmptyHeaders().build());
-
-      if (apiPingResponse.status() == HttpStatus.UNAUTHORIZED
-          && apiPingResponse.bodyString().isPresent()) {
-        canAcceptByCustomFingerprint =
-            apiPingResponse
-                .bodyString()
-                .get()
-                .contains(
-                    "You are not authenticated. Please see "
-                        + "https://www.mlflow.org/docs/latest/auth/index.html"
-                        + "#authenticating-to-mlflow "
-                        + "on how to authenticate");
-      }
-    } catch (IOException e) {
-      logger.atWarning().withCause(e).log("Unable to query '%s'.", pingApiUrl);
-      return false;
-    }
-
-    return canAcceptByCustomFingerprint;
+    return NetworkServiceUtils.getWebServiceName(networkService).equals(MLFLOW_SERVICE);
   }
 
   @Override

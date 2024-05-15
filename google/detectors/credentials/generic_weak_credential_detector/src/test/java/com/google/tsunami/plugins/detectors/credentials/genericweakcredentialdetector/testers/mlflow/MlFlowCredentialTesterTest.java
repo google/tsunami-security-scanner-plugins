@@ -79,7 +79,7 @@ public class MlFlowCredentialTesterTest {
         NetworkService.newBuilder()
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .setServiceName("http")
+            .setServiceName("mlflow")
             .build();
 
     assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WEAK_CRED_1)))
@@ -94,7 +94,7 @@ public class MlFlowCredentialTesterTest {
         NetworkService.newBuilder()
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .setServiceName("http")
+            .setServiceName("mlflow")
             .build();
 
     assertThat(
@@ -104,13 +104,13 @@ public class MlFlowCredentialTesterTest {
   }
 
   @Test
-  public void detect_canAccept() throws Exception {
+  public void detect_mlflowService_canAccept() throws Exception {
     startMockWebServer();
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .setServiceName("http")
+            .setServiceName("mlflow")
             .build();
 
     assertThat(tester.canAccept(targetNetworkService)).isTrue();
@@ -124,7 +124,7 @@ public class MlFlowCredentialTesterTest {
         NetworkService.newBuilder()
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .setServiceName("http")
+            .setServiceName("mlflow")
             .build();
 
     assertThat(
@@ -140,7 +140,7 @@ public class MlFlowCredentialTesterTest {
         NetworkService.newBuilder()
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .setServiceName("http")
+            .setServiceName("mlflow")
             .build();
     assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WRONG_CRED_1)))
         .isEmpty();
