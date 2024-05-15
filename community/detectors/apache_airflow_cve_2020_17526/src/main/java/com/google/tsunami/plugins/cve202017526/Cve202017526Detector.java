@@ -213,8 +213,6 @@ public final class Cve202017526Detector implements VulnDetector {
     }
     String freshCsrfToken = m.group(1);
     results.put("freshCsrfToken", freshCsrfToken);
-    logger.atWarning().log(results.get("freshCsrfToken"));
-    logger.atWarning().log(results.get("freshSessionCookieValue"));
     return results;
   }
 
