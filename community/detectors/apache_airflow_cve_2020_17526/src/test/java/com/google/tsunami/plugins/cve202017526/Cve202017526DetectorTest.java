@@ -203,7 +203,6 @@ public final class Cve202017526DetectorTest {
                     .setResponseCode(200)
                     .addHeader("Set-Cookie: session=aaaaaa")
                     .setBody("<title>Airflow - DAGs</title> \n var CSRF = \"bbbbbb\"");
-                // fall through
               case "/admin/airflow/paused?is_paused=true&dag_id=example_trigger_target_dag":
                 if (Objects.requireNonNull(request.getHeaders().get("X-CSRFToken")).equals("bbbbbb")
                     && Objects.requireNonNull(request.getHeaders().get("Cookie"))
