@@ -18,7 +18,7 @@ package com.google.tsunami.plugins.detectors.rce;
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
 /**
- * A Triton Inference Server Rce DetectorGuice module that bootstraps the {@link
+ * A Triton Inference Server Rce Detector Guice module that bootstraps the {@link
  * TritonInferenceServerRceVulnDetector}.
  */
 public final class TritonInferenceServerRceDetectorBootstrapModule extends PluginBootstrapModule {
