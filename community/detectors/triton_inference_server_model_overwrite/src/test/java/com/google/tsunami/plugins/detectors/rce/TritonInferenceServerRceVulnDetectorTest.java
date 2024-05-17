@@ -121,10 +121,12 @@ public final class TritonInferenceServerRceVulnDetectorTest {
                                 .setValue("TritonInferenceServerRce"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle(
-                            "This detector checks triton inference server RCE with explicit model-control option enabled")
+                            "This detector checks triton inference server RCE with explicit"
+                                + " model-control option enabled")
                         .setDescription(
-                            "All versions of triton inference server with the `--model-control explicit` option"
-                                + " and at least one loaded model can be overwritten by a malicious model and lead to RCE.")
+                            "All versions of triton inference server with the `--model-control"
+                                + " explicit` option and at least one loaded model can be"
+                                + " overwritten by a malicious model and lead to RCE.")
                         .setRecommendation(
                             "don't use `--model-control explicit` option with public access")
                         .addRelatedId(

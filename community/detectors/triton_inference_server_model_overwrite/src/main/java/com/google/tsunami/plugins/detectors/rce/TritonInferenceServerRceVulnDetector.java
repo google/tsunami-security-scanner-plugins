@@ -64,7 +64,8 @@ import javax.inject.Inject;
     name = "TritonInferenceServerRceVulnDetector",
     version = "0.1",
     description =
-        "This detector checks triton inference server RCE with explicit model-control option enabled",
+        "This detector checks triton inference server RCE with explicit model-control option"
+            + " enabled",
     author = "secureness",
     bootstrapModule = TritonInferenceServerRceDetectorBootstrapModule.class)
 public class TritonInferenceServerRceVulnDetector implements VulnDetector {
@@ -162,7 +163,8 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
     var payload = getTsunamiCallbackHttpPayload();
     if (payload == null || !payload.getPayloadAttributes().getUsesCallbackServer()) {
       logger.atWarning().log(
-          "The Tsunami callback server is not setup for this environment, so we cannot confirm the RCE callback");
+          "The Tsunami callback server is not setup for this environment, so we cannot confirm the"
+              + " RCE callback");
       return false;
     }
 
@@ -287,10 +289,12 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
                         .setValue("TritonInferenceServerRce"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle(
-                    "This detector checks triton inference server RCE with explicit model-control option enabled")
+                    "This detector checks triton inference server RCE with explicit model-control"
+                        + " option enabled")
                 .setDescription(
-                    "All versions of triton inference server with the `--model-control explicit` option"
-                        + " and at least one loaded model can be overwritten by a malicious model and lead to RCE.")
+                    "All versions of triton inference server with the `--model-control explicit`"
+                        + " option and at least one loaded model can be overwritten by a malicious"
+                        + " model and lead to RCE.")
                 .setRecommendation("don't use `--model-control explicit` option with public access")
                 .addRelatedId(
                     VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-31036")))
