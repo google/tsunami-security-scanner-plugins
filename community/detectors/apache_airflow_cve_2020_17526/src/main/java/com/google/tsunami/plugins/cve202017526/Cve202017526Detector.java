@@ -31,13 +31,14 @@ import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
-import com.google.tsunami.plugin.PluginType;
-import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.NotImplementedException;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
+import com.google.tsunami.plugin.PluginType;
+import com.google.tsunami.plugin.VulnDetector;
+import com.google.tsunami.plugins.cve202017526.Annotations.OobSleepDuration;
 import com.google.tsunami.plugins.cve202017526.flasksessionsigner.FlaskSessionSigner;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
@@ -78,12 +79,17 @@ public final class Cve202017526Detector implements VulnDetector {
   private final Clock utcClock;
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
+  private final int oobSleepDuration;
 
   @Inject
   Cve202017526Detector(
-      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
+      @UtcClock Clock utcClock,
+      HttpClient httpClient,
+      PayloadGenerator payloadGenerator,
+      @OobSleepDuration int oobSleepDuration) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(true).build();
+    this.oobSleepDuration = oobSleepDuration;
     this.payloadGenerator = checkNotNull(payloadGenerator);
   }
 
@@ -159,7 +165,11 @@ public final class Cve202017526Detector implements VulnDetector {
               .build(),
           networkService);
 
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(20));
+      if (oobSleepDuration != 0) {
+        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
+      } else {
+        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(1));
+      }
       return payload.checkIfExecuted();
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Failed to send request.");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,16 @@ import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAnd
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.Truth;
 import com.google.inject.Guice;
+import com.google.inject.testing.fieldbinder.Bind;
+import com.google.inject.testing.fieldbinder.BoundFieldModule;
+import com.google.inject.util.Modules;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
+import com.google.tsunami.plugins.cve202017526.Annotations.OobSleepDuration;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -48,9 +52,9 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.junit.Test;
 
 /** Unit tests for the {@link Cve202017526Detector}. */
 @RunWith(JUnit4.class)
@@ -67,12 +71,13 @@ public final class Cve202017526DetectorTest {
         }
       };
 
+  @Bind(lazy = true)
+  @OobSleepDuration
+  private int sleepDuration = 0;
+
   @Inject private Cve202017526Detector detector;
 
-  @Before
-  public void setUp() throws IOException {
-    mockCallbackServer.start();
-
+  private void createInjector() {
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
@@ -80,8 +85,13 @@ public final class Cve202017526DetectorTest {
                 .setCallbackServer(mockCallbackServer)
                 .setSecureRng(testSecureRandom)
                 .build(),
-            new Cve202017526DetectorModule())
+            Modules.override(new Cve202017526DetectorModule()).with(BoundFieldModule.of(this)))
         .injectMembers(this);
+  }
+
+  @Before
+  public void setUp() throws IOException {
+    mockCallbackServer.start();
   }
 
   @After
@@ -94,6 +104,8 @@ public final class Cve202017526DetectorTest {
   public void detect_withCallbackServer_onVulnerableTarget_returnsVulnerability()
       throws IOException {
     startMockWebServer();
+    sleepDuration = 1;
+    createInjector();
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
@@ -141,6 +153,9 @@ public final class Cve202017526DetectorTest {
   @Test
   public void detect_withCallbackServer_butNoCallback_returnsEmpty() throws IOException {
     startMockWebServer();
+    sleepDuration = 1;
+    createInjector();
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
@@ -160,6 +175,9 @@ public final class Cve202017526DetectorTest {
 
   @Test
   public void detect_withoutCallbackServer_returnsEmpty() throws IOException {
+    mockTargetService.start();
+    mockTargetService.url("/");
+
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
@@ -170,12 +188,10 @@ public final class Cve202017526DetectorTest {
         TargetInfo.newBuilder()
             .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
             .build();
-    Guice.createInjector(
-            new FakeUtcClockModule(fakeUtcClock),
-            new HttpClientModule.Builder().build(),
-            FakePayloadGeneratorModule.builder().build(),
-            new Cve202017526DetectorModule())
-        .injectMembers(this);
+    mockTargetService.enqueue(new MockResponse().setResponseCode(500));
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
+    sleepDuration = 1;
+    createInjector();
 
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));

@@ -15,20 +15,21 @@
  */
 package com.google.tsunami.plugins.cve202017526;
 
-import com.google.inject.Provides;
-import com.google.tsunami.plugin.PluginBootstrapModule;
-import com.google.tsunami.plugins.cve202017526.Annotations.OobSleepDuration;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
 
-/** A module registering the detector for CVE-2020-17526. */
-public final class Cve202017526DetectorModule extends PluginBootstrapModule {
-  @Override
-  protected void configurePlugin() {
-    registerPlugin(Cve202017526Detector.class);
-  }
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  @Provides
-  @OobSleepDuration
-  int provideOobSleepDuration(int duration) {
-    return duration;
-  }
+/** Annotation for {@link Cve202017526Detector}. */
+final class Annotations {
+  @Qualifier
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({PARAMETER, METHOD, FIELD})
+  @interface OobSleepDuration {}
+
+  private Annotations() {}
 }
