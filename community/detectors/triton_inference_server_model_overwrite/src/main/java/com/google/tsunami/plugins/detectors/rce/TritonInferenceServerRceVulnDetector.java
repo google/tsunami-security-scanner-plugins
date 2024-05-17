@@ -291,8 +291,9 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
                 .setDescription(
                     "All versions of triton inference server with the `--model-control explicit` option"
                         + " and at least one loaded model can be overwritten by a malicious model and lead to RCE.")
-                .setRecommendation(
-                    "don't use `--model-control explicit` option with public access"))
+                .setRecommendation("don't use `--model-control explicit` option with public access")
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-31036")))
         .build();
   }
 }
