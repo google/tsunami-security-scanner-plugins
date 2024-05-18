@@ -40,7 +40,6 @@ mkdir -p "${FINGERPRINTS_PATH}"
 
 BINPROTO="${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/community/mlflow.binproto"
 
-
 StartMLflow() {
   local version="$1"
   pushd "${APP_PATH}" >/dev/null
