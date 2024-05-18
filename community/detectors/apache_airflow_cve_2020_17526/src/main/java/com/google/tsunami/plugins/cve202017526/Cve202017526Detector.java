@@ -79,7 +79,8 @@ public final class Cve202017526Detector implements VulnDetector {
   private final Clock utcClock;
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
-  private final int oobSleepDuration;
+
+  final int oobSleepDuration;
 
   @Inject
   Cve202017526Detector(
@@ -96,6 +97,7 @@ public final class Cve202017526Detector implements VulnDetector {
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
+
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
@@ -168,7 +170,7 @@ public final class Cve202017526Detector implements VulnDetector {
       if (oobSleepDuration != 0) {
         Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
       } else {
-        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(1));
+        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(20));
       }
       return payload.checkIfExecuted();
     } catch (IOException e) {
