@@ -29,6 +29,9 @@ public final class Cve202017526DetectorModule extends PluginBootstrapModule {
   @Provides
   @OobSleepDuration
   int provideOobSleepDuration(Cve202017526DetectorConfigs configs) {
+    if (configs.oobSleepDuration == 0) {
+      return 20;
+    }
     return configs.oobSleepDuration;
   }
 }

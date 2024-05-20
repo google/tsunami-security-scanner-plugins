@@ -73,7 +73,7 @@ public final class Cve202017526DetectorTest {
 
   @Bind(lazy = true)
   @OobSleepDuration
-  private int sleepDuration = 0;
+  private int sleepDuration = 1;
 
   @Inject private Cve202017526Detector detector;
 
@@ -104,7 +104,6 @@ public final class Cve202017526DetectorTest {
   public void detect_withCallbackServer_onVulnerableTarget_returnsVulnerability()
       throws IOException {
     startMockWebServer();
-    sleepDuration = 1;
     createInjector();
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
     NetworkService targetNetworkService =
@@ -153,7 +152,6 @@ public final class Cve202017526DetectorTest {
   @Test
   public void detect_withCallbackServer_butNoCallback_returnsEmpty() throws IOException {
     startMockWebServer();
-    sleepDuration = 1;
     createInjector();
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
     NetworkService targetNetworkService =
@@ -190,7 +188,6 @@ public final class Cve202017526DetectorTest {
             .build();
     mockTargetService.enqueue(new MockResponse().setResponseCode(500));
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
-    sleepDuration = 1;
     createInjector();
 
     DetectionReportList detectionReports =

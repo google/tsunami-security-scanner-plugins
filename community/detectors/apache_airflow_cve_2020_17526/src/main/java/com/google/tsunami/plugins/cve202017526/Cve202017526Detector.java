@@ -79,8 +79,7 @@ public final class Cve202017526Detector implements VulnDetector {
   private final Clock utcClock;
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
-
-  final int oobSleepDuration;
+  private final int oobSleepDuration;
 
   @Inject
   Cve202017526Detector(
@@ -167,11 +166,8 @@ public final class Cve202017526Detector implements VulnDetector {
               .build(),
           networkService);
 
-      if (oobSleepDuration != 0) {
-        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
-      } else {
-        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(20));
-      }
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
+
       return payload.checkIfExecuted();
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Failed to send request.");
