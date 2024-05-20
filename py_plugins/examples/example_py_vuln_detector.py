@@ -14,13 +14,13 @@
 """Example Python vulnerability detector."""
 from absl import logging
 
-from google3.google.protobuf import timestamp_pb2
-from google3.third_party.java_src.tsunami.plugin_server.py import tsunami_plugin
-from google3.third_party.java_src.tsunami.plugin_server.py.common.net.http.http_client import HttpClient
-from google3.third_party.java_src.tsunami.plugin_server.py.plugin.payload.payload_generator import PayloadGenerator
-from google3.third_party.java_src.tsunami.proto import detection_pb2
-from google3.third_party.java_src.tsunami.proto import plugin_representation_pb2
-from google3.third_party.java_src.tsunami.proto import vulnerability_pb2
+from google.protobuf import timestamp_pb2
+import tsunami_plugin
+from common.net.http.http_client import HttpClient
+from plugin.payload.payload_generator import PayloadGenerator
+import detection_pb2
+import plugin_representation_pb2
+import vulnerability_pb2
 
 
 PluginInfo = plugin_representation_pb2.PluginInfo
