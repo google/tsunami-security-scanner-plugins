@@ -52,9 +52,9 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.junit.Test;
 
 /** Unit tests for the {@link Cve202017526Detector}. */
 @RunWith(JUnit4.class)
@@ -202,13 +202,6 @@ public final class Cve202017526DetectorTest {
   private void startMockWebServer() throws IOException {
     final Dispatcher dispatcher =
         new Dispatcher() {
-          final MockResponse unauthorizedResponse =
-              new MockResponse()
-                  .setResponseCode(401)
-                  .setBody(
-                      "You are not authenticated. Please see"
-                          + " https://www.mlflow.org/docs/latest/auth/index.html#authenticating-to-mlflow"
-                          + " on how to authenticate");
 
           @Override
           public MockResponse dispatch(RecordedRequest request) {
