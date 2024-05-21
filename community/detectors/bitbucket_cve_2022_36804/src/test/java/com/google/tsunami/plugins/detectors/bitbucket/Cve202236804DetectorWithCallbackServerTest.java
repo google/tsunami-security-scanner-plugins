@@ -1,6 +1,7 @@
 package com.google.tsunami.plugins.detectors.bitbucket;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.Timestamps;
@@ -9,7 +10,9 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.proto.*;
 import okhttp3.mockwebserver.MockWebServer;
 import com.google.inject.Guice;
+
 import javax.inject.Inject;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +38,8 @@ public class Cve202236804DetectorWithCallbackServerTest {
     private final FakeUtcClock fakeUtcClock =
             FakeUtcClock.create().setNow(Instant.parse("2022-09-15T00:00:00.00Z"));
 
-    @Inject private Cve202236804VulnDetector detector;
+    @Inject
+    private Cve202236804VulnDetector detector;
     private MockWebServer mockWebServer;
     private MockWebServer mockCallbackServer;
 
@@ -134,12 +138,12 @@ public class Cve202236804DetectorWithCallbackServerTest {
                                                         "CVE-2022-36804: Bitbucket Command injection vulnerability")
                                                 .setDescription(
                                                         "A vulnerability in Bitbucket allows a remote, An attacker with access "
-                                                                +   "to a public Bitbucket repository or with read permissions to a"
-                                                                +   "private one can execute arbitrary code by sending a malicious "
-                                                                +   "HTTP request. This All versions released after 6.10.17 "
-                                                                +   "including 7.0.0 and newer are affected, this means that all "
-                                                                +   "instances that are running any versions between 7.0.0 and "
-                                                                +   "8.3.0 inclusive can be exploited by this vulnerability.")
+                                                                + "to a public Bitbucket repository or with read permissions to a"
+                                                                + "private one can execute arbitrary code by sending a malicious "
+                                                                + "HTTP request. This All versions released after 6.10.17 "
+                                                                + "including 7.0.0 and newer are affected, this means that all "
+                                                                + "instances that are running any versions between 7.0.0 and "
+                                                                + "8.3.0 inclusive can be exploited by this vulnerability.")
                                                 .setRecommendation("Upgrade bitbucket to the latest version"))
                                 .build());
     }
@@ -162,7 +166,7 @@ public class Cve202236804DetectorWithCallbackServerTest {
                         "Date: Wed, 14 Sep 2022 08:55:59 GMT\n" +
                         "Connection: close\n" +
                         "Content-Length: 0\n"
-                        ));
+                ));
         mockWebServer.enqueue(
                 new MockResponse().setResponseCode(HttpStatus.SERVICE_UNAVAILABLE.code()));
         PollingResult log = PollingResult.newBuilder().setHasHttpInteraction(true).build();

