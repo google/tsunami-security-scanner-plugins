@@ -18,7 +18,11 @@ package com.google.tsunami.plugins.detectors.rce;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.rce.TritonInferenceServerRceVulnDetector.*;
+import static com.google.tsunami.plugins.detectors.rce.TritonInferenceServerRceVulnDetector.MODEL_CONFIG;
+import static com.google.tsunami.plugins.detectors.rce.TritonInferenceServerRceVulnDetector.PYTHON_MODEL;
+import static com.google.tsunami.plugins.detectors.rce.TritonInferenceServerRceVulnDetector.UPLOAD_CONFIG_PAYLOAD;
+import static com.google.tsunami.plugins.detectors.rce.TritonInferenceServerRceVulnDetector.UPLOAD_MODEL_PAYLOAD;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.Truth;
@@ -45,7 +49,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Objects;
 import javax.inject.Inject;
-
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -120,13 +123,13 @@ public final class TritonInferenceServerRceVulnDetectorTest {
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("TritonInferenceServerRce"))
                         .setSeverity(Severity.CRITICAL)
-                        .setTitle(
-                            "This detector checks triton inference server RCE with explicit"
-                                + " model-control option enabled")
+                        .setTitle("Triton Inference Server RCE")
                         .setDescription(
-                            "All versions of triton inference server with the `--model-control"
-                                + " explicit` option and at least one loaded model can be"
-                                + " overwritten by a malicious model and lead to RCE.")
+                            "This detector checks triton inference server RCE with explicit"
+                                + " model-control option enabled. \n"
+                                + "All versions of triton inference server with the"
+                                + " `--model-control explicit` option allows for loaded models to"
+                                + " be overwritten by  malicious models and lead to RCE.")
                         .setRecommendation(
                             "don't use `--model-control explicit` option with public access")
                         .addRelatedId(
@@ -177,7 +180,7 @@ public final class TritonInferenceServerRceVulnDetectorTest {
                               UPLOAD_CONFIG_PAYLOAD,
                               Base64.getEncoder()
                                   .encodeToString(
-                                      String.format(MODEL_CONFIG, "metasploit").getBytes())))
+                                      String.format(MODEL_CONFIG, "metasploit").getBytes(UTF_8))))
                       || request
                           .getBody()
                           .readString(StandardCharsets.UTF_8)
@@ -186,7 +189,7 @@ public final class TritonInferenceServerRceVulnDetectorTest {
                                   UPLOAD_MODEL_PAYLOAD,
                                   Base64.getEncoder()
                                       .encodeToString(
-                                          PYTHON_MODEL.substring(0, 20).getBytes()))))) {
+                                          PYTHON_MODEL.substring(0, 20).getBytes(UTF_8)))))) {
                 return new MockResponse().setResponseCode(200);
               }
             }

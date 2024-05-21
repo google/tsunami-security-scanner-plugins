@@ -288,13 +288,13 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("TritonInferenceServerRce"))
                 .setSeverity(Severity.CRITICAL)
-                .setTitle(
-                    "This detector checks triton inference server RCE with explicit model-control"
-                        + " option enabled")
+                .setTitle("Triton Inference Server RCE")
                 .setDescription(
-                    "All versions of triton inference server with the `--model-control explicit`"
-                        + " option and at least one loaded model can be overwritten by a malicious"
-                        + " model and lead to RCE.")
+                    "This detector checks triton inference server RCE with explicit model-control"
+                        + " option enabled. \n"
+                        + "All versions of triton inference server with the `--model-control"
+                        + " explicit` option allows for loaded models to be overwritten by "
+                        + " malicious models and lead to RCE.")
                 .setRecommendation("don't use `--model-control explicit` option with public access")
                 .addRelatedId(
                     VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-31036")))
