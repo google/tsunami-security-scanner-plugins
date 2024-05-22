@@ -131,8 +131,9 @@ public final class ExposedArgoCDDetector implements VulnDetector {
                         networkService,
                         "Argo-cd instance is misconfigured."
                             + "The instance is not authenticated."
-                            + "All applications can be accessed by public and therefore can be modified."
-                            + "Results in instance being compromised."));
+                            + "All applications can be accessed by public and therefore can"
+                            + " be modified. Results in instance being compromised.",
+                        "Please disable public access to your argo-cd instance"));
               } else if (isServiceVulnerableToAuthBypass(networkService)) {
                 // argo-cd instance is vulnerable to CVE-2022-29165
                 detectionReport.addDetectionReports(
@@ -141,8 +142,10 @@ public final class ExposedArgoCDDetector implements VulnDetector {
                         networkService,
                         "Argo-cd instance is vulnerable to CVE-2022-29165."
                             + "The authentication can be bypassed"
-                            + "All applications can be accessed by public and therefore can be modified."
-                            + "Results in instance being compromised."));
+                            + "All applications can be accessed by public and therefore can"
+                            + " be modified. Results in instance being compromised.",
+                        "Patched versions are 2.1.15, and 2.3.4, and 2.2.9, and"
+                            + " 2.1.15. Please update argo-cd to these versions and higher."));
               }
             });
     return detectionReport.build();
@@ -180,8 +183,6 @@ public final class ExposedArgoCDDetector implements VulnDetector {
       String projectsUrl = targetUrl + "api/v1/projects?fields=items.metadata.name";
       HttpResponse response =
           httpClient.send(get(projectsUrl).setHeaders(baseHeaders.build()).build(), networkService);
-      logger.atWarning().log("headers =============> %s", response.headers().toString());
-      logger.atWarning().log("body =============> %s", response.bodyJson().toString());
       if (response.bodyString().isEmpty()) {
         return false;
       }
@@ -207,8 +208,6 @@ public final class ExposedArgoCDDetector implements VulnDetector {
       String clustersUrl = targetUrl + "api/v1/clusters";
       response =
           httpClient.send(get(clustersUrl).setHeaders(baseHeaders.build()).build(), networkService);
-      logger.atWarning().log("headers =============> %s", response.headers().toString());
-      logger.atWarning().log("body =============> %s", response.bodyJson().toString());
       if (response.bodyString().isEmpty()) {
         return false;
       }
@@ -253,8 +252,6 @@ public final class ExposedArgoCDDetector implements VulnDetector {
                   .setRequestBody(ByteString.copyFromUtf8(payload))
                   .build(),
               networkService);
-      logger.atWarning().log("headers =============> %s", response.headers().toString());
-      logger.atWarning().log("body =============> %s", response.bodyJson().toString());
       // If we send a req with http it will redirect us to https with a 307 status code,
       // but by default our client doesn't redirect a POST request with 307 status code and a
       // location header in first response
@@ -268,8 +265,6 @@ public final class ExposedArgoCDDetector implements VulnDetector {
                     .setRequestBody(ByteString.copyFromUtf8(payload))
                     .build(),
                 networkService);
-        logger.atWarning().log("headers =============> %s", response.headers().toString());
-        logger.atWarning().log("body =============> %s", response.bodyJson().toString());
       }
       Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(25));
       if (callbackPayload.checkIfExecuted()) {
@@ -328,7 +323,10 @@ public final class ExposedArgoCDDetector implements VulnDetector {
   }
 
   private DetectionReport buildDetectionReport(
-      TargetInfo targetInfo, NetworkService vulnerableNetworkService, String description) {
+      TargetInfo targetInfo,
+      NetworkService vulnerableNetworkService,
+      String description,
+      String recommendation) {
 
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
@@ -343,7 +341,8 @@ public final class ExposedArgoCDDetector implements VulnDetector {
                         .setValue("ARGOCD_INSTANCE_EXPOSED"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Argo-cd instance Exposed")
-                .setDescription(description))
+                .setDescription(description)
+                .setRecommendation(recommendation))
         .build();
   }
 }
