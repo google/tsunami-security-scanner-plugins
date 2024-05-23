@@ -65,7 +65,7 @@ import javax.inject.Inject;
 
     // detailed description of the plugin
     description =
-        "This plugin detects exposed and misconfigured ArgoCd instances."
+        "This plugin detects exposed and misconfigured ArgoCD instances."
             + "Exposed Argo CD instances allow attackers to access kubernetes clusters."
             + "Attackers can change parameters of clusters and possibly compromise it.",
     author = "JamesFoxxx",
@@ -83,7 +83,7 @@ public final class ExposedArgoCDDetector implements VulnDetector {
   private final String PAYLOAD_GIT_URL = "https://github.com/JamesFoxxx/argo-cd-app";
   // The Path to the directory of payload on the git repository
   private final String PAYLOAD_GIT_PATH = "payloads/jsonnet-guestbook-tla";
-  // This is a template for creating an argo-cd application, we should fill four part of this
+  // This is a template for creating an Argo CD application, we should fill four part of this
   // payload.
   private final String CREATE_APPLICATION_TEMPLATE =
       "{\"apiVersion\":\"argoproj.io/v1alpha1\",\"kind\":\"Application\","
@@ -134,33 +134,33 @@ public final class ExposedArgoCDDetector implements VulnDetector {
         // filter services which are in scope
         .filter(this::isInScopeService)
         // check if the services are vulnerable
-        // Build a DetectionReport when the argo-cd UI is exposed publicly by admin access otherwise
+        // Build a DetectionReport when the Argo CD UI is exposed publicly by admin access otherwise
         // check if it is vulnerable to CVE-2022-29165
         .forEach(
             networkService -> {
               if (isServicePubliclyExposed(networkService)) {
-                // argo-cd instance is exposed publicly without any authentication
+                // Argo CD instance is exposed publicly without any authentication
                 detectionReport.addDetectionReports(
                     buildDetectionReport(
                         targetInfo,
                         networkService,
-                        "Argo-cd instance is misconfigured."
+                        "Argo CD instance is misconfigured."
                             + "The instance is not authenticated."
                             + "All applications can be accessed by public and therefore can"
                             + " be modified. Results in instance being compromised.",
-                        "Please disable public access to your argo-cd instance"));
+                        "Please disable public access to your Argo CD instance"));
               } else if (isServiceVulnerableToAuthBypass(networkService)) {
-                // argo-cd instance is vulnerable to CVE-2022-29165
+                // Argo CD instance is vulnerable to CVE-2022-29165
                 detectionReport.addDetectionReports(
                     buildDetectionReport(
                         targetInfo,
                         networkService,
-                        "Argo-cd instance is vulnerable to CVE-2022-29165."
+                        "Argo CD instance is vulnerable to CVE-2022-29165."
                             + "The authentication can be bypassed"
                             + "All applications can be accessed by public and therefore can"
                             + " be modified. Results in instance being compromised.",
                         "Patched versions are 2.1.15, and 2.3.4, and 2.2.9, and"
-                            + " 2.1.15. Please update argo-cd to these versions and higher."));
+                            + " 2.1.15. Please update Argo CD to these versions and higher."));
               }
             });
     return detectionReport.build();
@@ -176,7 +176,7 @@ public final class ExposedArgoCDDetector implements VulnDetector {
     return checkExposedArgoCdWithOutOfBandCallback(networkService, HttpHeaders.builder());
   }
 
-  /** Checks if a {@link NetworkService} has a vulnerable ArgoCd instances to CVE-2022-29165. */
+  /** Checks if a {@link NetworkService} has a vulnerable ArgoCD instances to CVE-2022-29165. */
   private boolean isServiceVulnerableToAuthBypass(NetworkService networkService) {
     HttpHeaders.Builder cookieHeader =
         HttpHeaders.builder()
@@ -360,7 +360,7 @@ public final class ExposedArgoCDDetector implements VulnDetector {
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("ARGOCD_INSTANCE_EXPOSED"))
                 .setSeverity(Severity.CRITICAL)
-                .setTitle("Argo-cd instance Exposed")
+                .setTitle("Argo CD instance Exposed")
                 .setDescription(description)
                 .setRecommendation(recommendation))
         .build();

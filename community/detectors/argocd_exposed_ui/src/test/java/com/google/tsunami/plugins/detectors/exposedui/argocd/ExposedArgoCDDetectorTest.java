@@ -130,15 +130,15 @@ public final class ExposedArgoCDDetectorTest {
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("ARGOCD_INSTANCE_EXPOSED"))
                         .setSeverity(Severity.CRITICAL)
-                        .setTitle("Argo-cd instance Exposed")
+                        .setTitle("Argo CD instance Exposed")
                         .setDescription(
-                            "Argo-cd instance is vulnerable to CVE-2022-29165."
+                            "Argo CD instance is vulnerable to CVE-2022-29165."
                                 + "The authentication can be bypassed"
                                 + "All applications can be accessed by public and therefore can"
                                 + " be modified. Results in instance being compromised.")
                         .setRecommendation(
                             "Patched versions are 2.1.15, and 2.3.4, and 2.2.9, and"
-                                + " 2.1.15. Please update argo-cd to these versions and higher."))
+                                + " 2.1.15. Please update Argo CD to these versions and higher."))
                 .build());
     Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(5);
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
@@ -168,13 +168,13 @@ public final class ExposedArgoCDDetectorTest {
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("ARGOCD_INSTANCE_EXPOSED"))
                         .setSeverity(Severity.CRITICAL)
-                        .setTitle("Argo-cd instance Exposed")
+                        .setTitle("Argo CD instance Exposed")
                         .setDescription(
-                            "Argo-cd instance is misconfigured."
+                            "Argo CD instance is misconfigured."
                                 + "The instance is not authenticated."
                                 + "All applications can be accessed by public and therefore can"
                                 + " be modified. Results in instance being compromised.")
-                        .setRecommendation("Please disable public access to your argo-cd instance"))
+                        .setRecommendation("Please disable public access to your Argo CD instance"))
                 .build());
     Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
@@ -189,7 +189,7 @@ public final class ExposedArgoCDDetectorTest {
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(6);
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(8);
   }
 
   @Test
@@ -200,7 +200,7 @@ public final class ExposedArgoCDDetectorTest {
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(5);
   }
 
   private void startMockWebServer(boolean mustHaveForgedCookie) throws IOException {
