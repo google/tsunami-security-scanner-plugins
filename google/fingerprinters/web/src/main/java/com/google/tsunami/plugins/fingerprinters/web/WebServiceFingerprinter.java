@@ -316,4 +316,41 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", pingApiUrl);
     }
   }
+
+  private void checkForZenMl(
+      Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
+    logger.atInfo().log("probing ZenMl ping - custom fingerprint phase");
+
+    // We want to test weak credentials against zenml versions above 2.5 which has basic
+    // authentication module.these versions return a 401 status code and a link to documentation
+    // about how to authenticate.
+    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
+    var pingApiUrl = String.format("http://%s/%s", uriAuthority, "ping");
+    try {
+      HttpResponse apiPingResponse = httpClient.send(get(pingApiUrl).withEmptyHeaders().build());
+
+      if (apiPingResponse.status() != HttpStatus.UNAUTHORIZED
+          || apiPingResponse.bodyString().isEmpty()) {
+        return;
+      }
+
+      if (apiPingResponse
+          .bodyString()
+          .get()
+          .contains(
+              "You are not authenticated. Please see "
+                  + "https://www.zenml.org/docs/latest/auth/index.html"
+                  + "#authenticating-to-zenml "
+                  + "on how to authenticate")) {
+        software.add(
+            DetectedSoftware.builder()
+                .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("zenml").build())
+                .setRootPath(startingUrl)
+                .setContentHashes(ImmutableMap.of())
+                .build());
+      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", pingApiUrl);
+    }
+  }
 }
