@@ -22,7 +22,6 @@ import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAnd
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.Truth;
 import com.google.inject.Guice;
-import com.google.inject.util.Modules;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
