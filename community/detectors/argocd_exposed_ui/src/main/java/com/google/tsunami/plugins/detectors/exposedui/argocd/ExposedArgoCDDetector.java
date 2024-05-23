@@ -259,7 +259,7 @@ public final class ExposedArgoCDDetector implements VulnDetector {
               PAYLOAD_GIT_URL,
               callbackPayload.getPayload(),
               projectName);
-      String createAppUrl = targetUrl + "api/v1/applications";
+      String createAppUrl = targetUrl + "api/v1/applications?upsert=true";
       response =
           httpClient.send(
               post(createAppUrl)
