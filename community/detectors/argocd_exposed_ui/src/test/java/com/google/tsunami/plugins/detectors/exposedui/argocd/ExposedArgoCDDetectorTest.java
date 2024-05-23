@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.exposedui.argocd;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static com.google.tsunami.plugins.detectors.exposedui.argocd.ExposedArgoCDDetector.PAYLOAD_ARGOCD_TOKEN_SESSION;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.Truth;
@@ -211,10 +212,7 @@ public final class ExposedArgoCDDetectorTest {
             // if withAnForgedCookie is True then we should check the forged cookie for all requests
             if (mustHaveForgedCookie
                 && !Objects.equals(
-                    request.getHeaders().get("Cookie"),
-                    "argocd.token="
-                        + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiJ9."
-                        + "TGGTTHuuGpEU8WgobXxkrBtW3NiR3dgw5LR-1DEW3BQ")) {
+                    request.getHeaders().get("Cookie"), PAYLOAD_ARGOCD_TOKEN_SESSION)) {
               return new MockResponse().setResponseCode(403);
             }
             // get an existing model name
