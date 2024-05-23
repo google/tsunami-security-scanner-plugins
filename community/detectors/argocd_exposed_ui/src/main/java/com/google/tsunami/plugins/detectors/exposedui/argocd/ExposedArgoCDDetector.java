@@ -38,17 +38,17 @@ import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
+import com.google.tsunami.plugins.detectors.exposedui.argocd.Annotations.OobSleepDuration;
 import com.google.tsunami.proto.DetectionReport;
-import com.google.tsunami.proto.PayloadGeneratorConfig;
-import com.google.tsunami.proto.DetectionStatus;
-import com.google.tsunami.proto.VulnerabilityId;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionReportList.Builder;
+import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
+import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
@@ -76,6 +76,8 @@ public final class ExposedArgoCDDetector implements VulnDetector {
   private final PayloadGenerator payloadGenerator;
   private final Clock utcClock;
   private final HttpClient httpClient;
+  private final int oobSleepDuration;
+
   // The URL that host the payload as a git repository
   // This url might be changed in the future, so I make it easy to change
   private final String PAYLOAD_GIT_URL = "https://github.com/JamesFoxxx/argo-cd-app";
@@ -100,7 +102,10 @@ public final class ExposedArgoCDDetector implements VulnDetector {
 
   @Inject
   ExposedArgoCDDetector(
-      HttpClient httpClient, @UtcClock Clock utcClock, PayloadGenerator payloadGenerator) {
+      HttpClient httpClient,
+      @UtcClock Clock utcClock,
+      PayloadGenerator payloadGenerator,
+      @OobSleepDuration int oobSleepDuration) {
     this.httpClient =
         checkNotNull(httpClient)
             .modify()
@@ -109,6 +114,7 @@ public final class ExposedArgoCDDetector implements VulnDetector {
             .build();
     this.utcClock = checkNotNull(utcClock);
     this.payloadGenerator = checkNotNull(payloadGenerator);
+    this.oobSleepDuration = oobSleepDuration;
   }
 
   private static final ImmutableSet<String> HTTP_EQUIVALENT_SERVICE_NAMES =
@@ -275,7 +281,7 @@ public final class ExposedArgoCDDetector implements VulnDetector {
                     .build(),
                 networkService);
       }
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(25));
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
       if (callbackPayload.checkIfExecuted()) {
         logger.atInfo().log("Confirmed OOB Payload execution.");
         try {

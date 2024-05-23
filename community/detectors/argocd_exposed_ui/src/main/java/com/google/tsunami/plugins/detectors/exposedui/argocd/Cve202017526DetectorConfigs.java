@@ -13,27 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.google.tsunami.plugins.detectors.exposedui.argocd;
 
-import com.google.inject.Provides;
-import com.google.tsunami.plugin.PluginBootstrapModule;
-import com.google.tsunami.plugins.detectors.exposedui.argocd.Annotations.OobSleepDuration;
+import com.google.tsunami.common.config.annotations.ConfigProperties;
 
-/** A {@link PluginBootstrapModule} for {@link ExposedArgoCDDetector}. */
-public final class ExposedArgoCDDetectorBootstrapModule extends PluginBootstrapModule {
-
-  @Override
-  protected void configurePlugin() {
-    registerPlugin(ExposedArgoCDDetector.class);
-  }
-
-  @Provides
-  @OobSleepDuration
-  int provideOobSleepDuration(ExposedArgoCDDetectorConfigs configs) {
-    if (configs.oobSleepDuration == 0) {
-      return 20;
-    }
-    return configs.oobSleepDuration;
-  }
+@ConfigProperties("plugins.community.detectors.argocd_exposed_ui")
+final class ExposedArgoCDDetectorConfigs {
+  int oobSleepDuration;
 }

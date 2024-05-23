@@ -50,6 +50,7 @@ ext {
     junitVersion = '4.13'
     okhttpVersion = '3.12.0'
     truthVersion = '1.0.1'
+    guiceVersion = '4.2.3'
 }
 
 dependencies {
@@ -59,6 +60,8 @@ dependencies {
     implementation 'com.google.auto.value:auto-value:1.10.4'
 
     testImplementation "junit:junit:${junitVersion}"
+    testImplementation "com.google.inject:guice:${guiceVersion}"
+    testImplementation "com.google.inject.extensions:guice-testlib:${guiceVersion}"
     testImplementation "com.google.truth:truth:${truthVersion}"
     testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
     testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"

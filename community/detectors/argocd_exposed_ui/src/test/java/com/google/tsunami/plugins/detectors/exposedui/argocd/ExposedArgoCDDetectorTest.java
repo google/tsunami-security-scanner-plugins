@@ -22,12 +22,16 @@ import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAnd
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.Truth;
 import com.google.inject.Guice;
+import com.google.inject.testing.fieldbinder.Bind;
+import com.google.inject.testing.fieldbinder.BoundFieldModule;
+import com.google.inject.util.Modules;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
+import com.google.tsunami.plugins.detectors.exposedui.argocd.Annotations.OobSleepDuration;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -43,16 +47,15 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 import javax.inject.Inject;
-
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.junit.Test;
 
 /** Unit tests for {@link ExposedArgoCDDetector}. */
 @RunWith(JUnit4.class)
@@ -75,6 +78,10 @@ public final class ExposedArgoCDDetectorTest {
         }
       };
 
+  @Bind(lazy = true)
+  @OobSleepDuration
+  private int sleepDuration = 1;
+
   private void createInjector() {
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
@@ -83,7 +90,8 @@ public final class ExposedArgoCDDetectorTest {
                 .setCallbackServer(mockCallbackServer)
                 .setSecureRng(testSecureRandom)
                 .build(),
-            new ExposedArgoCDDetectorBootstrapModule())
+            Modules.override(new ExposedArgoCDDetectorBootstrapModule())
+                .with(BoundFieldModule.of(this)))
         .injectMembers(this);
   }
 
@@ -176,6 +184,7 @@ public final class ExposedArgoCDDetectorTest {
   public void detect_ifNotVulnerable_doesNotReportVuln_Exposed_Ui() throws IOException {
     startMockWebServer(false);
     createInjector();
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
