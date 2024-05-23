@@ -284,42 +284,47 @@ public final class ExposedArgoCDDetector implements VulnDetector {
       Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
       if (callbackPayload.checkIfExecuted()) {
         logger.atInfo().log("Confirmed OOB Payload execution.");
-        try {
-          // 4. Try to delete the new application which was for testing purpose
-          String deleteAppUrl =
-              targetUrl
-                  + "api/v1/applications/tsunami-security-scanner?cascade=true&"
-                  + "propagationPolicy=foreground&appNamespace=argocd";
-          response =
-              httpClient.send(
-                  delete(deleteAppUrl)
-                      .setHeaders(baseHeaders.addHeader("Content-Type", "application/json").build())
-                      .setRequestBody(ByteString.copyFromUtf8("{}"))
-                      .build(),
-                  networkService);
-          // same as last comment about redirection
-          if (response.status().isRedirect()
-              && response.headers().get("Location").orElse(null) != null) {
-            logger.atInfo().log("redirect to %s", response.headers().get("Location"));
-            httpClient.send(
-                delete(response.headers().get("Location").get())
-                    .setHeaders(baseHeaders.addHeader("Content-Type", "application/json").build())
-                    .setRequestBody(ByteString.copyFromUtf8("{}"))
-                    .build(),
-                networkService);
-          }
-        } catch (IOException e) {
-          logger.atWarning().withCause(e).log("Unable to delete application.");
-          // But return true, because we had received a successful OOB response.
-          return true;
-        }
+        deleteTestApplicationRequest(networkService, baseHeaders, targetUrl);
         return true;
       }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUrl);
+      deleteTestApplicationRequest(networkService, baseHeaders, targetUrl);
       return false;
     }
+    deleteTestApplicationRequest(networkService, baseHeaders, targetUrl);
     return false;
+  }
+
+  private void deleteTestApplicationRequest(
+      NetworkService networkService, HttpHeaders.Builder baseHeaders, String targetUrl) {
+    try {
+      logger.atInfo().log("Try to delete the new application which was for testing purpose.");
+      String deleteAppUrl =
+          targetUrl
+              + "api/v1/applications/tsunami-security-scanner?cascade=true&"
+              + "propagationPolicy=foreground&appNamespace=argocd";
+      HttpResponse response =
+          httpClient.send(
+              delete(deleteAppUrl)
+                  .setHeaders(baseHeaders.addHeader("Content-Type", "application/json").build())
+                  .setRequestBody(ByteString.copyFromUtf8("{}"))
+                  .build(),
+              networkService);
+      // same as last comment about redirection
+      if (response.status().isRedirect()
+          && response.headers().get("Location").orElse(null) != null) {
+        logger.atInfo().log("redirect to %s", response.headers().get("Location"));
+        httpClient.send(
+            delete(response.headers().get("Location").get())
+                .setHeaders(baseHeaders.addHeader("Content-Type", "application/json").build())
+                .setRequestBody(ByteString.copyFromUtf8("{}"))
+                .build(),
+            networkService);
+      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to delete application.");
+    }
   }
 
   private Payload getTsunamiCallbackHttpPayload() {
