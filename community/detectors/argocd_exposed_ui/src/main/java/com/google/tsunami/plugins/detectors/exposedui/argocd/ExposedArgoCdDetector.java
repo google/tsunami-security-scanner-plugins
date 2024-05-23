@@ -26,6 +26,7 @@ import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
@@ -56,7 +57,7 @@ import java.time.Duration;
 import java.time.Instant;
 import javax.inject.Inject;
 
-/** A {@link VulnDetector} that detects exposed ArgoCD instances. */
+/** A {@link VulnDetector} that detects exposed ArgoCD API server. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
 
@@ -66,12 +67,12 @@ import javax.inject.Inject;
 
     // detailed description of the plugin
     description =
-        "This plugin detects exposed and misconfigured ArgoCD instances."
-            + "Exposed Argo CD instances allow attackers to access kubernetes clusters."
+        "This plugin detects exposed and misconfigured ArgoCD API server."
+            + "Exposed Argo CD API servers allow attackers to access kubernetes clusters."
             + "Attackers can change parameters of clusters and possibly compromise it.",
     author = "JamesFoxxx",
-    bootstrapModule = ExposedArgoCDDetectorBootstrapModule.class)
-public final class ExposedArgoCDDetector implements VulnDetector {
+    bootstrapModule = ExposedArgoCdApiDetectorBootstrapModule.class)
+public final class ExposedArgoCdDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final PayloadGenerator payloadGenerator;
@@ -109,7 +110,7 @@ public final class ExposedArgoCDDetector implements VulnDetector {
           + "\"selfHeal\":false}}}}";
 
   @Inject
-  ExposedArgoCDDetector(
+  ExposedArgoCdDetector(
       HttpClient httpClient,
       @UtcClock Clock utcClock,
       PayloadGenerator payloadGenerator,
@@ -134,7 +135,7 @@ public final class ExposedArgoCDDetector implements VulnDetector {
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
-    logger.atInfo().log("Starting exposed Argo CD instances detection.");
+    logger.atInfo().log("Starting exposed Argo CD API servers detection by out-of-band bacllback.");
 
     Builder detectionReport = DetectionReportList.newBuilder();
     matchedServices.stream()
@@ -146,27 +147,31 @@ public final class ExposedArgoCDDetector implements VulnDetector {
         // check if it is vulnerable to CVE-2022-29165
         .forEach(
             networkService -> {
-              if (isServicePubliclyExposed(networkService)) {
-                // Argo CD instance is exposed publicly without any authentication
+              if (isServicePubliclyExposed(networkService, true)) {
+                // Argo CD API server is exposed publicly without any authentication
                 detectionReport.addDetectionReports(
                     buildDetectionReport(
                         targetInfo,
                         networkService,
-                        "Argo CD instance is misconfigured."
-                            + "The instance is not authenticated."
-                            + "All applications can be accessed by public and therefore can"
-                            + " be modified. Results in instance being compromised.",
-                        "Please disable public access to your Argo CD instance"));
-              } else if (isServiceVulnerableToAuthBypass(networkService)) {
-                // Argo CD instance is vulnerable to CVE-2022-29165
+                        "Argo CD API server is misconfigured."
+                            + "The API server is not authenticated."
+                            + "All applications can be accessed by the public and therefore can be "
+                            + "modified resulting in all application instances being compromised."
+                            + " There is no way to execute OS commands from Argo CD UI"
+                            + " so far.",
+                        "Please disable public access to your Argo CD API server."));
+              } else if (isServiceVulnerableToAuthBypass(networkService, true)) {
+                // Argo CD API server is vulnerable to CVE-2022-29165
                 detectionReport.addDetectionReports(
                     buildDetectionReport(
                         targetInfo,
                         networkService,
-                        "Argo CD instance is vulnerable to CVE-2022-29165."
+                        "Argo CD API server is vulnerable to CVE-2022-29165."
                             + "The authentication can be bypassed"
                             + "All applications can be accessed by public and therefore can"
-                            + " be modified. Results in instance being compromised.",
+                            + " be modified resulting in all application instances being "
+                            + "compromised. There is no way to execute OS commands from Argo CD UI"
+                            + " so far.",
                         "Patched versions are 2.1.15, and 2.3.4, and 2.2.9, and"
                             + " 2.1.15. Please update Argo CD to these versions and higher."));
               }
@@ -179,16 +184,52 @@ public final class ExposedArgoCDDetector implements VulnDetector {
         || HTTP_EQUIVALENT_SERVICE_NAMES.contains(networkService.getServiceName());
   }
 
-  /** Checks if a {@link NetworkService} has a misconfigured ArgoCD instances exposed. */
-  private boolean isServicePubliclyExposed(NetworkService networkService) {
-    return checkExposedArgoCdWithOutOfBandCallback(networkService, HttpHeaders.builder());
+  /** Checks if a {@link NetworkService} has a misconfigured ArgoCD API server exposed. */
+  private boolean isServicePubliclyExposed(
+      NetworkService networkService, boolean useOutOfBandCallBack) {
+    if (useOutOfBandCallBack) {
+      return checkExposedArgoCdWithOutOfBandCallback(networkService, HttpHeaders.builder());
+    } else {
+      return checkExposedArgoCdWithResponseMatching(networkService, HttpHeaders.builder());
+    }
   }
 
-  /** Checks if a {@link NetworkService} has a vulnerable ArgoCD instances to CVE-2022-29165. */
-  private boolean isServiceVulnerableToAuthBypass(NetworkService networkService) {
+  /** Checks if a {@link NetworkService} has a vulnerable ArgoCD API server to CVE-2022-29165. */
+  private boolean isServiceVulnerableToAuthBypass(
+      NetworkService networkService, boolean useOutOfBandCallBack) {
     HttpHeaders.Builder cookieHeader =
         HttpHeaders.builder().addHeader("Cookie", PAYLOAD_ARGOCD_TOKEN_SESSION);
-    return checkExposedArgoCdWithOutOfBandCallback(networkService, cookieHeader);
+    if (useOutOfBandCallBack) {
+      return checkExposedArgoCdWithOutOfBandCallback(networkService, cookieHeader);
+    } else {
+      return checkExposedArgoCdWithResponseMatching(networkService, cookieHeader);
+    }
+  }
+
+  private boolean checkExposedArgoCdWithResponseMatching(
+      NetworkService networkService, HttpHeaders.Builder baseHeaders) {
+    logger.atInfo().log("Starting exposed Argo CD API servers detection by response matching.");
+    // the target URL of the target is built
+    String targetUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+
+    String targetUri = targetUrl + "api/v1/info";
+    logger.atInfo().log("targetUri is %s", targetUri);
+    try {
+      // This is a blocking call.
+      HttpResponse response =
+          httpClient.send(get(targetUri).setHeaders(baseHeaders.build()).build(), networkService);
+      logger.atInfo().log("the response is %s", response);
+      return response.status().isSuccess()
+          && response.bodyString().isPresent()
+          && response.bodyString().get().contains("managedNamespace");
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
+      return false;
+    } catch (JsonSyntaxException e) {
+      logger.atWarning().withCause(e).log(
+          "JSON syntax error occurred parsing response for target URI: '%s'.", targetUri);
+      return false;
+    }
   }
 
   private boolean checkExposedArgoCdWithOutOfBandCallback(
@@ -361,9 +402,9 @@ public final class ExposedArgoCDDetector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("ARGOCD_INSTANCE_EXPOSED"))
+                        .setValue("ARGOCD_API_SERVER_EXPOSED"))
                 .setSeverity(Severity.CRITICAL)
-                .setTitle("Argo CD instance Exposed")
+                .setTitle("Argo CD API server Exposed")
                 .setDescription(description)
                 .setRecommendation(recommendation))
         .build();

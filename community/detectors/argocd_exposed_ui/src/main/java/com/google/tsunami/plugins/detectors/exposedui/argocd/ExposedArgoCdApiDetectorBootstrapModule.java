@@ -20,12 +20,12 @@ import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
 import com.google.tsunami.plugins.detectors.exposedui.argocd.Annotations.OobSleepDuration;
 
-/** A {@link PluginBootstrapModule} for {@link ExposedArgoCDDetector}. */
-public final class ExposedArgoCDDetectorBootstrapModule extends PluginBootstrapModule {
+/** A {@link PluginBootstrapModule} for {@link ExposedArgoCdDetector}. */
+public final class ExposedArgoCdApiDetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    registerPlugin(ExposedArgoCDDetector.class);
+    registerPlugin(ExposedArgoCdDetector.class);
   }
 
   @Provides

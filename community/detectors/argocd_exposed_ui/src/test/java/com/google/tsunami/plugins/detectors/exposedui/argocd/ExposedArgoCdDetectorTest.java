@@ -18,7 +18,7 @@ package com.google.tsunami.plugins.detectors.exposedui.argocd;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.exposedui.argocd.ExposedArgoCDDetector.PAYLOAD_ARGOCD_TOKEN_SESSION;
+import static com.google.tsunami.plugins.detectors.exposedui.argocd.ExposedArgoCdDetector.PAYLOAD_ARGOCD_TOKEN_SESSION;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.Truth;
@@ -58,16 +58,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.Test;
 
-/** Unit tests for {@link ExposedArgoCDDetector}. */
+/** Unit tests for {@link ExposedArgoCdDetector}. */
 @RunWith(JUnit4.class)
-public final class ExposedArgoCDDetectorTest {
+public final class ExposedArgoCdDetectorTest {
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2024-12-03T00:00:00.00Z"));
 
   private final MockWebServer mockTargetService = new MockWebServer();
   private final MockWebServer mockCallbackServer = new MockWebServer();
 
-  @Inject private ExposedArgoCDDetector detector;
+  @Inject private ExposedArgoCdDetector detector;
 
   TargetInfo targetInfo;
   NetworkService targetNetworkService;
@@ -91,7 +91,7 @@ public final class ExposedArgoCDDetectorTest {
                 .setCallbackServer(mockCallbackServer)
                 .setSecureRng(testSecureRandom)
                 .build(),
-            Modules.override(new ExposedArgoCDDetectorBootstrapModule())
+            Modules.override(new ExposedArgoCdApiDetectorBootstrapModule())
                 .with(BoundFieldModule.of(this)))
         .injectMembers(this);
   }
@@ -129,14 +129,16 @@ public final class ExposedArgoCDDetectorTest {
                         .setMainId(
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("ARGOCD_INSTANCE_EXPOSED"))
+                                .setValue("ARGOCD_API_SERVER_EXPOSED"))
                         .setSeverity(Severity.CRITICAL)
-                        .setTitle("Argo CD instance Exposed")
+                        .setTitle("Argo CD API server Exposed")
                         .setDescription(
-                            "Argo CD instance is vulnerable to CVE-2022-29165."
+                            "Argo CD API server is vulnerable to CVE-2022-29165."
                                 + "The authentication can be bypassed"
                                 + "All applications can be accessed by public and therefore can"
-                                + " be modified. Results in instance being compromised.")
+                                + " be modified resulting in all application instances being "
+                                + "compromised. There is no way to execute OS commands from Argo CD UI"
+                                + " so far.")
                         .setRecommendation(
                             "Patched versions are 2.1.15, and 2.3.4, and 2.2.9, and"
                                 + " 2.1.15. Please update Argo CD to these versions and higher."))
@@ -167,15 +169,18 @@ public final class ExposedArgoCDDetectorTest {
                         .setMainId(
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("ARGOCD_INSTANCE_EXPOSED"))
+                                .setValue("ARGOCD_API_SERVER_EXPOSED"))
                         .setSeverity(Severity.CRITICAL)
-                        .setTitle("Argo CD instance Exposed")
+                        .setTitle("Argo CD API server Exposed")
                         .setDescription(
-                            "Argo CD instance is misconfigured."
-                                + "The instance is not authenticated."
-                                + "All applications can be accessed by public and therefore can"
-                                + " be modified. Results in instance being compromised.")
-                        .setRecommendation("Please disable public access to your Argo CD instance"))
+                            "Argo CD API server is misconfigured."
+                                + "The API server is not authenticated."
+                                + "All applications can be accessed by the public and therefore can be "
+                                + "modified resulting in all application instances being compromised."
+                                + " There is no way to execute OS commands from Argo CD UI"
+                                + " so far.")
+                        .setRecommendation(
+                            "Please disable public access to your Argo CD API server."))
                 .build());
     Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
