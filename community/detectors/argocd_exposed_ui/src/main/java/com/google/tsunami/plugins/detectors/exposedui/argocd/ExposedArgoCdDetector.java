@@ -148,30 +148,63 @@ public final class ExposedArgoCdDetector implements VulnDetector {
         .forEach(
             networkService -> {
               if (isServicePubliclyExposed(networkService, true)) {
-                // Argo CD API server is exposed publicly without any authentication
+                // Argo CD API server is exposed publicly without any authentication, and it is
+                // confirmed by receiving an out-of-band callback
+                detectionReport.addDetectionReports(
+                    buildDetectionReport(
+                        targetInfo,
+                        networkService,
+                        "Argo CD API server is misconfigured. "
+                            + "The API server is not authenticated. "
+                            + "All applications can be accessed by the public and therefore can be "
+                            + "modified resulting in all application instances being compromised. "
+                            + "The Argo CD UI does not support executing OS commands "
+                            + "in the hosting machine at this time. "
+                            + "We detected this vulnerable Argo CD API server by creating "
+                            + "a test application and receiving out-of-band callback",
+                        "Please disable public access to your Argo CD API server."));
+              } else if (isServiceVulnerableToAuthBypass(networkService, true)) {
+                // Argo CD API server is vulnerable to CVE-2022-29165, and it is confirmed by
+                // receiving an out-of-band callback
+                detectionReport.addDetectionReports(
+                    buildDetectionReport(
+                        targetInfo,
+                        networkService,
+                        "Argo CD API server is vulnerable to CVE-2022-29165."
+                            + "The authentication of Argo CD API server can be bypassed and "
+                            + "All applications can be accessed by public and therefore can "
+                            + "be modified resulting in all application instances being compromised. "
+                            + "The Argo CD UI does not support executing OS commands "
+                            + "in the hosting machine at this time. "
+                            + "We detected this vulnerable Argo CD API server by receiving a "
+                            + "HTTP response from an endpoint that needs authentication",
+                        "Patched versions are 2.1.15, and 2.3.4, and 2.2.9, and"
+                            + " 2.1.15. Please update Argo CD to these versions and higher."));
+              } else if (isServicePubliclyExposed(networkService, false)) {
+                // Argo CD API server is exposed publicly without any authentication, and it is
+                // confirmed by receiving matching a http response body
                 detectionReport.addDetectionReports(
                     buildDetectionReport(
                         targetInfo,
                         networkService,
                         "Argo CD API server is misconfigured."
                             + "The API server is not authenticated."
-                            + "All applications can be accessed by the public and therefore can be "
-                            + "modified resulting in all application instances being compromised."
-                            + " There is no way to execute OS commands from Argo CD UI"
-                            + " so far.",
+                            + "We can't confirm that this API server has an admin role because we "
+                            + "can't create a new application and receive an out-of-band callback from it, "
+                            + "but we are able to receive some endpoint data without authentication",
                         "Please disable public access to your Argo CD API server."));
-              } else if (isServiceVulnerableToAuthBypass(networkService, true)) {
-                // Argo CD API server is vulnerable to CVE-2022-29165
+              } else if (isServiceVulnerableToAuthBypass(networkService, false)) {
+                // Argo CD API server is vulnerable to CVE-2022-29165, and it is
+                // confirmed by receiving matching a http response body
                 detectionReport.addDetectionReports(
                     buildDetectionReport(
                         targetInfo,
                         networkService,
                         "Argo CD API server is vulnerable to CVE-2022-29165."
-                            + "The authentication can be bypassed"
-                            + "All applications can be accessed by public and therefore can"
-                            + " be modified resulting in all application instances being "
-                            + "compromised. There is no way to execute OS commands from Argo CD UI"
-                            + " so far.",
+                            + "The authentication can be bypassed. "
+                            + "We can't confirm that this API server has an admin role because we "
+                            + "can't create a new application and receive an out-of-band callback from it, "
+                            + "but we are able to receive some endpoint data without authentication",
                         "Patched versions are 2.1.15, and 2.3.4, and 2.2.9, and"
                             + " 2.1.15. Please update Argo CD to these versions and higher."));
               }
@@ -212,7 +245,7 @@ public final class ExposedArgoCdDetector implements VulnDetector {
     // the target URL of the target is built
     String targetUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
 
-    String targetUri = targetUrl + "api/v1/info";
+    String targetUri = targetUrl + "api/v1/certificates";
     logger.atInfo().log("targetUri is %s", targetUri);
     try {
       // This is a blocking call.
@@ -221,7 +254,8 @@ public final class ExposedArgoCdDetector implements VulnDetector {
       logger.atInfo().log("the response is %s", response);
       return response.status().isSuccess()
           && response.bodyString().isPresent()
-          && response.bodyString().get().contains("managedNamespace");
+          && response.bodyString().get().contains("\"items\"")
+          && response.bodyString().get().contains("\"metadata\"");
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
       return false;

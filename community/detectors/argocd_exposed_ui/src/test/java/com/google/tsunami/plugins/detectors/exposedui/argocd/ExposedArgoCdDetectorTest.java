@@ -108,8 +108,8 @@ public final class ExposedArgoCdDetectorTest {
   }
 
   @Test
-  public void detect_whenVulnerable_returnsVulnerability_Cve202229165() throws IOException {
-    startMockWebServer(true);
+  public void detect_whenVulnerable_returnsVulnerability_Cve202229165_Oob() throws IOException {
+    startMockWebServerForTestingWithOob(true);
     createInjector();
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
@@ -134,11 +134,13 @@ public final class ExposedArgoCdDetectorTest {
                         .setTitle("Argo CD API server Exposed")
                         .setDescription(
                             "Argo CD API server is vulnerable to CVE-2022-29165."
-                                + "The authentication can be bypassed"
-                                + "All applications can be accessed by public and therefore can"
-                                + " be modified resulting in all application instances being "
-                                + "compromised. There is no way to execute OS commands from Argo CD UI"
-                                + " so far.")
+                                + "The authentication of Argo CD API server can be bypassed and "
+                                + "All applications can be accessed by public and therefore can "
+                                + "be modified resulting in all application instances being compromised. "
+                                + "The Argo CD UI does not support executing OS commands "
+                                + "in the hosting machine at this time. "
+                                + "We detected this vulnerable Argo CD API server by receiving a "
+                                + "HTTP response from an endpoint that needs authentication")
                         .setRecommendation(
                             "Patched versions are 2.1.15, and 2.3.4, and 2.2.9, and"
                                 + " 2.1.15. Please update Argo CD to these versions and higher."))
@@ -148,8 +150,48 @@ public final class ExposedArgoCdDetectorTest {
   }
 
   @Test
-  public void detect_whenVulnerable_returnsVulnerability_Exposed_Ui() throws IOException {
-    startMockWebServer(false);
+  public void detect_whenVulnerable_returnsVulnerability_Cve202229165_Resp_Matching()
+      throws IOException {
+    startMockWebServerForTestingWithResponseMatching(true);
+    createInjector();
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList())
+        .containsExactly(
+            DetectionReport.newBuilder()
+                .setTargetInfo(targetInfo)
+                .setNetworkService(targetNetworkService)
+                .setDetectionTimestamp(
+                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                .setVulnerability(
+                    Vulnerability.newBuilder()
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("TSUNAMI_COMMUNITY")
+                                .setValue("ARGOCD_API_SERVER_EXPOSED"))
+                        .setSeverity(Severity.CRITICAL)
+                        .setTitle("Argo CD API server Exposed")
+                        .setDescription(
+                            "Argo CD API server is vulnerable to CVE-2022-29165."
+                                + "The authentication can be bypassed. "
+                                + "We can't confirm that this API server has an admin role because we "
+                                + "can't create a new application and receive an out-of-band callback from it, "
+                                + "but we are able to receive some endpoint data without authentication")
+                        .setRecommendation(
+                            "Patched versions are 2.1.15, and 2.3.4, and 2.2.9, and"
+                                + " 2.1.15. Please update Argo CD to these versions and higher."))
+                .build());
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
+    Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(0);
+  }
+
+  @Test
+  public void detect_whenVulnerable_returnsVulnerability_Exposed_Ui_Oob() throws IOException {
+    startMockWebServerForTestingWithOob(false);
     createInjector();
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
@@ -173,12 +215,14 @@ public final class ExposedArgoCdDetectorTest {
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Argo CD API server Exposed")
                         .setDescription(
-                            "Argo CD API server is misconfigured."
-                                + "The API server is not authenticated."
+                            "Argo CD API server is misconfigured. "
+                                + "The API server is not authenticated. "
                                 + "All applications can be accessed by the public and therefore can be "
-                                + "modified resulting in all application instances being compromised."
-                                + " There is no way to execute OS commands from Argo CD UI"
-                                + " so far.")
+                                + "modified resulting in all application instances being compromised. "
+                                + "The Argo CD UI does not support executing OS commands "
+                                + "in the hosting machine at this time. "
+                                + "We detected this vulnerable Argo CD API server by creating "
+                                + "a test application and receiving out-of-band callback")
                         .setRecommendation(
                             "Please disable public access to your Argo CD API server."))
                 .build());
@@ -187,29 +231,69 @@ public final class ExposedArgoCdDetectorTest {
   }
 
   @Test
+  public void detect_whenVulnerable_returnsVulnerability_Exposed_Ui_Resp_Matching()
+      throws IOException {
+    startMockWebServerForTestingWithResponseMatching(false);
+    createInjector();
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList())
+        .containsExactly(
+            DetectionReport.newBuilder()
+                .setTargetInfo(targetInfo)
+                .setNetworkService(targetNetworkService)
+                .setDetectionTimestamp(
+                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                .setVulnerability(
+                    Vulnerability.newBuilder()
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("TSUNAMI_COMMUNITY")
+                                .setValue("ARGOCD_API_SERVER_EXPOSED"))
+                        .setSeverity(Severity.CRITICAL)
+                        .setTitle("Argo CD API server Exposed")
+                        .setDescription(
+                            "Argo CD API server is misconfigured."
+                                + "The API server is not authenticated."
+                                + "We can't confirm that this API server has an admin role because we "
+                                + "can't create a new application and receive an out-of-band callback from it, "
+                                + "but we are able to receive some endpoint data without authentication")
+                        .setRecommendation(
+                            "Please disable public access to your Argo CD API server."))
+                .build());
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(3);
+    Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(0);
+  }
+
+  @Test
   public void detect_ifNotVulnerable_doesNotReportVuln_Exposed_Ui() throws IOException {
-    startMockWebServer(false);
+    startMockWebServerForTestingWithOob(false);
     createInjector();
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(8);
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(10);
   }
 
   @Test
   public void detect_ifNotVulnerable_doesNotReportVuln_Cve202229165() throws IOException {
-    startMockWebServer(true);
+    startMockWebServerAlwaysReturn403();
     createInjector();
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(5);
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
   }
 
-  private void startMockWebServer(boolean mustHaveForgedCookie) throws IOException {
+  private void startMockWebServerForTestingWithOob(boolean mustHaveForgedCookie)
+      throws IOException {
     final Dispatcher dispatcher =
         new Dispatcher() {
           @Override
@@ -260,6 +344,70 @@ public final class ExposedArgoCdDetectorTest {
               }
             }
             return new MockResponse().setBody("[{}]").setResponseCode(200);
+          }
+        };
+    mockTargetService.setDispatcher(dispatcher);
+    mockTargetService.start();
+    mockTargetService.url("/");
+
+    targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
+            .addSupportedHttpMethods("POST")
+            .build();
+    targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
+            .build();
+  }
+
+  private void startMockWebServerForTestingWithResponseMatching(boolean mustHaveForgedCookie)
+      throws IOException {
+    final Dispatcher dispatcher =
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            // if withAnForgedCookie is True then we should check the forged cookie for all requests
+            if (mustHaveForgedCookie
+                && !Objects.equals(
+                    request.getHeaders().get("Cookie"), PAYLOAD_ARGOCD_TOKEN_SESSION)) {
+              return new MockResponse().setResponseCode(403);
+            }
+            // get an existing model name
+            if (Objects.equals(request.getPath(), "/api/v1/certificates")
+                && request.getMethod().equals("GET")) {
+              return new MockResponse()
+                  .setBody(
+                      "{\"metadata\":{},\"items\":[{\"serverName\":\"github.com\",\"certType\":"
+                          + "\"ssh\",\"certSubType\":\"ecdsa-sha2-nistp256\",\"certData\":null,\"certInfo\":\"SHA256:p2QAMXNIC1TJYWeIOttrVc98/R1BUFWu3/LiyKgUfQM\"}]}")
+                  .setResponseCode(200);
+            }
+            return new MockResponse().setResponseCode(403);
+          }
+        };
+    mockTargetService.setDispatcher(dispatcher);
+    mockTargetService.start();
+    mockTargetService.url("/");
+
+    targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
+            .addSupportedHttpMethods("POST")
+            .build();
+    targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
+            .build();
+  }
+
+  private void startMockWebServerAlwaysReturn403() throws IOException {
+    final Dispatcher dispatcher =
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            return new MockResponse().setResponseCode(403);
           }
         };
     mockTargetService.setDispatcher(dispatcher);
