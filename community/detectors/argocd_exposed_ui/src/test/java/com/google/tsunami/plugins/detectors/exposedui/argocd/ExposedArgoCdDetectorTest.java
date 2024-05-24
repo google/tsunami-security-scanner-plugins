@@ -173,7 +173,7 @@ public final class ExposedArgoCdDetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("ARGOCD_API_SERVER_EXPOSED"))
-                        .setSeverity(Severity.CRITICAL)
+                        .setSeverity(Severity.HIGH)
                         .setTitle("Argo CD API server Exposed")
                         .setDescription(
                             "Argo CD API server is vulnerable to CVE-2022-29165."
@@ -254,7 +254,7 @@ public final class ExposedArgoCdDetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("ARGOCD_API_SERVER_EXPOSED"))
-                        .setSeverity(Severity.CRITICAL)
+                        .setSeverity(Severity.HIGH)
                         .setTitle("Argo CD API server Exposed")
                         .setDescription(
                             "Argo CD API server is misconfigured."
