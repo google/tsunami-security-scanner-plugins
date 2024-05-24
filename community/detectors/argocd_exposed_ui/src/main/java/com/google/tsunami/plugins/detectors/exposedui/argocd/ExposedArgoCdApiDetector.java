@@ -299,7 +299,7 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
                 .get("name")
                 .getAsString();
       } catch (IllegalStateException | NullPointerException | JsonParseException e) {
-        logger.atWarning().withCause(e).log("Unable to query '%s'.", projectsUrl);
+        logger.atWarning().withCause(e).log("The application does not appear to be vulnerable");
         return false;
       }
 
@@ -322,7 +322,7 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
                 .get("server")
                 .getAsString();
       } catch (IllegalStateException | NullPointerException | JsonParseException e) {
-        logger.atWarning().withCause(e).log("Unable to query '%s'.", clusterName);
+        logger.atWarning().withCause(e).log("The application does not appear to be vulnerable");
         return false;
       }
 
