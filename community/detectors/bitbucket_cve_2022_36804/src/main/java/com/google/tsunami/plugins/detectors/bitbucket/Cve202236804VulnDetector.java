@@ -49,19 +49,16 @@ import java.util.regex.Pattern;
                         + "including 7.0.0 and newer are affected, this means that all "
                         + "instances that are running any versions between 7.0.0 and "
                         + "8.3.0 inclusive can be exploited by this vulnerability.",
-        author = "SuperX.SIR",
+        author = "SuperX (SuperX.SIR@proton.me)",
         bootstrapModule = Cve202236804DetectorBootstrapModule.class)
 public class Cve202236804VulnDetector implements VulnDetector {
 
     private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-
-    private final HttpClient httpClient;
-
-    private final Clock utcClock;
     private static final String GET_ALL_PUB_PATH =
             "repos?visibility=public";
     private static final String STRING_PUB_REP = "Public Repositories";
-
+    private final HttpClient httpClient;
+    private final Clock utcClock;
     private final PayloadGenerator payloadGenerator;
 
     @Inject
