@@ -18,7 +18,7 @@ package com.google.tsunami.plugins.detectors.exposedui.argocd;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.exposedui.argocd.ExposedArgoCdDetector.PAYLOAD_ARGOCD_TOKEN_SESSION;
+import static com.google.tsunami.plugins.detectors.exposedui.argocd.ExposedArgoCdApiDetector.PAYLOAD_ARGOCD_TOKEN_SESSION;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.Truth;
@@ -58,16 +58,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.Test;
 
-/** Unit tests for {@link ExposedArgoCdDetector}. */
+/** Unit tests for {@link ExposedArgoCdApiDetector}. */
 @RunWith(JUnit4.class)
-public final class ExposedArgoCdDetectorTest {
+public final class ExposedArgoCdApiDetectorTest {
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2024-12-03T00:00:00.00Z"));
 
   private final MockWebServer mockTargetService = new MockWebServer();
   private final MockWebServer mockCallbackServer = new MockWebServer();
 
-  @Inject private ExposedArgoCdDetector detector;
+  @Inject private ExposedArgoCdApiDetector detector;
 
   TargetInfo targetInfo;
   NetworkService targetNetworkService;
@@ -133,7 +133,7 @@ public final class ExposedArgoCdDetectorTest {
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Argo CD API server Exposed")
                         .setDescription(
-                            "Argo CD API server is vulnerable to CVE-2022-29165."
+                            "Argo CD API server is vulnerable to CVE-2022-29165. "
                                 + "The authentication of Argo CD API server can be bypassed and "
                                 + "All applications can be accessed by public and therefore can "
                                 + "be modified resulting in all application instances being compromised. "
@@ -176,7 +176,7 @@ public final class ExposedArgoCdDetectorTest {
                         .setSeverity(Severity.HIGH)
                         .setTitle("Argo CD API server Exposed")
                         .setDescription(
-                            "Argo CD API server is vulnerable to CVE-2022-29165."
+                            "Argo CD API server is vulnerable to CVE-2022-29165. "
                                 + "The authentication can be bypassed. "
                                 + "We can't confirm that this API server has an admin role because we "
                                 + "can't create a new application and receive an out-of-band callback from it, "
@@ -257,7 +257,7 @@ public final class ExposedArgoCdDetectorTest {
                         .setSeverity(Severity.HIGH)
                         .setTitle("Argo CD API server Exposed")
                         .setDescription(
-                            "Argo CD API server is misconfigured."
+                            "Argo CD API server is misconfigured. "
                                 + "The API server is not authenticated."
                                 + "We can't confirm that this API server has an admin role because we "
                                 + "can't create a new application and receive an out-of-band callback from it, "

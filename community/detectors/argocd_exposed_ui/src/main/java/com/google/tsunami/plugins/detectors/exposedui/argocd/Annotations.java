@@ -24,7 +24,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
-/** Annotation for {@link ExposedArgoCdDetector}. */
+/** Annotation for {@link ExposedArgoCdApiDetector}. */
 final class Annotations {
   @Qualifier
   @Retention(RetentionPolicy.RUNTIME)

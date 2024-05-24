@@ -18,6 +18,6 @@ package com.google.tsunami.plugins.detectors.exposedui.argocd;
 import com.google.tsunami.common.config.annotations.ConfigProperties;
 
 @ConfigProperties("plugins.community.detectors.argocd_exposed_ui")
-final class ExposedArgoCDDetectorConfigs {
+final class ExposedArgoCdApiDetectorConfigs {
   int oobSleepDuration;
 }

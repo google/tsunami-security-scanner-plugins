@@ -74,7 +74,7 @@ import javax.inject.Inject;
             + "Attackers can change parameters of clusters and possibly compromise it.",
     author = "JamesFoxxx",
     bootstrapModule = ExposedArgoCdApiDetectorBootstrapModule.class)
-public final class ExposedArgoCdDetector implements VulnDetector {
+public final class ExposedArgoCdApiDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final PayloadGenerator payloadGenerator;
@@ -112,7 +112,7 @@ public final class ExposedArgoCdDetector implements VulnDetector {
           + "\"selfHeal\":false}}}}";
 
   @Inject
-  ExposedArgoCdDetector(
+  ExposedArgoCdApiDetector(
       HttpClient httpClient,
       @UtcClock Clock utcClock,
       PayloadGenerator payloadGenerator,
@@ -137,7 +137,7 @@ public final class ExposedArgoCdDetector implements VulnDetector {
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
-    logger.atInfo().log("Starting exposed Argo CD API servers detection by out-of-band bacllback.");
+    logger.atInfo().log("Starting exposed Argo CD API servers detection by out-of-band callback.");
 
     Builder detectionReport = DetectionReportList.newBuilder();
     matchedServices.stream()
@@ -173,7 +173,7 @@ public final class ExposedArgoCdDetector implements VulnDetector {
                     buildDetectionReport(
                         targetInfo,
                         networkService,
-                        "Argo CD API server is vulnerable to CVE-2022-29165."
+                        "Argo CD API server is vulnerable to CVE-2022-29165. "
                             + "The authentication of Argo CD API server can be bypassed and "
                             + "All applications can be accessed by public and therefore can "
                             + "be modified resulting in all application instances being compromised. "
@@ -191,7 +191,7 @@ public final class ExposedArgoCdDetector implements VulnDetector {
                     buildDetectionReport(
                         targetInfo,
                         networkService,
-                        "Argo CD API server is misconfigured."
+                        "Argo CD API server is misconfigured. "
                             + "The API server is not authenticated."
                             + "We can't confirm that this API server has an admin role because we "
                             + "can't create a new application and receive an out-of-band callback from it, "
@@ -205,7 +205,7 @@ public final class ExposedArgoCdDetector implements VulnDetector {
                     buildDetectionReport(
                         targetInfo,
                         networkService,
-                        "Argo CD API server is vulnerable to CVE-2022-29165."
+                        "Argo CD API server is vulnerable to CVE-2022-29165. "
                             + "The authentication can be bypassed. "
                             + "We can't confirm that this API server has an admin role because we "
                             + "can't create a new application and receive an out-of-band callback from it, "
