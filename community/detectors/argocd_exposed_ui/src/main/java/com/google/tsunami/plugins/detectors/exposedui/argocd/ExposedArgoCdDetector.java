@@ -17,7 +17,9 @@
 package com.google.tsunami.plugins.detectors.exposedui.argocd;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.tsunami.common.net.http.HttpRequest.*;
+import static com.google.tsunami.common.net.http.HttpRequest.delete;
+import static com.google.tsunami.common.net.http.HttpRequest.get;
+import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
