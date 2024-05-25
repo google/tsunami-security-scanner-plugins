@@ -252,12 +252,10 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
     String targetUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
 
     String targetUri = targetUrl + "api/v1/certificates";
-    logger.atInfo().log("targetUri is %s", targetUri);
     try {
       // This is a blocking call.
       HttpResponse response =
           httpClient.send(get(targetUri).setHeaders(baseHeaders.build()).build(), networkService);
-      logger.atInfo().log("the response is %s", response);
       return response.status().isSuccess()
           && response.bodyString().isPresent()
           && response.bodyString().get().contains("\"items\"")
@@ -299,7 +297,6 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
                 .get("name")
                 .getAsString();
       } catch (IllegalStateException | NullPointerException | JsonParseException e) {
-        logger.atWarning().withCause(e).log("The application does not appear to be vulnerable");
         return false;
       }
 
@@ -322,7 +319,6 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
                 .get("server")
                 .getAsString();
       } catch (IllegalStateException | NullPointerException | JsonParseException e) {
-        logger.atWarning().withCause(e).log("The application does not appear to be vulnerable");
         return false;
       }
 
