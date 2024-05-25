@@ -41,6 +41,7 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.jenkins.JenkinsCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.mlflow.MlFlowCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.mysql.MysqlCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.hive.HiveCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack.NcrackCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.postgres.PostgresCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.rabbitmq.RabbitMQCredentialTester;
@@ -68,6 +69,7 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
     credentialTesterBinder.addBinding().to(JenkinsCredentialTester.class);
     credentialTesterBinder.addBinding().to(MlFlowCredentialTester.class);
     credentialTesterBinder.addBinding().to(MysqlCredentialTester.class);
+    credentialTesterBinder.addBinding().to(HiveCredentialTester.class);
     credentialTesterBinder.addBinding().to(HydraCredentialTester.class);
     credentialTesterBinder.addBinding().to(NcrackCredentialTester.class);
     credentialTesterBinder.addBinding().to(PostgresCredentialTester.class);
