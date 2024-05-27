@@ -117,7 +117,7 @@ public class ZenMlCredentialTesterTest {
   }
 
   @Test
-  public void detect_weakCredentialsExistAndMlflowInForeignLanguage_returnsFirstWeakCredentials()
+  public void detect_weakCredentialsExistAndZenmlInForeignLanguage_returnsFirstWeakCredentials()
       throws Exception {
     startMockWebServer();
     NetworkService targetNetworkService =
@@ -145,7 +145,7 @@ public class ZenMlCredentialTesterTest {
   }
 
   @Test
-  public void detect_nonMlflowService_skips() throws Exception {
+  public void detect_nonZenmlService_skips() throws Exception {
     when(mockConnectionProvider.getConnection(any(), any(), any())).thenReturn(mockConnection);
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
