@@ -27,23 +27,27 @@ import com.google.common.flogger.GoogleLogger;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+import com.google.protobuf.ByteString;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
 import com.google.tsunami.proto.NetworkService;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
+import java.util.Random;
 import javax.inject.Inject;
 
 /** Credential tester specifically for zenml. */
 public final class ZenMlCredentialTester extends CredentialTester {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-  private static final String MLFLOW_SERVICE = "zenml";
+  private static final String ZENML_SERVICE = "zenml";
 
   private final HttpClient httpClient;
 
@@ -64,7 +68,7 @@ public final class ZenMlCredentialTester extends CredentialTester {
 
   @Override
   public boolean canAccept(NetworkService networkService) {
-    return NetworkServiceUtils.getWebServiceName(networkService).equals(MLFLOW_SERVICE);
+    return NetworkServiceUtils.getWebServiceName(networkService).equals(ZENML_SERVICE);
   }
 
   @Override
@@ -85,62 +89,66 @@ public final class ZenMlCredentialTester extends CredentialTester {
   }
 
   private boolean isZenMlAccessible(NetworkService networkService, TestCredential credential) {
-    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
-    var url =
+    logger.atWarning().log(
         String.format(
-            "http://%s/%s?username=%s",
-            uriAuthority, "api/2.0/zenml/users/get", credential.username());
+            "username: %s password: %s", credential.username(), credential.password().orElse("")));
+    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
+    var loginApiUrl = String.format("http://%s/%s", uriAuthority, "api/v1/login");
     try {
-      logger.atInfo().log(
-          "url: %s, username: %s, password: %s",
-          url, credential.username(), credential.password().orElse(""));
-      HttpResponse response = sendRequestWithCredentials(url, credential);
-      return response.status().isSuccess()
-          && response
+      HttpResponse apiLoginResponse =
+          httpClient.send(
+              post(loginApiUrl)
+                  .setHeaders(
+                      HttpHeaders.builder()
+                          .addHeader("Content-Type", "application/x-www-form-urlencoded")
+                          .build())
+                  .setRequestBody(
+                      ByteString.copyFromUtf8(
+                          String.format(
+                              "username=%s&password=%s",
+                              credential.username(), credential.password().orElse(""))))
+                  .build());
+
+      if (apiLoginResponse.status() == HttpStatus.UNAUTHORIZED
+          && apiLoginResponse.bodyString().isPresent()
+          && apiLoginResponse
               .bodyString()
-              .map(ZenMlCredentialTester::bodyContainsSuccessfulUserInfo)
-              .orElse(false);
+              .get()
+              .equals(
+                  "{\"detail\":[\"AuthorizationException\","
+                      + "\"Authentication error: invalid username or password\"]}")) {
+        return false;
+      }
+
+      if (apiLoginResponse.status() == HttpStatus.OK
+          && apiLoginResponse.bodyString().isPresent()
+          && bodyContainsSuccessfulAccessToken(apiLoginResponse.bodyString().get())) {
+        logger.atWarning().log("==============================================");
+        return true;
+      }
+
     } catch (IOException e) {
-      logger.atWarning().withCause(e).log("Unable to query '%s'.", url);
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", loginApiUrl);
       return false;
     }
-  }
-
-  private HttpResponse sendRequestWithCredentials(String url, TestCredential credential)
-      throws IOException {
-    // For testing no-auth configured case, no auth header is passed in
-    if (Strings.isNullOrEmpty(credential.username())
-        && Strings.isNullOrEmpty(credential.password().orElse(""))) {
-      return httpClient.send(post(url).withEmptyHeaders().build());
-    }
-
-    return httpClient.send(
-        get(url)
-            .setHeaders(
-                HttpHeaders.builder()
-                    .addHeader(
-                        "Authorization",
-                        "basic "
-                            + Base64.getEncoder()
-                                .encodeToString(
-                                    (credential.username() + ":" + credential.password().orElse(""))
-                                        .getBytes(UTF_8)))
-                    .build())
-            .build());
+    return false;
   }
 
   /**
-   * A successful authenticated request to the /api/2.0/zenml/users/get?username=admin endpoint
-   * returns a JSON with a root key like the following:
-   * {"user":{"experiment_permissions":[],"id":1,"is_admin":true,"registered_model_permissions":[],
-   * "username":"admin"}}
+   * A successful authenticated request to the /api/v1/login endpoint returns a JSON with a root key
+   * like the following: {"access_token":"An Access
+   * Token","token_type":"bearer","expires_in":null,"refresh_token":null,"scope":null}
    */
-  private static boolean bodyContainsSuccessfulUserInfo(String responseBody) {
+  private static boolean bodyContainsSuccessfulAccessToken(String responseBody) {
     try {
       JsonObject response = JsonParser.parseString(responseBody).getAsJsonObject();
 
-      if (response.has("user")) {
-        logger.atInfo().log("Successfully received a zenml user info");
+      if (response.has("access_token")
+          && response.has("token_type")
+          && response.has("refresh_token")
+          && response.has("scope")
+          && response.has("expires_in")) {
+        logger.atInfo().log("Successfully logged in as a zenml user");
         return true;
       } else {
         return false;
