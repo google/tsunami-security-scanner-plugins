@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
@@ -31,17 +30,12 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Key;
 import com.google.inject.multibindings.OptionalBinder;
-import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.Timestamps;
-import com.google.tsunami.callbackserver.proto.PollingResult;
-import com.google.tsunami.common.net.http.HttpStatus;
-import com.google.tsunami.common.net.http.HttpRequest;
-import com.google.tsunami.common.net.http.HttpHeaders;
-import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
+import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -59,11 +53,12 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.net.SocketFactory;
 
-import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import org.apache.activemq.util.MarshallingSupport;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -142,10 +137,7 @@ public final class Cve202346604DetectorTest {
             .setSoftware(Software.newBuilder().setName("ActiveMQ"))
             .build();
     TargetInfo targetInfo = TargetInfo.getDefaultInstance();
-    PollingResult log = PollingResult.newBuilder().setHasHttpInteraction(true).build();
-    String body = JsonFormat.printer().preservingProtoFieldNames().print(log);
-    mockCallbackServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(body));
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
 
@@ -202,6 +194,23 @@ public final class Cve202346604DetectorTest {
     TargetInfo targetInfo = TargetInfo.getDefaultInstance();
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_whenNotVulnerable_returnVersionNotMatch() throws Exception {
+    OutputStream os = new ByteArrayOutputStream();
+    DataOutputStream dos = new DataOutputStream(os);
+    dos.write(new byte[22]);
+    MarshallingSupport.marshalPrimitiveMap(Map.of("ProviderVersion", "5.15.17"), dos);
+    configureMockSocket(os.toString());
+    NetworkService service =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(forIpAndPort("127.0.0.1", 1234))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setSoftware(Software.newBuilder().setName("ActiveMQ"))
+            .build();
+    TargetInfo targetInfo = TargetInfo.getDefaultInstance();
+    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
 

