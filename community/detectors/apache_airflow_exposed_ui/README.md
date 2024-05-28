@@ -1,12 +1,8 @@
-# Apache Airflow CVE-2020-17526 Detector
+# Exposed Apache Airflow Detector
 
-This plugin for Tsunami detects a remote code execution (RCE) vulnerability in a
-default DAG of apache airflow UI with the help of CVE-2020-17526, which is an
-authentication bypass vulnerability.
-
-More information on the vulnerability:
-
-*   [CVE-2020-17526](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-17526)
+This plugin for Tsunami detects publicly exposed apache airflow instances.
+First it tries to receive a callback to the tsunami callback server and if it failed, it sends an HTTP request to an API
+endpoint to match the response with a pattern.
 
 ## Build jar file for this plugin
 

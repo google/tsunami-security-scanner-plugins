@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'Tsunami detector for CVE-2020-17526.'
+description = 'Tsunami detector for exposed apache airflow server.'
 group = 'com.google.tsunami'
 version = '0.0.1-SNAPSHOT'
 
