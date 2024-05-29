@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.cves.cve20231177;
+package com.google.tsunami.plugins.detectors.cves.cve20236977;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -50,15 +50,15 @@ import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
 
-/** A {@link VulnDetector} that detects the CVE-2023-1177 vulnerability. */
+/** A {@link VulnDetector} that detects the CVE-2023-6977 vulnerability. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "MLflow LFI/RFI CVE-2023-1177 Detector",
-    version = "0.1",
-    description = Cve20231177Detector.VULN_DESCRIPTION,
-    author = "hh-hunter",
-    bootstrapModule = Cve20231177DetectorBootstrapModule.class)
-public final class Cve20231177Detector implements VulnDetector {
+    name = "MLflow LFI/RFI CVE-2023-6977 Detector",
+    version = "0.2",
+    description = Cve20236977Detector.VULN_DESCRIPTION,
+    author = "hh-hunter & frkngksl",
+    bootstrapModule = Cve20236977DetectorBootstrapModule.class)
+public final class Cve20236977Detector implements VulnDetector {
 
   @VisibleForTesting static final String DETECTION_STRING = "root:x:0:0:root";
   @VisibleForTesting static final String CREATE_DETECTION_STRING = "Tsunami-Test";
@@ -72,7 +72,9 @@ public final class Cve20231177Detector implements VulnDetector {
           + " host server, including any files stored in remote locations to which the host server"
           + " has access.This vulnerability can read arbitrary files. Since MLflow usually"
           + " configures s3 storage, it means that AWS account information can also be obtained,"
-          + " and information such as local ssh private keys can also be read, resulting in RCE";
+          + " and information such as local ssh private keys can also be read, resulting in RCE."
+          + " The vulnerability detected here is CVE-2023-6977 which is a bypass for both"
+          + " CVE-2023-1177 and CVE-2023-2780. Hence, this plugin encompasses them.";
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
@@ -88,14 +90,14 @@ public final class Cve20231177Detector implements VulnDetector {
   private static final String CREATE_MODEL_DATA = "{\"name\":\"REPLACE_FLAG\"}";
 
   private static final String UPDATE_CREATE_MODEL_DATA =
-      "{\"name\":\"REPLACE_FLAG\",\"source\":\"file:///\"}";
+      "{\"name\":\"REPLACE_FLAG\",\"source\":\"//proc/self/root\"}";
 
   private final HttpClient httpClient;
 
   private final Clock utcClock;
 
   @Inject
-  Cve20231177Detector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  Cve20236977Detector(@UtcClock Clock utcClock, HttpClient httpClient) {
     this.httpClient = checkNotNull(httpClient);
     this.utcClock = checkNotNull(utcClock);
   }
@@ -103,7 +105,7 @@ public final class Cve20231177Detector implements VulnDetector {
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
-    logger.atInfo().log("CVE-2023-1177 starts detecting.");
+    logger.atInfo().log("CVE-2023-6977 starts detecting.");
 
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
@@ -219,11 +221,12 @@ public final class Cve20231177Detector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2023_1177"))
+                        .setValue("CVE_2023_6977"))
                 .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2023-1177 MLflow LFI/RFI")
+                .setTitle("CVE-2023-6977 MLflow LFI/RFI")
                 .setRecommendation(
-                    "1.Updated to version 2.2.1 or later\n2.Add authentication to MLflow server\n")
+                    "1.Updated to any version above the version 2.9.2\n"
+                        + "2.Add authentication to MLflow server\n")
                 .setDescription(VULN_DESCRIPTION))
         .build();
   }
