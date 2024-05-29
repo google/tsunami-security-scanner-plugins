@@ -53,7 +53,7 @@ ext {
     truthVersion = '1.0.1'
     okhttpVersion = '3.12.0'
     apacheActiveMqClientVersion = '5.18.4'
-    springframeworContextSupportVersion = '3.2.2.RELEASE'
+    guiceVersion = '4.2.3'
 }
 
 dependencies {
@@ -68,6 +68,8 @@ dependencies {
     testImplementation "com.squareup.okhttp3:mockwebserver:${okhttpVersion}"
     testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
     testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"
+    testImplementation "com.google.inject:guice:${guiceVersion}"
+    testImplementation "com.google.inject.extensions:guice-testlib:${guiceVersion}"
 }
 
 jar {

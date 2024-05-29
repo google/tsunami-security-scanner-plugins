@@ -26,7 +26,7 @@ import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.*;
 import org.apache.activemq.util.MarshallingSupport;
-
+import com.google.tsunami.plugins.detectors.cves.cve202346604.Annotations.OobSleepDuration;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
@@ -56,17 +56,22 @@ import javax.net.SocketFactory;
     type = PluginType.VULN_DETECTION,
     name = "Apache ActiveMQ RCE CVE-2023-46604 Detector",
     version = "0.1",
-    description = Cve202346604Detector.VULN_DESCRIPTION,
+    description = Cve202346604Detector.VULN_DESCRIPTION_OF_OOB_VERIFY,
     author = "hh-hunter",
     bootstrapModule = Cve202346604DetectorBootstrapModule.class)
 @ForServiceName({"apachemq"})
 public final class Cve202346604Detector implements VulnDetector {
 
   @VisibleForTesting
-  static final String VULN_DESCRIPTION =
+  static final String VULN_DESCRIPTION_OF_OOB_VERIFY =
       "Apache ActiveMQ is vulnerable to Remote Code Execution. The vulnerability may allow a remote attacker with "
           + "network access to a broker to run arbitrary shell commands by manipulating serialized class types in "
           + "the OpenWire protocol to cause the broker to instantiate any class on the classpath. ";
+
+  @VisibleForTesting
+  static final String VULN_DESCRIPTION_OF_VERSION =
+      VULN_DESCRIPTION_OF_OOB_VERIFY
+          + "vulnerable version but oob server unavailable produce a positive finding. ";
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
@@ -76,15 +81,20 @@ public final class Cve202346604Detector implements VulnDetector {
   private final Clock utcClock;
   private final SocketFactory socketFactory;
   private final PayloadGenerator payloadGenerator;
+  private final int oobSleepDuration;
+
+  private boolean useOOBVerifyVulnerable;
 
   @Inject
   Cve202346604Detector(
       @UtcClock Clock utcClock,
       @SocketFactoryInstance SocketFactory socketFactory,
-      PayloadGenerator payloadGenerator) {
+      PayloadGenerator payloadGenerator,
+      @OobSleepDuration int oobSleepDuration) {
     this.utcClock = checkNotNull(utcClock);
     this.socketFactory = checkNotNull(socketFactory);
     this.payloadGenerator = checkNotNull(payloadGenerator);
+    this.oobSleepDuration = oobSleepDuration;
   }
 
   @Override
@@ -110,10 +120,7 @@ public final class Cve202346604Detector implements VulnDetector {
     HostAndPort hp = NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
     String currentVersion = getServerVersion(hp.getHost(), hp.getPort());
     if (checkVersionIsSecure(currentVersion)) {
-      logger.atInfo().log(
-          "The target version %s is not susceptible. A version comparison has been completed, but payload "
-              + "verification has not been officially initiated.",
-          currentVersion);
+      logger.atInfo().log("The target version %s is not susceptible.", currentVersion);
       return false;
     }
 
@@ -127,26 +134,27 @@ public final class Cve202346604Detector implements VulnDetector {
 
     Payload payload = this.payloadGenerator.generate(config);
     if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
-      return false;
+      return true;
     }
+    useOOBVerifyVulnerable = true;
     try {
       boolean sendPayloadResult = this.sendPayloadToTarget(hp.getHost(), hp.getPort(), payload);
       if (!sendPayloadResult) {
-        logger.atInfo().log("Send payload to target %s failed", networkService);
+        logger.atInfo().log("Send payload to target %s failed", hp.toString());
         return false;
       }
 
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
 
       if (payload.checkIfExecuted()) {
-        logger.atInfo().log("Target %s is vulnerable", networkService);
+        logger.atInfo().log("Target %s is vulnerable", hp.toString());
         return true;
       } else {
-        logger.atInfo().log("Target %s is not vulnerable", networkService);
+        logger.atInfo().log("Target %s is not vulnerable", hp.toString());
         return false;
       }
     } catch (Exception e) {
-      logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
+      logger.atWarning().withCause(e).log("Request to target %s failed", hp.toString());
     }
     return false;
   }
@@ -219,7 +227,10 @@ public final class Cve202346604Detector implements VulnDetector {
         .setTargetInfo(targetInfo)
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
-        .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+        .setDetectionStatus(
+            useOOBVerifyVulnerable
+                ? DetectionStatus.VULNERABILITY_VERIFIED
+                : DetectionStatus.VULNERABILITY_PRESENT)
         .setVulnerability(
             Vulnerability.newBuilder()
                 .setMainId(
@@ -229,7 +240,10 @@ public final class Cve202346604Detector implements VulnDetector {
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2023-46604 Apache ActiveMQ RCE")
                 .setRecommendation("Upgrade to version 5.15.16, 5.16.7, 5.17.6, or 5.18.3")
-                .setDescription(VULN_DESCRIPTION))
+                .setDescription(
+                    useOOBVerifyVulnerable
+                        ? VULN_DESCRIPTION_OF_OOB_VERIFY
+                        : VULN_DESCRIPTION_OF_VERSION))
         .build();
   }
 
