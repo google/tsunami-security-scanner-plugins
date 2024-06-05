@@ -40,16 +40,7 @@ import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
-import com.google.tsunami.proto.DetectionReport;
-import com.google.tsunami.proto.DetectionReportList;
-import com.google.tsunami.proto.DetectionStatus;
-import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
-import com.google.tsunami.proto.Software;
-import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
+import com.google.tsunami.proto.*;
 
 import com.google.tsunami.plugins.detectors.cves.cve202346604.Annotations.OobSleepDuration;
 
@@ -90,7 +81,8 @@ public final class Cve202346604DetectorTest {
       };
   private final MockWebServer mockCallbackServer = new MockWebServer();
 
-  private boolean closeOOBServer = false;
+  private final TextData details =
+      TextData.newBuilder().setText("current version is 5.17.3").build();
 
   @Bind(lazy = true)
   @OobSleepDuration
@@ -120,7 +112,7 @@ public final class Cve202346604DetectorTest {
         .injectMembers(this);
   }
 
-  public void setUpOfNotUseOOB() throws IOException {
+  public void setUpNoOob() throws IOException {
     mockCallbackServer.shutdown();
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
@@ -193,7 +185,8 @@ public final class Cve202346604DetectorTest {
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("CVE-2023-46604 Apache ActiveMQ RCE")
                         .setRecommendation("Upgrade to version 5.15.16, 5.16.7, 5.17.6, or 5.18.3")
-                        .setDescription(VULN_DESCRIPTION_OF_OOB_VERIFY))
+                        .setDescription(VULN_DESCRIPTION_OF_OOB_VERIFY)
+                        .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
                 .build());
   }
 
@@ -232,8 +225,8 @@ public final class Cve202346604DetectorTest {
   }
 
   @Test
-  public void detect_whenVulnerable_returnsVulnerability_not_use_oob() throws Exception {
-    this.setUpOfNotUseOOB();
+  public void detect_whenVulnerableWithoutOob_returnsVulnerability() throws Exception {
+    this.setUpNoOob();
     final byte[] serverInfoResponse =
         new byte[] {
           0, 0, 1, 82, 1, 65, 99, 116, 105, 118, 101, 77, 81, 0, 0, 0, 12, 1, 0, 0, 1, 64, 0, 0, 0,
@@ -281,7 +274,8 @@ public final class Cve202346604DetectorTest {
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("CVE-2023-46604 Apache ActiveMQ RCE")
                         .setRecommendation("Upgrade to version 5.15.16, 5.16.7, 5.17.6, or 5.18.3")
-                        .setDescription(VULN_DESCRIPTION_OF_VERSION))
+                        .setDescription(VULN_DESCRIPTION_OF_VERSION)
+                        .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
                 .build());
   }
 

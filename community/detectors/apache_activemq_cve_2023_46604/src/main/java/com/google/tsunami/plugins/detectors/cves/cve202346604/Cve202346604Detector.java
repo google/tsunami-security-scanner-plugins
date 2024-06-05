@@ -47,8 +47,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Qualifier;
 import javax.net.SocketFactory;
@@ -85,7 +83,9 @@ public final class Cve202346604Detector implements VulnDetector {
   private final PayloadGenerator payloadGenerator;
   private final int oobSleepDuration;
 
-  private boolean useOOBVerifyVulnerable;
+  private boolean useOobVerifyVulnerable;
+
+  private String currentVersion;
 
   @Inject
   Cve202346604Detector(
@@ -120,7 +120,7 @@ public final class Cve202346604Detector implements VulnDetector {
 
   private boolean isServiceVulnerable(NetworkService networkService) {
     HostAndPort hp = NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
-    String currentVersion = getServerVersion(hp.getHost(), hp.getPort());
+    currentVersion = getServerVersion(hp.getHost(), hp.getPort());
     if (checkVersionIsSecure(currentVersion)) {
       logger.atInfo().log("The target version %s is not susceptible.", currentVersion);
       return false;
@@ -138,7 +138,7 @@ public final class Cve202346604Detector implements VulnDetector {
     if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
       return true;
     }
-    useOOBVerifyVulnerable = true;
+    useOobVerifyVulnerable = true;
     try {
       boolean sendPayloadResult = this.sendPayloadToTarget(hp.getHost(), hp.getPort(), payload);
       if (!sendPayloadResult) {
@@ -165,7 +165,7 @@ public final class Cve202346604Detector implements VulnDetector {
   private boolean sendPayloadToTarget(String host, int port, Payload payload) {
     try {
       String payloadString = payload.getPayload();
-      if (!payloadString.contains("http://") || !payloadString.contains("https://")) {
+      if (!payloadString.startsWith("http://") && !payloadString.startsWith("https://")) {
         payloadString = "http://" + payloadString;
       }
       Socket socket = socketFactory.createSocket(host, port);
@@ -229,12 +229,14 @@ public final class Cve202346604Detector implements VulnDetector {
 
   private DetectionReport buildDetectionReport(
       TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
+    TextData details =
+        TextData.newBuilder().setText("current version is " + currentVersion).build();
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(
-            useOOBVerifyVulnerable
+            useOobVerifyVulnerable
                 ? DetectionStatus.VULNERABILITY_VERIFIED
                 : DetectionStatus.VULNERABILITY_PRESENT)
         .setVulnerability(
@@ -247,9 +249,10 @@ public final class Cve202346604Detector implements VulnDetector {
                 .setTitle("CVE-2023-46604 Apache ActiveMQ RCE")
                 .setRecommendation("Upgrade to version 5.15.16, 5.16.7, 5.17.6, or 5.18.3")
                 .setDescription(
-                    useOOBVerifyVulnerable
+                    useOobVerifyVulnerable
                         ? VULN_DESCRIPTION_OF_OOB_VERIFY
-                        : VULN_DESCRIPTION_OF_VERSION))
+                        : VULN_DESCRIPTION_OF_VERSION)
+                .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
         .build();
   }
 
