@@ -108,9 +108,11 @@ public final class Cve20236977DetectorTest {
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE_2023_6977"))
                         .addRelatedId(
-                                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-1177"))
+                                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-6977"))
                         .addRelatedId(
                                 VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-2780"))
+                        .addRelatedId(
+                                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-1177"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("CVE-2023-6977 MLflow LFI/RFI")
                         .setRecommendation(
