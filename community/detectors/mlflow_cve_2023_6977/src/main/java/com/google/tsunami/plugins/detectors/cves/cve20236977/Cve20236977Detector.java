@@ -229,7 +229,7 @@ public final class Cve20236977Detector implements VulnDetector {
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2023-6977 MLflow LFI/RFI")
                 .setRecommendation(
-                    "1.Update to the version 2.10.0 and above\n"
+                    "1.Update to the version 2.10.0 or above\n"
                         + "2.Add authentication to MLflow server\n")
                 .setDescription(VULN_DESCRIPTION))
         .build();
