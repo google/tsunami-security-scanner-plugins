@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.cves.cve20231177;
+package com.google.tsunami.plugins.detectors.cves.cve20236977;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.cves.cve20231177.Cve20231177Detector.CREATE_DETECTION_STRING;
-import static com.google.tsunami.plugins.detectors.cves.cve20231177.Cve20231177Detector.DETECTION_STRING;
-import static com.google.tsunami.plugins.detectors.cves.cve20231177.Cve20231177Detector.VULN_DESCRIPTION;
+import static com.google.tsunami.plugins.detectors.cves.cve20236977.Cve20236977Detector.CREATE_DETECTION_STRING;
+import static com.google.tsunami.plugins.detectors.cves.cve20236977.Cve20236977Detector.DETECTION_STRING;
+import static com.google.tsunami.plugins.detectors.cves.cve20236977.Cve20236977Detector.VULN_DESCRIPTION;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -49,14 +49,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Unit tests for {@link Cve20231177Detector}. */
+/** Unit tests for {@link Cve20236977Detector}. */
 @RunWith(JUnit4.class)
-public final class Cve20231177DetectorTest {
+public final class Cve20236977DetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
-  @Inject private Cve20231177Detector detector;
+  @Inject private Cve20236977Detector detector;
 
   private MockWebServer mockWebServer;
 
@@ -65,7 +65,7 @@ public final class Cve20231177DetectorTest {
     mockWebServer = new MockWebServer();
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
-            new Cve20231177DetectorBootstrapModule(),
+            new Cve20236977DetectorBootstrapModule(),
             new HttpClientModule.Builder().build())
         .injectMembers(this);
   }
@@ -106,12 +106,24 @@ public final class Cve20231177DetectorTest {
                         .setMainId(
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2023_1177"))
+                                .setValue("CVE_2023_6977"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2023-6977"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2023-2780"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2023-1177"))
                         .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2023-1177 MLflow LFI/RFI")
+                        .setTitle("CVE-2023-6977 MLflow LFI/RFI")
                         .setRecommendation(
-                            "1.Updated to version 2.2.1 or later\n2.Add authentication to MLflow "
-                                + "server\n")
+                            "1.Update to the version 2.10.0 or above\n"
+                                + "2.Add authentication to MLflow server\n")
                         .setDescription(VULN_DESCRIPTION))
                 .build());
   }
@@ -141,6 +153,7 @@ public final class Cve20231177DetectorTest {
     mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(CREATE_DETECTION_STRING));
     mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(CREATE_DETECTION_STRING));
     mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(body));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200));
     mockWebServer.start();
   }
 }

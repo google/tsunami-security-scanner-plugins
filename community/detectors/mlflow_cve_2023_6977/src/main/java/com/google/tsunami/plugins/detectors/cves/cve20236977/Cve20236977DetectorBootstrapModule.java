@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.cves.cve20231177;
+package com.google.tsunami.plugins.detectors.cves.cve20236977;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-/** An CVE-2023-1177 Guice module that bootstraps the {@link Cve20231177Detector}. */
-public final class Cve20231177DetectorBootstrapModule extends PluginBootstrapModule {
+/** An CVE-2023-6977 Guice module that bootstraps the {@link Cve20236977Detector}. */
+public final class Cve20236977DetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    registerPlugin(Cve20231177Detector.class);
+    registerPlugin(Cve20236977Detector.class);
   }
 }

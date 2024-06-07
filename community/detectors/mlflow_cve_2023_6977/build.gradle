@@ -2,9 +2,9 @@ plugins {
     id 'java-library'
 }
 
-description = 'Tsunami MLflow LFI/RFI (CVE-2023-1177) VulnDetector plugin.'
+description = 'Tsunami MLflow LFI/RFI (CVE-2023-6977) VulnDetector plugin.'
 group 'com.google.tsunami'
-version '0.0.1-SNAPSHOT'
+version '0.0.2-SNAPSHOT'
 
 
 repositories {
