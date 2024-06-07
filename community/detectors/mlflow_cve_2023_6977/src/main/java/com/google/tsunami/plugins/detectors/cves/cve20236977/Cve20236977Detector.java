@@ -56,7 +56,7 @@ import javax.inject.Inject;
     name = "MLflow LFI/RFI CVE-2023-6977 Detector",
     version = "0.2",
     description = Cve20236977Detector.VULN_DESCRIPTION,
-    author = "hh-hunter & frkngksl",
+    author = "hh-hunter, frkngksl",
     bootstrapModule = Cve20236977DetectorBootstrapModule.class)
 public final class Cve20236977Detector implements VulnDetector {
 
