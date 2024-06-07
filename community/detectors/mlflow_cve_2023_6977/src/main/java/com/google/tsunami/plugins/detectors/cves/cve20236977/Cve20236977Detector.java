@@ -222,10 +222,14 @@ public final class Cve20236977Detector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2023_6977"))
+                .addRelatedId(
+                        VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-1177"))
+                .addRelatedId(
+                        VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-2780"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2023-6977 MLflow LFI/RFI")
                 .setRecommendation(
-                    "1.Updated to any version above the version 2.9.2\n"
+                    "1.Update to the version 2.10.0 and above\n"
                         + "2.Add authentication to MLflow server\n")
                 .setDescription(VULN_DESCRIPTION))
         .build();
