@@ -64,14 +64,18 @@ public final class Cve202346604Detector implements VulnDetector {
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION_OF_OOB_VERIFY =
-      "Apache ActiveMQ is vulnerable to Remote Code Execution. The vulnerability may allow a remote attacker with "
-          + "network access to a broker to run arbitrary shell commands by manipulating serialized class types in "
-          + "the OpenWire protocol to cause the broker to instantiate any class on the classpath. ";
+      "Apache ActiveMQ is vulnerable to Remote Code Execution (RCE). This vulnerability could allow a remote attacker"
+          + " with network access to a broker to execute arbitrary shell commands by manipulating serialized class"
+          + " types within the OpenWire protocol, causing the broker to instantiate any class on the classpath. The"
+          + " presence of this vulnerability was confirmed through an out-of-band callback.";
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION_OF_VERSION =
-      VULN_DESCRIPTION_OF_OOB_VERIFY
-          + "vulnerable version but oob server unavailable produce a positive finding. ";
+      "Apache ActiveMQ is susceptible to a Remote Code Execution (RCE) vulnerability. This flaw could enable a remote"
+          + " attacker with network access to a broker to execute arbitrary shell commands by manipulating serialized"
+          + " class types within the OpenWire protocol, thereby causing the broker to instantiate any class on the "
+          + "classpath. Although the vulnerability was identified based on the server's version number, it has not yet"
+          + " been verified.";
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
