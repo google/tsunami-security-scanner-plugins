@@ -41,6 +41,7 @@ import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionReportList.Builder;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.PayloadGeneratorConfig;
@@ -49,9 +50,6 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
-
-import com.google.tsunami.proto.DetectionReportList.Builder;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;

@@ -38,7 +38,6 @@ import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Objects;
 import javax.inject.Inject;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
@@ -46,9 +45,9 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.junit.Test;
 
 /** Unit tests for the {@link ExposedAirflowServerDetector}. */
 @RunWith(JUnit4.class)
@@ -205,13 +204,11 @@ public final class ExposedAirflowServerDetectorTest {
           @Override
           public MockResponse dispatch(RecordedRequest request) {
             switch (request.getPath()) {
-                // fall through
               case "/api/v1/dags":
                 return new MockResponse()
                     .setResponseCode(200)
                     .setBody(
                         "{\"dags\": [{\"next_dagrun_create_after\": \"2019-08-24T14:15:22Z\"}],\"total_entries\": 0}");
-                // fall through
               case "/api/v1/connections/test":
                 return new MockResponse().setResponseCode(200);
               default:
