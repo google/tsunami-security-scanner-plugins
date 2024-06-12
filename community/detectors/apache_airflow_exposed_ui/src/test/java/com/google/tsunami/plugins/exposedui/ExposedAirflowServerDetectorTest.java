@@ -100,6 +100,7 @@ public final class ExposedAirflowServerDetectorTest {
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
 
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
     assertThat(detectionReports.getDetectionReportsList())
         .comparingExpectedFieldsOnly()
         .containsExactly(
@@ -131,6 +132,7 @@ public final class ExposedAirflowServerDetectorTest {
   public void detect_withCallbackServer_butNoCallback_returnsEmpty() throws IOException {
     mockTargetService.enqueue(new MockResponse().setResponseCode(400));
     mockTargetService.enqueue(new MockResponse().setResponseCode(400));
+    mockTargetService.enqueue(new MockResponse().setResponseCode(400));
     mockTargetService.start();
     createInjector();
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
@@ -152,7 +154,31 @@ public final class ExposedAirflowServerDetectorTest {
   }
 
   @Test
-  public void detect_withoutCallbackServer_butWithResponseMatching() throws IOException {
+  public void detect_no_airflow_webservice_returnsEmpty() throws IOException {
+    mockTargetService.enqueue(new MockResponse().setResponseCode(400));
+    mockTargetService.start();
+    createInjector();
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
+            .addSupportedHttpMethods("POST")
+            .addSupportedHttpMethods("GET")
+            .build();
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
+            .build();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_withResponseMatching_insteadof_withoutCallbackServer() throws IOException {
     startMockWebServer();
     createInjector();
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
@@ -171,6 +197,7 @@ public final class ExposedAirflowServerDetectorTest {
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
 
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(3);
     assertThat(detectionReports.getDetectionReportsList())
         .comparingExpectedFieldsOnly()
         .containsExactly(
@@ -204,6 +231,8 @@ public final class ExposedAirflowServerDetectorTest {
           @Override
           public MockResponse dispatch(RecordedRequest request) {
             switch (request.getPath()) {
+              case "/login":
+                return new MockResponse().setResponseCode(200).setBody("Sign In - Airflow");
               case "/api/v1/dags":
                 return new MockResponse()
                     .setResponseCode(200)

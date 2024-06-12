@@ -17,6 +17,8 @@
 package com.google.tsunami.plugins.exposedui;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.tsunami.common.net.http.HttpRequest.get;
+import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
@@ -26,11 +28,9 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
-import com.google.tsunami.common.net.http.HttpClient;
-import com.google.tsunami.common.net.http.HttpHeaders;
-import com.google.tsunami.common.net.http.HttpRequest;
-import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.*;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
@@ -89,6 +89,7 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
     Builder detectionReport = DetectionReportList.newBuilder();
     matchedServices.stream()
         .filter(NetworkServiceUtils::isWebService)
+        .filter(this::isMlFlowWebService)
         .forEach(
             networkService -> {
               if (isServiceVulnerableCheckOutOfBandCallback(networkService)) {
@@ -113,6 +114,26 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
               }
             });
     return detectionReport.build();
+  }
+
+  public boolean isMlFlowWebService(NetworkService networkService) {
+    logger.atInfo().log("probing apache airflow login page - custom fingerprint phase");
+
+    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
+    var loginPageUrl = String.format("http://%s/%s", uriAuthority, "login");
+    try {
+      HttpResponse loginResponse =
+          this.httpClient.send(get(loginPageUrl).withEmptyHeaders().build());
+
+      if (loginResponse.status() == HttpStatus.OK
+          && loginResponse.bodyString().isPresent()
+          && loginResponse.bodyString().get().contains("Sign In - Airflow")) {
+        return true;
+      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", loginPageUrl);
+    }
+    return false;
   }
 
   private boolean isServiceVulnerableCheckOutOfBandCallback(NetworkService networkService) {
@@ -141,7 +162,7 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
           "{\"connection_id\":\"tsunami\",\"conn_type\":\"http\",\"host\":\"SSRF_PAYLOAD\",\"extra\":\"{}\"}"
               .replace("SSRF_PAYLOAD", payloadWithoutProtocol);
       this.httpClient.send(
-          HttpRequest.post(rootUrl + "api/v1/connections/test")
+          post(rootUrl + "api/v1/connections/test")
               .setHeaders(
                   HttpHeaders.builder().addHeader("Content-Type", "application/json").build())
               .setRequestBody(ByteString.copyFromUtf8(body))
@@ -150,7 +171,7 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
 
       Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(2));
       return payload.checkIfExecuted();
-    } catch (IOException e) {
+    } catch (IOException | RuntimeException e) {
       logger.atWarning().withCause(e).log("Failed to send request.");
       return false;
     }
@@ -161,7 +182,7 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
     try {
       HttpResponse dags =
           this.httpClient.send(
-              HttpRequest.get(rootUrl + "api/v1/dags").withEmptyHeaders().build(), networkService);
+              get(rootUrl + "api/v1/dags").withEmptyHeaders().build(), networkService);
       if (dags.bodyString().isEmpty()) {
         return false;
       }
