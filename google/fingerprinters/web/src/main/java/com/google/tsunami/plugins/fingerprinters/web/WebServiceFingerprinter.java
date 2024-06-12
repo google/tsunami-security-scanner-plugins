@@ -32,10 +32,10 @@ import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
-import com.google.tsunami.plugin.PluginType;
-import com.google.tsunami.plugin.ServiceFingerprinter;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.plugin.PluginType;
+import com.google.tsunami.plugin.ServiceFingerprinter;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.Crawler;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.ScopeUtils;
 import com.google.tsunami.plugins.fingerprinters.web.data.FingerprintData;
@@ -57,10 +57,11 @@ import com.google.tsunami.proto.Version.VersionType;
 import com.google.tsunami.proto.VersionSet;
 import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 import javax.inject.Inject;
-import java.nio.charset.Charset;
 
 /** A {@link ServiceFingerprinter} plugin that fingerprints web applications. */
 @PluginInfo(

@@ -17,11 +17,8 @@
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.zenml;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.gson.JsonObject;
@@ -38,10 +35,7 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
 import com.google.tsunami.proto.NetworkService;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.List;
-import java.util.Random;
 import javax.inject.Inject;
 
 /** Credential tester specifically for zenml. */

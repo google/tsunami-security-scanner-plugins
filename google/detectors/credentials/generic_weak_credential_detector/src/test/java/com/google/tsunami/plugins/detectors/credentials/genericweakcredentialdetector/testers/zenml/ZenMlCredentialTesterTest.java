@@ -27,16 +27,12 @@ import com.google.inject.Guice;
 import com.google.tsunami.common.net.db.ConnectionProviderInterface;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.zenml.ZenMlCredentialTester;
 import com.google.tsunami.proto.NetworkService;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
-import java.util.Base64;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Random;
 import javax.inject.Inject;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
@@ -44,12 +40,12 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.mockito.Mock;
+import org.junit.Test;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
+import org.mockito.Mock;
 
 /** Tests for {@link ZenMlCredentialTester}. */
 @RunWith(JUnit4.class)
