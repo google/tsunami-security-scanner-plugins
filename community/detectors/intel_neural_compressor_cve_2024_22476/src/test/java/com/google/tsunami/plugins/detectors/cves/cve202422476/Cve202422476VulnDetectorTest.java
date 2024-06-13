@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.tsunami.plugins.detectors.cves.cve202422476;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
-import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
@@ -34,16 +33,16 @@ import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
-import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
+import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,7 +56,7 @@ public class Cve202422476VulnDetectorTest {
       FakeUtcClock.create().setNow(Instant.parse("2022-05-23T00:00:00.00Z"));
   private MockWebServer mockWebServer;
   private MockWebServer mockCallbackServer;
-  private NetworkService service;
+  private NetworkService targetNetworkService;
   private TargetInfo targetInfo;
 
   @Inject private Cve202422476VulnDetector detector;
@@ -74,20 +73,6 @@ public class Cve202422476VulnDetectorTest {
             FakePayloadGeneratorModule.builder().setCallbackServer(mockCallbackServer).build(),
             new Cve202422476DetectorBootstrapModule())
         .injectMembers(this);
-
-    service =
-        NetworkService.newBuilder()
-            .setNetworkEndpoint(
-                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .setTransportProtocol(TransportProtocol.TCP)
-            .setSoftware(Software.newBuilder().setName("http"))
-            .setServiceName("http")
-            .build();
-
-    targetInfo =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
   }
 
   @After
@@ -99,21 +84,16 @@ public class Cve202422476VulnDetectorTest {
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
     // It is a blind RCE, body is not important. This is a part of a valid response.
-    mockWebServer.enqueue(
-        new MockResponse()
-            .setResponseCode(200)
-            .setBody(
-                "{\"status\":\"successfully\",\"task_id\":\"065d95dd70524cb2baa743def3ff7036\",\"msg\":\"Task"
-                    + " submitted successfully\"}"));
-
+    startMockWebServer(true);
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
-    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
 
     assertThat(detectionReports.getDetectionReportsList())
         .containsExactly(
             DetectionReport.newBuilder()
                 .setTargetInfo(targetInfo)
-                .setNetworkService(service)
+                .setNetworkService(targetNetworkService)
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
@@ -138,17 +118,63 @@ public class Cve202422476VulnDetectorTest {
                                 + " result, attackers can manipulate this parameter to remotely"
                                 + " execute arbitrary commands."))
                 .build());
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
   }
 
   @Test
   public void detect_ifNotVulnerable_doesNotReportVuln() throws IOException {
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("Hello world!"));
+    startMockWebServer(false);
 
-    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
+  }
+
+  private void startMockWebServer(boolean isVulnerableServer) throws IOException {
+    final Dispatcher dispatcher =
+        new Dispatcher() {
+
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            switch (request.getPath()) {
+              case "/":
+                return new MockResponse()
+                    .setResponseCode(200)
+                    .setBody("{\"message\":\"Welcome to Neural Solution!\"}");
+              case "/task/submit/":
+                if (isVulnerableServer) {
+                  return new MockResponse()
+                      .setResponseCode(200)
+                      .setBody(
+                          "{\"status\":\"successfully\",\"task_id\":\"065d95dd70524cb2baa743def3ff7036\",\"msg\":\"Task"
+                              + " submitted successfully\"}");
+                } else {
+                  return new MockResponse()
+                      .setResponseCode(422)
+                      .setBody("{\"detail\":\"Invalid task\"}");
+                }
+              default:
+                return new MockResponse()
+                    .setResponseCode(404)
+                    .setBody("{\"detail\":\"Not Found\"}");
+            }
+          }
+        };
+    mockWebServer.setDispatcher(dispatcher);
+    mockWebServer.start();
+    mockWebServer.url("/");
+    targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .addSupportedHttpMethods("POST")
+            .addSupportedHttpMethods("GET")
+            .build();
+    targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
+            .build();
   }
 }

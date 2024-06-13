@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.tsunami.plugins.detectors.cves.cve202422476;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -32,6 +33,7 @@ import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
+import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
@@ -68,12 +70,12 @@ public final class Cve202422476VulnDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final Clock utcClock;
-  private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
 
   private static final String VUL_PATH = "task/submit/";
   private static final int BATCH_REQUEST_WAIT_AFTER_TIMEOUT = 10;
   private final String taskRequestTemplate;
+  private static HttpClient httpClient;
 
   @Inject
   Cve202422476VulnDetector(
@@ -104,10 +106,26 @@ public final class Cve202422476VulnDetector implements VulnDetector {
         .build();
   }
 
+  private static boolean checkNeuralSolutionFingerprint(NetworkService networkService) {
+    String targetWebAddress = buildTarget(networkService).toString();
+    var request = HttpRequest.get(targetWebAddress).withEmptyHeaders().build();
+
+    try {
+      HttpResponse response = httpClient.send(request, networkService);
+      return response.status().isSuccess()
+          && response
+              .bodyString()
+              .map(body -> body.contains("{\"message\":\"Welcome to Neural Solution!\"}"))
+              .orElse(false);
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Failed to send request.");
+      return false;
+    }
+  }
+
   private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
-    return networkService.getServiceName().isEmpty()
-        || NetworkServiceUtils.isWebService(networkService)
-        || NetworkServiceUtils.getServiceName(networkService).equals("unknown");
+    return NetworkServiceUtils.isWebService(networkService)
+        && checkNeuralSolutionFingerprint(networkService);
   }
 
   private static StringBuilder buildTarget(NetworkService networkService) {
@@ -124,43 +142,37 @@ public final class Cve202422476VulnDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    return isRceExecutable(networkService);
-  }
-
-  private boolean isRceExecutable(NetworkService networkService) {
-    if (payloadGenerator.isCallbackServerEnabled()) {
-      String taskRequestBody = taskRequestTemplate;
-      // Check callback server is enabled
-      logger.atInfo().log("Callback server is available!");
-      Payload payload = generateCallbackServerPayload();
-      taskRequestBody =
-          taskRequestBody.replace(
-              "{{CALLBACK_PAYLOAD}}",
-              BaseEncoding.base64().encode(payload.getPayload().getBytes(UTF_8)));
-      String targetVulnerabilityUrl = buildTarget(networkService).append(VUL_PATH).toString();
-      logger.atInfo().log(taskRequestBody);
-      try {
-        HttpResponse httpResponse =
-            httpClient.send(
-                post(targetVulnerabilityUrl)
-                    .setHeaders(
-                        HttpHeaders.builder().addHeader(CONTENT_TYPE, "application/json").build())
-                    .setRequestBody(ByteString.copyFromUtf8(taskRequestBody))
-                    .build(),
-                networkService);
-        logger.atInfo().log(
-            "Callback Server Payload Response: %s", httpResponse.bodyString().get());
-        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(BATCH_REQUEST_WAIT_AFTER_TIMEOUT));
-        return payload.checkIfExecuted();
-
-      } catch (IOException e) {
-        logger.atWarning().withCause(e).log("Failed to send request.");
-        return false;
-      }
-    } else {
+    Payload payload = generateCallbackServerPayload();
+    if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
       logger.atInfo().log(
-          "Callback server is not available! This vulnerability cannot be detected without a"
-              + " callback server!");
+          "The Tsunami callback server is not setup for this environment, so we cannot confirm the"
+              + " RCE callback");
+      return false;
+    }
+    String taskRequestBody = taskRequestTemplate;
+    // Check callback server is enabled
+    logger.atInfo().log("Callback server is available!");
+    taskRequestBody =
+        taskRequestBody.replace(
+            "{{CALLBACK_PAYLOAD}}",
+            BaseEncoding.base64().encode(payload.getPayload().getBytes(UTF_8)));
+    String targetVulnerabilityUrl = buildTarget(networkService).append(VUL_PATH).toString();
+    logger.atInfo().log(taskRequestBody);
+    try {
+      HttpResponse httpResponse =
+          httpClient.send(
+              post(targetVulnerabilityUrl)
+                  .setHeaders(
+                      HttpHeaders.builder().addHeader(CONTENT_TYPE, "application/json").build())
+                  .setRequestBody(ByteString.copyFromUtf8(taskRequestBody))
+                  .build(),
+              networkService);
+      logger.atInfo().log("Callback Server Payload Response: %s", httpResponse.bodyString().get());
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(BATCH_REQUEST_WAIT_AFTER_TIMEOUT));
+      return payload.checkIfExecuted();
+
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Failed to send request.");
       return false;
     }
   }
