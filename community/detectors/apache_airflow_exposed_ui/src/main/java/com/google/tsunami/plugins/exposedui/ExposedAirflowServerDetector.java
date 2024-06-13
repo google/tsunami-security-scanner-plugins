@@ -30,7 +30,10 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
-import com.google.tsunami.common.net.http.*;
+import com.google.tsunami.common.net.http.HttpClient;
+import com.google.tsunami.common.net.http.HttpHeaders;
+import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
@@ -89,7 +92,7 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
     Builder detectionReport = DetectionReportList.newBuilder();
     matchedServices.stream()
         .filter(NetworkServiceUtils::isWebService)
-        .filter(this::isMlFlowWebService)
+        .filter(this::isApacheAirflow)
         .forEach(
             networkService -> {
               if (isServiceVulnerableCheckOutOfBandCallback(networkService)) {
@@ -116,7 +119,7 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
     return detectionReport.build();
   }
 
-  public boolean isMlFlowWebService(NetworkService networkService) {
+  public boolean isApacheAirflow(NetworkService networkService) {
     logger.atInfo().log("probing apache airflow login page - custom fingerprint phase");
 
     var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
