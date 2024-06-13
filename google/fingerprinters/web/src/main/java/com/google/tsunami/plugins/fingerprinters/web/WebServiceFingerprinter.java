@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
+import static com.google.tsunami.common.net.http.HttpRequest.post;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.collect.ImmutableMap;
@@ -27,6 +28,7 @@ import com.google.common.flogger.GoogleLogger;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
+import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.plugin.PluginType;
@@ -277,6 +279,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
     HashSet<DetectedSoftware> detectedSoftware = new HashSet<>();
 
     checkForMlflow(detectedSoftware, networkService, startingUrl);
+    checkForArgoCd(detectedSoftware, networkService, startingUrl);
     return ImmutableSet.copyOf(detectedSoftware);
   }
 
@@ -314,6 +317,44 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
       }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", pingApiUrl);
+    }
+  }
+
+  private void checkForArgoCd(
+      Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
+    logger.atInfo().log("probing Argo CD - custom fingerprint phase");
+
+    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
+    var applicationsApiUrl = String.format("http://%s/%s", uriAuthority, "api/v1/applications");
+    try {
+      HttpResponse apiApplicationsResponse =
+          httpClient.send(
+              post(applicationsApiUrl)
+                  .setHeaders(
+                      HttpHeaders.builder().addHeader("Content-Type", "application/json").build())
+                  .build());
+
+      if (apiApplicationsResponse.status() != HttpStatus.INTERNAL_SERVER_ERROR
+          || apiApplicationsResponse.bodyString().isEmpty()) {
+        return;
+      }
+
+      if (apiApplicationsResponse
+          .bodyString()
+          .get()
+          .contains(
+              "{\"error\":\"grpc: error while marshaling: proto: required field \\\"application\\\""
+                  + " not set\",\"code\":13,\"message\":\"grpc: error while marshaling: "
+                  + "proto: required field \\\"application\\\" not set\"}")) {
+        software.add(
+            DetectedSoftware.builder()
+                .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("argocd").build())
+                .setRootPath(startingUrl)
+                .setContentHashes(ImmutableMap.of())
+                .build());
+      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", applicationsApiUrl);
     }
   }
 }
