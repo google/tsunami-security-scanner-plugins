@@ -232,7 +232,18 @@ public final class ExposedAirflowServerDetectorTest {
           public MockResponse dispatch(RecordedRequest request) {
             switch (request.getPath()) {
               case "/login":
-                return new MockResponse().setResponseCode(200).setBody("Sign In - Airflow");
+                return new MockResponse()
+                    .setResponseCode(200)
+                    .setBody(
+                        "<!DOCTYPE html>\n"
+                            + "<html>\n"
+                            + "  <head>\n"
+                            + "    <title>Sign In - Airflow\n"
+                            + "  \n"
+                            + "</title>"
+                            + " </head>"
+                            + "<a href=\"https://airflow.apache.org\">Airflow Website</a>"
+                            + "</html>");
               case "/api/v1/dags":
                 return new MockResponse()
                     .setResponseCode(200)

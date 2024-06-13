@@ -56,9 +56,13 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 /** A VulnDetector plugin for Exposed Apache Airflow Server. */
 @PluginInfo(
@@ -127,11 +131,18 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
     try {
       HttpResponse loginResponse =
           this.httpClient.send(get(loginPageUrl).withEmptyHeaders().build());
-
-      if (loginResponse.status() == HttpStatus.OK
-          && loginResponse.bodyString().isPresent()
-          && loginResponse.bodyString().get().contains("Sign In - Airflow")) {
-        return true;
+      if (!(loginResponse.status() == HttpStatus.OK && loginResponse.bodyString().isPresent())) {
+        return false;
+      }
+      Document doc = Jsoup.parse(loginResponse.bodyString().get());
+      if (!Objects.equals(doc.title(), "Sign In - Airflow")) {
+        return false;
+      }
+      for (Element aTag : doc.getElementsByTag("a")) {
+        if (aTag.attr("href").equals("https://airflow.apache.org")
+            && Objects.equals(aTag.text(), "Airflow Website")) {
+          return true;
+        }
       }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", loginPageUrl);
