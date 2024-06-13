@@ -24,8 +24,19 @@ import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.plugin.annotations.ForServiceName;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.proto.*;
 import org.apache.activemq.util.MarshallingSupport;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
+import com.google.tsunami.proto.TransportProtocol;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.TextData;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
+import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.plugins.detectors.cves.cve202346604.Annotations.OobSleepDuration;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -74,8 +85,8 @@ public final class Cve202346604Detector implements VulnDetector {
       "Apache ActiveMQ is susceptible to a Remote Code Execution (RCE) vulnerability. This flaw could enable a remote"
           + " attacker with network access to a broker to execute arbitrary shell commands by manipulating serialized"
           + " class types within the OpenWire protocol, thereby causing the broker to instantiate any class on the "
-          + "classpath. Although the vulnerability was identified based on the server's version number, it has not yet"
-          + " been verified.";
+          + "classpath. Although the vulnerability was identified based on the server's version number, it has not "
+          + "been verified.";
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
@@ -105,7 +116,7 @@ public final class Cve202346604Detector implements VulnDetector {
 
   @Override
   public DetectionReportList detect(
-      TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
+          TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("CVE-2023-46604 starts detecting.");
 
     return DetectionReportList.newBuilder()
@@ -234,7 +245,7 @@ public final class Cve202346604Detector implements VulnDetector {
   private DetectionReport buildDetectionReport(
       TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
     TextData details =
-        TextData.newBuilder().setText("current version is " + currentVersion).build();
+        TextData.newBuilder().setText("The detected software version is " + currentVersion).build();
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(vulnerableNetworkService)
@@ -249,7 +260,7 @@ public final class Cve202346604Detector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2023_46604"))
-                .setSeverity(Severity.CRITICAL)
+                .setSeverity(useOobVerifyVulnerable ? Severity.CRITICAL : Severity.HIGH)
                 .setTitle("CVE-2023-46604 Apache ActiveMQ RCE")
                 .setRecommendation("Upgrade to version 5.15.16, 5.16.7, 5.17.6, or 5.18.3")
                 .setDescription(
