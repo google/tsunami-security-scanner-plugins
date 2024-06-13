@@ -82,7 +82,7 @@ public final class Cve202422476VulnDetector implements VulnDetector {
       @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator)
       throws IOException {
     this.utcClock = checkNotNull(utcClock);
-    this.httpClient =
+    Cve202422476VulnDetector.httpClient =
         checkNotNull(httpClient, "HttpClient cannot be null.")
             .modify()
             .setFollowRedirects(false)
