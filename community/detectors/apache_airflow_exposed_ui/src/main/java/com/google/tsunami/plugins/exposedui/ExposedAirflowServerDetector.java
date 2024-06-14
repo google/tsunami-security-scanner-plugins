@@ -35,13 +35,13 @@ import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
+import com.google.tsunami.plugin.PluginType;
+import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.NotImplementedException;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.plugin.PluginType;
-import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionReportList.Builder;
@@ -138,9 +138,9 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
       if (!Objects.equals(doc.title(), "Sign In - Airflow")) {
         return false;
       }
-      for (Element aTag : doc.getElementsByTag("a")) {
-        if (aTag.attr("href").equals("https://airflow.apache.org")
-            && Objects.equals(aTag.text(), "Airflow Website")) {
+      for (Element anchor : doc.getElementsByTag("a")) {
+        if (anchor.attr("href").equals("https://airflow.apache.org")
+            && Objects.equals(anchor.text(), "Airflow Website")) {
           return true;
         }
       }
