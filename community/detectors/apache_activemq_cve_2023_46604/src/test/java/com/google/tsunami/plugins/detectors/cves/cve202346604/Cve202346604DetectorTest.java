@@ -82,7 +82,7 @@ public final class Cve202346604DetectorTest {
   private final MockWebServer mockCallbackServer = new MockWebServer();
 
   private final TextData details =
-      TextData.newBuilder().setText("current version is 5.17.3").build();
+      TextData.newBuilder().setText("The detected software version is 5.17.3").build();
 
   @Bind(lazy = true)
   @OobSleepDuration
@@ -271,7 +271,7 @@ public final class Cve202346604DetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE_2023_46604"))
-                        .setSeverity(Severity.CRITICAL)
+                        .setSeverity(Severity.HIGH)
                         .setTitle("CVE-2023-46604 Apache ActiveMQ RCE")
                         .setRecommendation("Upgrade to version 5.15.16, 5.16.7, 5.17.6, or 5.18.3")
                         .setDescription(VULN_DESCRIPTION_OF_VERSION)
