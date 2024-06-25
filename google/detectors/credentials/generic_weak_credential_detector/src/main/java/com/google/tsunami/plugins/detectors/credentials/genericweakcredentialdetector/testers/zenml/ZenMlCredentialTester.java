@@ -83,9 +83,6 @@ public final class ZenMlCredentialTester extends CredentialTester {
   }
 
   private boolean isZenMlAccessible(NetworkService networkService, TestCredential credential) {
-    logger.atWarning().log(
-        String.format(
-            "username: %s password: %s", credential.username(), credential.password().orElse("")));
     var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
     var loginApiUrl = String.format("http://%s/%s", uriAuthority, "api/v1/login");
     try {
