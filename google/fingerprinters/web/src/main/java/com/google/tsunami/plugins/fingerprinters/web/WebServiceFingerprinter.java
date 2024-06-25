@@ -19,20 +19,23 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
+import static com.google.tsunami.common.net.http.HttpRequest.post;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
+import com.google.protobuf.ByteString;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
+import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
-import com.google.tsunami.plugin.PluginType;
-import com.google.tsunami.plugin.ServiceFingerprinter;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.plugin.PluginType;
+import com.google.tsunami.plugin.ServiceFingerprinter;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.Crawler;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.ScopeUtils;
 import com.google.tsunami.plugins.fingerprinters.web.data.FingerprintData;
@@ -277,6 +280,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
     HashSet<DetectedSoftware> detectedSoftware = new HashSet<>();
 
     checkForMlflow(detectedSoftware, networkService, startingUrl);
+    checkForZenMl(detectedSoftware, networkService, startingUrl);
     return ImmutableSet.copyOf(detectedSoftware);
   }
 
@@ -314,6 +318,60 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
       }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", pingApiUrl);
+    }
+  }
+
+  private void checkForZenMl(
+      Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
+    logger.atInfo().log("probing ZenMl login page and login api - custom fingerprint phase");
+    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
+
+    // we double-check both the api and login page
+    var loginApiUrl = String.format("http://%s/%s", uriAuthority, "api/v1/login");
+    try {
+      // test login api with a random username and password and for sure not exist
+      HttpResponse apiLoginResponse =
+          httpClient.send(
+              post(loginApiUrl)
+                  .setHeaders(
+                      HttpHeaders.builder()
+                          .addHeader("Content-Type", "application/x-www-form-urlencoded")
+                          .build())
+                  .setRequestBody(
+                      ByteString.copyFromUtf8(
+                          "username=aHkPdMlQoWjRtBnX&password=aHkPdMlQoWjRtBnX"))
+                  .build());
+
+      if (!(apiLoginResponse.status() == HttpStatus.UNAUTHORIZED
+          && apiLoginResponse.bodyString().isPresent()
+          && apiLoginResponse
+              .bodyString()
+              .get()
+              .equals(
+                  "{\"detail\":[\"AuthorizationException\","
+                      + "\"Authentication error: invalid username or password\"]}"))) {
+        return;
+      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", loginApiUrl);
+      return;
+    }
+
+    var loginUrl = String.format("http://%s/%s", uriAuthority, "login");
+    try {
+      HttpResponse loginPageResponse = httpClient.send(get(loginUrl).withEmptyHeaders().build());
+      if (!(loginPageResponse.bodyString().isPresent()
+          && loginPageResponse.bodyString().get().contains("<title>ZenML Dashboard</title>"))) {
+        return;
+      }
+      software.add(
+          DetectedSoftware.builder()
+              .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("zenml").build())
+              .setRootPath(startingUrl)
+              .setContentHashes(ImmutableMap.of())
+              .build());
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", loginUrl);
     }
   }
 }
