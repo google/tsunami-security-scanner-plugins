@@ -1,0 +1,41 @@
+version: '3.7'
+
+services:
+  kind:
+    image: kind_cluster:latest
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - kubeconfig:/root/.kube/
+      - lockconfig:/lockconfig
+      - ./kind_startup.sh:/src/startup.sh
+    entrypoint: /bin/sh -c "chmod +x /src/startup.sh && /src/startup.sh"
+    healthcheck:
+      test: ["CMD", "test", "-f", "/lockconfig/lock"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+    ports:
+      - "58080:58080"
+    environment:
+      - MODELS_WEB_APP_TAG=${MODELS_WEB_APP_TAG}
+
+  kubeflow:
+    image: kubeflow-models-ui:${MODELS_WEB_APP_TAG}
+    depends_on:
+      - kind
+    ports:
+      - "8080:5000"
+    volumes:
+      - kubeconfig:/root/.kube/
+      - lockconfig:/lockconfig
+      - ./app_startup.sh:/src/startup.sh
+    environment:
+      - APP_PREFIX=/
+      - APP_DISABLE_AUTH=True
+      - APP_SECURE_COOKIES=False
+
+    entrypoint: ["/bin/sh", "-c", "sleep 60 && chmod +x /src/startup.sh && /src/startup.sh"] 
+volumes:
+  kubeconfig:
+  lockconfig:
