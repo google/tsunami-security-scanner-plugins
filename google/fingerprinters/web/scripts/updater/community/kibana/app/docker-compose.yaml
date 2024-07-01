@@ -1,0 +1,27 @@
+services:
+  elasticsearch:
+    image: "docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION}"
+    container_name: elasticsearch
+    restart: always
+    environment:
+      - xpack.security.enabled=false
+      - "discovery.type=single-node"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+  kibana:
+    container_name: kibana
+    image: "docker.elastic.co/kibana/kibana:${ES_VERSION}"
+    restart: always
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+volumes:
+  elasticsearch_data: {}
