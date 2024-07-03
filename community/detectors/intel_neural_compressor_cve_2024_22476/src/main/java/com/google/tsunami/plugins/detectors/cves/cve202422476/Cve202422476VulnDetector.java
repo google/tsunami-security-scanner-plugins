@@ -73,16 +73,16 @@ public final class Cve202422476VulnDetector implements VulnDetector {
   private final PayloadGenerator payloadGenerator;
 
   private static final String VUL_PATH = "task/submit/";
-  private static final int BATCH_REQUEST_WAIT_AFTER_TIMEOUT = 10;
+  private static final Duration BATCH_REQUEST_WAIT_AFTER_TIMEOUT = Duration.ofSeconds(10);
   private final String taskRequestTemplate;
-  private static HttpClient httpClient;
+  private final HttpClient httpClient;
 
   @Inject
   Cve202422476VulnDetector(
       @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator)
       throws IOException {
     this.utcClock = checkNotNull(utcClock);
-    Cve202422476VulnDetector.httpClient =
+    this.httpClient =
         checkNotNull(httpClient, "HttpClient cannot be null.")
             .modify()
             .setFollowRedirects(false)
@@ -99,14 +99,14 @@ public final class Cve202422476VulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(Cve202422476VulnDetector::isWebServiceOrUnknownService)
+                .filter(this::isWebServiceOrUnknownService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
   }
 
-  private static boolean checkNeuralSolutionFingerprint(NetworkService networkService) {
+  private boolean checkNeuralSolutionFingerprint(NetworkService networkService) {
     String targetWebAddress = buildTarget(networkService).toString();
     var request = HttpRequest.get(targetWebAddress).withEmptyHeaders().build();
 
@@ -123,7 +123,7 @@ public final class Cve202422476VulnDetector implements VulnDetector {
     }
   }
 
-  private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
+  private boolean isWebServiceOrUnknownService(NetworkService networkService) {
     return NetworkServiceUtils.isWebService(networkService)
         && checkNeuralSolutionFingerprint(networkService);
   }
@@ -157,7 +157,7 @@ public final class Cve202422476VulnDetector implements VulnDetector {
             "{{CALLBACK_PAYLOAD}}",
             BaseEncoding.base64().encode(payload.getPayload().getBytes(UTF_8)));
     String targetVulnerabilityUrl = buildTarget(networkService).append(VUL_PATH).toString();
-    logger.atInfo().log(taskRequestBody);
+    logger.atInfo().log("Payload: %s", payload.getPayload().getBytes(UTF_8));
     try {
       HttpResponse httpResponse =
           httpClient.send(
@@ -168,7 +168,7 @@ public final class Cve202422476VulnDetector implements VulnDetector {
                   .build(),
               networkService);
       logger.atInfo().log("Callback Server Payload Response: %s", httpResponse.bodyString().get());
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(BATCH_REQUEST_WAIT_AFTER_TIMEOUT));
+      Uninterruptibles.sleepUninterruptibly(BATCH_REQUEST_WAIT_AFTER_TIMEOUT);
       return payload.checkIfExecuted();
 
     } catch (IOException e) {
