@@ -15,7 +15,9 @@
  */
 package com.google.tsunami.plugins.detectors.rce.torchserve;
 
-import com.google.inject.*;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
