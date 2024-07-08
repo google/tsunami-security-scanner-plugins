@@ -93,9 +93,9 @@ public final class TomcatHttpCredentialTester extends CredentialTester {
       logger.atInfo().log("probing Tomcat manager - custom fingerprint phase");
 
       HttpResponse response = httpClient.send(get(url).withEmptyHeaders().build());
-
-      canAcceptByCustomFingerprint = response.status().code() == 302
-      && response.headers().get("Location").get().equals("/manager/html");
+      
+      canAcceptByCustomFingerprint = response.status().code() == 302 
+        && response.headers().get("Location").get().equals("/manager/html");
 
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", url);
@@ -112,9 +112,7 @@ public final class TomcatHttpCredentialTester extends CredentialTester {
 
     return credentials.stream()
         .filter(cred -> isTomcatAccessible(networkService, cred))
-        .findFirst()
-        .map(ImmutableList::of)
-        .orElseGet(ImmutableList::of);
+        .collect(toImmutableList());
   }
 
   private boolean isTomcatAccessible(NetworkService networkService, TestCredential credential) {
@@ -157,9 +155,9 @@ public final class TomcatHttpCredentialTester extends CredentialTester {
   }
 
   // This method checks if the response body contains elements indicative of a Tomcat manager page.
-  // Specifically, it examines the page title rather than body elements because the content of the body can vary
-  // depending on the language settings of the server. The title is less likely to change and provides a reliable
-  // indicator of a successful login page.
+  // Specifically, it examines the page title rather than body elements because the content of the 
+  // body can vary depending on the language settings of the server. The title is less likely to 
+  // change and provides a reliable indicator of a successful login page.
   private static boolean bodyContainsSuccessfulLoginElements(String responseBody) {
     Document doc = Jsoup.parse(responseBody);
     String title = doc.title();

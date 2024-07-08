@@ -24,12 +24,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ajp13.AjpReader;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ajp13.AjpMessage;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ajp13.ForwardRequestMessage;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ajp13.Pair;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ajp13.AjpMessage;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ajp13.AjpReader;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ajp13.ForwardRequestMessage;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ajp13.Pair;
 import com.google.tsunami.proto.NetworkService;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -79,9 +79,7 @@ public final class TomcatAjpCredentialTester extends CredentialTester {
 
     return credentials.stream()
         .filter(cred -> isTomcatAccessible(networkService, cred))
-        .findFirst()
-        .map(ImmutableList::of)
-        .orElseGet(ImmutableList::of);
+        .collect(toImmutableList());
   }
 
   private boolean isTomcatAccessible(NetworkService networkService, TestCredential credential) {
@@ -144,9 +142,10 @@ public final class TomcatAjpCredentialTester extends CredentialTester {
     }
   }
 
-  // This method checks if the response headers contain elements indicative of a Tomcat manager page.
-  // Specifically, it examines the cookies set rather than body elements to improve the efficiency and speed of the plugin.
-  // By focusing on headers, the plugin can quickly identify successful logins without parsing potentially large and variable body content.
+  // This method checks if the response headers contain elements indicative of a Tomcat manager 
+  // page. Specifically, it examines the cookies set rather than body elements to improve the 
+  // efficiency and speed of the plugin. By focusing on headers, the plugin can quickly identify 
+  // successful logins without parsing potentially large and variable body content.
   private static boolean headersContainsSuccessfulLoginElements(AjpMessage responseMessage) {
     String responseHeaders = responseMessage.getDescription().toLowerCase();
     

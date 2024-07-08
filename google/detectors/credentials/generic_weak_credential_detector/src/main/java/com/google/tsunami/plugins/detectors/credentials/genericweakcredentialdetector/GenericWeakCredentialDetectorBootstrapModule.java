@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -44,10 +45,10 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack.NcrackCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.postgres.PostgresCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.rabbitmq.RabbitMQCredentialTester;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.wordpress.WordpressCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.rstudio.RStudioCredentialTester;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.tomcat.TomcatHttpCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.tomcat.TomcatAjpCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.tomcat.TomcatHttpCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.wordpress.WordpressCredentialTester;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
