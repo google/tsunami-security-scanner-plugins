@@ -13,7 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.hive;
+
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.tsunami.common.net.db.ConnectionProviderInterface;
@@ -27,15 +34,8 @@ import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
-
 import java.sql.Connection;
 import java.util.Optional;
-
-import static com.google.common.truth.Truth.assertThat;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 /** Tests for {@link HiveCredentialTester}. */
 @RunWith(JUnit4.class)
