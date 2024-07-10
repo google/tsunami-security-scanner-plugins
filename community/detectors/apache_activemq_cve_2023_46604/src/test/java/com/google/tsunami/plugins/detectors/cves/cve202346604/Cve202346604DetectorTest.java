@@ -17,9 +17,9 @@ package com.google.tsunami.plugins.detectors.cves.cve202346604;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forIpAndPort;
+import static com.google.tsunami.plugins.detectors.cves.cve202346604.Cve202346604Detector.SocketFactoryInstance;
 import static com.google.tsunami.plugins.detectors.cves.cve202346604.Cve202346604Detector.VULN_DESCRIPTION_OF_OOB_VERIFY;
 import static com.google.tsunami.plugins.detectors.cves.cve202346604.Cve202346604Detector.VULN_DESCRIPTION_OF_VERSION;
-import static com.google.tsunami.plugins.detectors.cves.cve202346604.Cve202346604Detector.SocketFactoryInstance;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -40,10 +40,8 @@ import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
-import com.google.tsunami.proto.*;
-
 import com.google.tsunami.plugins.detectors.cves.cve202346604.Annotations.OobSleepDuration;
-
+import com.google.tsunami.proto.*;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -53,7 +51,6 @@ import java.util.Arrays;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.net.SocketFactory;
-
 import okhttp3.mockwebserver.MockWebServer;
 import org.apache.activemq.util.MarshallingSupport;
 import org.junit.Before;
@@ -69,9 +66,6 @@ public final class Cve202346604DetectorTest {
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
   private final SocketFactory socketFactoryMock = mock(SocketFactory.class);
-
-  @Inject private Cve202346604Detector detector;
-
   private final SecureRandom testSecureRandom =
       new SecureRandom() {
         @Override
@@ -80,10 +74,9 @@ public final class Cve202346604DetectorTest {
         }
       };
   private final MockWebServer mockCallbackServer = new MockWebServer();
-
   private final TextData details =
       TextData.newBuilder().setText("The detected software version is 5.17.3").build();
-
+  @Inject private Cve202346604Detector detector;
   @Bind(lazy = true)
   @OobSleepDuration
   private int sleepDuration = 1;

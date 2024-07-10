@@ -18,35 +18,33 @@ package com.google.tsunami.plugins.detectors.cves.cve202346604;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.google.common.net.HostAndPort;
-import com.google.common.util.concurrent.Uninterruptibles;
-import com.google.tsunami.common.data.NetworkEndpointUtils;
-import com.google.tsunami.plugin.annotations.ForServiceName;
-import com.google.tsunami.plugin.payload.Payload;
-import com.google.tsunami.plugin.payload.PayloadGenerator;
-import org.apache.activemq.util.MarshallingSupport;
-import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.DetectionReportList;
-import com.google.tsunami.proto.PayloadGeneratorConfig;
-import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.DetectionReport;
-import com.google.tsunami.proto.TextData;
-import com.google.tsunami.proto.DetectionStatus;
-import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
-import com.google.tsunami.proto.Severity;
-import com.google.tsunami.proto.AdditionalDetail;
-import com.google.tsunami.plugins.detectors.cves.cve202346604.Annotations.OobSleepDuration;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
+import com.google.tsunami.plugin.annotations.ForServiceName;
 import com.google.tsunami.plugin.annotations.PluginInfo;
-
+import com.google.tsunami.plugin.payload.Payload;
+import com.google.tsunami.plugin.payload.PayloadGenerator;
+import com.google.tsunami.plugins.detectors.cves.cve202346604.Annotations.OobSleepDuration;
+import com.google.tsunami.proto.AdditionalDetail;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
+import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TextData;
+import com.google.tsunami.proto.TransportProtocol;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -61,6 +59,7 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Qualifier;
 import javax.net.SocketFactory;
+import org.apache.activemq.util.MarshallingSupport;
 
 /** A {@link VulnDetector} that detects the CVE-2023-46604 vulnerability. */
 @PluginInfo(
@@ -114,9 +113,24 @@ public final class Cve202346604Detector implements VulnDetector {
     this.oobSleepDuration = oobSleepDuration;
   }
 
+  public static boolean checkVersionIsSecure(String currentVersion) {
+    String[] parts1 = currentVersion.split("\\.");
+    for (String secureVersion : SECURE_VERSIONS) {
+      String[] parts2 = secureVersion.split("\\.");
+      if (parts1[0].equals(parts2[0])) {
+        if (parts1[1].equals(parts2[1])) {
+          return Integer.parseInt(parts1[2]) >= Integer.parseInt(parts2[2]);
+        }
+      }
+    }
+    // If no secure minor version matches the current version, it's considered not secure by
+    // default.
+    return false;
+  }
+
   @Override
   public DetectionReportList detect(
-          TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
+      TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("CVE-2023-46604 starts detecting.");
 
     return DetectionReportList.newBuilder()
@@ -211,21 +225,6 @@ public final class Cve202346604Detector implements VulnDetector {
     } catch (IOException e) {
       return false;
     }
-  }
-
-  public static boolean checkVersionIsSecure(String currentVersion) {
-    String[] parts1 = currentVersion.split("\\.");
-    for (String secureVersion : SECURE_VERSIONS) {
-      String[] parts2 = secureVersion.split("\\.");
-      if (parts1[0].equals(parts2[0])) {
-        if (parts1[1].equals(parts2[1])) {
-          return Integer.parseInt(parts1[2]) >= Integer.parseInt(parts2[2]);
-        }
-      }
-    }
-    // If no secure minor version matches the current version, it's considered not secure by
-    // default.
-    return false;
   }
 
   private String getServerVersion(String serverAddress, int serverPort) {
