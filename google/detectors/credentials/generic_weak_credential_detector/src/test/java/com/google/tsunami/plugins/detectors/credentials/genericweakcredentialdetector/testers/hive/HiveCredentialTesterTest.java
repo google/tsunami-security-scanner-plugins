@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.tsunami.common.net.db.ConnectionProviderInterface;
+import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.proto.NetworkService;
 import org.junit.Before;
@@ -34,6 +35,7 @@ import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
+
 import java.sql.Connection;
 import java.util.Optional;
 
@@ -43,6 +45,7 @@ public class HiveCredentialTesterTest {
   @Rule public MockitoRule rule = MockitoJUnit.rule();
   @Mock private ConnectionProviderInterface mockConnectionProvider;
   @Mock private Connection mockConnection;
+  @Mock private HttpClient httpClient;
   private HiveCredentialTester tester;
 
   private static final TestCredential WEAK_CRED_1 =
@@ -52,7 +55,7 @@ public class HiveCredentialTesterTest {
 
   @Before
   public void setup() {
-    tester = new HiveCredentialTester(mockConnectionProvider);
+    tester = new HiveCredentialTester(mockConnectionProvider, httpClient);
   }
 
   @Test

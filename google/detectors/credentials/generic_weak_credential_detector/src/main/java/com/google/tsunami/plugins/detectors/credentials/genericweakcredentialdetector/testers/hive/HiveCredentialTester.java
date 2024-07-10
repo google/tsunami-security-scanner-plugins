@@ -18,33 +18,43 @@ package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialde
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.tsunami.common.net.http.HttpRequest.get;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.net.HostAndPort;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.db.ConnectionProviderInterface;
+import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpClient;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.proto.TargetService;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
 import com.google.tsunami.proto.NetworkService;
+
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 import javax.inject.Inject;
 
 /** Credential tester specifically for hive. */
 public final class HiveCredentialTester extends CredentialTester {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private final ConnectionProviderInterface connectionProvider;
-
+  private final HttpClient httpClient;
   private static final ImmutableMap<String, TargetService> SERVICE_MAP =
       ImmutableMap.of("snet-sensor-mgmt", TargetService.HIVE);
+  private static final String HIVE_TITLE = "<title>HiveServer2</title>";
 
   @Inject
-  HiveCredentialTester(ConnectionProviderInterface connectionProvider) {
+  HiveCredentialTester(ConnectionProviderInterface connectionProvider, HttpClient httpClient) {
     this.connectionProvider = checkNotNull(connectionProvider);
+    this.httpClient = httpClient;
   }
 
   @Override
@@ -59,6 +69,23 @@ public final class HiveCredentialTester extends CredentialTester {
 
   @Override
   public boolean canAccept(NetworkService networkService) {
+    HostAndPort targetPage = NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
+    String targetUri = String.format("http://%s:%d", targetPage.getHost(), 10002);
+
+    try {
+      HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
+      if (response != null) {
+        Optional<String> body = response.bodyString();
+        if (response.status().code() == HttpStatus.OK.code()
+                && body.isPresent() && body.get().contains(HIVE_TITLE)) {
+          logger.atWarning().log("Succeed to query hive http server '%s'.", targetUri);
+        } else {
+          logger.atWarning().log("Unable to query hive http server '%s'.", targetUri);
+        }
+      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query hive http server '%s'.", targetUri);
+    }
     String serviceName = NetworkServiceUtils.getServiceName(networkService);
     return SERVICE_MAP.containsKey(serviceName);
   }
