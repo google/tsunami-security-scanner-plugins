@@ -149,7 +149,6 @@ public class Cve20243104VulnDetectorTest {
               case "/api/migrate":
                 return new MockResponse().setResponseCode(200).setBody("OK");
               case "/api/system/update-env":
-            	// Example response
                 return new MockResponse()
                     .setResponseCode(200)
                     .setBody(
