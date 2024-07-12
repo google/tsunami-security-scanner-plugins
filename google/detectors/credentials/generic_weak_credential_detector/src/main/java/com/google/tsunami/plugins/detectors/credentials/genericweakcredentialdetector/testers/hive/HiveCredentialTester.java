@@ -75,7 +75,6 @@ public final class HiveCredentialTester extends CredentialTester {
       HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
       if (response != null) {
         Optional<String> body = response.bodyString();
-        body.ifPresent(s -> logger.atWarning().log(s));
         if (response.status().code() == HttpStatus.OK.code()
                 && body.isPresent() && body.get().contains(HIVE_TITLE)) {
           return true;
