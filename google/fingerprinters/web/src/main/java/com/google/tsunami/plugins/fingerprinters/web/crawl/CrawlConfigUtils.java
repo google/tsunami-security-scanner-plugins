@@ -19,6 +19,8 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.tsunami.proto.CrawlConfig;
 import com.google.tsunami.proto.CrawlTarget;
+import java.util.List;
+import java.util.regex.Pattern;
 
 /** Static utility methods pertaining to {@link CrawlConfig} proto buffer. */
 final class CrawlConfigUtils {
@@ -40,5 +42,14 @@ final class CrawlConfigUtils {
   static boolean isCrawlTargetInScope(CrawlConfig crawlConfig, CrawlTarget crawlTarget) {
     return !crawlConfig.getShouldEnforceScopeCheck() || crawlConfig.getScopesList().stream()
         .anyMatch(scope -> ScopeUtils.isInScope(scope, crawlTarget.getUrl()));
+  }
+
+  static boolean isCrawlTargetInBlockList(CrawlTarget crawlTarget, List<String> pathExclusions) {
+    for (String regex : pathExclusions) {
+      if (Pattern.compile(regex).matcher(crawlTarget.getUrl()).find()) {
+        return true;
+      }
+    }
+    return false;
   }
 }
