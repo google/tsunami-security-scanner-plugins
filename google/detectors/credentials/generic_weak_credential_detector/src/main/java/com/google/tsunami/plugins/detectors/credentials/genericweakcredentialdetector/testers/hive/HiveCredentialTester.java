@@ -75,18 +75,16 @@ public final class HiveCredentialTester extends CredentialTester {
       HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
       if (response != null) {
         Optional<String> body = response.bodyString();
+        body.ifPresent(s -> logger.atWarning().log(s));
         if (response.status().code() == HttpStatus.OK.code()
                 && body.isPresent() && body.get().contains(HIVE_TITLE)) {
-          logger.atWarning().log("Succeed to query hive http server '%s'.", targetUri);
-        } else {
-          logger.atWarning().log("Unable to query hive http server '%s'.", targetUri);
+          return true;
         }
       }
     } catch (IOException e) {
-      logger.atWarning().withCause(e).log("Unable to query hive http server '%s'.", targetUri);
+      return false;
     }
-    String serviceName = NetworkServiceUtils.getServiceName(networkService);
-    return SERVICE_MAP.containsKey(serviceName);
+    return false;
   }
 
   @Override
