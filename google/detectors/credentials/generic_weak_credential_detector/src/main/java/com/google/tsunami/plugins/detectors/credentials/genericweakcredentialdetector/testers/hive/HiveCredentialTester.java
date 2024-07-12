@@ -21,16 +21,13 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.net.HostAndPort;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
-import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.db.ConnectionProviderInterface;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpStatus;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.proto.TargetService;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
 import com.google.tsunami.proto.NetworkService;
@@ -46,8 +43,6 @@ public final class HiveCredentialTester extends CredentialTester {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private final ConnectionProviderInterface connectionProvider;
   private final HttpClient httpClient;
-  private static final ImmutableMap<String, TargetService> SERVICE_MAP =
-      ImmutableMap.of("snet-sensor-mgmt", TargetService.HIVE);
   private static final String HIVE_TITLE = "<title>HiveServer2</title>";
 
   @Inject
