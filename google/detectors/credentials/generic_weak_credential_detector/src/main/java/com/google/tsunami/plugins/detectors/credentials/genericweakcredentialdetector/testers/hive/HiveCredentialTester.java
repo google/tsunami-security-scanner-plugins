@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.net.HostAndPort;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
+import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.db.ConnectionProviderInterface;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpResponse;
@@ -44,6 +45,7 @@ public final class HiveCredentialTester extends CredentialTester {
   private final ConnectionProviderInterface connectionProvider;
   private final HttpClient httpClient;
   private static final String HIVE_TITLE = "<title>HiveServer2</title>";
+  private static final int HIVE_TCP_PORT = 10000;
 
   @Inject
   HiveCredentialTester(ConnectionProviderInterface connectionProvider, HttpClient httpClient) {
@@ -63,8 +65,7 @@ public final class HiveCredentialTester extends CredentialTester {
 
   @Override
   public boolean canAccept(NetworkService networkService) {
-    HostAndPort targetPage = NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
-    String targetUri = String.format("http://%s:%d", targetPage.getHost(), 10002);
+    String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
 
     try {
       HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
@@ -99,12 +100,9 @@ public final class HiveCredentialTester extends CredentialTester {
   }
 
   private boolean isHiveAccessible(NetworkService networkService, TestCredential credential) {
-
+    HostAndPort targetPage = NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
     try {
-      var url =
-          String.format(
-              "jdbc:hive2://%s/default",
-              NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint()));
+      String url = String.format("jdbc:hive2://%s:%d/default", targetPage.getHost(), HIVE_TCP_PORT);
       logger.atInfo().log(
           "url: %s, username: %s, password: %s",
           url, credential.username(), credential.password().orElse(""));

@@ -35,6 +35,8 @@ import com.google.tsunami.proto.NetworkService;
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.Optional;
+
+import com.google.tsunami.proto.Software;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -46,7 +48,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
@@ -67,10 +68,8 @@ public class HiveCredentialTesterTest {
 
   @Before
   public void setup() throws IOException {
-    MockitoAnnotations.openMocks(this);
     mockWebServer = new MockWebServer();
     startMockWebServer();
-
     tester = new HiveCredentialTester(mockConnectionProvider, httpClient);
   }
 
@@ -92,8 +91,9 @@ public class HiveCredentialTesterTest {
                     .build());
     NetworkService targetNetworkService =
             NetworkService.newBuilder()
-                    .setNetworkEndpoint(forHostnameAndPort("example.com", 10000))
-                    .setServiceName("snet-sensor-mgmt")
+                    .setNetworkEndpoint(forHostnameAndPort("example.com", mockWebServer.getPort()))
+                    .setServiceName("http")
+                    .setSoftware(Software.newBuilder().setName("hive"))
                     .build();
 
     assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WEAK_CRED_1)))
@@ -116,8 +116,9 @@ public class HiveCredentialTesterTest {
                     .build());
     NetworkService targetNetworkService =
             NetworkService.newBuilder()
-                    .setNetworkEndpoint(forHostnameAndPort("example.com", 10000))
-                    .setServiceName("snet-sensor-mgmt")
+                    .setNetworkEndpoint(forHostnameAndPort("example.com", mockWebServer.getPort()))
+                    .setServiceName("http")
+                    .setSoftware(Software.newBuilder().setName("hive"))
                     .build();
 
     assertThat(
@@ -139,8 +140,9 @@ public class HiveCredentialTesterTest {
                     .build());
     NetworkService targetNetworkService =
             NetworkService.newBuilder()
-                    .setNetworkEndpoint(forHostnameAndPort("example.com", 10000))
-                    .setServiceName("snet-sensor-mgmt")
+                    .setNetworkEndpoint(forHostnameAndPort("example.com", mockWebServer.getPort()))
+                    .setServiceName("http")
+                    .setSoftware(Software.newBuilder().setName("hive"))
                     .build();
 
     assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WEAK_CRED_1)))
@@ -152,8 +154,9 @@ public class HiveCredentialTesterTest {
     when(mockConnectionProvider.getConnection(any(), any(), any())).thenReturn(mockConnection);
     NetworkService targetNetworkService =
             NetworkService.newBuilder()
-                    .setNetworkEndpoint(forHostnameAndPort("example.com", 10000))
-                    .setServiceName("snet-sensor-mgmt")
+                    .setNetworkEndpoint(forHostnameAndPort("example.com", mockWebServer.getPort()))
+                    .setServiceName("http")
+                    .setSoftware(Software.newBuilder().setName("hive"))
                     .build();
 
     assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of()))
@@ -172,7 +175,7 @@ public class HiveCredentialTesterTest {
               }
             };
     mockWebServer.setDispatcher(dispatcher);
-    mockWebServer.start(10002);
+    mockWebServer.start();
     mockWebServer.url("/");
   }
 }
