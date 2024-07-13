@@ -32,11 +32,10 @@ import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.Software;
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.Optional;
-
-import com.google.tsunami.proto.Software;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
