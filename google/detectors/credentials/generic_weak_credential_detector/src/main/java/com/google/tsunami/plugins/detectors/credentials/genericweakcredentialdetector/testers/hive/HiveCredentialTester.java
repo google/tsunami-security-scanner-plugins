@@ -63,9 +63,25 @@ public final class HiveCredentialTester extends CredentialTester {
     return "Hive credential tester.";
   }
 
+  private static String buildTargetUrl(NetworkService networkService, String path) {
+    StringBuilder targetUrlBuilder = new StringBuilder();
+
+    if (NetworkServiceUtils.isWebService(networkService)) {
+      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
+
+    } else {
+      targetUrlBuilder
+              .append("http://")
+              .append(NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint()))
+              .append("/");
+    }
+    targetUrlBuilder.append(path);
+    return targetUrlBuilder.toString();
+  }
+
   @Override
   public boolean canAccept(NetworkService networkService) {
-    String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    String targetUri = buildTargetUrl(networkService, "");
 
     try {
       HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
