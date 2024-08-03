@@ -1,4 +1,4 @@
-# Triton Inference Server Rce Detector
+# Geoserver CVE-2024-36401 RCE Detector
 
 This detector checks Geoserver RCE by CVE-2024-36401.
 Multiple OGC request parameters allow Remote Code Execution (RCE)
