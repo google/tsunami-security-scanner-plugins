@@ -107,8 +107,7 @@ public final class Cve202013945DetectorTest {
                                 .setValue("CVE_2020_13945"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle(
-                            "CVE-2020-13945 Apache APISIX's Admin API Default Access Token (RCE)CVE-2020-13945 Apache "
-                                + "APISIX's Admin API Default Access Token (RCE)")
+                            "CVE-2020-13945 Apache APISIX's Admin API Default Access Token (RCE)")
                         .setRecommendation(
                             "Upgrade to the latest version of Apache APISIX, which includes a fix for the "
                                 + "vulnerability. Additionally, ensure that sensitive credentials are properly "
@@ -139,6 +138,7 @@ public final class Cve202013945DetectorTest {
   }
 
   private void mockWebResponse(String body) throws IOException {
+    mockWebServer.enqueue(new MockResponse().setResponseCode(201).setBody(body));
     mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(body));
     mockWebServer.start();
   }

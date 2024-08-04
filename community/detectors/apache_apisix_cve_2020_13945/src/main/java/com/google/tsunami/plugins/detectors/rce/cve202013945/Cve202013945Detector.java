@@ -21,6 +21,7 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -46,6 +47,7 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.time.Clock;
 import java.time.Instant;
 
@@ -77,7 +79,7 @@ public final class Cve202013945Detector implements VulnDetector {
           + "\":\"roundrobin\",\"nodes\":{\"example.com:80\":1}}}";
   private static final String TOKEN_HEADER_NAME = "X-API-KEY";
   private static final String TOKEN_VALUE = "edd1c9f034335f136f87ad84b625c8f1";
-  private static final String EXECUTE_DATA = String.format("?cmd=echo %s", DETECTION_STRING);
+  private static final String EXECUTE_DATA = String.format("echo %s", DETECTION_STRING);
 
   private final HttpClient httpClient;
 
@@ -126,8 +128,11 @@ public final class Cve202013945Detector implements VulnDetector {
     String targetVulnerabilityUrl = buildTarget(networkService).append(VUL_PATH).toString();
     String randomVerifyPath = String.format("tsunami_%s", Instant.now(utcClock).toEpochMilli());
     String targetExecuteUrl =
-        buildTarget(networkService).append(randomVerifyPath).append(EXECUTE_DATA).toString();
-
+        buildTarget(networkService)
+            .append(randomVerifyPath)
+            .append("?cmd=")
+            .append(URLEncoder.encode(EXECUTE_DATA, UTF_8))
+            .toString();
     try {
       HttpResponse httpResponse =
           httpClient.sendAsIs(
@@ -137,12 +142,15 @@ public final class Cve202013945Detector implements VulnDetector {
                           .addHeader(CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
                           .addHeader(TOKEN_HEADER_NAME, TOKEN_VALUE)
                           .build())
-                  .setRequestBody(ByteString.copyFromUtf8(POST_DATA))
+                  .setRequestBody(
+                      ByteString.copyFromUtf8(String.format(POST_DATA, randomVerifyPath)))
                   .build());
-      if (httpResponse.status().code() == 200) {
+      if (httpResponse.status().code() == 201) {
         logger.atInfo().log("Request payload to target %s succeeded", networkService);
-        HttpResponse executeResponse = httpClient.sendAsIs(get(targetExecuteUrl).build());
-        if (executeResponse.status().code() == 201
+        HttpResponse executeResponse =
+            httpClient.sendAsIs(
+                get(targetExecuteUrl).setHeaders(HttpHeaders.builder().build()).build());
+        if (executeResponse.status().code() == 200
             && executeResponse.bodyString().isPresent()
             && executeResponse.bodyString().get().contains(DETECTION_STRING)) {
           logger.atInfo().log("Vulnerability detected on target %s", networkService);
