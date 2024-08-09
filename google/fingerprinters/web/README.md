@@ -39,53 +39,82 @@ Add **generated fingerprint binary proto** to https://github.com/google/tsunami-
 
 # How to Collect Fingerprints for a Web Application
 
-1. Create parameterized docker compose file to turn up different versions of the web application
+1.  Create parameterized docker compose file to turn up different versions of
+    the web application
 
-  [WordPress Example](https://github.com/google/tsunami-security-scanner-plugins/blob/master/google/fingerprinters/web/scripts/updater/google/wordpress/app/docker-compose.yaml#L16)
+    [WordPress Example](https://github.com/google/tsunami-security-scanner-plugins/blob/master/google/fingerprinters/web/scripts/updater/google/wordpress/app/docker-compose.yaml#L16)
 
-1. Locate the open source repo of the web application
+1.  Locate the open source repo of the web application
 
-  For instance, wordpress is located at https://github.com/WordPress/WordPress, and a list of wordpress versions can be extracted based on its git [**Tags**](https://git-scm.com/book/en/v2/Git-Basics-Tagging).
+    For instance, wordpress is located at
+    https://github.com/WordPress/WordPress, and a list of wordpress versions can
+    be extracted based on its git
+    [**Tags**](https://git-scm.com/book/en/v2/Git-Basics-Tagging).
 
-  Furthermore, note down where the static/public resources are located in the repository. It could be the top level directory like `https://github.com/WordPress/WordPress`, or a UI/frontend specific directory like `https://github.com/zabbix/zabbix/tree/4.0.0/frontends/php`.  The [updater tool](https://github.com/google/tsunami-security-scanner-plugins/blob/master/google/fingerprinters/web/src/main/java/com/google/tsunami/plugins/fingerprinters/web/tools/FingerprintUpdater.java) would try query potential static files identified in the specified repo direction against the live instance of the application you spin up locally.
+    Furthermore, note down where the static/public resources are located in the
+    repository. It could be the top level directory like
+    `https://github.com/WordPress/WordPress`, or a UI/frontend specific
+    directory like `https://github.com/zabbix/zabbix/tree/4.0.0/frontends/php`.
+    The
+    [updater tool](https://github.com/google/tsunami-security-scanner-plugins/blob/master/google/fingerprinters/web/src/main/java/com/google/tsunami/plugins/fingerprinters/web/tools/FingerprintUpdater.java)
+    would try query potential static files identified in the specified repo
+    direction against the live instance of the application you spin up locally.
 
-1. Initialize/Seed the fingerprint file
+1.  Initialize/Seed the fingerprint file
 
-  Using Zabbix as an example:
+    Using Zabbix as an example:
 
-  ```
-  ./gradlew :runFingerprintUpdater --args="\
-  --software-name=zabbix\
-  --fingerprint-data-path=/tmp/zabbix_fingerprints/fingerprints/fingerprint.json\
-  --local-repo-path=/tmp/zabbix_fingerprints/repo/frontends/php\
-  --remote-url=http://localhost:280\
-  --version=4.0.0\
-  --init"
-  ```
+    ```
+    # Change into the fingerprinter directory
+    cd google/fingerprinters/web/
 
-  `--local-repo-path` is the location where you git clone the application git repo; `--remote-url` points to the live instance of the application you are running locally; `--init` initializes the `/tmp/zabbix_fingerprints/fingerprints/fingerprint.json`.
+    # Run the fingerprinter to create a new fingerprint file
+    ./gradlew :runFingerprintUpdater --args="\
+    --software-name=zabbix \
+    --fingerprint-data-path=/tmp/zabbix_fingerprints/fingerprints/fingerprint.json \
+    --local-repo-path=/tmp/zabbix_fingerprints/repo/frontends/php \
+    --remote-url=http://localhost:280 \
+    --version=4.0.0 \
+    --init"
 
-1. Create the fingerprint generation script
+    # Create a binproto file from your newly generated fingerprint.json file
+    source common.sh
+    convertFingerprint /tmp/zabbix_fingerprints/fingerprints/fingerprint.json /tmp/zabbix_fingerprints/fingerprints/fingerprint.binproto
+    # Move your binproto file into the same directory as specified in your update.sh BIN_DATA directory
+    mv /tmp/zabbix_fingerprints/fingerprints/fingerprint.binproto ./google/fingerprinters/web/src/main/resources/fingerprinters/web/data/google/zabbix.binproto
+    ```
 
-  Existing examples:
+    `--local-repo-path` is the location where you git clone the application git
+    repo; `--remote-url` points to the live instance of the application you are
+    running locally; `--init` initializes the
+    `/tmp/zabbix_fingerprints/fingerprints/fingerprint.json`.
 
-  * [WordPress updater script](https://github.com/google/tsunami-security-scanner-plugins/blob/master/google/fingerprinters/web/scripts/updater/google/wordpress/update.sh)
-  * [Zabbix updater script](https://github.com/google/tsunami-security-scanner-plugins/blob/master/google/fingerprinters/web/scripts/updater/community/zabbix/update.sh)
+1.  Create the fingerprint generation script
 
-  Note: [updater/common.sh](https://github.com/google/tsunami-security-scanner-plugins/blob/master/google/fingerprinters/web/scripts/updater/common.sh) contains a lot of utils you can reuse in your updater script.
+    Existing examples:
 
+    *   [WordPress updater script](https://github.com/google/tsunami-security-scanner-plugins/blob/master/google/fingerprinters/web/scripts/updater/google/wordpress/update.sh)
+    *   [Zabbix updater script](https://github.com/google/tsunami-security-scanner-plugins/blob/master/google/fingerprinters/web/scripts/updater/community/zabbix/update.sh)
 
-1. Validate the correctness of the fingerprints
+    Note:
+    [updater/common.sh](https://github.com/google/tsunami-security-scanner-plugins/blob/master/google/fingerprinters/web/scripts/updater/common.sh)
+    contains a lot of utils you can reuse in your updater script.
 
-  Once the generated \<software\>.binproto is added to https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/fingerprinters/web/src/main/resources/fingerprinters/web/data/community you can run Tsunami scanner locally against the application, the scanner should report correct software name as well as the version or set of versions. For example:
+1.  Validate the correctness of the fingerprints
 
-  ```
-  INFO: WebServiceFingerprinter discovered 1 potential applications for 'http://127.0.0.1:18080/': [zabbix].
-  Mar 27, 2023 8:43:43 PM com.google.tsunami.plugins.fingerprinters.web.detection.VersionDetector detectVersions
-  INFO: Possible versions for software zabbix from file hashes are: [4.0.21, 4.0.22, 4.0.24, 4.0.25, 4.0.26, 4.0.27]
-  Mar 27, 2023 8:43:43 PM com.google.tsunami.plugins.fingerprinters.web.detection.VersionDetector detectVersions
-  INFO: Possible versions for software zabbix after file path sifting: [4.0.21, 4.0.22, 4.0.24, 4.0.25, 4.0.26, 4.0.27]
-  ```
+    Once the generated \<software\>.binproto is added to
+    https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/fingerprinters/web/src/main/resources/fingerprinters/web/data/community
+    you can run Tsunami scanner locally against the application, the scanner
+    should report correct software name as well as the version or set of
+    versions. For example:
+
+    ```
+    INFO: WebServiceFingerprinter discovered 1 potential applications for 'http://127.0.0.1:18080/': [zabbix].
+    Mar 27, 2023 8:43:43 PM com.google.tsunami.plugins.fingerprinters.web.detection.VersionDetector detectVersions
+    INFO: Possible versions for software zabbix from file hashes are: [4.0.21, 4.0.22, 4.0.24, 4.0.25, 4.0.26, 4.0.27]
+    Mar 27, 2023 8:43:43 PM com.google.tsunami.plugins.fingerprinters.web.detection.VersionDetector detectVersions
+    INFO: Possible versions for software zabbix after file path sifting: [4.0.21, 4.0.22, 4.0.24, 4.0.25, 4.0.26, 4.0.27]
+    ```
 
 ## Common Issues
 

@@ -1,0 +1,7 @@
+version: '2'
+services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:${MLFLOW_VERSION}
+    ports:
+      - "5000:5000"
+    command: sh -c "mlflow server --host 0.0.0.0 --port 5000"
