@@ -17,7 +17,6 @@ package com.google.tsunami.plugins.detectors.cves.cve202346604;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forIpAndPort;
-import static com.google.tsunami.plugins.detectors.cves.cve202346604.Cve202346604Detector.SocketFactoryInstance;
 import static com.google.tsunami.plugins.detectors.cves.cve202346604.Cve202346604Detector.VULN_DESCRIPTION_OF_OOB_VERIFY;
 import static com.google.tsunami.plugins.detectors.cves.cve202346604.Cve202346604Detector.VULN_DESCRIPTION_OF_VERSION;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -41,6 +40,7 @@ import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.plugins.detectors.cves.cve202346604.Annotations.OobSleepDuration;
+import com.google.tsunami.plugins.detectors.cves.cve202346604.Cve202346604Detector.SocketFactoryInstance;
 import com.google.tsunami.proto.*;
 import java.io.*;
 import java.net.Socket;
