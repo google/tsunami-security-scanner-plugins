@@ -8,10 +8,10 @@
 
 This detector checks for BitBucket CVE-2022-36804 command injection vulnerability.
 
-A vulnerability in Bitbucket allows a remote, An attacker with access
-to a public Bitbucket repository or with read permissions to a
-private one can execute arbitrary code by sending a malicious
-HTTP request. This All versions released after 6.10.17
+A vulnerability in Bitbucket allows a remote code execution.
+An attacker with access with read or public access to a
+repository can execute arbitrary code by sending a malicious
+HTTP request. All versions released after 6.10.17
 including 7.0.0 and newer are affected, this means that all
 instances that are running any versions between 7.0.0 and
 8.3.0 inclusive can be exploited by this vulnerability.

