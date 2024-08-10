@@ -1,0 +1,23 @@
+{
+  "capabilities": {
+    "firstMatch": [
+      {}
+    ],
+    "alwaysMatch": {
+      "browserName": "chrome",
+      "pageLoadStrategy": "normal",
+      "platformName": "linux",
+      "cloud:options": {
+        "build": "RCE",
+        "name": "RCE"
+      },
+      "goog:chromeOptions": {
+        "extensions": [],
+        "args": [
+          "--no-sandbox",
+          "--renderer-cmd-prefix=%s --"
+        ]
+      }
+    }
+  }
+}

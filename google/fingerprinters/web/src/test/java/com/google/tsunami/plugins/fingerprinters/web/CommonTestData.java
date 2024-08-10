@@ -114,6 +114,46 @@ public final class CommonTestData {
           .build();
   public static final Hash SOFTWARE_2_ICON_HASH =
       Hash.newBuilder().setHexString("0e8493d8ddaf39774968c19a77ad4825").build();
+  public static final CrawlResult SOFTWARE_3_ZIP =
+      CrawlResult.newBuilder()
+          .setCrawlTarget(
+              CrawlTarget.newBuilder().setUrl(fakeUrl("/file.zip")).setHttpMethod("GET"))
+          .setResponseCode(200)
+          .setContentType("application/zip")
+          .setContent(ByteString.copyFromUtf8("software3 zip with contents"))
+          .build();
+  public static final Hash SOFTWARE_3_ZIP_HASH =
+      Hash.newBuilder().setHexString("57c793cbc96ed671d01d76b0b3ff8630").build();
+
+  public static final CrawlResult SOFTWARE_3_CSS =
+      CrawlResult.newBuilder()
+          .setCrawlTarget(
+              CrawlTarget.newBuilder().setUrl(fakeUrl("/file.css")).setHttpMethod("GET"))
+          .setResponseCode(200)
+          .setContentType("text/css")
+          .setContent(
+              ByteString.copyFromUtf8(
+                  ".materialize-red{background-color:#e51c23"
+                      + " !important}.materialize-red-text{color:#e51c23"
+                      + " !important}.materialize-red.lighten-5{background-color:#fdeaeb"
+                      + " !important}.materialize-red-text.text-lighten-5{color:#fdeaeb"
+                      + " !important}.materialize-red.lighten-4{background-color:#f8c1c3"
+                      + " !important}.materialize-red-text.text-lighten-4{color:#f8c1c3"
+                      + " !important}.materialize-red.lighten-3{background-color:#f3989b"
+                      + " !important}.materialize-red-text.text-lighten-3{color:#f3989b"
+                      + " !important}.materialize-red.lighten-2{background-color:#ee6e73."))
+          .build();
+  public static final Hash SOFTWARE_3_CSS_HASH =
+      Hash.newBuilder().setHexString("1ebae34d06fc5a9be81b852a7c354041").build();
+
+  public static final CrawlResult SOFTWARE_4_MLFLOW =
+      CrawlResult.newBuilder()
+          .setCrawlTarget(
+              CrawlTarget.newBuilder().setUrl(fakeUrl("/login?from")).setHttpMethod("GET"))
+          .setResponseCode(200)
+          .setContent(ByteString.copyFromUtf8("MLFLOW"))
+          .build();
+
   public static final CrawlResult UNKNOWN_CONTENT =
       CrawlResult.newBuilder()
           .setCrawlTarget(CrawlTarget.newBuilder().setUrl(fakeUrl("/unknown")).setHttpMethod("GET"))
@@ -124,6 +164,11 @@ public final class CommonTestData {
       SoftwareIdentity.newBuilder().setSoftware("Software1").build();
   public static final SoftwareIdentity SOFTWARE_IDENTITY_2 =
       SoftwareIdentity.newBuilder().setSoftware("Software2").build();
+  public static final SoftwareIdentity SOFTWARE_IDENTITY_3 =
+      SoftwareIdentity.newBuilder().setSoftware("Software3").build();
+
+  public static final SoftwareIdentity SOFTWARE_IDENTITY_4 =
+      SoftwareIdentity.newBuilder().setSoftware("mlflow").build();
   public static final FingerprintData FINGERPRINT_DATA_1 =
       FingerprintData.fromProto(
           Fingerprints.newBuilder()
@@ -237,6 +282,29 @@ public final class CommonTestData {
                   PathVersion.newBuilder()
                       .setContentPath(getPath(SOFTWARE_2_ICON.getCrawlTarget().getUrl()))
                       .addVersions(Version.newBuilder().setFullName("2.0"))
+                      .addVersions(Version.newBuilder().setFullName("2.1")))
+              .build());
+
+  public static final FingerprintData FINGERPRINT_DATA_3 =
+      FingerprintData.fromProto(
+          Fingerprints.newBuilder()
+              .setSoftwareIdentity(SOFTWARE_IDENTITY_3)
+              .addContentHashes(
+                  ContentHash.newBuilder()
+                      .setContentPath(getPath(SOFTWARE_3_ZIP.getCrawlTarget().getUrl()))
+                      .addHashes(SOFTWARE_3_ZIP_HASH))
+              .addContentHashes(
+                  ContentHash.newBuilder()
+                      .setContentPath(getPath(SOFTWARE_3_CSS.getCrawlTarget().getUrl()))
+                      .addHashes(SOFTWARE_3_CSS_HASH))
+              .addHashVersions(
+                  HashVersion.newBuilder()
+                      .setHash(SOFTWARE_3_ZIP_HASH)
+                      .addVersions(Version.newBuilder().setFullName("2.0"))
+                      .addVersions(Version.newBuilder().setFullName("2.1")))
+              .addHashVersions(
+                  HashVersion.newBuilder()
+                      .setHash(SOFTWARE_3_CSS_HASH)
                       .addVersions(Version.newBuilder().setFullName("2.1")))
               .build());
 

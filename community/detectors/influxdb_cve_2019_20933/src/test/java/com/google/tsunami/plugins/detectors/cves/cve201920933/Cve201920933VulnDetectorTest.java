@@ -210,6 +210,6 @@ public final class Cve201920933VulnDetectorTest {
 
     DetectionReportList findings = detector.detect(targetInfo, ImmutableList.of(influxDBservice));
 
-    assert (findings.getDetectionReportsList().isEmpty());
+    assertThat(findings.getDetectionReportsList()).isEmpty();
   }
 }
