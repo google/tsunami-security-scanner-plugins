@@ -29,4 +29,4 @@ Guidelines](https://opensource.google/conduct/).
 
 ## Public Review Process
 
-The [Public Review Process](https://github.com/doyensec/tsunami-security-scanner-plugins/blob/master/docs/publicreviewprocess.md) document provides a set of guidelines on how Tsunami plugins are reviewed. This is meant to facilitate the work of reviewers and contributors.
+The [Public Review Process](publicreviewprocess.md) document provides a set of guidelines on how Tsunami plugins are reviewed. This is meant to facilitate the work of reviewers and contributors.
