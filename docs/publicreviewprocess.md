@@ -66,7 +66,7 @@ Contributions that do not pass all checks will **not be accepted**.
         - [ ] The related CVE field is filled if applicable
     - [ ] Verify if the detector includes key details for quality assurance and debugging. For example, if the detector depends on presence of custom content like `/etc/passwd`, it would be very helpful to include the content in the [AddtionalDetails](https://github.com/google/tsunami-security-scanner-plugins/blob/master/google/detectors/directorytraversal/generic_path_traversal_detector/src/main/java/com/google/tsunami/plugins/detectors/directorytraversal/genericpathtraversaldetector/GenericPathTraversalDetector.java#L198) field of the vulnerability. 
         - [ ] At the end of the day, it is impossible to always foresee all the ways for false positive detections to happen. As a result,  there's internal monitoring of the initial findings from each new detector. Sometimes if we are not sure if a given concern/assumption is valid, it is always a good idea to provide additional logs in the detector to help debugging during the initial triage process.
-    - [ ] Determine the ability of the plugin to work multi-platform (if applicable)
+    - [ ] Determine the ability of the plugin to work multi-platform (*if applicable*)
         - [ ] Some of the vulnerable targets might be deployed on different architectures and / or operating systems. The ability for the plugin to work under all circumstances increases its detection capabilities. At the minimum, the plugin must work on Linux based operating systems.
 
 ##### Verify The Plugin Implementation Is High Quality
@@ -78,7 +78,7 @@ Contributions that do not pass all checks will **not be accepted**.
 - [ ] Comments are provided to address some non-obvious nuances in the detection logic. Ideally, the comments should also contain details on the specific vulnerability that the plugin is attempting to detect.
 - [ ] Minimize new library dependency introduced, and check for duplication in existing libraries, for example, there should only be one Json parser.
 - [ ] Check the license of new dependencies, some of the forbidden licenses are:
-    * AGPL (Affero GPL), OSL, SSPL, Cryptographic Autonomy License (CAL), CPAL, CPOL, European Union Public Licence (EUPL), SISSL, Watcom-1.0
+    * *AGPL (Affero GPL)*, *OSL*, *SSPL*, *Cryptographic Autonomy License (CAL)*, *CPAL*, *CPOL*, *European Union Public Licence (EUPL)*, *SISSL*, *Watcom-1.0*
     * When in doubt, check with the Tsunami team
 
 #### Tsunami Fingerprints Review Process
@@ -87,7 +87,7 @@ Contributions that do not pass all checks will **not be accepted**.
 
 - [ ] Tsunami scanner should be able to detect target versions of the application using the generated fingerprints. This is meant to ensure the functional requirements.
 
-##### Verify The Quality of The update.sh Script
+##### Verify The Quality of The "update.sh" Script
 
 - [ ] Check whether `update.sh` can be evoked locally with no runtime errors so that it can be used continuously in the future to generate new fingerprints for the newer version of the application.
 
@@ -103,16 +103,18 @@ Contributions that do not pass all checks will **not be accepted**.
     * Responsiveness
     * Overall quality, thoroughness of the work
 
-#### Provide A Message To Both Contributor and Tsunami Dev Team That The Review Is Complete
+#### Message To Both Contributors and the Tsunami Dev Team
 
 - [ ] Finalize the review by posting all comments using the PR review feature of Github. Clarify all remaining todos with bullet points to ease the contributor’s follow-up. Assuming that the expected changes have been implemented by the contributor, the PR can be accepted. A final message should provide an overall evaluation of the contribution:
 
 ```
 Reviewer: <Name, Affiliation>
 
-Plugin: <Context of the submission. What is the vulnerability type the plugin is verifying (RCE, file write, file traversal, file read, ..) or specifics of the fingerprint mechanism>
-Feedback: <General feedback on code quality, thoroughness of the work, reliability and accuracy of the contribution. Use this space to highlight any potential gaps in the current detection/fingerprint logic>
-Drawbacks: <Use this space to highlight potential concerns of likelihood of false positives to watch out for during the triage process, any state changing operations & risks on the target service>
+Plugin: <Context of the submission. What is the vulnerability type the plugin is verifying or specifics of the fingerprint mechanism>
+Feedback: <General feedback on code quality, thoroughness of the work, reliability and accuracy of the contribution. 
+Use this space to highlight any potential gaps in the current detection/fingerprint logic>
+Drawbacks: <Use this space to highlight potential concerns of likelihood of false positives to watch out for during the triage process,
+any state changing operations & risks on the target service>
 ```
 
 
