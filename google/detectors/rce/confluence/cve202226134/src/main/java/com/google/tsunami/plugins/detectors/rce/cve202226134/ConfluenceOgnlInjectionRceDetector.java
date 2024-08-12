@@ -68,7 +68,7 @@ public final class ConfluenceOgnlInjectionRceDetector implements VulnDetector {
           "",
           "unknown", // nmap could not determine the service name, we try to exploit anyway.
           "opsmessaging"); // nmap returns opsmessaging service name for port 8090.
-  @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "Google";
+  @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "GOOGLE";
   @VisibleForTesting static final String VULNERABILITY_REPORT_ID = "CVE_2022_26134";
 
   @VisibleForTesting

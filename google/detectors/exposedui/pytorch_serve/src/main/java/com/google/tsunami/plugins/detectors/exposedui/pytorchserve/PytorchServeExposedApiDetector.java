@@ -67,7 +67,7 @@ public final class PytorchServeExposedApiDetector implements VulnDetector {
   private final Clock utcClock;
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
-  @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "Google";
+  @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "GOOGLE";
   @VisibleForTesting static final String VULNERABILITY_REPORT_ID = "PYTORCH_EXPOSED_UI";
   private static final Pattern URI_REGEX = Pattern.compile("curl (.*)");
 

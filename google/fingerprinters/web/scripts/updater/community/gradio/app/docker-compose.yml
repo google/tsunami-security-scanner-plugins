@@ -1,0 +1,8 @@
+services:
+  gradio:
+    build:
+      context: .
+      args:
+        version: ${GRADIO_VERSION}
+    ports:
+      - "8000:8000"

@@ -19,6 +19,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forIp;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.COMMON_LIB;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.FINGERPRINT_DATA_1;
@@ -29,9 +30,11 @@ import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTW
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_2_ICON;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_3_CSS;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_3_ZIP;
+import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_4_MLFLOW;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_IDENTITY_1;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_IDENTITY_2;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_IDENTITY_3;
+import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.SOFTWARE_IDENTITY_4;
 import static com.google.tsunami.plugins.fingerprinters.web.CommonTestData.fakeUrl;
 
 import com.google.common.collect.ImmutableList;
@@ -42,6 +45,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
+import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.plugins.fingerprinters.web.WebServiceFingerprinterConfigs.WebServiceFingerprinterCliOptions;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.Crawler;
@@ -52,6 +56,7 @@ import com.google.tsunami.proto.CrawlConfig;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
 import com.google.tsunami.proto.FingerprintingReport;
+import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.ServiceContext;
 import com.google.tsunami.proto.Software;
@@ -60,9 +65,14 @@ import com.google.tsunami.proto.Version;
 import com.google.tsunami.proto.Version.VersionType;
 import com.google.tsunami.proto.VersionSet;
 import com.google.tsunami.proto.WebServiceContext;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import javax.inject.Inject;
+import okhttp3.mockwebserver.Dispatcher;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -74,12 +84,14 @@ public final class WebServiceFingerprinterTest {
 
   private final FakeCrawler fakeCrawler = new FakeCrawler();
   private WebServiceFingerprinterCliOptions cliOptions;
+  private MockWebServer mockWebServer;
 
   @Inject WebServiceFingerprinter fingerprinter;
 
   @Before
   public void setUp() {
     cliOptions = new WebServiceFingerprinterCliOptions();
+    mockWebServer = new MockWebServer();
     Guice.createInjector(
             new AbstractModule() {
               @Override
@@ -324,6 +336,62 @@ public final class WebServiceFingerprinterTest {
                 .getWebServiceContext()
                 .getCrawlResultsList())
         .doesNotContain(SOFTWARE_3_CSS);
+  }
+
+  @Test
+  public void fingerprint_mlflowServiceWithBasicAuth_fillsServiceContextWithApplication()
+      throws Exception {
+    fakeCrawler.setCrawlResults(ImmutableSet.of(SOFTWARE_4_MLFLOW));
+    startMockMlflowWebServer();
+    NetworkEndpoint endpoint =
+        forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort());
+    NetworkService networkService =
+        NetworkService.newBuilder().setNetworkEndpoint(endpoint).setServiceName("http").build();
+
+    FingerprintingReport fingerprintingReport =
+        fingerprinter.fingerprint(TargetInfo.getDefaultInstance(), networkService);
+
+    assertThat(fingerprintingReport)
+        .comparingExpectedFieldsOnly()
+        .isEqualTo(
+            FingerprintingReport.newBuilder()
+                .addNetworkServices(
+                    networkService.toBuilder()
+                        .setServiceName(SOFTWARE_IDENTITY_4.getSoftware())
+                        .setServiceContext(
+                            ServiceContext.newBuilder()
+                                .setWebServiceContext(
+                                    WebServiceContext.newBuilder()
+                                        .setApplicationRoot(
+                                            String.format(
+                                                "http://%s/",
+                                                NetworkEndpointUtils.toUriAuthority(endpoint)))
+                                        .setSoftware(
+                                            Software.newBuilder()
+                                                .setName(SOFTWARE_IDENTITY_4.getSoftware())))))
+                .build());
+  }
+
+  private void startMockMlflowWebServer() throws IOException {
+    final Dispatcher dispatcher =
+        new Dispatcher() {
+          final MockResponse unauthorizedResponse =
+              new MockResponse()
+                  .setResponseCode(401)
+                  .setBody(
+                      "You are not authenticated. "
+                          + "Please see https://www.mlflow.org/docs/latest/auth/index.html"
+                          + "#authenticating-to-mlflow "
+                          + "on how to authenticate");
+
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            return unauthorizedResponse;
+          }
+        };
+    mockWebServer.setDispatcher(dispatcher);
+    mockWebServer.start();
+    mockWebServer.url("/");
   }
 
   private static NetworkService addServiceContext(

@@ -35,6 +35,7 @@ import com.google.tsunami.plugins.portscan.nmap.client.testing.SpyNmapClientModu
 import com.google.tsunami.plugins.portscan.nmap.option.NmapPortScannerCliOptions;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.OperatingSystemClass;
 import com.google.tsunami.proto.PortScanningReport;
 import com.google.tsunami.proto.ScanTarget;
 import com.google.tsunami.proto.Software;
@@ -99,7 +100,16 @@ public class NmapPortScannerTest {
             portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
         .isEqualTo(
             PortScanningReport.newBuilder()
-                .setTargetInfo(TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint))
+                .setTargetInfo(
+                    TargetInfo.newBuilder()
+                        .addNetworkEndpoints(networkEndpoint)
+                        .addOperatingSystemClasses(
+                            OperatingSystemClass.newBuilder()
+                                .setType("WAP")
+                                .setVendor("Asus")
+                                .setOsFamily("embedded")
+                                .setAccuracy(98)
+                                .build()))
                 .addNetworkServices(
                     NetworkService.newBuilder()
                         .setNetworkEndpoint(

@@ -66,7 +66,7 @@ import javax.inject.Inject;
 // nmap returns fmtp for the Consul admin endpoint
 @ForServiceName({"fmtp"})
 public final class ConsulEnableScriptChecksCommandExecutionDetector implements VulnDetector {
-  @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "Google";
+  @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "GOOGLE";
 
   @VisibleForTesting
   static final String VULNERABILITY_REPORT_ID = "CONSUL_ENABLE_SCRIPT_CHECKS_COMMAND_EXECUTION";

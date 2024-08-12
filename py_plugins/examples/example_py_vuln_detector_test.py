@@ -15,18 +15,18 @@
 
 import unittest.mock as umock
 from absl.testing import absltest
-from google3.google.protobuf import timestamp_pb2
-from google3.third_party.java_src.tsunami.plugin_server.py import tsunami_plugin
-from google3.third_party.java_src.tsunami.plugin_server.py.common.net.http.requests_http_client import RequestsHttpClientBuilder
-from google3.third_party.java_src.tsunami.plugin_server.py.plugin.payload.payload_generator import PayloadGenerator
-from google3.third_party.java_src.tsunami.plugin_server.py.plugin.payload.payload_secret_generator import PayloadSecretGenerator
-from google3.third_party.java_src.tsunami.plugin_server.py.plugin.payload.payload_utility import get_parsed_payload
-from google3.third_party.java_src.tsunami.plugin_server.py.plugin.tcs_client import TcsClient
-from google3.third_party.java_src.tsunami.proto import detection_pb2
-from google3.third_party.java_src.tsunami.proto import network_service_pb2
-from google3.third_party.java_src.tsunami.proto import reconnaissance_pb2
-from google3.third_party.java_src.tsunami.proto import vulnerability_pb2
-from google3.third_party.tsunami_plugins.py_plugins.examples import example_py_vuln_detector
+from google.protobuf import timestamp_pb2
+import tsunami_plugin
+from common.net.http.requests_http_client import RequestsHttpClientBuilder
+from plugin.payload.payload_generator import PayloadGenerator
+from plugin.payload.payload_secret_generator import PayloadSecretGenerator
+from plugin.payload.payload_utility import get_parsed_payload
+from plugin.tcs_client import TcsClient
+import detection_pb2
+import network_service_pb2
+import reconnaissance_pb2
+import vulnerability_pb2
+from third_party.tsunami_plugins.py_plugins.examples import example_py_vuln_detector
 
 
 # Callback server
