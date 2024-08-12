@@ -23,7 +23,7 @@ All plugin reviewed are prioritized by the following factors:
 
 The approval of Tsunami plugins is entirely at our discretion, and it is subject to Tsunami's top level goals and philosophy. If the vulnerability is RCE like and is detectable in Tsunami with high confidence, we would generally accept the request.
 
-Each PR is also evaluated based on the criteria below. The overall quality and reliability of the contribution will determine the reward (if applicable).
+Each PR is also evaluated based on the [criteria below](#4-acknowledgements-and-evaluation). The overall quality and reliability of the contribution will determine the reward (if applicable).
 
 ### 3. Review Github Pull Requests
 
