@@ -66,8 +66,7 @@ import javax.inject.Inject;
 public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnDetector {
   @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "TSUNAMI_COMMUNITY";
 
-  @VisibleForTesting
-  static final String VULNERABILITY_REPORT_ID = "KUBERNETES_WITH_OPEN_ACCESS";
+  @VisibleForTesting static final String VULNERABILITY_REPORT_ID = "KUBERNETES_WITH_OPEN_ACCESS";
 
   @VisibleForTesting
   static final String VULNERABILITY_REPORT_TITLE = "Kubernetes Open Access Remote Code Execution";
