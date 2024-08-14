@@ -97,9 +97,6 @@ public final class AirflowCredentialTester extends CredentialTester {
     String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     String loginUrl = rootUrl + "login/";
     try {
-      logger.atInfo().log(
-          "url: %s, username: %s, password: %s",
-          loginUrl, credential.username(), credential.password().orElse(""));
       HttpResponse response =
           this.httpClient.send(
               post(loginUrl)
