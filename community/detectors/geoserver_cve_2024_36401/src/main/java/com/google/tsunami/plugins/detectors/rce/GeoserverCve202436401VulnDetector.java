@@ -24,6 +24,7 @@ import static com.google.tsunami.common.net.http.HttpRequest.get;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.time.UtcClock;
@@ -32,6 +33,7 @@ import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.NotImplementedException;
+import com.google.tsunami.plugins.detectors.rce.Annotations.OobSleepDuration;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.DetectionReport;
@@ -47,6 +49,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import javax.inject.Inject;
 
@@ -71,13 +74,18 @@ public class GeoserverCve202436401VulnDetector implements VulnDetector {
   private final PayloadGenerator payloadGenerator;
   private final HttpClient httpClient;
   private final Clock utcClock;
+  private final int oobSleepDuration;
 
   @Inject
   GeoserverCve202436401VulnDetector(
-      HttpClient httpClient, @UtcClock Clock utcClock, PayloadGenerator payloadGenerator) {
+      HttpClient httpClient,
+      @UtcClock Clock utcClock,
+      PayloadGenerator payloadGenerator,
+      @OobSleepDuration int oobSleepDuration) {
     this.httpClient = checkNotNull(httpClient);
     this.utcClock = checkNotNull(utcClock);
     this.payloadGenerator = checkNotNull(payloadGenerator);
+    this.oobSleepDuration = oobSleepDuration;
   }
 
   @Override
@@ -118,12 +126,7 @@ public class GeoserverCve202436401VulnDetector implements VulnDetector {
     }
     // If there is an RCE, the execution isn't immediate
     logger.atInfo().log("Waiting for RCE callback.");
-    try {
-      Thread.sleep(5000);
-    } catch (InterruptedException e) {
-      logger.atWarning().withCause(e).log("Failed to wait for RCE result");
-      return false;
-    }
+    Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
     if (payload.checkIfExecuted()) {
       logger.atInfo().log("RCE payload executed!");
       return true;

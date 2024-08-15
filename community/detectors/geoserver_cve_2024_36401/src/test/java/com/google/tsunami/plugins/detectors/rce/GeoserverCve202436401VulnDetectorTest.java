@@ -22,11 +22,15 @@ import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAnd
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.Truth;
 import com.google.inject.Guice;
+import com.google.inject.testing.fieldbinder.Bind;
+import com.google.inject.testing.fieldbinder.BoundFieldModule;
+import com.google.inject.util.Modules;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
+import com.google.tsunami.plugins.detectors.rce.Annotations.OobSleepDuration;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
@@ -72,6 +76,10 @@ public final class GeoserverCve202436401VulnDetectorTest {
         }
       };
 
+  @Bind(lazy = true)
+  @OobSleepDuration
+  private int sleepDuration = 1;
+
   @Before
   public void setUp() throws IOException {
     mockCallbackServer.start();
@@ -82,7 +90,8 @@ public final class GeoserverCve202436401VulnDetectorTest {
                 .setCallbackServer(mockCallbackServer)
                 .setSecureRng(testSecureRandom)
                 .build(),
-            new GeoserverCve202436401VulnDetectorBootstrapModule())
+            Modules.override(new GeoserverCve202436401VulnDetectorBootstrapModule())
+                .with(BoundFieldModule.of(this)))
         .injectMembers(this);
   }
 
@@ -136,6 +145,7 @@ public final class GeoserverCve202436401VulnDetectorTest {
   @Test
   public void detect_ifNotVulnerable_doesNotReportVuln() throws IOException {
     startMockWebServer();
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();

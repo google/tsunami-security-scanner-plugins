@@ -15,7 +15,9 @@
  */
 package com.google.tsunami.plugins.detectors.rce;
 
+import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
+import com.google.tsunami.plugins.detectors.rce.Annotations.OobSleepDuration;
 
 /**
  * A Geoserver Cve-2024-36401 Rce Detector Guice module that bootstraps the {@link
@@ -26,5 +28,14 @@ public final class GeoserverCve202436401VulnDetectorBootstrapModule extends Plug
   @Override
   protected void configurePlugin() {
     registerPlugin(GeoserverCve202436401VulnDetector.class);
+  }
+
+  @Provides
+  @OobSleepDuration
+  int provideOobSleepDuration(GeoserverRceDetectorConfigs configs) {
+    if (configs.oobSleepDuration == 0) {
+      return 10;
+    }
+    return configs.oobSleepDuration;
   }
 }
