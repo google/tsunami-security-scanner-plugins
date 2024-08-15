@@ -27,6 +27,8 @@ import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClient;
+import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -96,10 +98,25 @@ public class GeoserverCve202436401VulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
+                .filter(this::isGeoserverInstance)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
+  }
+
+  private boolean isGeoserverInstance(NetworkService networkService) {
+
+    final String rootUri = buildWebApplicationRootUrl(networkService);
+    try {
+      HttpResponse response =
+          httpClient.send(
+              get(rootUri + "geoserver/index.html").withEmptyHeaders().build(), networkService);
+      return response.status().equals(HttpStatus.OK);
+    } catch (RuntimeException | IOException e) {
+      logger.atWarning().withCause(e).log("Failed to send HTTP request to '%s'", rootUri);
+      return false;
+    }
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
