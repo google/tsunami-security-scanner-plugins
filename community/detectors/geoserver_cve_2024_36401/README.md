@@ -1,6 +1,6 @@
 # Geoserver CVE-2024-36401 RCE Detector
 
-This detector checks Geoserver RCE by CVE-2024-36401.
+This detector checks for Geoserver RCE (CVE-2024-36401).
 Multiple OGC request parameters allow Remote Code Execution (RCE)
 by unauthenticated users through specially crafted input against
 a default GeoServer installation due to unsafely evaluating property
