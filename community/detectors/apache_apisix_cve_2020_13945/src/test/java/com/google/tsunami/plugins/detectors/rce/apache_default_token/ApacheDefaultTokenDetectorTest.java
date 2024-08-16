@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.rce.cve202013945;
+package com.google.tsunami.plugins.detectors.rce.apache_default_token;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.rce.cve202013945.Cve202013945Detector.DETECTION_STRING;
+import static com.google.tsunami.plugins.detectors.rce.apache_default_token.ApacheDefaultTokenDetector.DETECTION_STRING;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -47,14 +47,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Unit tests for {@link Cve202013945Detector}. */
+/** Unit tests for {@link ApacheDefaultTokenDetector}. */
 @RunWith(JUnit4.class)
-public final class Cve202013945DetectorTest {
+public final class ApacheDefaultTokenDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
-  @Inject private Cve202013945Detector detector;
+  @Inject private ApacheDefaultTokenDetector detector;
 
   private MockWebServer mockWebServer;
 
@@ -63,7 +63,7 @@ public final class Cve202013945DetectorTest {
     mockWebServer = new MockWebServer();
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
-            new Cve202013945DetectorBootstrapModule(),
+            new ApacheDefaultTokenDetectorBootstrapModule(),
             new HttpClientModule.Builder().build())
         .injectMembers(this);
   }
@@ -104,15 +104,13 @@ public final class Cve202013945DetectorTest {
                         .setMainId(
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2020_13945"))
+                                .setValue("APISIX_DEFAULT_TOKEN"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle(
-                            "CVE-2020-13945 Apache APISIX's Admin API Default Access Token (RCE)")
+                            "Apache APISIX's Admin API Default Access Token (RCE)")
                         .setRecommendation(
-                            "Upgrade to the latest version of Apache APISIX, which includes a fix for the "
-                                + "vulnerability. Additionally, ensure that sensitive credentials are properly "
-                                + "protected and stored securely.")
-                        .setDescription(Cve202013945Detector.VULN_DESCRIPTION))
+                            "Change the default admin API key and set appropriate IP access control lists.")
+                        .setDescription(ApacheDefaultTokenDetector.VULN_DESCRIPTION))
                 .build());
   }
 

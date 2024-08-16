@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.rce.cve202013945;
+package com.google.tsunami.plugins.detectors.rce.apache_default_token;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-/** A {@link PluginBootstrapModule} for {@link Cve202013945Detector}. */
-public final class Cve202013945DetectorBootstrapModule extends PluginBootstrapModule {
+/** A {@link PluginBootstrapModule} for {@link ApacheDefaultTokenDetector}. */
+public final class ApacheDefaultTokenDetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    registerPlugin(Cve202013945Detector.class);
+    registerPlugin(ApacheDefaultTokenDetector.class);
   }
 }

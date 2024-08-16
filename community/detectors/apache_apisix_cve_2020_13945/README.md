@@ -1,9 +1,7 @@
-# Apache APISIX RCE CVE-2020-13945 Detector
+# Apache APISIX Default Token RCE  Detector
 
-Apache APISIX 1.2, 1.3, 1.4, and 1.5 is susceptible to insufficiently protected credentials. An attacker can enable the
-Admin API and delete the Admin API access IP restriction rules. Eventually, the default token is allowed to access
-APISIX management data.
-See https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-202-13945 for a details.
+Apache APISIX has a built-in default API KEY. If the user does not proactively modify it (which few will), Lua scripts
+can be executed directly through the API interface, which can lead to RCE vulnerabilities.
 
 ## Build jar file for this plugin
 

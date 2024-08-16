@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.rce.cve202013945;
+package com.google.tsunami.plugins.detectors.rce.apache_default_token;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -54,12 +54,12 @@ import java.time.Instant;
 /** A {@link VulnDetector} that detects Apache APISIX RCE CVE-2020-13945. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "Apache APISIX RCE CVE-2020-13945 Detector",
+    name = "Apache APISIX with default Admin token Detector",
     version = "0.1",
-    description = "This detector checks Apache APISIX RCE (CVE-2020-13945).",
+    description = "This detector checks Apache APISIX with default Admin token.",
     author = "hh-hunter",
-    bootstrapModule = Cve202013945DetectorBootstrapModule.class)
-public final class Cve202013945Detector implements VulnDetector {
+    bootstrapModule = ApacheDefaultTokenDetectorBootstrapModule.class)
+public final class ApacheDefaultTokenDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   @VisibleForTesting static final String DETECTION_STRING = "tsunami_verify_success";
@@ -86,7 +86,7 @@ public final class Cve202013945Detector implements VulnDetector {
   private final Clock utcClock;
 
   @Inject
-  Cve202013945Detector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  ApacheDefaultTokenDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
     this.httpClient = checkNotNull(httpClient);
     this.utcClock = checkNotNull(utcClock);
   }
@@ -117,7 +117,7 @@ public final class Cve202013945Detector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(Cve202013945Detector::isWebServiceOrUnknownService)
+                .filter(ApacheDefaultTokenDetector::isWebServiceOrUnknownService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
@@ -134,6 +134,19 @@ public final class Cve202013945Detector implements VulnDetector {
             .append(URLEncoder.encode(EXECUTE_DATA, UTF_8))
             .toString();
     try {
+      HttpResponse checkIsAPISIXResponse =
+          httpClient.sendAsIs(
+              get(targetExecuteUrl).setHeaders(HttpHeaders.builder().build()).build());
+      boolean present = checkIsAPISIXResponse.headers().get("Server").isPresent();
+      if (checkIsAPISIXResponse.status().code() != 401
+          && present
+          && !checkIsAPISIXResponse.headers().get("Server").get().contains("APISIX")) {
+        logger.atInfo().log(
+            "Target %s is not an Apache APISIX instance.",
+            NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
+        return false;
+      }
+
       HttpResponse httpResponse =
           httpClient.sendAsIs(
               post(targetVulnerabilityUrl)
@@ -146,22 +159,29 @@ public final class Cve202013945Detector implements VulnDetector {
                       ByteString.copyFromUtf8(String.format(POST_DATA, randomVerifyPath)))
                   .build());
       if (httpResponse.status().code() == 201) {
-        logger.atInfo().log("Request payload to target %s succeeded", networkService);
+        logger.atInfo().log(
+            "Request payload to target %s succeeded",
+            NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
         HttpResponse executeResponse =
             httpClient.sendAsIs(
                 get(targetExecuteUrl).setHeaders(HttpHeaders.builder().build()).build());
         if (executeResponse.status().code() == 200
             && executeResponse.bodyString().isPresent()
             && executeResponse.bodyString().get().contains(DETECTION_STRING)) {
-          logger.atInfo().log("Vulnerability detected on target %s", networkService);
+          logger.atInfo().log(
+              "Vulnerability detected on target %s",
+              NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
           return true;
         }
       } else {
         logger.atInfo().log(
-            "Execution of the command to the target %s has failed.", networkService);
+            "Execution of the command to the target %s has failed.",
+            NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
       }
     } catch (IOException | AssertionError e) {
-      logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
+      logger.atWarning().withCause(e).log(
+          "Request to target %s failed",
+          NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
       return false;
     }
     return false;
@@ -179,12 +199,11 @@ public final class Cve202013945Detector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2020_13945"))
+                        .setValue("APISIX_DEFAULT_TOKEN"))
                 .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2020-13945 Apache APISIX's Admin API Default Access Token (RCE)")
+                .setTitle("Apache APISIX's Admin API Default Access Token (RCE)")
                 .setRecommendation(
-                    "Upgrade to the latest version of Apache APISIX, which includes a fix for the vulnerability. "
-                        + "Additionally, ensure that sensitive credentials are properly protected and stored securely.")
+                    "Change the default admin API key and set appropriate IP access control lists.")
                 .setDescription(VULN_DESCRIPTION))
         .build();
   }
