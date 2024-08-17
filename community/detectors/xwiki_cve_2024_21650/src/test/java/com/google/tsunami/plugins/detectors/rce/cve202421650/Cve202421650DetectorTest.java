@@ -17,12 +17,14 @@ package com.google.tsunami.plugins.detectors.rce.cve202421650;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
+import com.google.inject.testing.fieldbinder.Bind;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
+import com.google.tsunami.plugins.detectors.rce.cve202421650.Annotations.OobSleepDuration;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.TargetInfo;
@@ -60,6 +62,10 @@ public final class Cve202421650DetectorTest {
 
   private NetworkService service;
   private TargetInfo targetInfo;
+
+  @Bind(lazy = true)
+  @OobSleepDuration
+  private int sleepDuration = 0;
 
   @Before
   public void setUp() {

@@ -15,24 +15,9 @@
  */
 package com.google.tsunami.plugins.detectors.rce.cve202421650;
 
-import com.google.inject.Provides;
-import com.google.tsunami.plugin.PluginBootstrapModule;
-import com.google.tsunami.plugins.detectors.rce.cve202421650.Annotations.OobSleepDuration;
+import com.google.tsunami.common.config.annotations.ConfigProperties;
 
-/** A {@link PluginBootstrapModule} for {@link Cve202421650Detector}. */
-public final class Cve202421650DetectorBootstrapModule extends PluginBootstrapModule {
-
-  @Override
-  protected void configurePlugin() {
-    registerPlugin(Cve202421650Detector.class);
-  }
-
-  @Provides
-  @OobSleepDuration
-  int provideOobSleepDuration(Cve202421650DetectorConfigs configs) {
-    if (configs.oobSleepDuration == 0) {
-      return 2;
-    }
-    return configs.oobSleepDuration;
-  }
+@ConfigProperties("plugins.community.detectors.xwiki_cve_2024_21650")
+final class Cve202421650DetectorConfigs {
+  int oobSleepDuration;
 }

@@ -15,24 +15,21 @@
  */
 package com.google.tsunami.plugins.detectors.rce.cve202421650;
 
-import com.google.inject.Provides;
-import com.google.tsunami.plugin.PluginBootstrapModule;
-import com.google.tsunami.plugins.detectors.rce.cve202421650.Annotations.OobSleepDuration;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
 
-/** A {@link PluginBootstrapModule} for {@link Cve202421650Detector}. */
-public final class Cve202421650DetectorBootstrapModule extends PluginBootstrapModule {
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  @Override
-  protected void configurePlugin() {
-    registerPlugin(Cve202421650Detector.class);
-  }
+/** Annotation for {@link Cve202421650Detector}. */
+final class Annotations {
+    @Qualifier
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({PARAMETER, METHOD, FIELD})
+    @interface OobSleepDuration {}
 
-  @Provides
-  @OobSleepDuration
-  int provideOobSleepDuration(Cve202421650DetectorConfigs configs) {
-    if (configs.oobSleepDuration == 0) {
-      return 2;
-    }
-    return configs.oobSleepDuration;
-  }
+    private Annotations() {}
 }

@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'Tsunami Apache APISIX RCE (CVE-2022-24112) VulnDetector plugin.'
+description = 'Tsunami XWiki RCE (CVE-2024-21650) VulnDetector plugin.'
 group = 'com.google.tsunami'
 version = '0.0.1-SNAPSHOT'
 
@@ -47,9 +47,9 @@ java {
 }
 
 ext {
-    tsunamiVersion = '0.0.11'
-    junitVersion = '4.13'
-    mockitoVersion = '2.28.2'
+    tsunamiVersion = 'latest.release'
+    junitVersion = '4.13.1'
+    guiceVersion = '4.2.3'
     okhttpVersion = '3.12.0'
     truthVersion = '1.1.3'
 }
@@ -60,8 +60,8 @@ dependencies {
     implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
 
     testImplementation "junit:junit:${junitVersion}"
-    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "com.google.inject:guice:${guiceVersion}"
+    testImplementation "com.google.inject.extensions:guice-testlib:${guiceVersion}"
     testImplementation "com.google.truth:truth:${truthVersion}"
-    testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
     testImplementation "com.squareup.okhttp3:mockwebserver:${okhttpVersion}"
 }

