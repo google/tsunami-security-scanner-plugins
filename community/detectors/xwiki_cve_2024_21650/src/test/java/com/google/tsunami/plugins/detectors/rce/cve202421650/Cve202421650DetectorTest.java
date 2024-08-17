@@ -65,7 +65,7 @@ public final class Cve202421650DetectorTest {
 
   @Bind(lazy = true)
   @OobSleepDuration
-  private int sleepDuration = 0;
+  private int sleepDuration = 1;
 
   @Before
   public void setUp() {
