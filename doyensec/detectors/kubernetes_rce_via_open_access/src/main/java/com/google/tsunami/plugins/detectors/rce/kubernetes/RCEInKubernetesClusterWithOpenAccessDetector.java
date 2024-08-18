@@ -120,10 +120,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
       throws IOException {
     this.utcClock = checkNotNull(utcClock);
 
-    // TODO: HTTPS with insecure cert fails (despite the trustAllCertificate set below) with:
-    // javax.net.ssl.SSLHandshakeException.
-    // Must run tsunami with option: --http-client-trust-all-certificates for it to take effect.
-    this.httpClient = checkNotNull(httpClient).modify().setTrustAllCertificates(true).build();
+    this.httpClient = checkNotNull(httpClient);
 
     this.payloadGenerator = checkNotNull(payloadGenerator);
     this.payloadFormatString =
