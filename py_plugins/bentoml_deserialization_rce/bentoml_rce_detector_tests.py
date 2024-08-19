@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for SpringCloudFunctionDetector."""
+"""Tests for Cve20242912Detector."""
 import json
 import unittest.mock as umock
 from importlib.resources import contents
@@ -66,7 +66,7 @@ _DOCS_BODY = '''{
         }'''.encode('utf-8')
 
 
-class SpringCloudFunctionDetectorTest(absltest.TestCase):
+class Cve20242912DetectorTest(absltest.TestCase):
     def setUp(self):
         super().setUp()
         # payload generator and client with callback
