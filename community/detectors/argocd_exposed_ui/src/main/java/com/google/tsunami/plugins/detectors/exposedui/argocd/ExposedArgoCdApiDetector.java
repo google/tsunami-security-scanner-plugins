@@ -121,7 +121,6 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
         checkNotNull(httpClient)
             .modify()
             .setFollowRedirects(true)
-            .setTrustAllCertificates(true)
             .build();
     this.utcClock = checkNotNull(utcClock);
     this.payloadGenerator = checkNotNull(payloadGenerator);
