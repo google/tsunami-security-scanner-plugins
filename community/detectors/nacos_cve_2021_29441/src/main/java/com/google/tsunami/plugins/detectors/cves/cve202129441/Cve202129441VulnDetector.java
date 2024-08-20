@@ -95,7 +95,7 @@ public final class Cve202129441VulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(Cve202129441VulnDetector::isWebServiceOrUnknownService)
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
@@ -144,12 +144,6 @@ public final class Cve202129441VulnDetector implements VulnDetector {
                         + " version, configure custom authentication key-value pair information")
                 .setDescription(VULN_DESCRIPTION))
         .build();
-  }
-
-  private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
-    return networkService.getServiceName().isEmpty()
-        || NetworkServiceUtils.isWebService(networkService)
-        || NetworkServiceUtils.getServiceName(networkService).equals("unknown");
   }
 
   private static String buildTargetUrl(NetworkService networkService) {

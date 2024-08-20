@@ -79,11 +79,6 @@ public final class Cve20220540VulnDetector implements VulnDetector {
     this.utcClock = checkNotNull(utcClock);
   }
 
-  private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
-    return networkService.getServiceName().isEmpty()
-        || NetworkServiceUtils.isWebService(networkService);
-  }
-
   private static String buildTargetUrl(NetworkService networkService, String url) {
     StringBuilder targetUrlBuilder = new StringBuilder();
     if (NetworkServiceUtils.isWebService(networkService)) {
@@ -106,7 +101,7 @@ public final class Cve20220540VulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(Cve20220540VulnDetector::isWebServiceOrUnknownService)
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))

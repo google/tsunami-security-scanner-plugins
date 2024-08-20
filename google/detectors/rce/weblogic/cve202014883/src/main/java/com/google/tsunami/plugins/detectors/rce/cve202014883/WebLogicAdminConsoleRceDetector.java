@@ -21,7 +21,6 @@ import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.util.Timestamps;
@@ -65,11 +64,6 @@ public final class WebLogicAdminConsoleRceDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String INJECTION_TEMPLATE =
       "%sconsole/images/.%%252e/console.portal?_nfpb=true&_pageLable=&handle=com.tangosol.coherence.mvel2.sh.ShellSession(%s);";
-  private static final ImmutableSet<String> HTTP_EQUIVALENT_SERVICE_NAMES =
-      ImmutableSet.of(
-          "",
-          "unknown", // nmap could not determine the service name, we try to exploit anyway.
-          "afs3-callback"); // most /etc/services list port 7001 as afs3-callback service
   @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "GOOGLE";
   @VisibleForTesting static final String VULNERABILITY_REPORT_ID = "CVE_2020_14883";
 
@@ -112,16 +106,11 @@ public final class WebLogicAdminConsoleRceDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(this::isInScopeService)
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
-  }
-
-  private boolean isInScopeService(NetworkService networkService) {
-    return NetworkServiceUtils.isWebService(networkService)
-        || HTTP_EQUIVALENT_SERVICE_NAMES.contains(networkService.getServiceName());
   }
 
   private String buildRootUri(NetworkService networkService) {

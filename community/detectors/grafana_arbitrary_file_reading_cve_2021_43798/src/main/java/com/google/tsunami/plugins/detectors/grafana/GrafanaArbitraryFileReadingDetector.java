@@ -134,18 +134,12 @@ public class GrafanaArbitraryFileReadingDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(this::isWebServiceOrUnknownService)
+                .filter(NetworkServiceUtils::isWebService)
                 .map(this::checkUrlWithPlugin)
                 .filter(CheckResult::isVulnerable)
                 .map(checkResult -> buildDetectionReport(targetInfo, checkResult))
                 .collect(toImmutableList()))
         .build();
-  }
-
-  private boolean isWebServiceOrUnknownService(NetworkService networkService) {
-    return networkService.getServiceName().isEmpty()
-        || NetworkServiceUtils.isWebService(networkService)
-        || NetworkServiceUtils.getServiceName(networkService).equals("unknown");
   }
 
   private CheckResult checkUrlWithPlugin(NetworkService networkService) {

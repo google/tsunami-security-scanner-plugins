@@ -131,12 +131,6 @@ public final class Cve202122205VulnDetector implements VulnDetector {
     }
   }
 
-  private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
-    return networkService.getServiceName().isEmpty()
-        || NetworkServiceUtils.isWebService(networkService)
-        || NetworkServiceUtils.getServiceName(networkService).equals("unknown");
-  }
-
   private static StringBuilder buildTarget(NetworkService networkService) {
     StringBuilder targetUrlBuilder = new StringBuilder();
     if (NetworkServiceUtils.isWebService(networkService)) {
@@ -158,7 +152,7 @@ public final class Cve202122205VulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(Cve202122205VulnDetector::isWebServiceOrUnknownService)
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
