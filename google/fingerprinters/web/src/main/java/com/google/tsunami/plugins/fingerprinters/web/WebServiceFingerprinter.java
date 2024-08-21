@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.ByteString;
-import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
@@ -291,8 +290,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
     // We want to test weak credentials against mlflow versions above 2.5 which has basic
     // authentication module.these versions return a 401 status code and a link to documentation
     // about how to authenticate.
-    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
-    var pingApiUrl = String.format("http://%s/%s", uriAuthority, "ping");
+    var pingApiUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "ping";
     try {
       HttpResponse apiPingResponse = httpClient.send(get(pingApiUrl).withEmptyHeaders().build());
 
@@ -324,10 +322,10 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
   private void checkForZenMl(
       Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
     logger.atInfo().log("probing ZenMl login page and login api - custom fingerprint phase");
-    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
 
     // we double-check both the api and login page
-    var loginApiUrl = String.format("http://%s/%s", uriAuthority, "api/v1/login");
+    var loginApiUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "api/v1/login";
     try {
       // test login api with a random username and password and for sure not exist
       HttpResponse apiLoginResponse =
@@ -357,7 +355,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
       return;
     }
 
-    var loginUrl = String.format("http://%s/%s", uriAuthority, "login");
+    var loginUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "login";
     try {
       HttpResponse loginPageResponse = httpClient.send(get(loginUrl).withEmptyHeaders().build());
       if (!(loginPageResponse.bodyString().isPresent()

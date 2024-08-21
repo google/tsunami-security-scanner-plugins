@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.rce.selenium;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -228,29 +227,14 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
     }
   }
 
-  private static String buildTargetUrl(NetworkService networkService, String path) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-
-    } else {
-      // Default to HTTP protocol when the scanner cannot identify the actual service.
-      // HTTP is also used in a default Selenium Grid install.
-      targetUrlBuilder
-          .append("http://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    targetUrlBuilder.append(path);
-    return targetUrlBuilder.toString();
-  }
-
   // Verifies that Selenium Grid is exposed.
   // Password-protected Selenium Grid will issue a 401 Unauthorized response with header:
   // WWW-Authenticate: Basic realm="selenium-server"
   private boolean isSeleniumGridExposed(NetworkService networkService) {
-    String statusUri = buildTargetUrl(networkService, SELENIUM_GRID_SERVICE_PATH + "/status");
+    String statusUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + SELENIUM_GRID_SERVICE_PATH
+            + "/status";
 
     try {
       HttpResponse response =
@@ -268,7 +252,10 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
   // Returns true when ready, or false on timeout or failure
   private boolean isSeleniumGridReady(NetworkService networkService) {
     boolean seleniumIsReady = false;
-    String statusUri = buildTargetUrl(networkService, SELENIUM_GRID_SERVICE_PATH + "/status");
+    String statusUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + SELENIUM_GRID_SERVICE_PATH
+            + "/status";
 
     logger.atInfo().log(
         "Waiting for Selenium Grid to enter ready state (timeout is %d s)",
@@ -323,7 +310,10 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
   // This prevents a normal chrome instance startup which should result in a "tab crashed" error.
   // Returns true if the injected command caused a tab crash (command likely executed).
   private boolean executeCommandViaChrome(NetworkService networkService, String command) {
-    String targetUri = buildTargetUrl(networkService, SELENIUM_GRID_SERVICE_PATH + "/session");
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + SELENIUM_GRID_SERVICE_PATH
+            + "/session";
     String reqPayload = String.format(payloadFormatString, command);
     boolean hasTabCrashed;
 
@@ -366,8 +356,11 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
 
     // Request file to read via file:// protocol
     String targetUri =
-        buildTargetUrl(
-            networkService, SELENIUM_GRID_SERVICE_PATH + "/session/" + seleniumSessionId + "/url");
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + SELENIUM_GRID_SERVICE_PATH
+            + "/session/"
+            + seleniumSessionId
+            + "/url";
     String fileUri = "file://" + filePath;
     String fileReadPayload = String.format(seleniumUrlPayload, fileUri);
     boolean fileRequestSubmitted = false;
@@ -394,9 +387,11 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
 
     // Read file contents via Selenium browser source code handler
     targetUri =
-        buildTargetUrl(
-            networkService,
-            SELENIUM_GRID_SERVICE_PATH + "/session/" + seleniumSessionId + "/source");
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + SELENIUM_GRID_SERVICE_PATH
+            + "/session/"
+            + seleniumSessionId
+            + "/source";
     String fileContents = null;
 
     req =
@@ -439,7 +434,10 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
   // Opens a Selenium Grid session that is required to submit browser requests.
   // Returns session ID string, or null if not successful.
   private String createSeleniumSession(NetworkService networkService) {
-    String targetUri = buildTargetUrl(networkService, SELENIUM_GRID_SERVICE_PATH + "/session");
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + SELENIUM_GRID_SERVICE_PATH
+            + "/session";
     String seleniumSessionId = null;
 
     HttpRequest req =
@@ -477,8 +475,10 @@ public final class RCEViaExposedSeleniumGridDetector implements VulnDetector {
   private boolean closeSeleniumSession(NetworkService networkService, String seleniumSessionId) {
     logger.atInfo().log("Closing Selenium Session %s", seleniumSessionId);
     String targetUri =
-        buildTargetUrl(
-            networkService, SELENIUM_GRID_SERVICE_PATH + "/session/" + seleniumSessionId);
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + SELENIUM_GRID_SERVICE_PATH
+            + "/session/"
+            + seleniumSessionId;
     HttpRequest req =
         HttpRequest.delete(targetUri)
             .setHeaders(HttpHeaders.builder().addHeader(CONTENT_TYPE, "application/json").build())

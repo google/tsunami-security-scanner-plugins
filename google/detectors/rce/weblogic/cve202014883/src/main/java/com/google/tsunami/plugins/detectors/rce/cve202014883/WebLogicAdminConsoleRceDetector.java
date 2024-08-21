@@ -17,7 +17,6 @@ package com.google.tsunami.plugins.detectors.rce.cve202014883;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -113,15 +112,8 @@ public final class WebLogicAdminConsoleRceDetector implements VulnDetector {
         .build();
   }
 
-  private String buildRootUri(NetworkService networkService) {
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      return NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    }
-    return String.format("http://%s/", toUriAuthority(networkService.getNetworkEndpoint()));
-  }
-
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String rootUri = buildRootUri(networkService);
+    String rootUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
 
     return (payloadGenerator.isCallbackServerEnabled()
             && isVulnerableWithCallback(rootUri, networkService))

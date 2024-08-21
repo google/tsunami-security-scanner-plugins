@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.rce.kubernetes;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -204,25 +203,10 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
     return isVulnerable;
   }
 
-  private static String buildTargetUrl(NetworkService networkService, String path) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      // Default to HTTPS protocol when the scanner cannot identify the actual service.
-      // which is what Kubernetes API server normally uses.
-      targetUrlBuilder
-          .append("https://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    targetUrlBuilder.append(path);
-    return targetUrlBuilder.toString();
-  }
-
   private boolean createPod(NetworkService networkService, String podName, String payload) {
-    String targetUri = buildTargetUrl(networkService, "api/v1/namespaces/default/pods");
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + "api/v1/namespaces/default/pods";
     logger.atInfo().log("Creating pod via Kubernetes service at '%s'", targetUri);
 
     HttpRequest req =
@@ -251,7 +235,10 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
   }
 
   private boolean deletePod(NetworkService networkService, String podName) {
-    String targetUri = buildTargetUrl(networkService, "api/v1/namespaces/default/pods/" + podName);
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + "api/v1/namespaces/default/pods/"
+            + podName;
 
     logger.atInfo().log("Deleting Kubernetes pod at '%s'", targetUri);
 

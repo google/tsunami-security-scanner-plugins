@@ -17,7 +17,6 @@ package com.google.tsunami.plugins.detectors.exposedui.argoworkflow;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 
 import com.google.common.collect.ImmutableList;
@@ -85,13 +84,6 @@ public final class ExposedArgoworkflowDetector implements VulnDetector {
         .build();
   }
 
-  private String buildRootUri(NetworkService networkService) {
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      return NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    }
-    return String.format("https://%s/", toUriAuthority(networkService.getNetworkEndpoint()));
-  }
-
   private boolean isArgoWorkflowExposed(HttpResponse response) {
     boolean flag = response.toString().contains("managedNamespace");
     logger.atInfo().log("Is unauthorized content exposed: %s", flag);
@@ -102,7 +94,7 @@ public final class ExposedArgoworkflowDetector implements VulnDetector {
   private boolean isServiceVulnerable(NetworkService networkService) {
 
     // the target URL of the target is built
-    String rootUri = buildRootUri(networkService);
+    String rootUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
 
     String targetUri = rootUri + "api/v1/info";
     logger.atInfo().log("targetUri is %s", targetUri);

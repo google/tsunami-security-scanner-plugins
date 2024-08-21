@@ -20,7 +20,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.COOKIE;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
@@ -131,19 +130,6 @@ public final class Cve202122205VulnDetector implements VulnDetector {
     }
   }
 
-  private static StringBuilder buildTarget(NetworkService networkService) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      targetUrlBuilder
-          .append("http://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    return targetUrlBuilder;
-  }
-
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
@@ -164,7 +150,8 @@ public final class Cve202122205VulnDetector implements VulnDetector {
   }
 
   private Cve202122205VulnVo getCsrfTokenAndCookie(NetworkService networkService) {
-    String targetUserSignUrl = buildTarget(networkService).append(USER_SIGN_PATH).toString();
+    String targetUserSignUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + USER_SIGN_PATH;
     Cve202122205VulnVo result = new Cve202122205VulnVo();
     try {
       HttpResponse httpResponse =
@@ -190,7 +177,8 @@ public final class Cve202122205VulnDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String targetVulnerabilityUrl = buildTarget(networkService).append(VUL_PATH).toString();
+    String targetVulnerabilityUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + VUL_PATH;
     try {
       Cve202122205VulnVo info = getCsrfTokenAndCookie(networkService);
       if (Strings.isNullOrEmpty(info.getCookie()) && Strings.isNullOrEmpty(info.getCsrfToken())) {

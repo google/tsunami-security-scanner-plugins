@@ -24,7 +24,7 @@ import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
-import com.google.tsunami.common.data.NetworkEndpointUtils;
+import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
@@ -101,10 +101,7 @@ public final class DockerExposedUiDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String targetUri =
-        String.format(
-            "http://%s/version",
-            NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint()));
+    String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "version";
     try {
       HttpResponse response = httpClient.send(get(targetUri).withEmptyHeaders().build());
       if (response.status().isSuccess() && response.bodyString().isPresent()) {

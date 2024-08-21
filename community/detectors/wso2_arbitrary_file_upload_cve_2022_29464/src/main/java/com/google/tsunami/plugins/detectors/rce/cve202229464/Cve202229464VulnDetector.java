@@ -19,7 +19,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONNECTION;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -31,6 +30,7 @@ import com.google.common.io.Resources;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
@@ -123,7 +123,7 @@ public class Cve202229464VulnDetector implements VulnDetector {
 
   @VisibleForTesting
   String buildRootUri(NetworkService networkService) {
-    return String.format("https://%s/", toUriAuthority(networkService.getNetworkEndpoint()));
+    return NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {

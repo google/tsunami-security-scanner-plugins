@@ -19,7 +19,6 @@ package com.google.tsunami.plugins.detectors.cves.cve20243104;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
@@ -109,7 +108,7 @@ public final class Cve20243104VulnDetector implements VulnDetector {
   }
 
   private boolean checkNeuralSolutionFingerprint(NetworkService networkService) {
-    String targetWebAddress = buildTarget(networkService).toString();
+    String targetWebAddress = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     var request = HttpRequest.get(targetWebAddress).withEmptyHeaders().build();
 
     try {
@@ -133,21 +132,9 @@ public final class Cve20243104VulnDetector implements VulnDetector {
         && checkNeuralSolutionFingerprint(networkService);
   }
 
-  private StringBuilder buildTarget(NetworkService networkService) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      targetUrlBuilder
-          .append("https://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    return targetUrlBuilder;
-  }
-
   private boolean sendFirstStepRequest(NetworkService networkService, Payload payload) {
-    String targetVulnerabilityUrl = buildTarget(networkService).append(VUL_PATH_STEP_1).toString();
+    String targetVulnerabilityUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + VUL_PATH_STEP_1;
     String requestBody = PAYLOAD_BODY.replace("{{CALLBACK_PAYLOAD}}", payload.getPayload());
     try {
       HttpResponse httpResponse =
@@ -172,7 +159,8 @@ public final class Cve20243104VulnDetector implements VulnDetector {
   }
 
   private boolean sendSecondStepRequest(NetworkService networkService) {
-    String targetVulnerabilityUrl = buildTarget(networkService).append(VUL_PATH_STEP_2).toString();
+    String targetVulnerabilityUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + VUL_PATH_STEP_2;
 
     try {
       HttpResponse httpResponse =
@@ -188,7 +176,8 @@ public final class Cve20243104VulnDetector implements VulnDetector {
   }
 
   private boolean sendThirdStepRequest(NetworkService networkService) {
-    String targetVulnerabilityUrl = buildTarget(networkService).append(VUL_PATH_STEP_3).toString();
+    String targetVulnerabilityUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + VUL_PATH_STEP_3;
     try {
       HttpResponse httpResponse =
           httpClient.send(get(targetVulnerabilityUrl).withEmptyHeaders().build(), networkService);

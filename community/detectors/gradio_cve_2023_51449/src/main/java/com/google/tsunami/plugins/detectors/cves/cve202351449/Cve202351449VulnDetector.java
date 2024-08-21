@@ -19,7 +19,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.auto.value.AutoValue;
@@ -93,21 +92,9 @@ public final class Cve202351449VulnDetector implements VulnDetector {
     this.httpClient = checkNotNull(httpClient);
   }
 
-  private static StringBuilder buildTarget(NetworkService networkService) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      targetUrlBuilder
-          .append("https://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    return targetUrlBuilder;
-  }
-
   private HttpResponse sendUploadRequest(NetworkService networkService) throws IOException {
-    String uploadUrl = buildTarget(networkService).append(POST_UPLOAD_PATH).toString();
+    String uploadUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + POST_UPLOAD_PATH;
     MultipartBody fileRequest =
         new MultipartBody.Builder()
             .setType(MultipartBody.FORM)
@@ -147,7 +134,8 @@ public final class Cve202351449VulnDetector implements VulnDetector {
 
   private HttpResponse sendGetFileRequest(NetworkService networkService, String payload)
       throws IOException {
-    String fetchFileUrl = buildTarget(networkService).append(GET_FILE_PATH).toString() + payload;
+    String fetchFileUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + GET_FILE_PATH + payload;
     return httpClient.sendAsIs(
         HttpRequest.get(fetchFileUrl)
             .setHeaders(HttpHeaders.builder().addHeader(USER_AGENT, "Tsunami Scanner").build())

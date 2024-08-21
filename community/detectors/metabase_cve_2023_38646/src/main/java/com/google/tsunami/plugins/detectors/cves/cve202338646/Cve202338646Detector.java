@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.cves.cve202338646;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
@@ -128,7 +127,7 @@ public final class Cve202338646Detector implements VulnDetector {
   private String getSetupToken(NetworkService networkService) {
     HttpHeaders httpHeaders = HttpHeaders.builder().build();
     String targetVulnerabilityUrl =
-        buildTarget(networkService).append(SETUP_TOKEN_ENDPOINT).toString();
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + SETUP_TOKEN_ENDPOINT;
     try {
       HttpResponse httpResponse =
           httpClient.send(
@@ -152,7 +151,7 @@ public final class Cve202338646Detector implements VulnDetector {
         HttpHeaders.builder().addHeader(CONTENT_TYPE, "application/json").build();
 
     String targetVulnerabilityUrl =
-        buildTarget(networkService).append(DB_CREATE_ENDPOINT).toString();
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + DB_CREATE_ENDPOINT;
     try {
       httpClient.send(
           post(targetVulnerabilityUrl)
@@ -163,19 +162,6 @@ public final class Cve202338646Detector implements VulnDetector {
     } catch (IOException | AssertionError e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
     }
-  }
-
-  private static StringBuilder buildTarget(NetworkService networkService) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      targetUrlBuilder
-          .append("http://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    return targetUrlBuilder;
   }
 
   private DetectionReport buildDetectionReport(

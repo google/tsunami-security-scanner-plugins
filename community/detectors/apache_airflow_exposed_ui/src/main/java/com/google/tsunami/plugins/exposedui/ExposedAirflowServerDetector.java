@@ -28,7 +28,6 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
-import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
@@ -126,8 +125,7 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
   public boolean isApacheAirflow(NetworkService networkService) {
     logger.atInfo().log("probing apache airflow login page - custom fingerprint phase");
 
-    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
-    var loginPageUrl = String.format("http://%s/%s", uriAuthority, "login");
+    var loginPageUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "login";
     try {
       HttpResponse loginResponse =
           this.httpClient.send(get(loginPageUrl).withEmptyHeaders().build());

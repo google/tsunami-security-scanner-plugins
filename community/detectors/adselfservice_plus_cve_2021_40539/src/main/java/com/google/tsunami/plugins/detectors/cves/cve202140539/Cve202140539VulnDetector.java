@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.cves.cve202140539;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -82,20 +81,6 @@ public final class Cve202140539VulnDetector implements VulnDetector {
     this.utcClock = checkNotNull(utcClock);
   }
 
-  private static StringBuilder buildTarget(NetworkService networkService) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      targetUrlBuilder
-          .append("http://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    targetUrlBuilder.append(VUL_PATH);
-    return targetUrlBuilder;
-  }
-
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
@@ -112,7 +97,8 @@ public final class Cve202140539VulnDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String targetVulnerabilityUrl = buildTarget(networkService).toString();
+    String targetVulnerabilityUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + VUL_PATH;
     try {
       HttpResponse httpResponse =
           httpClient.sendAsIs(

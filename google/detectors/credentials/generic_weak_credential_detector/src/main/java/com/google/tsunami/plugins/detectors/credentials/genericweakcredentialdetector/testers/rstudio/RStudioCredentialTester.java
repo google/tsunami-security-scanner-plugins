@@ -17,14 +17,12 @@
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.rstudio;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.ByteString;
-import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
@@ -84,22 +82,6 @@ public final class RStudioCredentialTester extends CredentialTester {
     return "RStudio credential tester.";
   }
 
-  private static String buildTargetUrl(NetworkService networkService, String path) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      // Default to HTTP protocol when the scanner cannot identify the actual service.
-      targetUrlBuilder
-          .append("http://")
-          .append(NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    targetUrlBuilder.append(path);
-    return targetUrlBuilder.toString();
-  }
-
   /**
    * Determines if this tester can accept the {@link NetworkService} based on the name of the
    * service or a custom fingerprint. The fingerprint is necessary since nmap doesn't recognize a
@@ -116,7 +98,8 @@ public final class RStudioCredentialTester extends CredentialTester {
       return true;
     }
     boolean canAcceptByCustomFingerprint = false;
-    String url = buildTargetUrl(networkService, "unsupported_browser.htm");
+    String url =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "unsupported_browser.htm";
     try {
       logger.atInfo().log("Probing RStudio - custom fingerprint phase");
       HttpResponse response = httpClient.send(get(url).withEmptyHeaders().build());
@@ -162,7 +145,7 @@ public final class RStudioCredentialTester extends CredentialTester {
   }
 
   private boolean isRStudioAccessible(NetworkService networkService, TestCredential credential) {
-    var url = buildTargetUrl(networkService, "auth-public-key");
+    var url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "auth-public-key";
     try {
       logger.atInfo().log("Retrieving public key");
       HttpResponse response = httpClient.send(get(url).withEmptyHeaders().build());
@@ -170,7 +153,7 @@ public final class RStudioCredentialTester extends CredentialTester {
       String exponent = body.get().split(":")[0];
       String modulus = body.get().split(":")[1];
 
-      url = buildTargetUrl(networkService, "auth-do-sign-in");
+      url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "auth-do-sign-in";
       logger.atInfo().log(
           "url: %s, username: %s, password: %s",
           url, credential.username(), credential.password().orElse(""));
