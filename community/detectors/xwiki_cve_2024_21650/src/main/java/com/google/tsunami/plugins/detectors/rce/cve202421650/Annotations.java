@@ -26,10 +26,10 @@ import javax.inject.Qualifier;
 
 /** Annotation for {@link Cve202421650Detector}. */
 final class Annotations {
-    @Qualifier
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({PARAMETER, METHOD, FIELD})
-    @interface OobSleepDuration {}
+  @Qualifier
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({PARAMETER, METHOD, FIELD})
+  @interface OobSleepDuration {}
 
-    private Annotations() {}
+  private Annotations() {}
 }
