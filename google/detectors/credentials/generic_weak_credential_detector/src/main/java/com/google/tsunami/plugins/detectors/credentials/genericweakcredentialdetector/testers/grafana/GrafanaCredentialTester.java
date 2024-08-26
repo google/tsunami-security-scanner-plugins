@@ -82,6 +82,10 @@ public final class GrafanaCredentialTester extends CredentialTester {
       return true;
     }
 
+    if (!NetworkServiceUtils.isWebService(networkService)) {
+      return false;
+    }
+
     boolean canAcceptByCustomFingerprint = false;
 
     var url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);

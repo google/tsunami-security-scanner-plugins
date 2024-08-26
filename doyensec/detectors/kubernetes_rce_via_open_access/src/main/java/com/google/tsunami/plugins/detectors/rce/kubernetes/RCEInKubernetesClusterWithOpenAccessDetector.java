@@ -139,9 +139,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                // TODO: This filter doesn't trigger this detector.
-                // .filter(NetworkServiceUtils::isWebService)
-
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))

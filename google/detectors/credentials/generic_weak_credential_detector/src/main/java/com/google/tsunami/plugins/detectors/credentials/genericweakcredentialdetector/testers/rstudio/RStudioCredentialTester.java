@@ -138,6 +138,7 @@ public final class RStudioCredentialTester extends CredentialTester {
       NetworkService networkService, List<TestCredential> credentials) {
 
     return credentials.stream()
+        .filter(unused -> NetworkServiceUtils.isWebService(networkService))
         .filter(cred -> isRStudioAccessible(networkService, cred))
         .findFirst()
         .map(ImmutableList::of)

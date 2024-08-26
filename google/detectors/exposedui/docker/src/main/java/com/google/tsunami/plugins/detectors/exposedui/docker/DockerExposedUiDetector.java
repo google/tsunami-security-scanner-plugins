@@ -89,6 +89,7 @@ public final class DockerExposedUiDetector implements VulnDetector {
         DetectionReportList.newBuilder()
             .addAllDetectionReports(
                 matchedServices.stream()
+                    .filter(NetworkServiceUtils::isWebService)
                     .filter(this::isServiceVulnerable)
                     .map(networkService -> buildDetectionReport(targetInfo, networkService))
                     .collect(toImmutableList()))
