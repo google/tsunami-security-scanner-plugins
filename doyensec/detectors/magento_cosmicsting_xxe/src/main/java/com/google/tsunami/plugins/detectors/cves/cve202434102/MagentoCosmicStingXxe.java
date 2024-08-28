@@ -68,7 +68,6 @@ import javax.inject.Inject;
     bootstrapModule = MagentoCosmicStingXxeBootstrapModule.class)
 public final class MagentoCosmicStingXxe implements VulnDetector {
   @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "TSUNAMI_COMMUNITY";
-
   @VisibleForTesting static final String VULNERABILITY_REPORT_ID = "CVE-2024-34102";
 
   @VisibleForTesting
@@ -125,7 +124,6 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
   private final int oobSleepDuration;
-
   private boolean responseMatchingOnly = false;
   private String detectedMagentoVersion = null;
 
@@ -166,7 +164,8 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
 
     try {
       HttpResponse response = this.httpClient.send(req, networkService);
-      if (response.status() == HttpStatus.OK && response.bodyString().orElse("").contains("Magento")) {
+      if (response.status() == HttpStatus.OK
+          && response.bodyString().orElse("").contains("Magento")) {
         String version = response.bodyString().get();
         logger.atInfo().log("Detected Magento version: '%s'", version);
         return version;
@@ -275,7 +274,6 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
 
   // Checks whether a given Magento instance is exposed and vulnerable.
   private boolean isServiceVulnerable(NetworkService networkService) {
-
     // Fetch the version of the running Magento instance
     this.detectedMagentoVersion = detectMagentoVersion(networkService);
 
@@ -307,6 +305,10 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
     }
 
     // Build the XML XXE payload
+    // Note: when the callback server is not available, oobCallbackUrl will be an empty string.
+    // This is fine, as in that case we only care about the HTTP response, the contents of the
+    // payload
+    // don't really matter.
     String xxePayload =
         PAYLOAD_TEMPLATE
             .replace("{OOB_CALLBACK}", oobCallbackUrl)
@@ -327,7 +329,6 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
     }
 
     logger.atInfo().log("Waiting for XXE callback.");
-
     Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
 
     // payload should never be null here as we should have already returned in that case
@@ -350,7 +351,6 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
 
   private DetectionReport buildDetectionReport(
       TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
-
     // Set the additional details section to the detected Magento version
     String additionalDetails;
     if (this.detectedMagentoVersion == null) {
