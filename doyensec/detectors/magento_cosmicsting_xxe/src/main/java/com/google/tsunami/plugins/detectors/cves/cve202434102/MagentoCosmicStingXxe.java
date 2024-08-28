@@ -307,8 +307,7 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
     // Build the XML XXE payload
     // Note: when the callback server is not available, oobCallbackUrl will be an empty string.
     // This is fine, as in that case we only care about the HTTP response, the contents of the
-    // payload
-    // don't really matter.
+    // payload don't really matter.
     String xxePayload =
         PAYLOAD_TEMPLATE
             .replace("{OOB_CALLBACK}", oobCallbackUrl)
