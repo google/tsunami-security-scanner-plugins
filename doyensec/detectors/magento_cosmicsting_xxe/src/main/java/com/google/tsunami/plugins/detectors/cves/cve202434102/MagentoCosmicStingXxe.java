@@ -166,8 +166,7 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
 
     try {
       HttpResponse response = this.httpClient.send(req, networkService);
-      if (response.status().code() == HttpStatus.OK.code()
-          && response.bodyString().orElse("").startsWith("Magento")) {
+      if (response.status() == HttpStatus.OK && response.bodyString().orElse("").contains("Magento")) {
         String version = response.bodyString().get();
         logger.atInfo().log("Detected Magento version: '%s'", version);
         return version;
