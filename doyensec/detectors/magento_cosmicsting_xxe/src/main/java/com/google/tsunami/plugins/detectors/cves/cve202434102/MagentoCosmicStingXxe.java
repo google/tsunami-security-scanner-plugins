@@ -80,15 +80,17 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
           + " HTTP request with a crafted XML file that references external entities; when the"
           + " request payload is deserialized, the attacker can extract sensitive files from the"
           + " system and gain administrative access to the software. Remote Code Execution (RCE)"
-          + " could be accomplished by combining the issue with another vulnerability, such as the"
-          + " PHP iconv RCE. See: https://nvd.nist.gov/vuln/detail/CVE-2024-34102 or"
+          + " can be accomplished by combining this issue with another vulnerability, such as the"
+          + " PHP iconv RCE (CVE-2024-2961). An exploit that leverages both vulnerabilities to"
+          + " achieve RCE on unpatched Magento is publicly available.\n"
+          + "See: https://nvd.nist.gov/vuln/detail/CVE-2024-34102 or"
           + " https://helpx.adobe.com/security/products/magento/apsb24-40.html for more"
           + " information.\n";
 
   @VisibleForTesting
   static final String VULNERABILITY_REPORT_DESCRIPTION_CALLBACK =
       VULNERABILITY_REPORT_DESCRIPTION_BASIC
-          + "The vulnerability was confirmed via an Out of Band Callback.";
+          + "The vulnerability was confirmed via an out of band callback.";
 
   @VisibleForTesting
   static final String VULNERABILITY_REPORT_DESCRIPTION_RESPONSE_MATCHING =
