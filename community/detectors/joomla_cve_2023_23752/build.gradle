@@ -1,0 +1,71 @@
+plugins {
+    id 'java-library'
+}
+
+description = 'Tsunami CVE-2023-23752 VulnDetector plugin.'
+group 'com.google.tsunami'
+version '0.0.1-SNAPSHOT'
+
+
+repositories {
+    maven { // The google mirror is less flaky than mavenCentral()
+        url 'https://maven-central.storage-download.googleapis.com/repos/central/data/'
+    }
+    mavenCentral()
+    mavenLocal()
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+
+    jar.manifest {
+        attributes('Implementation-Title': name,
+                'Implementation-Version': version,
+                'Built-By': System.getProperty('user.name'),
+                'Built-JDK': System.getProperty('java.version'),
+                'Source-Compatibility': sourceCompatibility,
+                'Target-Compatibility': targetCompatibility)
+    }
+
+    javadoc.options {
+        encoding = 'UTF-8'
+        use = true
+        links 'https://docs.oracle.com/javase/8/docs/api/'
+    }
+
+    // Log stacktrace to console when test fails.
+    test {
+        testLogging {
+            exceptionFormat = 'full'
+            showExceptions true
+            showCauses true
+            showStackTraces true
+        }
+        maxHeapSize = '1500m'
+    }
+}
+
+ext {
+    tsunamiVersion = '0.0.14'
+    junitVersion = '4.13'
+    mockitoVersion = '2.28.2'
+    truthVersion = '1.0.1'
+    okhttpVersion = '3.12.0'
+    autoValueVersion = '1.9'
+}
+
+dependencies {
+    implementation "com.google.tsunami:tsunami-common:${tsunamiVersion}"
+    implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
+    implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
+    compileOnly "com.google.auto.value:auto-value-annotations:${autoValueVersion}"
+    annotationProcessor "com.google.auto.value:auto-value:${autoValueVersion}"
+
+    testImplementation "junit:junit:${junitVersion}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "com.google.truth:truth:${truthVersion}"
+    testImplementation "com.squareup.okhttp3:mockwebserver:${okhttpVersion}"
+    testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
+    testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"
+}
