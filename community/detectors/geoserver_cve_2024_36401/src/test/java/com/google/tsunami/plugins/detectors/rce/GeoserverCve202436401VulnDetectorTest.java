@@ -138,7 +138,7 @@ public final class GeoserverCve202436401VulnDetectorTest {
                                 .setPublisher("CVE")
                                 .setValue("CVE-2024-36401")))
                 .build());
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(1);
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
   }
 
@@ -162,6 +162,10 @@ public final class GeoserverCve202436401VulnDetectorTest {
                     .contains(
                         "/geoserver/wfs?service=WFS&version=2.0.0&request=GetPropertyValue&typeNames="
                             + "sf:archsites&valueReference=exec(java.lang.Runtime.getRuntime(),")
+                && request.getMethod().equals("GET")) {
+              return new MockResponse().setResponseCode(200);
+            }
+            if (request.getPath().equals("/geoserver/index.html")
                 && request.getMethod().equals("GET")) {
               return new MockResponse().setResponseCode(200);
             }
