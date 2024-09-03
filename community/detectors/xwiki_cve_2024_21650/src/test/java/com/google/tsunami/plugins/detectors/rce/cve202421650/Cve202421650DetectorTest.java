@@ -16,14 +16,12 @@
 package com.google.tsunami.plugins.detectors.rce.cve202421650;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.inject.testing.fieldbinder.Bind;
+import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
@@ -31,10 +29,7 @@ import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.plugins.detectors.rce.cve202421650.Annotations.OobSleepDuration;
-import com.google.tsunami.proto.DetectionReportList;
-import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.TransportProtocol;
+import com.google.tsunami.proto.*;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -55,7 +50,7 @@ public final class Cve202421650DetectorTest {
   static final String CSRF_TEMPLATE =
       "<input type=\"hidden\" name=\"form_token\" value=\"XJJ8bxI3PjfwK9FxAUPFCg\" />";
 
-  static String PSEUDO_RANDOM_STR = " string";
+  static String PSEUDO_RANDOM_STR = "18d48374c00";
 
   private MockWebServer mockWebServer;
   private MockWebServer mockCallbackServer;
@@ -82,12 +77,13 @@ public final class Cve202421650DetectorTest {
 
     targetInfo =
         TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
+            .addNetworkEndpoints(NetworkEndpointUtils.forHostname(mockWebServer.getHostName()))
             .build();
     service =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
-                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+                NetworkEndpointUtils.forHostnameAndPort(
+                    mockWebServer.getHostName(), mockWebServer.getPort()))
             .setTransportProtocol(TransportProtocol.TCP)
             .setServiceName("http")
             .build();
@@ -100,9 +96,6 @@ public final class Cve202421650DetectorTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-    Cve202421650Detector mock = spy(detector);
-    when(mock.buildRandomString()).thenReturn(PSEUDO_RANDOM_STR);
-
     mockWebServer.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(CSRF_TEMPLATE));
     mockWebServer.enqueue(
@@ -112,10 +105,33 @@ public final class Cve202421650DetectorTest {
     mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.ACCEPTED.code()));
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
-    DetectionReportList detectionReports = mock.detect(targetInfo, ImmutableList.of(service));
+    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
 
     assertThat(detectionReports.getDetectionReportsList())
-        .containsExactly(mock.buildDetectionReport(targetInfo, service));
+        .containsExactly(
+            DetectionReport.newBuilder()
+                .setTargetInfo(targetInfo)
+                .setNetworkService(service)
+                .setDetectionTimestamp(
+                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                .setVulnerability(
+                    Vulnerability.newBuilder()
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("TSUNAMI_COMMUNITY")
+                                .setValue("CVE-2024-21650"))
+                        .setSeverity(Severity.CRITICAL)
+                        .setTitle("XWiki RCE (CVE-2024-21650)")
+                        .setDescription(
+                            "XWiki is vulnerable to a remote code execution (RCE) attack through"
+                                + " its user registration feature. This issue allows an attacker to"
+                                + " execute arbitrary code by crafting malicious payloads in the"
+                                + " \"first name\" or \"last name\" fields during user"
+                                + " registration. This impacts all installations that have user"
+                                + " registration enabled for guests. This vulnerability has been"
+                                + " patched in XWiki 14.10.17, 15.5.3 and 15.8 RC1."))
+                .build());
   }
 
   @Test
@@ -127,9 +143,6 @@ public final class Cve202421650DetectorTest {
             new Cve202421650DetectorBootstrapModule())
         .injectMembers(this);
 
-    Cve202421650Detector mock = spy(detector);
-    when(mock.buildRandomString()).thenReturn(PSEUDO_RANDOM_STR);
-
     mockWebServer.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(CSRF_TEMPLATE));
     mockWebServer.enqueue(
@@ -138,10 +151,33 @@ public final class Cve202421650DetectorTest {
             .setBody("XWiki.test" + PSEUDO_RANDOM_STR + "]] (test" + PSEUDO_RANDOM_STR + ")"));
     mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.ACCEPTED.code()));
 
-    DetectionReportList detectionReports = mock.detect(targetInfo, ImmutableList.of(service));
+    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
 
     assertThat(detectionReports.getDetectionReportsList())
-        .containsExactly(mock.buildDetectionReport(targetInfo, service));
+        .containsExactly(
+            DetectionReport.newBuilder()
+                .setTargetInfo(targetInfo)
+                .setNetworkService(service)
+                .setDetectionTimestamp(
+                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                .setVulnerability(
+                    Vulnerability.newBuilder()
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("TSUNAMI_COMMUNITY")
+                                .setValue("CVE-2024-21650"))
+                        .setSeverity(Severity.CRITICAL)
+                        .setTitle("XWiki RCE (CVE-2024-21650)")
+                        .setDescription(
+                            "XWiki is vulnerable to a remote code execution (RCE) attack through"
+                                + " its user registration feature. This issue allows an attacker to"
+                                + " execute arbitrary code by crafting malicious payloads in the"
+                                + " \"first name\" or \"last name\" fields during user"
+                                + " registration. This impacts all installations that have user"
+                                + " registration enabled for guests. This vulnerability has been"
+                                + " patched in XWiki 14.10.17, 15.5.3 and 15.8 RC1."))
+                .build());
   }
 
   @Test
@@ -153,6 +189,26 @@ public final class Cve202421650DetectorTest {
             .setBody("<!DOCTYPE html><html><head></head><body>...</body></html>"));
     mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.ACCEPTED.code()));
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
+
+    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_ifNotVulnerable_noCallbackServer_doesNotReportVuln() {
+    Guice.createInjector(
+            new FakeUtcClockModule(fakeUtcClock),
+            new HttpClientModule.Builder().build(),
+            FakePayloadGeneratorModule.builder().build(),
+            new Cve202421650DetectorBootstrapModule())
+        .injectMembers(this);
+
+    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(CSRF_TEMPLATE));
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody("<!DOCTYPE html><html><head></head><body>...</body></html>"));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.ACCEPTED.code()));
 
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();

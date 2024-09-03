@@ -1,13 +1,6 @@
 package com.google.tsunami.plugins.detectors.rce.cve202421650;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.tsunami.common.net.http.HttpRequest.get;
-import static com.google.tsunami.common.net.http.HttpRequest.post;
-import static com.google.tsunami.common.net.http.HttpRequest.put;
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -16,6 +9,7 @@ import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
+import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
@@ -35,6 +29,7 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -87,9 +82,9 @@ public final class Cve202421650Detector implements VulnDetector {
       HttpClient httpClient,
       PayloadGenerator payloadGenerator,
       @OobSleepDuration int oobSleepDuration) {
-    this.utcClock = checkNotNull(utcClock);
-    this.httpClient = checkNotNull(httpClient);
-    this.payloadGenerator = checkNotNull(payloadGenerator);
+    this.utcClock = Preconditions.checkNotNull(utcClock);
+    this.httpClient = Preconditions.checkNotNull(httpClient);
+    this.payloadGenerator = Preconditions.checkNotNull(payloadGenerator);
     this.oobSleepDuration = oobSleepDuration;
   }
 
@@ -104,13 +99,12 @@ public final class Cve202421650Detector implements VulnDetector {
                 .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
-                .collect(toImmutableList()))
+                .collect(ImmutableList.toImmutableList()))
         .build();
   }
 
-  @VisibleForTesting
-  String buildRandomString() {
-    return Long.toHexString(Double.doubleToLongBits(Math.random()));
+  private String buildRandomString() {
+    return Long.toHexString(this.utcClock.instant().toEpochMilli());
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
@@ -149,7 +143,7 @@ public final class Cve202421650Detector implements VulnDetector {
 
     try {
       HttpResponse response =
-          httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
+          httpClient.send(HttpRequest.get(targetUri).withEmptyHeaders().build(), networkService);
       if (response.status().code() != HttpStatus.OK.code()) {
         return false;
       }
@@ -177,7 +171,7 @@ public final class Cve202421650Detector implements VulnDetector {
     try {
       HttpResponse response =
           httpClient.send(
-              post(targetUri)
+              HttpRequest.post(targetUri)
                   .setHeaders(
                       HttpHeaders.builder()
                           .addHeader("Content-Type", "application/x-www-form-urlencoded")
@@ -189,7 +183,7 @@ public final class Cve202421650Detector implements VulnDetector {
       Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
 
       httpClient.send(
-          put(targetCleanupUri)
+          HttpRequest.put(targetCleanupUri)
               .setHeaders(
                   HttpHeaders.builder()
                       .addHeader("Content-Type", "application/x-www-form-urlencoded")
@@ -200,7 +194,7 @@ public final class Cve202421650Detector implements VulnDetector {
                               + Base64.getEncoder()
                                   .encodeToString(
                                       (requestUserName + ":" + requestUserPassword)
-                                          .getBytes(UTF_8)))
+                                          .getBytes(StandardCharsets.UTF_8)))
                       .build())
               .setRequestBody(
                   ByteString.copyFromUtf8(
