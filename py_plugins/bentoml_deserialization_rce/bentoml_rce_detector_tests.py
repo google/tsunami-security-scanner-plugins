@@ -12,29 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Cve20242912Detector."""
-import json
-import unittest.mock as umock
-from importlib.resources import contents
-
 from absl.testing import absltest
-import requests_mock
-
 from common.data import network_endpoint_utils
 from common.net.http.requests_http_client import RequestsHttpClientBuilder
 from plugin.payload.payload_generator import PayloadGenerator
 from plugin.payload.payload_secret_generator import PayloadSecretGenerator
 from plugin.payload.payload_utility import get_parsed_payload
 from plugin.tcs_client import TcsClient
-import tsunami_plugin
+from py_plugins.bentoml_rce_detector import Cve20242912Detector
+from py_plugins.bentoml_rce_detector import _VULN_DESCRIPTION
 import detection_pb2
 import network_pb2
 import network_service_pb2
 import plugin_representation_pb2
 import reconnaissance_pb2
+import requests_mock
 import software_pb2
+import tsunami_plugin
+import unittest.mock as umock
 import vulnerability_pb2
-from py_plugins.bentoml_rce_detector import Cve20242912Detector
-from py_plugins.bentoml_rce_detector import _VULN_DESCRIPTION
 
 # Callback server
 _CBID = '04041e8898e739ca33a250923e24f59ca41a8373f8cf6a45a1275f3b'

