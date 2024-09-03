@@ -29,11 +29,6 @@ import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.plugins.detectors.rce.cve202421650.Annotations.OobSleepDuration;
-
-import java.io.IOException;
-import java.time.Instant;
-import javax.inject.Inject;
-
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -43,6 +38,9 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
+import java.io.IOException;
+import java.time.Instant;
+import javax.inject.Inject;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.After;
