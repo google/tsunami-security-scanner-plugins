@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import javax.inject.Inject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -71,6 +72,11 @@ public final class TomcatAjpCredentialTesterTest {
     Guice.createInjector().injectMembers(this);
   }
 
+  @After
+  public void tearDown() throws IOException {
+    ajpTestServer.stop();
+  }
+
   @Test
   public void detect_weakCredentialsExists_returnsWeakCredentials() throws Exception {
     ajpTestServer.setResponseForCredential(
@@ -92,7 +98,6 @@ public final class TomcatAjpCredentialTesterTest {
 
     assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WEAK_CRED_1)))
         .containsExactly(WEAK_CRED_1);
-    ajpTestServer.stop();
   }
 
   @Test
@@ -122,7 +127,6 @@ public final class TomcatAjpCredentialTesterTest {
             tester.testValidCredentials(
                 targetNetworkService, ImmutableList.of(WEAK_CRED_1, WEAK_CRED_2)))
         .containsExactly(WEAK_CRED_1, WEAK_CRED_2);
-    ajpTestServer.stop();
   }
 
   @Test
@@ -143,7 +147,6 @@ public final class TomcatAjpCredentialTesterTest {
 
     assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WRONG_CRED_1)))
         .isEmpty();
-    ajpTestServer.stop();
   }
 
   private static byte[] createAjpUnauthorizedResponse() {
@@ -156,7 +159,7 @@ public final class TomcatAjpCredentialTesterTest {
   private static class AjpTestServer {
     private ServerSocket serverSocket;
     private boolean running = false;
-    private final int port = 8909;
+    private final int port = 8009;
     private final String host = "localhost";
     private final Map<String, byte[]> credentialResponses = new HashMap<>();
 
