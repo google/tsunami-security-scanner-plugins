@@ -74,6 +74,8 @@ public final class MagentoCosmicStingXxeTest {
   private MockWebServer mockCallbackServer = new MockWebServer();
 
   private static final String MOCK_MAGENTO_VERSION = "Magento/2.4 (Mock)";
+  private static final String MOCK_CURRENCY_ENDPOINT_RESPONSE =
+      "{\"base_currency_code\":\"USD\",\"base_currency_symbol\":\"$\",\"default_display_currency_code\":\"USD\",\"default_display_currency_symbol\":\"$\",\"available_currency_codes\":[\"USD\",\"EUR\"],\"exchange_rates\":[{\"currency_to\":\"USD\",\"rate\":1},{\"currency_to\":\"EUR\",\"rate\":0.7067}]}";
   private static final String PATCHED_INSTANCE_RESPONSE = "{\"message\":\"Invalid data type\"}";
   private static final String VULNERABLE_INSTANCE_RESPONSE =
       "{\"message\":\"Internal Error. Details are available in Magento log file. Report ID:"
@@ -120,7 +122,7 @@ public final class MagentoCosmicStingXxeTest {
     DetectionReport expectedDetection =
         generateDetectionReportWithCallback(targetInfo, httpServices.get(0));
     assertThat(detectionReports.getDetectionReportsList()).containsExactly(expectedDetection);
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
   }
 
@@ -140,7 +142,7 @@ public final class MagentoCosmicStingXxeTest {
     DetectionReport expectedDetection =
         generateDetectionReportWithResponseMatching(targetInfo, httpServices.get(0));
     assertThat(detectionReports.getDetectionReportsList()).containsExactly(expectedDetection);
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(0);
   }
 
@@ -158,7 +160,7 @@ public final class MagentoCosmicStingXxeTest {
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
 
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
   }
 
@@ -176,7 +178,7 @@ public final class MagentoCosmicStingXxeTest {
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
 
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(0);
   }
 
@@ -254,11 +256,18 @@ public final class MagentoCosmicStingXxeTest {
     public MockResponse dispatch(RecordedRequest recordedRequest) {
 
       if (recordedRequest.getMethod().equals("GET")
-          && recordedRequest.getPath().equals("/magento_version")) {
+          && recordedRequest.getPath().equals("/" + VERSION_ENDPOINT_PATH)) {
         // Version detection request
         return new MockResponse()
             .setResponseCode(HttpStatus.OK.code())
             .setBody(MOCK_MAGENTO_VERSION);
+      } else if (recordedRequest.getMethod().equals("GET")
+          && recordedRequest.getPath().equals("/" + CURRENCY_ENDPOINT_PATH)) {
+        // Magento identification request
+        return new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setHeader("Content-Type", "application/json; charset=utf-8")
+            .setBody(MOCK_CURRENCY_ENDPOINT_RESPONSE);
       } else if (recordedRequest.getMethod().equals("POST")
           && recordedRequest.getPath().equals("/" + VULNERABLE_ENDPOINT_PATH)) {
         // Exploit attempt

@@ -24,6 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
@@ -122,6 +123,11 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
   static final String VULNERABLE_ENDPOINT_PATH =
       "rest/all/V1/guest-carts/test-assetnote/estimate-shipping-methods";
 
+  @VisibleForTesting
+  static final String CURRENCY_ENDPOINT_PATH = "rest/default/V1/directory/currency";
+
+  @VisibleForTesting static final String VERSION_ENDPOINT_PATH = "magento_version";
+
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -152,15 +158,59 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
         .addAllDetectionReports(
             matchedServices.stream()
                 .filter(NetworkServiceUtils::isWebService)
+                .filter(this::isMagento)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
   }
 
+  /*
+    Check presence of endpoint with always anonymous access: /rest/default/V1/directory/currency
+    From: https://developer.adobe.com/commerce/webapi/rest/use-rest/anonymous-api-security/
+
+    Typical response:
+    HTTP/2 200 OK
+    {
+      "base_currency_code": "USD",
+      "base_currency_symbol": "$",
+      ...
+    }
+  */
+  private boolean isMagento(NetworkService networkService) {
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + CURRENCY_ENDPOINT_PATH;
+
+    HttpRequest req =
+        HttpRequest.get(targetUri)
+            .setHeaders(HttpHeaders.builder().addHeader("Accept", "application/json").build())
+            .build();
+
+    HttpResponse response;
+    try {
+      response = this.httpClient.send(req, networkService);
+    } catch (IOException e) {
+      return false;
+    }
+
+    // Check status code 200
+    if (response.status() != HttpStatus.OK) return false;
+    // Check if body is JSON
+    if (response.bodyJson().isEmpty()) return false;
+    JsonElement body = response.bodyJson().get();
+    // Check if JSON body is object
+    if (!body.isJsonObject()) return false;
+    // If the body has a known key, e.g. "base_currency_code", it's Magento
+    return body.getAsJsonObject().has("base_currency_code");
+  }
+
+  /*
+   Tries to get the Magento version by fetching /magento_version
+   This endpoint can be manually disabled, so don't stop the plugin if we can't fetch it
+  */
   private String detectMagentoVersion(NetworkService networkService) {
     String targetUri =
-        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "magento_version";
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + VERSION_ENDPOINT_PATH;
     logger.atInfo().log("Trying to detect Magento version at '%s'", targetUri);
 
     HttpRequest req = HttpRequest.get(targetUri).withEmptyHeaders().build();
