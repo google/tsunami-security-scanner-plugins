@@ -205,6 +205,14 @@ public final class TomcatAjpCredentialTesterTest {
       if (serverSocket != null) {
         serverSocket.close();
       }
+
+      while (!serverSocket.isClosed()) {
+        try {
+          Thread.sleep(1); 
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
     }
 
     public String getHost() {
