@@ -17,7 +17,6 @@ package com.google.tsunami.plugins.detectors.cves.cve202233891;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
@@ -84,30 +83,11 @@ public final class Cve202233891VulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(Cve202233891VulnDetector::isWebServiceOrUnknownService)
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
-  }
-
-  private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
-    return networkService.getServiceName().isEmpty()
-        || NetworkServiceUtils.isWebService(networkService)
-        || NetworkServiceUtils.getServiceName(networkService).equals("unknown");
-  }
-
-  private static StringBuilder buildTarget(NetworkService networkService) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      targetUrlBuilder
-          .append("https://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    return targetUrlBuilder;
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
@@ -121,7 +101,10 @@ public final class Cve202233891VulnDetector implements VulnDetector {
       logger.atInfo().log("Callback server is available!");
       payload = generateCallbackServerPayload();
       String targetUri =
-          buildTarget(networkService).append("?doAs=`" + payload.getPayload() + "`").toString();
+          NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+              + "?doAs=`"
+              + payload.getPayload()
+              + "`";
       var request = HttpRequest.get(targetUri).withEmptyHeaders().build();
 
       try {
@@ -137,7 +120,8 @@ public final class Cve202233891VulnDetector implements VulnDetector {
       // If there is no callback server available, try sleep
       logger.atInfo().log("Callback server is not available!");
       Stopwatch stopwatch = Stopwatch.createUnstarted();
-      String targetUri = buildTarget(networkService).append("?doAs=`sleep 5`").toString();
+      String targetUri =
+          NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "?doAs=`sleep 5`";
       var request = HttpRequest.get(targetUri).withEmptyHeaders().build();
       try {
         stopwatch.start();

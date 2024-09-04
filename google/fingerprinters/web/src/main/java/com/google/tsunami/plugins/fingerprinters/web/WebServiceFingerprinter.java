@@ -19,20 +19,22 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
+import static com.google.tsunami.common.net.http.HttpRequest.post;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
-import com.google.tsunami.common.data.NetworkEndpointUtils;
+import com.google.protobuf.ByteString;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
+import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
-import com.google.tsunami.plugin.PluginType;
-import com.google.tsunami.plugin.ServiceFingerprinter;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.plugin.PluginType;
+import com.google.tsunami.plugin.ServiceFingerprinter;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.Crawler;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.ScopeUtils;
 import com.google.tsunami.plugins.fingerprinters.web.data.FingerprintData;
@@ -277,6 +279,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
     HashSet<DetectedSoftware> detectedSoftware = new HashSet<>();
 
     checkForMlflow(detectedSoftware, networkService, startingUrl);
+    checkForZenMl(detectedSoftware, networkService, startingUrl);
     return ImmutableSet.copyOf(detectedSoftware);
   }
 
@@ -287,8 +290,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
     // We want to test weak credentials against mlflow versions above 2.5 which has basic
     // authentication module.these versions return a 401 status code and a link to documentation
     // about how to authenticate.
-    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
-    var pingApiUrl = String.format("http://%s/%s", uriAuthority, "ping");
+    var pingApiUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "ping";
     try {
       HttpResponse apiPingResponse = httpClient.send(get(pingApiUrl).withEmptyHeaders().build());
 
@@ -314,6 +316,60 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
       }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", pingApiUrl);
+    }
+  }
+
+  private void checkForZenMl(
+      Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
+    logger.atInfo().log("probing ZenMl login page and login api - custom fingerprint phase");
+
+    // we double-check both the api and login page
+    var loginApiUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "api/v1/login";
+    try {
+      // test login api with a random username and password and for sure not exist
+      HttpResponse apiLoginResponse =
+          httpClient.send(
+              post(loginApiUrl)
+                  .setHeaders(
+                      HttpHeaders.builder()
+                          .addHeader("Content-Type", "application/x-www-form-urlencoded")
+                          .build())
+                  .setRequestBody(
+                      ByteString.copyFromUtf8(
+                          "username=aHkPdMlQoWjRtBnX&password=aHkPdMlQoWjRtBnX"))
+                  .build());
+
+      if (!(apiLoginResponse.status() == HttpStatus.UNAUTHORIZED
+          && apiLoginResponse.bodyString().isPresent()
+          && apiLoginResponse
+              .bodyString()
+              .get()
+              .equals(
+                  "{\"detail\":[\"AuthorizationException\","
+                      + "\"Authentication error: invalid username or password\"]}"))) {
+        return;
+      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", loginApiUrl);
+      return;
+    }
+
+    var loginUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "login";
+    try {
+      HttpResponse loginPageResponse = httpClient.send(get(loginUrl).withEmptyHeaders().build());
+      if (!(loginPageResponse.bodyString().isPresent()
+          && loginPageResponse.bodyString().get().contains("<title>ZenML Dashboard</title>"))) {
+        return;
+      }
+      software.add(
+          DetectedSoftware.builder()
+              .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("zenml").build())
+              .setRootPath(startingUrl)
+              .setContentHashes(ImmutableMap.of())
+              .build());
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", loginUrl);
     }
   }
 }

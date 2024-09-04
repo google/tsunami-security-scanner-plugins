@@ -148,7 +148,7 @@ public final class ApacheSparksExposedApiVulnDetector implements VulnDetector {
             Vulnerability.newBuilder()
                 .setMainId(
                     VulnerabilityId.newBuilder()
-                        .setPublisher("Community")
+                        .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("Apache_Spark_Exposed_Api"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Exposed Apache Spark API which allows unauthenticated RCE detected.")

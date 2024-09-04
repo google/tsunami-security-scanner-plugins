@@ -17,12 +17,12 @@ package com.google.tsunami.plugins.detectors.exposedui.pytorchserve;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
@@ -67,7 +67,7 @@ public final class PytorchServeExposedApiDetector implements VulnDetector {
   private final Clock utcClock;
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
-  @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "Google";
+  @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "GOOGLE";
   @VisibleForTesting static final String VULNERABILITY_REPORT_ID = "PYTORCH_EXPOSED_UI";
   private static final Pattern URI_REGEX = Pattern.compile("curl (.*)");
 
@@ -126,8 +126,8 @@ public final class PytorchServeExposedApiDetector implements VulnDetector {
 
     String targetUri =
         String.format(
-            "http://%s/models?url=http://%s/%s",
-            toUriAuthority(networkService.getNetworkEndpoint()),
+            "%smodels?url=http://%s/%s",
+            NetworkServiceUtils.buildWebApplicationRootUrl(networkService),
             m.group(1),
             Long.toHexString(Double.doubleToLongBits(Math.random())));
     logger.atInfo().log("PytorchServeApiExposedui targetUri: %s", targetUri);

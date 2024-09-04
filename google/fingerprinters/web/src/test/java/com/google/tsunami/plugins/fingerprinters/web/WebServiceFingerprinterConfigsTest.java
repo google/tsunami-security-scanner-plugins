@@ -149,4 +149,36 @@ public final class WebServiceFingerprinterConfigsTest {
         .containsExactly("application/zip", "application/gzip")
         .inOrder();
   }
+
+  @Test
+  public void pathExclusions_whenCliOptionSet_returnsCliOptionSetting() {
+    cliOptions.pathExclusions = ImmutableList.of(".*/logout$", ".*/dangerous$");
+    assertThat(configs.getPathExclusions())
+        .containsExactly(".*/logout$", ".*/dangerous$")
+        .inOrder();
+  }
+
+  @Test
+  public void pathExclusions_whenConfigPropertySet_returnsConfigPropertySetting() {
+    configProperties.pathExclusions = ImmutableList.of(".*/logout$", ".*/dangerous$");
+    assertThat(configs.getPathExclusions())
+        .containsExactly(".*/logout$", ".*/dangerous$")
+        .inOrder();
+  }
+
+  @Test
+  public void pathExclusions_whenBothCliAndConfigAreSet_cliOptionTakesPrecedence() {
+    cliOptions.pathExclusions = ImmutableList.of(".*/logout$", ".*/dangerous$");
+    configProperties.pathExclusions = ImmutableList.of(".*/login$", ".*/safe$");
+    assertThat(configs.getPathExclusions())
+        .containsExactly(".*/logout$", ".*/dangerous$")
+        .inOrder();
+  }
+
+  @Test
+  public void pathExclusions_whenBothCliAndConfigAreNotSet_returnsDefaultValue() {
+    cliOptions.pathExclusions = null;
+    configProperties.pathExclusions = null;
+    assertThat(configs.getPathExclusions()).isEmpty();
+  }
 }

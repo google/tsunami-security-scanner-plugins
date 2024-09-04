@@ -27,7 +27,6 @@ import com.google.common.flogger.GoogleLogger;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
@@ -85,11 +84,12 @@ public final class MlFlowCredentialTester extends CredentialTester {
   }
 
   private boolean isMlFlowAccessible(NetworkService networkService, TestCredential credential) {
-    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
     var url =
         String.format(
-            "http://%s/%s?username=%s",
-            uriAuthority, "api/2.0/mlflow/users/get", credential.username());
+            "%s%s?username=%s",
+            NetworkServiceUtils.buildWebApplicationRootUrl(networkService),
+            "api/2.0/mlflow/users/get",
+            credential.username());
     try {
       logger.atInfo().log(
           "url: %s, username: %s, password: %s",

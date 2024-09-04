@@ -19,7 +19,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpClient.TSUNAMI_USER_AGENT;
 
 import com.google.auto.value.AutoValue;
@@ -117,7 +116,7 @@ public final class Cve202328432VulnDetector implements VulnDetector {
         DetectionReportList.newBuilder()
             .addAllDetectionReports(
                 matchedServices.stream()
-                    .filter(Cve202328432VulnDetector::isWebServiceOrUnknownService)
+                    .filter(NetworkServiceUtils::isWebService)
                     .map(this::checkEndpointForNetworkService)
                     .filter(EndpointProbingResult::isVulnerable)
                     .map(probingResult -> buildDetectionReport(targetInfo, probingResult))
@@ -130,23 +129,8 @@ public final class Cve202328432VulnDetector implements VulnDetector {
     return detectionReports;
   }
 
-  private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
-    return networkService.getServiceName().isEmpty()
-        || NetworkServiceUtils.isWebService(networkService)
-        || NetworkServiceUtils.getServiceName(networkService).equals("unknown")
-        || NetworkServiceUtils.getServiceName(networkService).equals("cslistener");
-  }
-
-  private static String buildTargetUrl(NetworkService networkService) {
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      return NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    }
-    // Assume the service uses HTTP protocol when the scanner cannot identify the actual service.
-    return "http://" + toUriAuthority(networkService.getNetworkEndpoint()) + "/";
-  }
-
   private EndpointProbingResult checkEndpointForNetworkService(NetworkService networkService) {
-    String baseUrl = buildTargetUrl(networkService);
+    String baseUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     String targetUri = String.format("%s%s", baseUrl, MINIO_VERIFY_PATH);
     boolean usesDefaultPw = false;
 
