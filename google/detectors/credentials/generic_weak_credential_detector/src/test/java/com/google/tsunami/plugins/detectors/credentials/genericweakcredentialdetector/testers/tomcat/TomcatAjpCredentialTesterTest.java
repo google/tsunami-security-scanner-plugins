@@ -37,8 +37,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.inject.Inject;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -72,11 +72,6 @@ public final class TomcatAjpCredentialTesterTest {
     Guice.createInjector().injectMembers(this);
   }
 
-  @After
-  public void tearDown() throws IOException {
-    ajpTestServer.stop();
-  }
-
   @Test
   public void detect_weakCredentialsExists_returnsWeakCredentials() throws Exception {
     ajpTestServer.setResponseForCredential(
@@ -98,6 +93,7 @@ public final class TomcatAjpCredentialTesterTest {
 
     assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WEAK_CRED_1)))
         .containsExactly(WEAK_CRED_1);
+    ajpTestServer.stop();
   }
 
   @Test
@@ -161,11 +157,14 @@ public final class TomcatAjpCredentialTesterTest {
   private static class AjpTestServer {
     private ServerSocket serverSocket;
     private boolean running = false;
-    private final int port = 8009;
+    private int port;
     private final String host = "localhost";
     private final Map<String, byte[]> credentialResponses = new HashMap<>();
 
     public void start() throws IOException {
+
+      this.port = ThreadLocalRandom.current().nextInt(8000, 10001);
+
       serverSocket = new ServerSocket(port);
       running = true;
 
@@ -202,16 +201,8 @@ public final class TomcatAjpCredentialTesterTest {
 
     public void stop() throws IOException {
       running = false;
-      if (serverSocket != null) {
+      if (serverSocket != null && !serverSocket.isClosed()) {
         serverSocket.close();
-      }
-
-      while (!serverSocket.isClosed()) {
-        try {
-          Thread.sleep(1); 
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
       }
     }
 
