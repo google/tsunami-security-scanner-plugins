@@ -156,7 +156,7 @@ public final class TomcatAjpCredentialTesterTest {
   private static class AjpTestServer {
     private ServerSocket serverSocket;
     private boolean running = false;
-    private final int port = 8009;
+    private final int port = 8909;
     private final String host = "localhost";
     private final Map<String, byte[]> credentialResponses = new HashMap<>();
 
