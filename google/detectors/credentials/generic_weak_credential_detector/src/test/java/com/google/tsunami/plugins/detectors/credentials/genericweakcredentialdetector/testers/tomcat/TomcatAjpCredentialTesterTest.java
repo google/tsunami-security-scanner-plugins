@@ -127,6 +127,7 @@ public final class TomcatAjpCredentialTesterTest {
             tester.testValidCredentials(
                 targetNetworkService, ImmutableList.of(WEAK_CRED_1, WEAK_CRED_2)))
         .containsExactly(WEAK_CRED_1, WEAK_CRED_2);
+    ajpTestServer.stop();
   }
 
   @Test
@@ -147,6 +148,7 @@ public final class TomcatAjpCredentialTesterTest {
 
     assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WRONG_CRED_1)))
         .isEmpty();
+    ajpTestServer.stop();
   }
 
   private static byte[] createAjpUnauthorizedResponse() {
@@ -191,7 +193,6 @@ public final class TomcatAjpCredentialTesterTest {
                     os.flush();
 
                   } catch (IOException e) {
-                    System.err.println("An error occurred in AjpTestServer.");
                     e.printStackTrace();
                   }
                 }
@@ -201,7 +202,7 @@ public final class TomcatAjpCredentialTesterTest {
 
     public void stop() throws IOException {
       running = false;
-      if (serverSocket != null && !serverSocket.isClosed()) {
+      if (serverSocket != null) {
         serverSocket.close();
       }
     }
