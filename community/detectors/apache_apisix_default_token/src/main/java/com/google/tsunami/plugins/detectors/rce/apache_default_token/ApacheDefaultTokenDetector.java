@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.rce.apache_default_token;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -51,7 +50,7 @@ import java.net.URLEncoder;
 import java.time.Clock;
 import java.time.Instant;
 
-/** A {@link VulnDetector} that detects Apache APISIX RCE CVE-2020-13945. */
+/** A {@link VulnDetector} that detects Apache APISIX Default Admin Token. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "Apache APISIX with default Admin token Detector",
@@ -66,10 +65,9 @@ public final class ApacheDefaultTokenDetector implements VulnDetector {
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION =
-      "Apache APISIX 1.2, 1.3, 1.4, and 1.5 is susceptible to insufficiently protected credentials. An attacker can "
-          + "enable the Admin API and delete the Admin API access IP restriction rules. Eventually, the default token "
-          + "is allowed to access APISIX management data. This vulnerability allows an attacker to execute arbitrary "
-          + "code on the server.";
+      "APISIX provides REST management API functionality. Users can manage APISIX using the REST Admin API. If the "
+          + "REST Admin API is exposed externally and the default hard-coded admin_key is not modified, an attacker"
+          + " can use the admin_key to execute arbitrary Lua code, leading to remote command execution.";
 
   private static final String VUL_PATH = "apisix/admin/routes";
   private static final String POST_DATA =
@@ -91,33 +89,15 @@ public final class ApacheDefaultTokenDetector implements VulnDetector {
     this.utcClock = checkNotNull(utcClock);
   }
 
-  private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
-    return networkService.getServiceName().isEmpty()
-        || NetworkServiceUtils.isWebService(networkService);
-  }
-
-  private static StringBuilder buildTarget(NetworkService networkService) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      targetUrlBuilder
-          .append("http://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    return targetUrlBuilder;
-  }
-
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
-    logger.atInfo().log("CVE-2020-13945 starts detecting.");
+    logger.atInfo().log("Apache APISIX Default Admin Token starts detecting.");
 
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(ApacheDefaultTokenDetector::isWebServiceOrUnknownService)
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
@@ -125,25 +105,18 @@ public final class ApacheDefaultTokenDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String targetVulnerabilityUrl = buildTarget(networkService).append(VUL_PATH).toString();
+    String targetBaseUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    String targetVulnerabilityUrl = targetBaseUrl + VUL_PATH;
     String randomVerifyPath = String.format("tsunami_%s", Instant.now(utcClock).toEpochMilli());
     String targetExecuteUrl =
-        buildTarget(networkService)
-            .append(randomVerifyPath)
-            .append("?cmd=")
-            .append(URLEncoder.encode(EXECUTE_DATA, UTF_8))
-            .toString();
+        targetBaseUrl + randomVerifyPath + "?cmd=" + URLEncoder.encode(EXECUTE_DATA, UTF_8);
+
     try {
       HttpResponse checkIsAPISIXResponse =
           httpClient.sendAsIs(
               get(targetExecuteUrl).setHeaders(HttpHeaders.builder().build()).build());
-      boolean present = checkIsAPISIXResponse.headers().get("Server").isPresent();
-      if (checkIsAPISIXResponse.status().code() != 401
-          && present
-          && !checkIsAPISIXResponse.headers().get("Server").get().contains("APISIX")) {
-        logger.atInfo().log(
-            "Target %s is not an Apache APISIX instance.",
-            NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
+      if (!checkIsAPISIXResponse.headers().get("Server").orElse("").contains("APISIX")) {
+        logger.atInfo().log("Target %s is not an Apache APISIX instance.", targetBaseUrl);
         return false;
       }
 
@@ -159,29 +132,20 @@ public final class ApacheDefaultTokenDetector implements VulnDetector {
                       ByteString.copyFromUtf8(String.format(POST_DATA, randomVerifyPath)))
                   .build());
       if (httpResponse.status().code() == 201) {
-        logger.atInfo().log(
-            "Request payload to target %s succeeded",
-            NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
+        logger.atInfo().log("Request payload to target %s succeeded", targetBaseUrl);
         HttpResponse executeResponse =
             httpClient.sendAsIs(
                 get(targetExecuteUrl).setHeaders(HttpHeaders.builder().build()).build());
         if (executeResponse.status().code() == 200
-            && executeResponse.bodyString().isPresent()
-            && executeResponse.bodyString().get().contains(DETECTION_STRING)) {
-          logger.atInfo().log(
-              "Vulnerability detected on target %s",
-              NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
+            && executeResponse.bodyString().orElse("").contains(DETECTION_STRING)) {
+          logger.atInfo().log("Vulnerability detected on target %s", targetBaseUrl);
           return true;
         }
       } else {
-        logger.atInfo().log(
-            "Execution of the command to the target %s has failed.",
-            NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
+        logger.atInfo().log("Execution of the command to the target %s has failed.", targetBaseUrl);
       }
     } catch (IOException | AssertionError e) {
-      logger.atWarning().withCause(e).log(
-          "Request to target %s failed",
-          NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
+      logger.atWarning().withCause(e).log("Request to target %s failed", targetBaseUrl);
       return false;
     }
     return false;

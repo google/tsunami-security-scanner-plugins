@@ -106,8 +106,7 @@ public final class ApacheDefaultTokenDetectorTest {
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("APISIX_DEFAULT_TOKEN"))
                         .setSeverity(Severity.CRITICAL)
-                        .setTitle(
-                            "Apache APISIX's Admin API Default Access Token (RCE)")
+                        .setTitle("Apache APISIX's Admin API Default Access Token (RCE)")
                         .setRecommendation(
                             "Change the default admin API key and set appropriate IP access control lists.")
                         .setDescription(ApacheDefaultTokenDetector.VULN_DESCRIPTION))
@@ -136,8 +135,12 @@ public final class ApacheDefaultTokenDetectorTest {
   }
 
   private void mockWebResponse(String body) throws IOException {
-    mockWebServer.enqueue(new MockResponse().setResponseCode(201).setBody(body));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(body));
+    mockWebServer.enqueue(
+        new MockResponse().setResponseCode(201).setHeader("Server", "APISIX").setBody(body));
+    mockWebServer.enqueue(
+        new MockResponse().setResponseCode(201).setHeader("Server", "APISIX").setBody(body));
+    mockWebServer.enqueue(
+        new MockResponse().setResponseCode(200).setHeader("Server", "APISIX").setBody(body));
     mockWebServer.start();
   }
 }
