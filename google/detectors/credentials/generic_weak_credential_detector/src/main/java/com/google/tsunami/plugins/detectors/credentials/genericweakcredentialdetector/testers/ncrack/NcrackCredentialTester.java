@@ -16,11 +16,11 @@
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.tsunami.common.command.CommandExecutionThreadPool;
@@ -116,7 +116,7 @@ public final class NcrackCredentialTester extends CredentialTester {
 
   @Override
   public boolean batched() {
-    return true;
+    return false;
   }
 
   @Override
@@ -127,6 +127,11 @@ public final class NcrackCredentialTester extends CredentialTester {
       return ImmutableList.of();
     }
 
+    ImmutableSet<String> usernames =
+        credentials.stream().map(TestCredential::username).collect(toImmutableSet());
+    ImmutableSet<String> passwords =
+        credentials.stream().map(cred -> cred.password().orElse("")).collect(toImmutableSet());
+
     try {
       // We use a Provider here to get a new NcrackClient object because this function might be
       // called multiple times in the client code.
@@ -136,8 +141,8 @@ public final class NcrackCredentialTester extends CredentialTester {
               .withTimingTemplate(TimingTemplate.NORMAL)
               .withQuitCrackingAfterOneFound()
               .withNetworkEndpoint(networkService.getNetworkEndpoint())
-              .usingUsernamePasswordPair(
-                  generateTestCredentialsMapFromListOfCredentials(credentials))
+              .usingUsernameList(usernames)
+              .usingPasswordList(passwords)
               .onTargetService(getTargetService(networkService))
               .run(this.executor);
 
@@ -156,12 +161,5 @@ public final class NcrackCredentialTester extends CredentialTester {
 
   private static TargetService getTargetService(NetworkService networkService) {
     return SERVICE_MAP.get(NetworkServiceUtils.getServiceName(networkService));
-  }
-
-  private static Multimap<String, String> generateTestCredentialsMapFromListOfCredentials(
-      List<TestCredential> credentials) {
-    Multimap<String, String> map = ArrayListMultimap.create();
-    credentials.forEach(c -> map.put(c.username(), c.password().orElse("")));
-    return map;
   }
 }
