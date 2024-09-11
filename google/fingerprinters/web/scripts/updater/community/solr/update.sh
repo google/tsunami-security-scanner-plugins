@@ -24,7 +24,7 @@ PROJECT_ROOT="$(cd -- "${SCRIPT_PATH}/../../../.." >/dev/null 2>&1 ; pwd -P)"
 # Path to the configurations for starting a live instance of Solr.
 APP_PATH="${SCRIPT_PATH}/app"
 # Path to the temporary data holder.
-TMP_DATA="/root/solr_fingerprints"
+TMP_DATA="/tmp/solr_fingerprints"
 # Path to the local git repository for Solr codebase.
 GIT_REPO="${TMP_DATA}/repo"
 # Path to the directory of all the updated fingerprints data.
