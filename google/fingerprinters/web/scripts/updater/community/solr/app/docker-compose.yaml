@@ -3,10 +3,6 @@ services:
     image: solr:${SOLR_VERSION}
     ports:
      - "8983:8983"
-    volumes:
-      - data:/var/solr
     command:
       - solr-precreate
       - gettingstarted
-volumes:
-  data:
