@@ -41,14 +41,14 @@ startSolr() {
   local version="$1"
   pushd "${APP_PATH}" >/dev/null
     # add COMPOSE_HTTP_TIMEOUT to avoid docker-compose errors
-    SOLR_VERSION="${version}" COMPOSE_HTTP_TIMEOUT=200 docker-compose up -d
+    SOLR_VERSION="${version}" COMPOSE_HTTP_TIMEOUT=200 docker compose up -d
   popd >/dev/null
 }
 
 stopSolr() {
   local version="$1"
   pushd "${APP_PATH}" >/dev/null
-    SOLR_VERSION="${version}" COMPOSE_HTTP_TIMEOUT=200 docker-compose down --volumes --remove-orphans
+    SOLR_VERSION="${version}" COMPOSE_HTTP_TIMEOUT=200 docker compose down --volumes --remove-orphans
   popd >/dev/null
 }
 
