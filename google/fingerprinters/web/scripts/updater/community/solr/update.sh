@@ -37,6 +37,7 @@ BIN_DATA="${FINGERPRINTS_PATH}/fingerprint.binproto"
 readarray -t ALL_VERSIONS < "${SCRIPT_PATH}/versions.txt"
 mkdir -p "${FINGERPRINTS_PATH}"
 
+BINPROTO="${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/community/solr.binproto"
 startSolr() {
   local version="$1"
   pushd "${APP_PATH}" >/dev/null
