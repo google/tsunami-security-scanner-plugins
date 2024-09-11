@@ -54,9 +54,7 @@ stopSolr() {
 }
 
 # Convert the existing data file to a human-readable json file.
-convertFingerprint \
-  "${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/community/solr.binproto" \
-  "${JSON_DATA}"
+convertFingerprint "${BINPROTO}" "${JSON_DATA}"
 
 # Fetch Solr codebase.
 if [[ ! -d "${GIT_REPO}" ]] ; then
