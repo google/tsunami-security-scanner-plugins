@@ -90,7 +90,6 @@ public final class AirbyteCredentialTester extends CredentialTester {
   private boolean isAirbyteAccessible(NetworkService networkService, TestCredential credential) {
     var rootUrl =
         "http://" + NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint()) + "/";
-    logger.atWarning().log("============NetworkServiceUtils2;===============");
     try {
       HttpResponse rootResponse =
           httpClient.send(

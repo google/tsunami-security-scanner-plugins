@@ -29,7 +29,6 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.proto.NetworkService;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.util.Objects;
 import java.util.Optional;
@@ -56,13 +55,13 @@ public class AirbyteCredentialTesterTest {
   @Inject private AirbyteCredentialTester tester;
   private MockWebServer mockWebServer;
   private static final TestCredential WEAK_CRED_1 =
-      TestCredential.create("default", Optional.of("airbyte"));
+      TestCredential.create("airbyte", Optional.of("password"));
   private static final TestCredential WRONG_CRED_1 =
-      TestCredential.create("wrong", Optional.of("password"));
+      TestCredential.create("wrong", Optional.of("wrong"));
 
-  // the default username and password value for an insecure airbyte instance
-  private static final String DEFAULT_USERNAME = "default";
-  private static final String DEFAULT_PASSWORD = "";
+  // The base64 encoding of default authentication username:password pairs which the tester will
+  // send these this to our mock webserver
+  private static final String WEAK_CRED_AUTH_1 = "basic YWlyYnl0ZTpwYXNzd29yZA==";
 
   @Before
   public void setup() {
@@ -70,35 +69,34 @@ public class AirbyteCredentialTesterTest {
     Guice.createInjector(new HttpClientModule.Builder().build()).injectMembers(this);
   }
 
-  //
-  //  @Test
-  //  public void detect_weakCredentialsExists_returnsWeakCredentials() throws Exception {
-  //    startMockWebServer();
-  //    NetworkService targetNetworkService =
-  //        NetworkService.newBuilder()
-  //            .setNetworkEndpoint(
-  //                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-  //            .setServiceName("airbyte")
-  //            .build();
-  //
-  //    assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WEAK_CRED_1)))
-  //        .containsExactly(WEAK_CRED_1);
-  //    mockWebServer.shutdown();
-  //  }
-  //
-  //  @Test
-  //  public void detect_weakCredentialsExist_returnsFirstWeakCredentials() throws Exception {
-  //    startMockWebServer();
-  //    NetworkService targetNetworkService =
-  //        NetworkService.newBuilder()
-  //            .setNetworkEndpoint(
-  //                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-  //            .setServiceName("airbyte")
-  //            .build();
-  //
-  //    assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WEAK_CRED_1)))
-  //        .containsExactly(WEAK_CRED_1);
-  //  }
+  @Test
+  public void detect_weakCredentialsExists_returnsWeakCredentials() throws Exception {
+    startMockWebServer();
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setServiceName("airbyte")
+            .build();
+
+    assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WEAK_CRED_1)))
+        .containsExactly(WEAK_CRED_1);
+    mockWebServer.shutdown();
+  }
+
+  @Test
+  public void detect_weakCredentialsExist_returnsFirstWeakCredentials() throws Exception {
+    startMockWebServer();
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setServiceName("airbyte")
+            .build();
+
+    assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WEAK_CRED_1)))
+        .containsExactly(WEAK_CRED_1);
+  }
 
   @Test
   public void detect_airbyteService_canAccept() throws Exception {
@@ -113,21 +111,20 @@ public class AirbyteCredentialTesterTest {
     assertThat(tester.canAccept(targetNetworkService)).isTrue();
   }
 
-  //  @Test
-  //  public void
-  // detect_weakCredentialsExistAndAirbyteInForeignLanguage_returnsFirstWeakCredentials()
-  //      throws Exception {
-  //    startMockWebServer();
-  //    NetworkService targetNetworkService =
-  //        NetworkService.newBuilder()
-  //            .setNetworkEndpoint(
-  //                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-  //            .setServiceName("airbyte")
-  //            .build();
-  //
-  //    assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WEAK_CRED_1)))
-  //        .containsExactly(WEAK_CRED_1);
-  //  }
+  @Test
+  public void detect_weakCredentialsExistAndAirbyteInForeignLanguage_returnsFirstWeakCredentials()
+      throws Exception {
+    startMockWebServer();
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setServiceName("airbyte")
+            .build();
+
+    assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WEAK_CRED_1)))
+        .containsExactly(WEAK_CRED_1);
+  }
 
   @Test
   public void detect_noWeakCredentials_returnsNoCredentials() throws Exception {
@@ -163,32 +160,38 @@ public class AirbyteCredentialTesterTest {
               new MockResponse()
                   .setResponseCode(401)
                   .setBody(
-                      "{\"detail\":[\"AuthorizationException\","
-                          + "\"Authentication error: invalid username or password\"]}");
+                      "content=\"Airbyte is the turnkey open-source data integration platform that "
+                          + "syncs data from applications, APIs and databases to warehouses.\"");
 
           @Override
           public MockResponse dispatch(RecordedRequest request) {
-            if (request.getPath().matches("/login") && Objects.equals(request.getMethod(), "GET")) {
-              return new MockResponse()
-                  .setResponseCode(200)
-                  .setBody(" <title>Airbyte Dashboard</title> ");
-            }
-            if (request.getPath().matches("/api/v1/login")
-                && Objects.equals(request.getMethod(), "POST")
-                && request
-                    .getBody()
-                    .readString(StandardCharsets.UTF_8)
-                    .contains(
-                        String.format(
-                            "username=%s&password=%s", DEFAULT_USERNAME, DEFAULT_PASSWORD))) {
-              return new MockResponse()
-                  .setResponseCode(200)
-                  .setBody(
-                      "{\"access_token\":\"An AccessToken\",\"token_type\":\"bearer\","
-                          + "\"expires_in\":null,\"refresh_token\":null,\"scope\":null}");
-            } else {
+            String authorizationHeader = request.getHeaders().get("Authorization");
+            if (authorizationHeader == null) {
               return unauthorizedResponse;
             }
+            if (request.getPath().equals("/") && Objects.equals(request.getMethod(), "GET")) {
+              boolean isDefaultCredentials = authorizationHeader.equals(WEAK_CRED_AUTH_1);
+              if (isDefaultCredentials) {
+                return new MockResponse()
+                    .setResponseCode(200)
+                    .setBody(
+                        "<html lang=\"en\">\n"
+                            + "  <head>\n"
+                            + "    <meta\n"
+                            + "name=\"description\"\n"
+                            + "content=\"Airbyte is the turnkey open-source data "
+                            + "integration platform that syncs data from applications, APIs and databases to warehouses.\"\n"
+                            + "        >\n"
+                            + "    <title>Airbyte</title>\n"
+                            + "  </head>\n"
+                            + "  <body>\n"
+                            + "  </body>\n"
+                            + "</html>");
+              } else {
+                return unauthorizedResponse;
+              }
+            }
+            return new MockResponse().setResponseCode(404);
           }
         };
     mockWebServer.setDispatcher(dispatcher);
