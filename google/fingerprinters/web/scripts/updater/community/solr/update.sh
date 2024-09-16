@@ -42,7 +42,7 @@ startSolr() {
   local version="$1"
   pushd "${APP_PATH}" >/dev/null
     # add COMPOSE_HTTP_TIMEOUT to avoid docker-compose errors
-    SOLR_VERSION="${version}" COMPOSE_HTTP_TIMEOUT=200 docker compose up -d
+    SOLR_VERSION="${version}" COMPOSE_HTTP_TIMEOUT=200 docker compose up --wait -d
   popd >/dev/null
 }
 
@@ -72,7 +72,7 @@ for git_version in "${ALL_VERSIONS[@]}"; do
   startSolr "${version}"
   # Arbitrarily chosen so that Solr is up and running.
   echo "Waiting for Solr ${version} to be ready ..."
-  sleep 30
+  #sleep 30
   # No need to do other installation process for Solr.
 
   # Checkout the repository to the correct tag.
