@@ -211,12 +211,16 @@ public final class JavaJmxRceDetector implements VulnDetector {
         return false;
       }
 
-      // Parse hostname
-      byte[] hostnameBytes =
+      // Parse client host
+      byte[] hostBytes =
           Arrays.copyOfRange(buffer, hostnameOffset, hostnameOffset + hostnameSize);
-      String hostname = new String(hostnameBytes, StandardCharsets.UTF_8);
+      String clientHost = new String(hostBytes, StandardCharsets.UTF_8);
+      if (!clientHost.matches("[\\w:._-]+")) {
+        logger.atWarning().log("Invalid client host string");
+        return false;
+      }
 
-      logger.atInfo().log("RMI server detected. Declared hostname: %s", hostname);
+      logger.atInfo().log("RMI server detected");
       return true;
     } catch (IOException e) {
       return false;
