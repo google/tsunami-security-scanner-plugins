@@ -62,3 +62,6 @@ releases/solr/9.3.0
 releases/solr/9.4.0
 releases/solr/9.4.1
 releases/solr/9.5.0
+releases/solr/9.6.0
+releases/solr/9.6.1
+releases/solr/9.7.0
