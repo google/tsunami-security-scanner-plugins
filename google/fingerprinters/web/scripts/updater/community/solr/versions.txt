@@ -3,7 +3,6 @@ releases/lucene-solr/5.5.2
 releases/lucene-solr/5.5.3
 releases/lucene-solr/5.5.4
 releases/lucene-solr/5.5.5
-releases/lucene-solr/6.0.0
 releases/lucene-solr/6.0.1
 releases/lucene-solr/6.1.0
 releases/lucene-solr/6.2.0
