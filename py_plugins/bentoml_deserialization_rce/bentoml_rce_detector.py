@@ -163,8 +163,8 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
             except Exception:  # pylint: disable=broad-exception-caught
                 logging.exception('Unable to query %s', url)
         time.sleep(_SLEEP_TIME_SEC)
-        for responseBody in responses_body:
-            if payload.check_if_executed(responseBody):
+        for response_body in responses_body:
+            if payload.check_if_executed(response_body):
                 return True
         return False
 
