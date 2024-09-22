@@ -149,7 +149,7 @@ public final class GeoserverCve202436401VulnDetectorTest {
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(1);
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
   }
 
   private void startMockWebServer() throws IOException {
