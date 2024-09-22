@@ -98,6 +98,7 @@ public class GeoserverCve202436401VulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isGeoserverInstance)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
