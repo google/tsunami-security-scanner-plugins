@@ -126,13 +126,14 @@ public final class GeoserverCve202436401VulnDetectorTest {
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Geoserver RCE (CVE-2024-36401)")
                         .setDescription(
-                            "This detector checks for Geoserver RCE (CVE-2024-36401). "
-                                + "Multiple OGC request parameters allow Remote Code Execution (RCE) "
-                                + "by unauthenticated users through specially crafted input against "
-                                + "a default GeoServer installation due to unsafely evaluating property "
-                                + "names as XPath expressions.")
+                            "This detector checks for Geoserver RCE (CVE-2024-36401). Multiple OGC"
+                                + " request parameters allow Remote Code Execution (RCE) by"
+                                + " unauthenticated users through specially crafted input against a"
+                                + " default GeoServer installation due to unsafely evaluating"
+                                + " property names as XPath expressions.")
                         .setRecommendation(
-                            "Upgrade Geoserver to a patched version. The vulnerability was fixed in versions 2.23.6, 2.24.4, and 2.25.2.")
+                            "Upgrade Geoserver to a patched version. The vulnerability was fixed in"
+                                + " versions 2.23.6, 2.24.4, and 2.25.2.")
                         .addRelatedId(
                             VulnerabilityId.newBuilder()
                                 .setPublisher("CVE")
