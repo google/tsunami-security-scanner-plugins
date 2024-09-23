@@ -175,7 +175,7 @@ public final class Cve202421650DetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE-2024-21650"))
-                        .setSeverity(Severity.CRITICAL)
+                        .setSeverity(Severity.HIGH)
                         .setTitle("XWiki RCE (CVE-2024-21650)")
                         .setDescription(
                             "XWiki is vulnerable to a remote code execution (RCE) attack through"

@@ -76,6 +76,8 @@ public final class Cve202421650Detector implements VulnDetector {
   private final PayloadGenerator payloadGenerator;
   private final int oobSleepDuration;
 
+  Severity vulnSeverity = Severity.HIGH;
+
   @Inject
   Cve202421650Detector(
       @UtcClock Clock utcClock,
@@ -203,8 +205,15 @@ public final class Cve202421650Detector implements VulnDetector {
               .build(),
           networkService);
 
-      if (response.bodyString().isPresent() && (payload != null && payload.checkIfExecuted())
-          || response.bodyString().get().contains(responseString)) {
+      if (payload != null && payload.checkIfExecuted()) {
+        vulnSeverity = Severity.CRITICAL;
+        logger.atInfo().log("The remote code execution was confirmed via an out-of-band callback.");
+        return true;
+      } else if (response.bodyString().isPresent()
+          && response.bodyString().get().contains(responseString)) {
+        logger.atInfo().log(
+            "Since the Tsunami Callback Server was not available, the vulnerability was confirmed"
+                + " through response matching.");
         return true;
       }
     } catch (IOException e) {
@@ -226,7 +235,7 @@ public final class Cve202421650Detector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE-2024-21650"))
-                .setSeverity(Severity.CRITICAL)
+                .setSeverity(vulnSeverity)
                 .setTitle("XWiki RCE (CVE-2024-21650)")
                 .setDescription(
                     "XWiki is vulnerable to a remote code execution (RCE) attack through its user "
