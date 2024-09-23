@@ -190,7 +190,8 @@ public class GeoserverCve202436401VulnDetector implements VulnDetector {
                         + "a default GeoServer installation due to unsafely evaluating property "
                         + "names as XPath expressions.")
                 .setRecommendation(
-                    "Upgrade Geoserver to a patched version. The vulnerability was fixed in versions 2.23.6, 2.24.4, and 2.25.2.")
+                    "Upgrade Geoserver to a patched version. The vulnerability was fixed in"
+                        + " versions 2.23.6, 2.24.4, and 2.25.2.")
                 .addRelatedId(
                     VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2024-36401")))
         .build();
