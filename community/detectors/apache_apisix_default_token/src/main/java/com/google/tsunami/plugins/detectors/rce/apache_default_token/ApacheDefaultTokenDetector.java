@@ -126,13 +126,16 @@ public final class ApacheDefaultTokenDetector implements VulnDetector {
 
     try {
       HttpResponse checkIsAPISIXResponse =
-              httpClient.sendAsIs(
+              httpClient.send(
                       get(targetVulnerabilityUrl).setHeaders(HttpHeaders.builder().build()).build());
       if (!checkIsAPISIXResponse.headers().get("Server").orElse("").contains("APISIX")) {
-        logger.atInfo().log("Target %s is not an Apache APISIX instance.", targetBaseUrl);
         return false;
       }
+    } catch (IOException | AssertionError e) {
+      return false;
+    }
 
+    try {
       HttpResponse httpResponse =
               httpClient.sendAsIs(
                       post(targetVulnerabilityUrl)
