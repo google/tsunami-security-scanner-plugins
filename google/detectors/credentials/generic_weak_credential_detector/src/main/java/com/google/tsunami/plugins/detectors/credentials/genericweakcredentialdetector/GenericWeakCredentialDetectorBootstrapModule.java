@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -44,8 +45,10 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack.NcrackCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.postgres.PostgresCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.rabbitmq.RabbitMQCredentialTester;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.wordpress.WordpressCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.rstudio.RStudioCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.tomcat.TomcatAjpCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.tomcat.TomcatHttpCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.wordpress.WordpressCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.zenml.ZenMlCredentialTester;
 
 import java.io.FileNotFoundException;
@@ -77,6 +80,8 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
     credentialTesterBinder.addBinding().to(GrafanaCredentialTester.class);
     credentialTesterBinder.addBinding().to(RStudioCredentialTester.class);
     credentialTesterBinder.addBinding().to(RabbitMQCredentialTester.class);
+    credentialTesterBinder.addBinding().to(TomcatHttpCredentialTester.class);
+    credentialTesterBinder.addBinding().to(TomcatAjpCredentialTester.class);
     credentialTesterBinder.addBinding().to(ZenMlCredentialTester.class);
 
     Multibinder<CredentialProvider> credentialProviderBinder =

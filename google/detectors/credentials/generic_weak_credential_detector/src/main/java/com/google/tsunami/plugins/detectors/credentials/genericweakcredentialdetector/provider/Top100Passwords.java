@@ -58,7 +58,9 @@ public final class Top100Passwords extends CredentialProvider {
           "vagrant",
           "azureuser",
           "cisco",
-          "rstudio");
+          "rstudio",
+          "tomcat",
+          "manager");
 
   private static final ImmutableList<String> TOP_100_PASSWORDS =
       ImmutableList.of(
@@ -68,6 +70,8 @@ public final class Top100Passwords extends CredentialProvider {
           "123456",
           "password",
           "Password",
+          "password1",
+          "Password1",
           "12345678",
           "qwerty",
           "123456789",
@@ -165,7 +169,10 @@ public final class Top100Passwords extends CredentialProvider {
           "austin",
           "thunder",
           "taylor",
-          "matrix");
+          "tomcat",
+          "matrix",
+          "s3cret",
+          "changethis");
 
   private final ImmutableList<TestCredential> credentials;
 
