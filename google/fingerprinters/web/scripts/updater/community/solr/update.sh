@@ -68,6 +68,9 @@ for git_version in "${ALL_VERSIONS[@]}"; do
   if [ "$version" == "8.1.0" ]; then
      version="${version%.0}"
   fi
+  if [ "$version" == "5.3.0" ]; then
+     version="${version%.0}"
+  fi
   # Start a live instance of Solr.
   echo "Waiting for Solr ${version} to be ready ..."
   startSolr "${version}"
