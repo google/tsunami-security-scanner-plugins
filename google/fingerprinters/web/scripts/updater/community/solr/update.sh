@@ -95,4 +95,3 @@ convertFingerprint "${JSON_DATA}" "${BIN_DATA}"
 echo "Fingerprint updated for Solr. Please commit the following file:"
 echo "  ${BIN_DATA}"
 
-
