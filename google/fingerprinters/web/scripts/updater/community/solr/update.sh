@@ -69,10 +69,8 @@ for git_version in "${ALL_VERSIONS[@]}"; do
      version="${version%.0}"
   fi
   # Start a live instance of Solr.
-  startSolr "${version}"
-  # Arbitrarily chosen so that Solr is up and running.
   echo "Waiting for Solr ${version} to be ready ..."
-  #sleep 30
+  startSolr "${version}"
   # No need to do other installation process for Solr.
 
   # Checkout the repository to the correct tag.
