@@ -38,6 +38,7 @@ public final class Top100Passwords extends CredentialProvider {
 
   private static final ImmutableList<String> TOP_USER_NAMES =
       ImmutableList.of(
+          "",
           "anonymous",
           "root",
           "admin",
