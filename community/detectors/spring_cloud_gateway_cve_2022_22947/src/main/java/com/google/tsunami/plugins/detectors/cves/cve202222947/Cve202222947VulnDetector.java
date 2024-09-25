@@ -22,8 +22,6 @@ import static com.google.common.net.HttpHeaders.ACCEPT_ENCODING;
 import static com.google.common.net.HttpHeaders.ACCEPT_LANGUAGE;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
-import static com.google.tsunami.common.data.NetworkServiceUtils.buildWebApplicationRootUrl;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
@@ -97,26 +95,6 @@ public final class Cve202222947VulnDetector implements VulnDetector {
     this.utcClock = checkNotNull(utcClock);
   }
 
-  private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
-    return networkService.getServiceName().isEmpty()
-        || NetworkServiceUtils.isWebService(networkService)
-        || NetworkServiceUtils.getServiceName(networkService).equals("unknown")
-        || NetworkServiceUtils.getServiceName(networkService).equals("rtsp");
-  }
-
-  private static StringBuilder buildTarget(NetworkService networkService) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(buildWebApplicationRootUrl(networkService));
-    } else {
-      targetUrlBuilder
-          .append("http://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    return targetUrlBuilder;
-  }
-
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
@@ -125,7 +103,7 @@ public final class Cve202222947VulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(Cve202222947VulnDetector::isWebServiceOrUnknownService)
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
@@ -134,7 +112,7 @@ public final class Cve202222947VulnDetector implements VulnDetector {
 
   private String createRouter(NetworkService networkService) throws IOException {
     String router = UUID.randomUUID().toString().replace("-", "").substring(0, 6);
-    String url = buildTarget(networkService).append(ROUTES).append(router).toString();
+    String url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + ROUTES + router;
     String payload = new String(Base64.getDecoder().decode(POST_DATA)).replace(PLACEHOLDER, router);
     HttpResponse httpResponse =
         httpClient.send(
@@ -198,14 +176,11 @@ public final class Cve202222947VulnDetector implements VulnDetector {
       if (tmpRouter.isEmpty()) {
         return false;
       }
-      refresh(buildTarget(networkService).append(REFRESH).toString(), networkService);
-      boolean requestRouteStatus =
-          requestRoute(
-              buildTarget(networkService).append(ROUTES).append(tmpRouter).toString(),
-              networkService);
-      deleteRoutes(
-          buildTarget(networkService).append(ROUTES).append(tmpRouter).toString(), networkService);
-      refresh(buildTarget(networkService).append(REFRESH).toString(), networkService);
+      String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+      refresh(rootUrl + REFRESH, networkService);
+      boolean requestRouteStatus = requestRoute(rootUrl + ROUTES + tmpRouter, networkService);
+      deleteRoutes(rootUrl + ROUTES + tmpRouter, networkService);
+      refresh(rootUrl + REFRESH, networkService);
       return requestRouteStatus;
     } catch (Exception e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);

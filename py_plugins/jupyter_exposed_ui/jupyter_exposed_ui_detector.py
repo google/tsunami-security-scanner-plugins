@@ -15,15 +15,15 @@
 """A Tsunami plugin for detecting exposed UI from Jupyter."""
 
 from absl import logging
-from google3.google.protobuf import timestamp_pb2
-from google3.third_party.java_src.tsunami.plugin_server.py import tsunami_plugin
-from google3.third_party.java_src.tsunami.plugin_server.py.common.data import network_service_utils
-from google3.third_party.java_src.tsunami.plugin_server.py.common.net.http.http_client import HttpClient
-from google3.third_party.java_src.tsunami.plugin_server.py.common.net.http.http_request import HttpRequest
-from google3.third_party.java_src.tsunami.plugin_server.py.common.net.http.http_status import HttpStatus
-from google3.third_party.java_src.tsunami.proto import detection_pb2
-from google3.third_party.java_src.tsunami.proto import plugin_representation_pb2
-from google3.third_party.java_src.tsunami.proto import vulnerability_pb2
+from google.protobuf import timestamp_pb2
+import tsunami_plugin
+from common.data import network_service_utils
+from common.net.http.http_client import HttpClient
+from common.net.http.http_request import HttpRequest
+from common.net.http.http_status import HttpStatus
+import detection_pb2
+import plugin_representation_pb2
+import vulnerability_pb2
 
 _VULN_DESCRIPTION = (
     'This detector checks whether a unauthenticated Jupyter Notebook is'

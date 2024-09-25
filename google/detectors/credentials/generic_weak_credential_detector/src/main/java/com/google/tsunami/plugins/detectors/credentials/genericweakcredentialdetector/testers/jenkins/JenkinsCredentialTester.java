@@ -22,7 +22,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
-import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
@@ -82,8 +81,7 @@ public final class JenkinsCredentialTester extends CredentialTester {
   }
 
   private boolean isJenkinsAccessible(NetworkService networkService, TestCredential credential) {
-    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
-    var url = String.format("http://%s/", uriAuthority) + "view/all/newJob";
+    var url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "view/all/newJob";
     try {
       logger.atInfo().log(
           "url: %s, username: %s, password: %s",

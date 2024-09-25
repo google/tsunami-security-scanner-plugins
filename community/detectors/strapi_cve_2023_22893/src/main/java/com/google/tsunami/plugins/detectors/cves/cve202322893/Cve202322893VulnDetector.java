@@ -19,7 +19,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.ACCEPT_LANGUAGE;
 import static com.google.common.net.HttpHeaders.UPGRADE_INSECURE_REQUESTS;
-import static com.google.tsunami.common.data.NetworkServiceUtils.buildWebApplicationRootUrl;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -79,10 +78,6 @@ public final class Cve202322893VulnDetector implements VulnDetector {
     this.utcClock = checkNotNull(utcClock);
   }
 
-  private static String buildTarget(NetworkService networkService) {
-    return buildWebApplicationRootUrl(networkService);
-  }
-
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
@@ -103,7 +98,8 @@ public final class Cve202322893VulnDetector implements VulnDetector {
             .addHeader(UPGRADE_INSECURE_REQUESTS, "1")
             .addHeader(ACCEPT_LANGUAGE, "en-US,en;q=0.5")
             .build();
-    String targetUrl = buildTarget(networkService) + VULNERABLE_REQUEST_PATH;
+    String targetUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + VULNERABLE_REQUEST_PATH;
     try {
       HttpResponse httpResponse =
           httpClient.send(get(targetUrl).setHeaders(httpHeaders).build(), networkService);

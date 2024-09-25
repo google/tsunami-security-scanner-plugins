@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.grafana;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -134,7 +133,7 @@ public class GrafanaArbitraryFileReadingDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(this::isWebServiceOrUnknownService)
+                .filter(NetworkServiceUtils::isWebService)
                 .map(this::checkUrlWithPlugin)
                 .filter(CheckResult::isVulnerable)
                 .map(checkResult -> buildDetectionReport(targetInfo, checkResult))
@@ -142,15 +141,11 @@ public class GrafanaArbitraryFileReadingDetector implements VulnDetector {
         .build();
   }
 
-  private boolean isWebServiceOrUnknownService(NetworkService networkService) {
-    return networkService.getServiceName().isEmpty()
-        || NetworkServiceUtils.isWebService(networkService)
-        || NetworkServiceUtils.getServiceName(networkService).equals("unknown");
-  }
-
   private CheckResult checkUrlWithPlugin(NetworkService networkService) {
     for (String plugin : PLUGINS) {
-      String targetUri = buildTargetUrl(networkService, plugin);
+      String targetUri =
+          NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+              + VUL_PATH_FMT.replace("{plugin}", plugin);
       try {
         HttpResponse response = httpClient.send(
             HttpRequest.get(targetUri).withEmptyHeaders().build(),
@@ -166,21 +161,6 @@ public class GrafanaArbitraryFileReadingDetector implements VulnDetector {
       }
     }
     return CheckResult.buildForSecureService(networkService);
-  }
-
-  private static String buildTargetUrl(NetworkService networkService, String plugin) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      // Assume the service uses HTTP protocol when the scanner cannot identify the actual service.
-      targetUrlBuilder
-          .append("http://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    targetUrlBuilder.append(VUL_PATH_FMT.replace("{plugin}", plugin));
-    return targetUrlBuilder.toString();
   }
 
   public DetectionReport buildDetectionReport(

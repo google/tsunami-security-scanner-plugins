@@ -17,7 +17,6 @@ package com.google.tsunami.plugins.detectors.rce.cve202322518;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.plugins.detectors.rce.cve202322518.Cve202322518VulnDetector.FILE_UPLOAD_PATH;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -26,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.truth.Truth;
 import com.google.inject.Guice;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
@@ -138,7 +138,7 @@ public final class Cve202322518VuLnDetectorTest {
     Cve202322518VulnDetector mock = spy(detector);
 
     when(mock.buildRootUri(service))
-        .thenReturn(String.format("http://%s/", toUriAuthority(service.getNetworkEndpoint())));
+        .thenReturn(NetworkServiceUtils.buildWebApplicationRootUrl(service));
 
     mockWebServer.enqueue(new MockResponse().setResponseCode(200));
 

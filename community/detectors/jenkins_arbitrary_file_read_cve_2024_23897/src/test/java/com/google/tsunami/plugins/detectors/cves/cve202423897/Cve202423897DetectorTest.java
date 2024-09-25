@@ -34,7 +34,6 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -112,6 +111,8 @@ public final class Cve202423897DetectorTest {
                         VulnerabilityId.newBuilder()
                             .setPublisher("TSUNAMI_COMMUNITY")
                             .setValue("CVE_2024_23897"))
+                    .addRelatedId(
+                        VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2024-23897"))
                     .setSeverity(Severity.CRITICAL)
                     .setTitle("Jenkins Arbitrary File Read")
                     .setDescription(
