@@ -84,8 +84,8 @@ public final class Cve20242928VulnDetector implements VulnDetector {
       "model-versions/get-artifact?path=passwd&name=poc&version=1";
   private static final Pattern VULNERABILITY_RESPONSE_PATTERN = Pattern.compile("(root:[x*]:0:0:)");
 
-  private String experimentID;
-  private String runID;
+  private String experimentId;
+  private String runId;
 
   private static HttpClient httpClient;
 
@@ -113,7 +113,7 @@ public final class Cve20242928VulnDetector implements VulnDetector {
         .build();
   }
 
-  private static boolean checkMLflowFingerprint(NetworkService networkService) {
+  private static boolean checkMlflowFingerprint(NetworkService networkService) {
     String targetWebAddress = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     var request = HttpRequest.get(targetWebAddress).withEmptyHeaders().build();
 
@@ -132,7 +132,7 @@ public final class Cve20242928VulnDetector implements VulnDetector {
 
   private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
     return NetworkServiceUtils.isWebService(networkService)
-        && checkMLflowFingerprint(networkService);
+        && checkMlflowFingerprint(networkService);
   }
 
   private boolean createExperiment(NetworkService networkService) {
@@ -153,8 +153,8 @@ public final class Cve20242928VulnDetector implements VulnDetector {
       }
       JsonObject jsonResponse = (JsonObject) httpResponse.bodyJson().get();
       if (jsonResponse.keySet().contains("experiment_id")) {
-        this.experimentID = jsonResponse.get("experiment_id").getAsString();
-        logger.atInfo().log("Created Experiment ID: %s", this.experimentID);
+        this.experimentId = jsonResponse.get("experiment_id").getAsString();
+        logger.atInfo().log("Created Experiment ID: %s", this.experimentId);
         return true;
       }
     } catch (IOException e) {
@@ -167,7 +167,7 @@ public final class Cve20242928VulnDetector implements VulnDetector {
   private boolean createRunForExperiment(NetworkService networkService) {
     String targetWebAddress =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + RUN_CREATION_PATH;
-    String requestBody = RUN_PAYLOAD.replace("{{EXPERIMENT_ID}}", this.experimentID);
+    String requestBody = RUN_PAYLOAD.replace("{{EXPERIMENT_ID}}", this.experimentId);
 
     try {
       HttpResponse httpResponse =
@@ -188,8 +188,8 @@ public final class Cve20242928VulnDetector implements VulnDetector {
         if (jsonInRunKey.keySet().contains("info")) {
           JsonObject jsonInInfoKey = jsonInRunKey.get("info").getAsJsonObject();
           if (jsonInInfoKey.keySet().contains("run_id")) {
-            this.runID = jsonInInfoKey.get("run_id").getAsString();
-            logger.atInfo().log("Created Run ID: %s", this.runID);
+            this.runId = jsonInInfoKey.get("run_id").getAsString();
+            logger.atInfo().log("Created Run ID: %s", this.runId);
             return true;
           }
         }
@@ -237,7 +237,7 @@ public final class Cve20242928VulnDetector implements VulnDetector {
   private boolean createLinkForModel(NetworkService networkService) {
     String targetWebAddress =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + LINK_PATH;
-    String requestBody = LINK_PAYLOAD.replace("{{RUN_ID}}", this.runID);
+    String requestBody = LINK_PAYLOAD.replace("{{RUN_ID}}", this.runId);
 
     try {
       HttpResponse httpResponse =
@@ -309,7 +309,7 @@ public final class Cve20242928VulnDetector implements VulnDetector {
   private void deleteExperiment(NetworkService networkService) {
     String targetWebAddress =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + EXP_DELETION_PATH;
-    String requestBody = RUN_PAYLOAD.replace("{{EXPERIMENT_ID}}", this.experimentID);
+    String requestBody = RUN_PAYLOAD.replace("{{EXPERIMENT_ID}}", this.experimentId);
     try {
       HttpResponse httpResponse =
           httpClient.send(
@@ -319,7 +319,7 @@ public final class Cve20242928VulnDetector implements VulnDetector {
                   .setRequestBody(ByteString.copyFromUtf8(requestBody))
                   .build());
       if (httpResponse.status().code() == 200) {
-        logger.atInfo().log("Clean Experiment (%s) is successful", this.experimentID);
+        logger.atInfo().log("Clean Experiment (%s) is successful", this.experimentId);
       }
     } catch (Exception e) {
       logger.atWarning().withCause(e).log("Failed to send request.");
