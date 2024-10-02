@@ -34,6 +34,7 @@ This directory contains plugins contributed by community members.
 *   [CVE-2022-36804 Bitbucket Server RCE via command injection](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/bitbucket_cve_2022_36804)
 *   [Spring Cloud Function CVE-2022-22963 VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/spring_cloud_function_cve_2022_22963)
 *   [Apache Spark Exposed API VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/rce/apache_spark_exposed_api)
+*   [CVE-2023-0669 GoAnywhere MFT RCE vulnerability Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/goanywhere_cve_2023_0669)
 
 #### Information Disclosure
 
