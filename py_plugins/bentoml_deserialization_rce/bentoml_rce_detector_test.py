@@ -85,6 +85,12 @@ class Cve20242912DetectorTest(absltest.TestCase):
     def test_detect_service_with_callback_server_returns_vul(self, mock):
         mock.register_uri(
             'GET',
+            'http://%s:%s/' % (_TARGET_URL, _TARGET_PORT),
+            content="<title>BentoML Prediction Service</title>".encode('utf-8'),
+            status_code=200,
+        )
+        mock.register_uri(
+            'GET',
             'http://%s:%s/docs.json' % (_TARGET_URL, _TARGET_PORT),
             content=_DOCS_BODY,
             status_code=200,
@@ -140,6 +146,12 @@ class Cve20242912DetectorTest(absltest.TestCase):
         disabled_client = TcsClient('', 0, '', RequestsHttpClientBuilder().build())
         self.detector.payload_generator = PayloadGenerator(
             self.psg, self.payloads, disabled_client
+        )
+        mock.register_uri(
+            'GET',
+            'http://%s:%s/' % (_TARGET_URL, _TARGET_PORT),
+            content="<title>BentoML Prediction Service</title>".encode('utf-8'),
+            status_code=200,
         )
         mock.register_uri(
             'GET',

@@ -80,7 +80,8 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
     """
         logging.info('Cve20242912Detector starts detecting.')
         vulnerable_services = [
-            s for s in matched_services if self._IsSupportedService(s)
+            service for service in matched_services if
+            self._IsSupportedService(service) and self._IsBentoMlWebService(service)
         ]
 
         return detection_pb2.DetectionReportList(
@@ -101,6 +102,23 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
                 or network_service_utils.get_service_name(network_service) == 'unknown'
                 or network_service_utils.get_service_name(network_service) == 'ppp'
         )
+
+    def _IsBentoMlWebService(
+            self, network_service: tsunami_plugin.NetworkService
+    ) -> bool:
+        """Check if this web service is a BentoML web application."""
+        url = self._BuildUrl(network_service, "/")
+        request = (
+            HttpRequest.get(url)
+            .with_empty_headers()
+            .build()
+        )
+        try:
+            response = self.http_client.send(request, network_service)
+            return "<title>BentoML Prediction Service</title>" in response.body_string()
+        except Exception:  # pylint: disable=broad-exception-caught
+            logging.exception('Unable to query %s', url)
+        return False
 
     def _IsServiceVulnerable(
             self, network_service: tsunami_plugin.NetworkService
