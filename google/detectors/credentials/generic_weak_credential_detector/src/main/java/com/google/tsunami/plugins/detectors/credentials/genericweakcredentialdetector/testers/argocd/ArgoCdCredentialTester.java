@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialde
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
+import static com.google.tsunami.common.net.http.HttpStatus.TEMPORARY_REDIRECT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Strings;
@@ -31,6 +32,7 @@ import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
+import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
@@ -90,25 +92,29 @@ public final class ArgoCdCredentialTester extends CredentialTester {
 
   private boolean isArgoCdAccessible(NetworkService networkService, TestCredential credential) {
     var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
-    var url = String.format("http://%s/", uriAuthority) + "api/v1/session";
+    var url = String.format("http://%s/%s", uriAuthority, "api/v1/session");
     try {
       logger.atInfo().log(
           "url: %s, username: %s, password: %s",
           url, credential.username(), credential.password().orElse(""));
-      HttpResponse response =
-          httpClient.send(
-              post(url)
-                  .setHeaders(
-                      HttpHeaders.builder().addHeader("Content-Type", "application/json").build())
-                  .setRequestBody(
-                      ByteString.copyFromUtf8(
-                          String.format(
-                              "{\"username\":\"%s\",\"password\":\"%s\"}",
-                              credential.username(), credential.password().get())))
-                  .build());
-      return response.status().isSuccess()
-          && response.bodyString().isPresent()
-          && bodyContainsToken(response.bodyString().get());
+      ByteString loginReqBody =
+          ByteString.copyFromUtf8(
+              String.format(
+                  "{\"username\":\"%s\",\"password\":\"%s\"}",
+                  credential.username(), credential.password().get()));
+      HttpHeaders loginHeaders =
+          HttpHeaders.builder().addHeader("Content-Type", "application/json").build();
+      HttpResponse loginResponse =
+          httpClient.send(post(url).setHeaders(loginHeaders).setRequestBody(loginReqBody).build());
+      if (loginResponse.status() == TEMPORARY_REDIRECT) {
+        url = String.format("https://%s/%s", uriAuthority, "api/v1/session");
+        loginResponse =
+            httpClient.send(
+                post(url).setHeaders(loginHeaders).setRequestBody(loginReqBody).build());
+      }
+      return loginResponse.status().isSuccess()
+          && loginResponse.bodyString().isPresent()
+          && bodyContainsToken(loginResponse.bodyString().get());
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", url);
       return false;

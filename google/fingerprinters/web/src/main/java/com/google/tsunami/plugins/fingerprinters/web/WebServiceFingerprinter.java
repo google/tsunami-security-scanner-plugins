@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
+import static com.google.tsunami.common.net.http.HttpStatus.TEMPORARY_REDIRECT;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.collect.ImmutableMap;
@@ -388,7 +389,15 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
                   .setHeaders(
                       HttpHeaders.builder().addHeader("Content-Type", "application/json").build())
                   .build());
-
+      if (apiApplicationsResponse.status() == TEMPORARY_REDIRECT) {
+        applicationsApiUrl = String.format("https://%s/%s", uriAuthority, "api/v1/applications");
+        apiApplicationsResponse =
+            httpClient.send(
+                post(applicationsApiUrl)
+                    .setHeaders(
+                        HttpHeaders.builder().addHeader("Content-Type", "application/json").build())
+                    .build());
+      }
       if (apiApplicationsResponse.status() != HttpStatus.INTERNAL_SERVER_ERROR
           || apiApplicationsResponse.bodyString().isEmpty()) {
         return;
