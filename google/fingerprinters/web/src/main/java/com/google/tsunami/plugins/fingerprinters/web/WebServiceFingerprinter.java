@@ -383,20 +383,14 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
     var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
     var applicationsApiUrl = String.format("http://%s/%s", uriAuthority, "api/v1/applications");
     try {
+      HttpHeaders apiApplicationsReqHeaders =
+          HttpHeaders.builder().addHeader("Content-Type", "application/json").build();
       HttpResponse apiApplicationsResponse =
-          httpClient.send(
-              post(applicationsApiUrl)
-                  .setHeaders(
-                      HttpHeaders.builder().addHeader("Content-Type", "application/json").build())
-                  .build());
+          httpClient.send(post(applicationsApiUrl).setHeaders(apiApplicationsReqHeaders).build());
       if (apiApplicationsResponse.status() == TEMPORARY_REDIRECT) {
         applicationsApiUrl = String.format("https://%s/%s", uriAuthority, "api/v1/applications");
         apiApplicationsResponse =
-            httpClient.send(
-                post(applicationsApiUrl)
-                    .setHeaders(
-                        HttpHeaders.builder().addHeader("Content-Type", "application/json").build())
-                    .build());
+            httpClient.send(post(applicationsApiUrl).setHeaders(apiApplicationsReqHeaders).build());
       }
       if (apiApplicationsResponse.status() != HttpStatus.INTERNAL_SERVER_ERROR
           || apiApplicationsResponse.bodyString().isEmpty()) {
