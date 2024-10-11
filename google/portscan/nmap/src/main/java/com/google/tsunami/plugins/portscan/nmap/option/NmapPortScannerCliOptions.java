@@ -43,6 +43,9 @@ public final class NmapPortScannerCliOptions implements CliOption {
       description = "Additional command line options for Nmap scanning.")
   public List<String> nmapCmdOpts;
 
+  @Parameter(names = "--nmap-os-detection", description = "Activates OS detection in Nmap.")
+  public boolean nmapOsDetection;
+
   @Override
   public void validate() {}
 }

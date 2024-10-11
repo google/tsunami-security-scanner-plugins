@@ -110,7 +110,7 @@ public final class ApacheSparksExposedWebuiVulnDetectorTest {
                     Vulnerability.newBuilder()
                         .setMainId(
                             VulnerabilityId.newBuilder()
-                                .setPublisher("Community")
+                                .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("Apache_Spark_Exposed_WebUI"))
                         .setSeverity(Severity.MEDIUM)
                         .setTitle(
