@@ -96,7 +96,7 @@ public final class TomcatAjpCredentialTester extends CredentialTester {
           2, "HTTP/1.1", "/manager/html", host, host, host, port, true, headers, attributes);
 
       byte[] response = sendAndReceive(host, port, request.getBytes());
-          AjpMessage responseMessage = AjpReader.parseMessage(response);
+      AjpMessage responseMessage = AjpReader.parseMessage(response);
 
       canAcceptByCustomFingerprint = responseMessage.getDescription()
         .toLowerCase().contains(TOMCAT_AUTH_HEADER.toLowerCase());
@@ -152,7 +152,7 @@ public final class TomcatAjpCredentialTester extends CredentialTester {
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", url);
       return false;
-    } 
+    }
   }
 
 
