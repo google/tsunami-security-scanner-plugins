@@ -16,7 +16,6 @@
 
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.tomcat;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -35,9 +34,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.sql.Timestamp;
 import java.util.Base64;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import javax.inject.Inject;
@@ -77,8 +74,8 @@ public final class TomcatAjpCredentialTester extends CredentialTester {
     boolean canAcceptByNmapReport =
         NetworkServiceUtils.getWebServiceName(networkService).equals(AJP13_SERVICE);
 
-    if (canAcceptByNmapReport) {
-      return true;
+    if (!canAcceptByNmapReport) {
+      return false;
     }
 
     boolean canAcceptByCustomFingerprint = false;
@@ -99,14 +96,16 @@ public final class TomcatAjpCredentialTester extends CredentialTester {
           2, "HTTP/1.1", "/manager/html", host, host, host, port, true, headers, attributes);
 
       byte[] response = sendAndReceive(host, port, request.getBytes());
-      AjpMessage responseMessage = AjpReader.parseMessage(response);
+          AjpMessage responseMessage = AjpReader.parseMessage(response);
 
       canAcceptByCustomFingerprint = responseMessage.getDescription()
         .toLowerCase().contains(TOMCAT_AUTH_HEADER.toLowerCase());
 
-    } catch (Exception e) {
-      // This catch block will catch both IOException and NullPointerException
-      logger.atWarning().withCause(e).log("Unable to query '%s'.", uriAuthority);
+    } catch (NullPointerException e) {
+      logger.atWarning().log("Unable to query '%s'.", uriAuthority);
+      return false;
+    } catch (IOException e){
+      logger.atWarning().log("Unable to query '%s'.", uriAuthority);
       return false;
     }
 
@@ -127,7 +126,7 @@ public final class TomcatAjpCredentialTester extends CredentialTester {
     String[] uriParts = uriAuthority.split(":");
     String host = uriParts[0];
     int port = Integer.parseInt(uriParts[1]);
-    var url = String.format("http://%s/%s", uriAuthority, "manager/html");
+    var url = String.format("%s/%s", uriAuthority, "manager/html");
     
     logger.atInfo().log("uriAuthority: %s", uriAuthority);
     try {
@@ -153,7 +152,7 @@ public final class TomcatAjpCredentialTester extends CredentialTester {
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", url);
       return false;
-    }
+    } 
   }
 
 

@@ -79,6 +79,10 @@ public final class TomcatHttpCredentialTester extends CredentialTester {
       return true;
     }
 
+    if (!NetworkServiceUtils.isWebService(networkService)) {
+      return false;
+    }
+
     boolean canAcceptByCustomFingerprint = false;
 
     var url =
