@@ -16,15 +16,11 @@
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.argocd;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 import static com.google.tsunami.common.net.http.HttpStatus.TEMPORARY_REDIRECT;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.ByteString;
@@ -32,19 +28,13 @@ import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
-import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
 import com.google.tsunami.proto.NetworkService;
 import java.io.IOException;
-import java.util.Base64;
 import java.util.List;
 import javax.inject.Inject;
-
-import jdk.jfr.ContentType;
-import org.jsoup.Jsoup;
-import org.jsoup.select.Elements;
 
 /** Credential tester specifically for argocd. */
 public final class ArgoCdCredentialTester extends CredentialTester {
