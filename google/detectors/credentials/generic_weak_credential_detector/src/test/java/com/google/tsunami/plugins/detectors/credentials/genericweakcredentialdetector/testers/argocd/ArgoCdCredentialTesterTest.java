@@ -28,7 +28,6 @@ import com.google.inject.Guice;
 import com.google.tsunami.common.net.db.ConnectionProviderInterface;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.argocd.ArgoCdCredentialTester;
 import com.google.tsunami.proto.NetworkService;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
