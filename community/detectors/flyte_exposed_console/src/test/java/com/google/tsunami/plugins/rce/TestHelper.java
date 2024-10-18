@@ -16,15 +16,13 @@
 
 package com.google.tsunami.plugins.rce;
 
-import static com.google.tsunami.common.data.NetworkEndpointUtils.*;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 import static com.google.tsunami.plugins.rce.ExposedFlyteConsoleDetector.*;
-import static org.mockito.AdditionalAnswers.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.time.Instant;
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
@@ -37,7 +35,6 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-
 import flyteidl.service.AdminServiceGrpc;
 import flyteidl.service.AdminServiceGrpc.AdminServiceBlockingStub;
 import io.grpc.ClientInterceptors;
@@ -52,6 +49,9 @@ import io.grpc.ServerServiceDefinition;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.testing.GrpcCleanupRule;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.time.Instant;
 import okhttp3.mockwebserver.MockWebServer;
 
 final class TestHelper {

@@ -16,20 +16,8 @@
 
 package com.google.tsunami.plugins.rce;
 
-import static com.google.common.truth.Truth.*;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.*;
-
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.time.Instant;
-
-import javax.inject.Inject;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -42,10 +30,18 @@ import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.TargetInfo;
-
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.time.Instant;
+import javax.inject.Inject;
 
 /** Unit tests for the {@link ExposedFlyteConsoleDetector}. */
 @RunWith(JUnit4.class)
@@ -53,6 +49,9 @@ public final class ExposedFlyteConsoleDetectorTest {
   private final MockWebServer mockTargetService = new MockWebServer();
   private final MockWebServer mockCallbackServer = new MockWebServer();
   private final FakeUtcClock fakeUtcClock = FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
+  private static final String MOCK_RESPONSE_BODY = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
+    "<meta name=\"description\" content=\"Dashboard values to monitor your FlyteConsole instance\">" +
+    "<title>Flyte Dashboard</title>";
 
   @Inject
   private ExposedFlyteConsoleDetector detector;
@@ -104,7 +103,7 @@ public final class ExposedFlyteConsoleDetectorTest {
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
 
     TargetInfo target = TestHelper.buildTargetInfo(forHostname(mockTargetService.getHostName()));
-    mockTargetService.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
+    mockTargetService.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(MOCK_RESPONSE_BODY));
 
     //Use the mock client
     detector.flyteClient = TestHelper.getMockFlyteProtoClient();
@@ -128,7 +127,7 @@ public final class ExposedFlyteConsoleDetectorTest {
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
     TargetInfo target = TestHelper.buildTargetInfo(forHostname(mockTargetService.getHostName()));
-    mockTargetService.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
+    mockTargetService.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(MOCK_RESPONSE_BODY));
 
     detector.flyteClient = TestHelper.getMockFlyteProtoClient();
 

@@ -16,14 +16,8 @@
 
 package com.google.tsunami.plugins.rce;
 
-import static com.google.common.base.Preconditions.*;
-import static com.google.tsunami.common.net.http.HttpRequest.*;
-
-import java.io.IOException;
-import java.time.Clock;
-import java.time.Instant;
-
-import javax.inject.Inject;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.tsunami.common.net.http.HttpRequest.get;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -51,9 +45,22 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
+import java.io.IOException;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.regex.Pattern;
+import javax.inject.Inject;
 
 /** A VulnDetector plugin for Exposed Flyte Console Server. */
-@PluginInfo(type = PluginType.VULN_DETECTION, name = "Exposed Flyte Console Detector", version = "0.1", description = "This detector identifies instances of exposed Flyte Console, which could potentially allow for remote code execution (RCE).", author = "hayageek", bootstrapModule = ExposedFlyteConsoleDetectorModule.class)
+@PluginInfo(
+	    type = PluginType.VULN_DETECTION,
+	    name = "Exposed Flyte Console Detector",
+	    version = "0.1",
+	    description = "This detector identifies instances of exposed Flyte Console, "
+	                + "which could potentially allow for remote code execution (RCE).",
+	    author = "hayageek",
+	    bootstrapModule = ExposedFlyteConsoleDetectorModule.class
+	)
 @ForWebService
 public final class ExposedFlyteConsoleDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
@@ -74,6 +81,9 @@ public final class ExposedFlyteConsoleDetector implements VulnDetector {
 
   @VisibleForTesting
   static final String RECOMMENDATION = "Please disable public access to your flyte console instance.";
+
+  @VisibleForTesting
+  private static final Pattern VULNERABILITY_RESPONSE_PATTERN = Pattern.compile("<title>Flyte");
 
   @VisibleForTesting
   FlyteProtoClient flyteClient = new FlyteProtoClient();
@@ -123,7 +133,10 @@ public final class ExposedFlyteConsoleDetector implements VulnDetector {
     try {
       HttpResponse loginResponse = this.httpClient.send(get(consolePageUrl).withEmptyHeaders().build());
       if ((loginResponse.status() == HttpStatus.OK && loginResponse.bodyString().isPresent())) {
-        return true;
+          String responseBody = loginResponse.bodyString().get();
+          if (VULNERABILITY_RESPONSE_PATTERN.matcher(responseBody).find()) {
+            return true;
+          }
       }
 
     } catch (IOException e) {
