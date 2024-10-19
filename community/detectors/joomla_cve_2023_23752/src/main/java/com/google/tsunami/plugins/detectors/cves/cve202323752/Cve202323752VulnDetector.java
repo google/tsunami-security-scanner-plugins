@@ -136,6 +136,15 @@ public final class Cve202323752VulnDetector implements VulnDetector {
   @VisibleForTesting static final String DETECTION_STRING_1 = "password";
   @VisibleForTesting static final String DETECTION_STRING_2 = "user";
   @VisibleForTesting static final int DETECTION_STRING_BY_STATUS = HttpStatus.OK.code();
+
+  @VisibleForTesting
+  static final String ACCEPT_HEADER =
+      "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8";
+
+  @VisibleForTesting
+  static final String USER_AGENT_HEADER =
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.5563.65 Safari/537.36";
+
   private final HttpClient httpClient;
   private final Clock utcClock;
 
@@ -242,34 +251,32 @@ public final class Cve202323752VulnDetector implements VulnDetector {
     HttpHeaders httpHeaders =
         HttpHeaders.builder()
             .addHeader(CONTENT_TYPE, "text/plain; charset=UTF-8")
-            .addHeader(
-                ACCEPT,
-                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
+            .addHeader(ACCEPT, ACCEPT_HEADER)
             .addHeader(UPGRADE_INSECURE_REQUESTS, "1")
             .addHeader(ACCEPT_LANGUAGE, "Accept-Language: en-US,en;q=0.5")
             .addHeader(ACCEPT_ENCODING, "gzip, deflate")
             .build();
 
-    String targetUrl = buildTarget(networkService).append(VULNERABLE_PATH).toString();
+    String appConfUrl = buildTarget(networkService).append(VULNERABLE_PATH).toString();
     try {
-      HttpResponse httpResponse =
-          httpClient.send(get(targetUrl).setHeaders(httpHeaders).build(), networkService);
+      HttpResponse appConfHttpResponse =
+          httpClient.send(get(appConfUrl).setHeaders(httpHeaders).build(), networkService);
 
-      // immediate checks for faster scanning
-      if (httpResponse.status().code() != DETECTION_STRING_BY_STATUS
-          || httpResponse.bodyJson().isEmpty()
-          || httpResponse.bodyString().isEmpty()) {
+      // immediate checks for accelerating the scan
+      if (appConfHttpResponse.status().code() != DETECTION_STRING_BY_STATUS
+          || appConfHttpResponse.bodyJson().isEmpty()
+          || appConfHttpResponse.bodyString().isEmpty()) {
         return results.build();
       }
 
       // check for body values match our detection rules
       // and save leaked credentials
-      if (httpResponse.bodyString().get().contains(DETECTION_STRING_1)
-          && httpResponse.bodyString().get().contains(DETECTION_STRING_2)) {
+      if (appConfHttpResponse.bodyString().get().contains(DETECTION_STRING_1)
+          && appConfHttpResponse.bodyString().get().contains(DETECTION_STRING_2)) {
         results.setIsSuccessful(true);
-        results.setLeakedResponse(httpResponse.bodyString().get());
+        results.setLeakedResponse(appConfHttpResponse.bodyString().get());
 
-        JsonObject jsonResponse = (JsonObject) httpResponse.bodyJson().get();
+        JsonObject jsonResponse = (JsonObject) appConfHttpResponse.bodyJson().get();
         if (jsonResponse.keySet().contains("data")) {
           JsonArray jsonArray = jsonResponse.getAsJsonArray("data");
           for (int i = 0; i < jsonArray.size(); i++) {
@@ -290,7 +297,7 @@ public final class Cve202323752VulnDetector implements VulnDetector {
           }
         }
 
-        // Check leaked Credentials if administrator has used them in some other entries
+        // Check if administrator is using the leaked credentials for admin and other users
         if (!results.build().dataBaseUsername().isEmpty()
             && !results.build().dataBasePassword().isEmpty()) {
           results.setCompromisedAdminAccount(
@@ -317,100 +324,89 @@ public final class Cve202323752VulnDetector implements VulnDetector {
   }
 
   public static boolean checkJoomlaAdminsLogin(
-      StringBuilder url, String dataBaseUsername, String dataBasePassword)
+      StringBuilder initialReqUrl, String dbUsername, String dbPassword)
       throws IOException, InterruptedException {
     return checkJoomlaLogin(
-        url + "administrator/",
-        url + "administrator/index.php",
-        "username="
-            + dataBaseUsername
-            + "&passwd="
-            + dataBasePassword
-            + "&option=com_login&task=login",
+        initialReqUrl + "administrator/",
+        initialReqUrl + "administrator/index.php",
+        "username=" + dbUsername + "&passwd=" + dbPassword + "&option=com_login&task=login",
         "Set-Cookie");
   }
 
   public static boolean checkJoomlaUsersLogin(
-      StringBuilder url, String dataBaseUsername, String dataBasePassword)
+      StringBuilder initialReqUrl, String dbUsername, String dbPassword)
       throws IOException, InterruptedException {
     return checkJoomlaLogin(
-        url.toString(),
-        url.append("index.php").toString(),
+        initialReqUrl.toString(),
+        initialReqUrl.append("index.php").toString(),
         "username="
-            + dataBaseUsername
+            + dbUsername
             + "&password="
-            + dataBasePassword
+            + dbPassword
             + "&Submit=&option=com_users&task=user.login",
         "joomla_user_state=logged_in;");
   }
 
   public static boolean checkJoomlaLogin(
-      String initialUrl, String loginUrl, String body, String finalResponseMatcher)
+      String initialReqUrl, String loginUrl, String reqBody, String finalResponseMatcher)
       throws IOException, InterruptedException {
 
     java.net.http.HttpClient httpClient =
         java.net.http.HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
-    HttpRequest request =
+    HttpRequest initReq =
         HttpRequest.newBuilder()
             .GET()
-            .uri(URI.create(initialUrl))
-            .setHeader(
-                ACCEPT,
-                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
-            .setHeader(
-                "User-Agent",
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.5563.65 Safari/537.36")
+            .uri(URI.create(initialReqUrl))
+            .setHeader(ACCEPT, ACCEPT_HEADER)
+            .setHeader("User-Agent", USER_AGENT_HEADER)
             .setHeader("Cache-Control", "max-age=0")
             .build();
-    java.net.http.HttpResponse<String> httpResponse =
-        httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+    java.net.http.HttpResponse<String> initialHttpResponse =
+        httpClient.send(initReq, java.net.http.HttpResponse.BodyHandlers.ofString());
 
     // get some hidden parameter values
-    String returnToken = null;
+    String returnToken;
     Pattern returnTokenPattern =
         Pattern.compile("<input type=\"hidden\" name=\"return\" value=\"(.+?)\">");
-    Matcher matcher = returnTokenPattern.matcher(httpResponse.body());
+    Matcher matcher = returnTokenPattern.matcher(initialHttpResponse.body());
     if (matcher.find()) {
       returnToken = matcher.group(1);
     } else return false;
 
     // get CSRF token method 1
-    String csrfToken = null;
+    String csrfToken;
     Pattern csrfPattern = Pattern.compile("<input type=\"hidden\" name=\"(.+?)\" value=\"1\">");
-    matcher = csrfPattern.matcher(httpResponse.body());
+    matcher = csrfPattern.matcher(initialHttpResponse.body());
     if (matcher.find()) {
       csrfToken = matcher.group(1);
     } else return false;
 
     // get PreAuth Cookies
-    if (httpResponse.headers().firstValue("Set-Cookie").isEmpty()) {
+    if (initialHttpResponse.headers().firstValue("Set-Cookie").isEmpty()) {
       return false;
     }
-    String cookies = httpResponse.headers().firstValue("Set-Cookie").get();
+    String cookies = initialHttpResponse.headers().firstValue("Set-Cookie").get();
 
-    request =
+    HttpRequest loginReq =
         HttpRequest.newBuilder()
             .POST(
                 HttpRequest.BodyPublishers.ofString(
-                    body + "&return=" + returnToken + "&" + csrfToken + "=1"))
+                    reqBody + "&return=" + returnToken + "&" + csrfToken + "=1"))
             .uri(URI.create(loginUrl))
-            .setHeader(
-                ACCEPT,
-                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
-            .setHeader(
-                "User-Agent",
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.5563.65 Safari/537.36")
+            .setHeader(ACCEPT, ACCEPT_HEADER)
+            .setHeader("User-Agent", USER_AGENT_HEADER)
             .setHeader("Cache-Control", "max-age=0")
             .setHeader("Cookie", cookies)
             .setHeader("Content-Type", "application/x-www-form-urlencoded")
             .build();
 
-    httpResponse = httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+    java.net.http.HttpResponse<String> loginResponse =
+        httpClient.send(loginReq, java.net.http.HttpResponse.BodyHandlers.ofString());
 
-    return httpResponse.headers().toString().contains(finalResponseMatcher)
-        || httpResponse.headers().toString().contains(finalResponseMatcher.toLowerCase())
-        || httpResponse.body().contains(finalResponseMatcher)
-        || httpResponse.body().contains(finalResponseMatcher.toLowerCase());
+    return loginResponse.headers().toString().contains(finalResponseMatcher)
+        || loginResponse.headers().toString().contains(finalResponseMatcher.toLowerCase())
+        || loginResponse.body().contains(finalResponseMatcher)
+        || loginResponse.body().contains(finalResponseMatcher.toLowerCase());
   }
 
   public static boolean IsPublicHost(String url) {
@@ -419,9 +415,8 @@ public final class Cve202323752VulnDetector implements VulnDetector {
         return false;
       }
       try {
-        InetAddress address = null;
+        InetAddress address;
         String host = "";
-        String hostAddress = "";
         if (url.contains(":")) {
           // It is a URL and has protocol/scheme (https/http)
           URL parsedUrl = new URL(url);
@@ -431,7 +426,8 @@ public final class Cve202323752VulnDetector implements VulnDetector {
           // it isn't a URL and only contains hostname
           address = InetAddress.getByName(url);
         }
-        hostAddress = address.getHostAddress();
+
+        String hostAddress = address.getHostAddress();
         host = host.toLowerCase();
 
         return !address.isAnyLocalAddress()
@@ -465,9 +461,8 @@ public final class Cve202323752VulnDetector implements VulnDetector {
             && !hostAddress.startsWith("198.18.") // 198.18.0.0/15
             && !hostAddress.startsWith("198.19.") // 198.18.0.0/15
             && !hostAddress.startsWith("fc00::") // fc00::/7
-            // https://stackoverflow.com/questions/53764109/is-there-a-java-api-that-will-identify-the-ipv6-address-fd00-as-local-private
             && !hostAddress.startsWith("fd00::") // fd00::/8
-            && !host.endsWith(".arpa"); // reverse domain (needed?)
+            && !host.endsWith(".arpa");
       } catch (MalformedURLException | UnknownHostException e) {
         return false;
       }
