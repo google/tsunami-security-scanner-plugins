@@ -73,6 +73,12 @@ public final class TomcatHttpCredentialTester extends CredentialTester {
 
     var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
 
+    boolean canAcceptByNmapReport = 
+        NetworkServiceUtils.getWebServiceName(networkService).equals(TOMCAT_SERVICE);
+    if (canAcceptByNmapReport) {
+      return true;
+    }
+
     if (!NetworkServiceUtils.isWebService(networkService)) {
       return false;
     }
