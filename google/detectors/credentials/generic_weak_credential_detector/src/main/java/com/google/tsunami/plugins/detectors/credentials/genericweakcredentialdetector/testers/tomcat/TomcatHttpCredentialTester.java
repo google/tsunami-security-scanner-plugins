@@ -46,6 +46,7 @@ public final class TomcatHttpCredentialTester extends CredentialTester {
 
   private static final String TOMCAT_SERVICE = "tomcat";
   private static final String TOMCAT_PAGE_TITLE = "/manager";
+  private static final String TOMCAT_AUTH_HEADER = "Basic realm=\"Tomcat Manager Application\"";
 
   @Inject
   TomcatHttpCredentialTester(HttpClient httpClient) {
@@ -72,34 +73,33 @@ public final class TomcatHttpCredentialTester extends CredentialTester {
 
     var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
 
-    boolean canAcceptByNmapReport = 
-        NetworkServiceUtils.getWebServiceName(networkService).equals(TOMCAT_SERVICE);
-
-    if (canAcceptByNmapReport) {
-      return true;
-    }
-
     if (!NetworkServiceUtils.isWebService(networkService)) {
       return false;
     }
 
     boolean canAcceptByCustomFingerprint = false;
 
-    var url =
-        String.format(
-            "http://%s/%s",
-            uriAuthority, "manager/");
+    var url = String.format("http://%s/%s", uriAuthority, "manager/html");
 
-    // Check if the server response indicates a redirection to /manager/html.
-    // This typically means that the Tomcat Manager is active and automatically
-    // redirects users to the management interface when accessing the base manager URL.
+    // Check if the server responds with a 401 Unauthorized status and the WWW-Authenticate header
+    // contains the Tomcat Manager realm. This typically means that the Tomcat Manager application
+    // is active and requires authentication.
     try {
-      logger.atInfo().log("probing Tomcat manager - custom fingerprint phase");
+      logger.atInfo().log("Probing Tomcat manager - custom fingerprint phase");
 
       HttpResponse response = httpClient.send(get(url).withEmptyHeaders().build());
-      
-      canAcceptByCustomFingerprint = response.status().code() == 302 
-        && response.headers().get("Location").get().equals("/manager/html");
+
+      canAcceptByCustomFingerprint = response.status().code() == 401
+          && response.headers().get("WWW-Authenticate")
+              .map(headerValue -> Ascii.toLowerCase(headerValue)
+                  .contains(Ascii.toLowerCase(TOMCAT_AUTH_HEADER)))
+              .orElse(false);
+
+      if (canAcceptByCustomFingerprint) {
+        logger.atInfo().log("Service identified as Tomcat based on WWW-Authenticate header.");
+      } else {
+        logger.atInfo().log("Service does not appear to be Tomcat.");
+      }
 
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", url);
@@ -107,7 +107,6 @@ public final class TomcatHttpCredentialTester extends CredentialTester {
     }
 
     return canAcceptByCustomFingerprint;
-
   }
 
   @Override
@@ -140,7 +139,7 @@ public final class TomcatHttpCredentialTester extends CredentialTester {
       return false;
     }
   }
-
+  
   private HttpResponse sendRequestWithCredentials(String url, TestCredential credential)
       throws IOException {
 
