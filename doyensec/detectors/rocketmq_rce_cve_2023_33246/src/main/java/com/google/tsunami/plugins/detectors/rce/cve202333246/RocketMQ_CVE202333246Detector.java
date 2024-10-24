@@ -67,11 +67,17 @@ public final class RocketMQ_CVE202333246Detector implements VulnDetector {
       "{\"code\":%d,\"flag\":0,\"language\":\"JAVA\",\"opaque\":0,\"serializeTypeCurrentRPC\":\"JSON\",\"version\":395}";
   private final Clock utcClock;
   private final PayloadGenerator payloadGenerator;
+  private final int oobSleepDuration;
 
   @Inject
-  RocketMQ_CVE202333246Detector(@UtcClock Clock utcClock, PayloadGenerator payloadGenerator) {
+  RocketMQ_CVE202333246Detector(
+          @UtcClock Clock utcClock,
+          PayloadGenerator payloadGenerator,
+          @Annotations.OobSleepDuration int oobSleepDuration
+  ) {
     this.utcClock = checkNotNull(utcClock);
     this.payloadGenerator = checkNotNull(payloadGenerator);
+    this.oobSleepDuration = oobSleepDuration;
   }
 
   @Override
@@ -196,7 +202,7 @@ public final class RocketMQ_CVE202333246Detector implements VulnDetector {
     // Wait for execution before checking for callback
     // We observed varying degrees of delays in responses from the target, so we wait up to one minute
     // but we do it in 10s cycles so we can exit early if the response comes
-    Duration timeout = Duration.ofSeconds(10);
+    Duration timeout = Duration.ofSeconds(oobSleepDuration);
     int retries = 6;
     boolean executed = false;
     for (int currentTry = 0; currentTry < retries && !executed; currentTry++) {
