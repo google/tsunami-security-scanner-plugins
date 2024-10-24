@@ -24,7 +24,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
-/** Annotation for {@link RocketMQ_CVE202333246Detector}. */
+/** Annotation for {@link RocketMqCve202333246Detector}. */
 final class Annotations {
     @Qualifier
     @Retention(RetentionPolicy.RUNTIME)

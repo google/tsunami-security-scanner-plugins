@@ -18,17 +18,17 @@ package com.google.tsunami.plugins.detectors.rce.cve202333246;
 import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-/** A module for bootstrapping the {@link RocketMQ_CVE202333246Detector}. */
-public final class RocketMQ_CVE202333246DetectorBootstrapModule extends PluginBootstrapModule {
+/** A module for bootstrapping the {@link RocketMqCve202333246Detector}. */
+public final class RocketMqCve202333246DetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    registerPlugin(RocketMQ_CVE202333246Detector.class);
+    registerPlugin(RocketMqCve202333246Detector.class);
   }
 
   @Provides
   @Annotations.OobSleepDuration
-  int provideOobSleepDuration(RocketMQ_CVE202333246DetectorConfig configs) {
+  int provideOobSleepDuration(RocketMqCve202333246DetectorConfig configs) {
     if (configs.oobSleepDuration == 0) {
       return 10;
     }

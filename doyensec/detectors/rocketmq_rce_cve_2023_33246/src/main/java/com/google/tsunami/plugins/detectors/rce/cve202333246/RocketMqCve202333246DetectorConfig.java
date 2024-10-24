@@ -19,6 +19,6 @@ package com.google.tsunami.plugins.detectors.rce.cve202333246;
 import com.google.tsunami.common.config.annotations.ConfigProperties;
 
 @ConfigProperties("plugins.community.detectors.rocketmq_cve_2023_33246")
-public class RocketMQ_CVE202333246DetectorConfig {
+public class RocketMqCve202333246DetectorConfig {
     int oobSleepDuration;
 }

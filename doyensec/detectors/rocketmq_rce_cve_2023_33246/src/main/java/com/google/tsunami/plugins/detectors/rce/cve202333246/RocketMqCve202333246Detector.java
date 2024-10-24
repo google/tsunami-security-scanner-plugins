@@ -48,12 +48,12 @@ import javax.inject.Inject;
 /** A Tsunami plugin that detects RocketMQ RCE vulnerability CVE-2023-33246. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "RocketMQ_CVE202333246Detector",
+    name = "RocketMqCve202333246Detector",
     version = "0.1",
     description = "This plugin detects the RocketMQ CVE-2023-33246 RCE vulnerability.",
     author = "Raul Mijan (raul@doyensec.com)",
-    bootstrapModule = RocketMQ_CVE202333246DetectorBootstrapModule.class)
-public final class RocketMQ_CVE202333246Detector implements VulnDetector {
+    bootstrapModule = RocketMqCve202333246DetectorBootstrapModule.class)
+public final class RocketMqCve202333246Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String VULNERABILITY_ID = "CVE-2023-33246";
   private static final String VULNERABILITY_DESCRIPTION =
@@ -70,7 +70,7 @@ public final class RocketMQ_CVE202333246Detector implements VulnDetector {
   private final int oobSleepDuration;
 
   @Inject
-  RocketMQ_CVE202333246Detector(
+  RocketMqCve202333246Detector(
           @UtcClock Clock utcClock,
           PayloadGenerator payloadGenerator,
           @Annotations.OobSleepDuration int oobSleepDuration
