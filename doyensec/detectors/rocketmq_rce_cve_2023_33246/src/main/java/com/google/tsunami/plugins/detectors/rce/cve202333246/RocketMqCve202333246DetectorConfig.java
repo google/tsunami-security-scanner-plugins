@@ -20,5 +20,5 @@ import com.google.tsunami.common.config.annotations.ConfigProperties;
 
 @ConfigProperties("plugins.community.detectors.rocketmq_cve_2023_33246")
 public class RocketMqCve202333246DetectorConfig {
-    int oobSleepDuration;
+  int oobSleepDuration;
 }

@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.rce.cve202333246;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -28,6 +29,8 @@ import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
+import com.google.tsunami.plugins.detectors.rce.cve202333246.Annotations.OobSleepDuration;
+import com.google.tsunami.plugins.detectors.rce.cve202333246.Annotations.SocketFactoryInstance;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -44,6 +47,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import javax.inject.Inject;
+import javax.net.SocketFactory;
 
 /** A Tsunami plugin that detects RocketMQ RCE vulnerability CVE-2023-33246. */
 @PluginInfo(
@@ -55,28 +59,34 @@ import javax.inject.Inject;
     bootstrapModule = RocketMqCve202333246DetectorBootstrapModule.class)
 public final class RocketMqCve202333246Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-  private static final String VULNERABILITY_ID = "CVE-2023-33246";
-  private static final String VULNERABILITY_DESCRIPTION =
+  @VisibleForTesting static final String VULNERABILITY_ID = "CVE-2023-33246";
+
+  @VisibleForTesting
+  static final String VULNERABILITY_DESCRIPTION =
       "Apache RocketMQ allows unauthenticated attackers to modify the broker configuration "
           + "through a command injection vulnerability, leading to remote code execution.";
-  private static final String VULNERABILITY_RECOMMENDATION =
-      "Remove RocketMQ from internet exposure and apply the latest patches to mitigate the issue.";
-  private static final String ROCKETMQ_RESPONSE_INDICATOR = "serializeTypeCurrentRPC";
 
+  @VisibleForTesting
+  static final String VULNERABILITY_RECOMMENDATION =
+      "Remove RocketMQ from internet exposure and apply the latest patches to mitigate the issue.";
+
+  private static final String ROCKETMQ_RESPONSE_INDICATOR = "serializeTypeCurrentRPC";
   private static final String ROCKETMQ_PAYLOAD_HEADER_TEMPLATE =
       "{\"code\":%d,\"flag\":0,\"language\":\"JAVA\",\"opaque\":0,\"serializeTypeCurrentRPC\":\"JSON\",\"version\":395}";
   private final Clock utcClock;
   private final PayloadGenerator payloadGenerator;
+  private final SocketFactory socketFactory;
   private final int oobSleepDuration;
 
   @Inject
   RocketMqCve202333246Detector(
-          @UtcClock Clock utcClock,
-          PayloadGenerator payloadGenerator,
-          @Annotations.OobSleepDuration int oobSleepDuration
-  ) {
+      @UtcClock Clock utcClock,
+      PayloadGenerator payloadGenerator,
+      @SocketFactoryInstance SocketFactory socketFactory,
+      @OobSleepDuration int oobSleepDuration) {
     this.utcClock = checkNotNull(utcClock);
     this.payloadGenerator = checkNotNull(payloadGenerator);
+    this.socketFactory = checkNotNull(socketFactory);
     this.oobSleepDuration = oobSleepDuration;
   }
 
@@ -130,13 +140,14 @@ public final class RocketMqCve202333246Detector implements VulnDetector {
     var serviceIp = service.getNetworkEndpoint().getIpAddress().getAddress();
     var servicePort = service.getNetworkEndpoint().getPort().getPortNumber();
 
-    try (var socket = new java.net.Socket(serviceIp, servicePort)) {
+    try (var socket = socketFactory.createSocket(serviceIp, servicePort)) {
       socket.getOutputStream().write(payload);
 
       byte[] response = new byte[4096];
       int bytesRead = socket.getInputStream().read(response);
       if (bytesRead <= 0) {
-        logger.atWarning().log("Failed to read response from target server.");
+        logger.atWarning().log(
+            "Failed to read response from target server. Read %s bytes.", bytesRead);
         return null;
       }
       return response;
@@ -172,6 +183,13 @@ public final class RocketMqCve202333246Detector implements VulnDetector {
   private boolean isServiceVulnerable(NetworkService service) {
     logger.atInfo().log("Checking if RocketMQ service is vulnerable.");
 
+    if (!payloadGenerator.isCallbackServerEnabled()) {
+      logger.atWarning().log(
+          "The Tsunami callback server is not available, therefore the presence of the"
+              + " vulnerability cannot be verified.");
+      return false;
+    }
+
     PayloadGeneratorConfig payloadConfig =
         PayloadGeneratorConfig.newBuilder()
             .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
@@ -183,10 +201,8 @@ public final class RocketMqCve202333246Detector implements VulnDetector {
 
     Payload tsunamiPayload = payloadGenerator.generate(payloadConfig);
 
-    if (tsunamiPayload == null || !tsunamiPayload.getPayloadAttributes().getUsesCallbackServer()) {
-      logger.atWarning().log(
-          "The Tsunami callback server is not available, therefore the presence of the"
-              + " vulnerability cannot be verified.");
+    if (tsunamiPayload == null) {
+      logger.atWarning().log("There was an error in the generation of the Tsunami payload.");
       return false;
     }
 
@@ -200,17 +216,9 @@ public final class RocketMqCve202333246Detector implements VulnDetector {
     }
 
     // Wait for execution before checking for callback
-    // We observed varying degrees of delays in responses from the target, so we wait up to one minute
-    // but we do it in 10s cycles so we can exit early if the response comes
-    Duration timeout = Duration.ofSeconds(oobSleepDuration);
-    int retries = 6;
-    boolean executed = false;
-    for (int currentTry = 0; currentTry < retries && !executed; currentTry++) {
-      Uninterruptibles.sleepUninterruptibly(timeout);
-      executed = tsunamiPayload.checkIfExecuted();
-    }
+    Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
 
-    return executed;
+    return tsunamiPayload.checkIfExecuted();
   }
 
   private DetectionReport buildDetectionReport(TargetInfo targetInfo, NetworkService service) {

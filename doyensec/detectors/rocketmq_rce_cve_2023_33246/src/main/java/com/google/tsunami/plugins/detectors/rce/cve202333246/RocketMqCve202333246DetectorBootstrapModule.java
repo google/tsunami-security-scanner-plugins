@@ -17,6 +17,9 @@ package com.google.tsunami.plugins.detectors.rce.cve202333246;
 
 import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
+import com.google.tsunami.plugins.detectors.rce.cve202333246.Annotations.OobSleepDuration;
+import com.google.tsunami.plugins.detectors.rce.cve202333246.Annotations.SocketFactoryInstance;
+import javax.net.SocketFactory;
 
 /** A module for bootstrapping the {@link RocketMqCve202333246Detector}. */
 public final class RocketMqCve202333246DetectorBootstrapModule extends PluginBootstrapModule {
@@ -27,11 +30,17 @@ public final class RocketMqCve202333246DetectorBootstrapModule extends PluginBoo
   }
 
   @Provides
-  @Annotations.OobSleepDuration
+  @OobSleepDuration
   int provideOobSleepDuration(RocketMqCve202333246DetectorConfig configs) {
     if (configs.oobSleepDuration == 0) {
-      return 10;
+      return 40;
     }
     return configs.oobSleepDuration;
+  }
+
+  @Provides
+  @SocketFactoryInstance
+  SocketFactory provideSocketFactoryInstance() {
+    return SocketFactory.getDefault();
   }
 }

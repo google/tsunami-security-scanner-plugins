@@ -26,10 +26,15 @@ import javax.inject.Qualifier;
 
 /** Annotation for {@link RocketMqCve202333246Detector}. */
 final class Annotations {
-    @Qualifier
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({PARAMETER, METHOD, FIELD})
-    @interface OobSleepDuration {}
+  @Qualifier
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({PARAMETER, METHOD, FIELD})
+  @interface OobSleepDuration {}
 
-    private Annotations() {}
+  @Qualifier
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({PARAMETER, METHOD, FIELD})
+  @interface SocketFactoryInstance {}
+
+  private Annotations() {}
 }
