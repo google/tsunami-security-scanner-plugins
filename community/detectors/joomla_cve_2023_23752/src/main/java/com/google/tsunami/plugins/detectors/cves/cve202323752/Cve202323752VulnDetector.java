@@ -238,7 +238,7 @@ public final class Cve202323752VulnDetector implements VulnDetector {
                 .setDescription(
                     "CVE-2023-23752: An improper access check allows unauthorized access to"
                         + " webservice endpoints. attacker can get critical information of database and webserver like passwords by this vulnerability")
-                .setRecommendation("Upgrade to version 4.2.8 and higher")
+                .setRecommendation("Upgrade Joomla to a supported version.")
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
                         .setTextData(TextData.newBuilder().setText(ScanResultReport.toString()))))
