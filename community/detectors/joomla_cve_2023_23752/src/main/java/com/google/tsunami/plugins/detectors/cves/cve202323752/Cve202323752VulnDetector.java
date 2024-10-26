@@ -233,7 +233,7 @@ public final class Cve202323752VulnDetector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2023_23752"))
-                .setSeverity(Severity.CRITICAL)
+                .setSeverity(Severity.HIGH)
                 .setTitle("Joomla unauthorized access to webservice endpoints")
                 .setDescription(
                     "CVE-2023-23752: An improper access check allows unauthorized access to"
