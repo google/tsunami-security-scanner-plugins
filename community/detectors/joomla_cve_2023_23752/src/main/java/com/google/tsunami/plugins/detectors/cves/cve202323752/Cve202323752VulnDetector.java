@@ -123,8 +123,7 @@ abstract class ScanResults {
     name = "Cve202323752VulnDetector",
     version = "0.1",
     description =
-        "CVE-2023-23752: An improper access check allows unauthorized access to webservice"
-            + " endpoints",
+        "Joomla CVE-2023-23752: An information disclosure allows to retrieve the database credentials",
     author = "Am0o0",
     bootstrapModule = Cve202323752DetectorBootstrapModule.class)
 public final class Cve202323752VulnDetector implements VulnDetector {
