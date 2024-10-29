@@ -89,3 +89,4 @@ convertFingerprint "${JSON_DATA}" "${BIN_DATA}"
 
 echo "Fingerprint updated for Grafana. Please commit the following file:"
 echo "  ${BIN_DATA}"
+
