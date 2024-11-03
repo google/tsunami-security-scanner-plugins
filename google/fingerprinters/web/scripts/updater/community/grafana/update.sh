@@ -24,7 +24,7 @@ PROJECT_ROOT="$(cd -- "${SCRIPT_PATH}/../../../.." >/dev/null 2>&1 ; pwd -P)"
 # Path to the configurations for starting a live instance of Grafana.
 APP_PATH="${SCRIPT_PATH}/app"
 # Path to the temporary data holder.
-TMP_DATA="/tmp/granfa_fingerprints"
+TMP_DATA="/tmp/grafana_fingerprints"
 # Path to the local git repository for Grafana codebase.
 GIT_REPO="${TMP_DATA}/repo"
 # Path to the directory of all the updated fingerprints data.
@@ -37,7 +37,7 @@ BIN_DATA="${FINGERPRINTS_PATH}/fingerprint.binproto"
 readarray -t ALL_VERSIONS < "${SCRIPT_PATH}/versions.txt"
 mkdir -p "${FINGERPRINTS_PATH}"
 
-BINPROTO="${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/community/granfa.binproto"
+BINPROTO="${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/community/grafana.binproto"
 startGrafana() {
   local version="$1"
   pushd "${APP_PATH}" >/dev/null
@@ -58,7 +58,7 @@ convertFingerprint "${BINPROTO}" "${JSON_DATA}"
 
 # Fetch Grafana codebase.
 if [[ ! -d "${GIT_REPO}" ]] ; then
-  git clone https://github.com/granfa/granfa.git "${GIT_REPO}"
+  git clone https://github.com/grafana/grafana.git "${GIT_REPO}"
 fi
 
 # Update for all the versions listed in versions.txt file.
@@ -75,7 +75,7 @@ for git_version in "${ALL_VERSIONS[@]}"; do
   checkOutRepo "${GIT_REPO}" "${git_version}"
 
   updateFingerprint \
-    "granfa" \
+    "grafana" \
     "${version}" \
     "${FINGERPRINTS_PATH}" \
     "${GIT_REPO}" \
