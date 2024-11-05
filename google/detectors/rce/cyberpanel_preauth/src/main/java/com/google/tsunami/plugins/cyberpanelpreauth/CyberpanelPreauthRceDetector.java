@@ -32,10 +32,13 @@ import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.plugin.payload.Payload;
+import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
@@ -56,16 +59,16 @@ import javax.inject.Inject;
     bootstrapModule = CyberpanelPreauthRceDetectorBootstrapModule.class)
 @ForWebService
 public final class CyberpanelPreauthRceDetector implements VulnDetector {
-  private static final String PAYLOAD = "echo tsunami$((1250+50*2))";
-  private static final String EXPECTED_RESPONSE = "tsunami1350";
-
   private final Clock utcClock;
   private final HttpClient httpClient;
+  private final PayloadGenerator payloadGenerator;
 
   @Inject
-  CyberpanelPreauthRceDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  CyberpanelPreauthRceDetector(
+      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
+    this.payloadGenerator = checkNotNull(payloadGenerator);
   }
 
   @Override
@@ -105,12 +108,26 @@ public final class CyberpanelPreauthRceDetector implements VulnDetector {
     }
   }
 
+  private Payload generatePayload() {
+    return this.payloadGenerator.generateNoCallback(
+        PayloadGeneratorConfig.newBuilder()
+            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
+            .setInterpretationEnvironment(
+                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
+            .setExecutionEnvironment(
+                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+            .build());
+  }
+
   private boolean isInstanceVulnerable(NetworkService networkService, String token) {
+    var payload = generatePayload();
     var targetUrl =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
             + "dataBases/upgrademysqlstatus";
-    var payload =
-        String.format("{\"statusfile\":\"/dev/null; %s; #\",\"csrftoken\":\"%s\"}", PAYLOAD, token);
+    var data =
+        String.format(
+            "{\"statusfile\":\"/dev/null; %s; #\",\"csrftoken\":\"%s\"}",
+            payload.getPayload(), token);
     var httpHeaders =
         HttpHeaders.builder()
             .addHeader("Content-Type", "application/json")
@@ -124,7 +141,7 @@ public final class CyberpanelPreauthRceDetector implements VulnDetector {
           httpClient.send(
               put(targetUrl)
                   .setHeaders(httpHeaders)
-                  .setRequestBody(ByteString.copyFromUtf8(payload))
+                  .setRequestBody(ByteString.copyFromUtf8(data))
                   .build());
       var jsonElement = response.bodyJson();
 
@@ -132,12 +149,8 @@ public final class CyberpanelPreauthRceDetector implements VulnDetector {
         return false;
       }
 
-      return jsonElement
-          .get()
-          .getAsJsonObject()
-          .get("requestStatus")
-          .getAsString()
-          .contains(EXPECTED_RESPONSE);
+      var requestStatus = jsonElement.get().getAsJsonObject().get("requestStatus").getAsString();
+      return payload.checkIfExecuted(requestStatus);
     } catch (IOException e) {
       return false;
     }
