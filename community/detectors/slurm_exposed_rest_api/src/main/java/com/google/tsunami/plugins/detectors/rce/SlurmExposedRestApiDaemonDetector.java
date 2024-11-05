@@ -76,7 +76,6 @@ public class SlurmExposedRestApiDaemonDetector implements VulnDetector {
           + "    \"job\": {"
           + "        \"name\": \"test\","
           + "        \"ntasks\": 1,"
-          + "        \"nodes\": 9,"
           + "        \"current_working_directory\": \"/root\","
           + "        \"standard_input\": \"/dev/null\","
           + "        \"standard_output\": \"/root/test.out\","
