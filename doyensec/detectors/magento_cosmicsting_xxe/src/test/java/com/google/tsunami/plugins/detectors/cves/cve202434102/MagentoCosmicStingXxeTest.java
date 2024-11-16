@@ -19,7 +19,15 @@ package com.google.tsunami.plugins.detectors.cves.cve202434102;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.*;
+import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.CURRENCY_ENDPOINT_PATH;
+import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VERSION_ENDPOINT_PATH;
+import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VULNERABILITY_REPORT_DESCRIPTION_CALLBACK;
+import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VULNERABILITY_REPORT_DESCRIPTION_RESPONSE_MATCHING;
+import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VULNERABILITY_REPORT_ID;
+import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VULNERABILITY_REPORT_PUBLISHER;
+import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VULNERABILITY_REPORT_RECOMMENDATION;
+import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VULNERABILITY_REPORT_TITLE;
+import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VULNERABLE_ENDPOINT_PATH;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;

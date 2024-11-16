@@ -194,12 +194,21 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
     }
 
     // Check status code 200
-    if (response.status() != HttpStatus.OK) return false;
+    if (response.status() != HttpStatus.OK) {
+      return false;
+    }
+
     // Check if body is JSON
-    if (response.bodyJson().isEmpty()) return false;
+    if (response.bodyJson().isEmpty()) {
+      return false;
+    }
+
     JsonElement body = response.bodyJson().get();
     // Check if JSON body is object
-    if (!body.isJsonObject()) return false;
+    if (!body.isJsonObject()) {
+      return false;
+    }
+
     // If the body has a known key, e.g. "base_currency_code", it's Magento
     return body.getAsJsonObject().has("base_currency_code");
   }

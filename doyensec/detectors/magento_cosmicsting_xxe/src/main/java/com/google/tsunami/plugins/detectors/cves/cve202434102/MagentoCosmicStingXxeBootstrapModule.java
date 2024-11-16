@@ -20,15 +20,11 @@ import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
 import com.google.tsunami.plugins.detectors.cves.cve202434102.Annotations.OobSleepDuration;
 
-/** An example Guice module that bootstraps the {@link MagentoCosmicStingXxe}. */
+/** A Guice module that bootstraps the {@link MagentoCosmicStingXxe}. */
 public final class MagentoCosmicStingXxeBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    // Tsunami relies heavily on Guice (https://github.com/google/guice). All Guice bindings for
-    // your plugin should be implemented here.
-
-    // registerPlugin method is required in order for the Tsunami scanner to identify your plugin.
     registerPlugin(MagentoCosmicStingXxe.class);
   }
 
