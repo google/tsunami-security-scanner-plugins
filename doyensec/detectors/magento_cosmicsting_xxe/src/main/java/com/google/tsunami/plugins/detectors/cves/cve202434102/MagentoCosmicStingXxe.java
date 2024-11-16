@@ -17,6 +17,7 @@
 package com.google.tsunami.plugins.detectors.cves.cve202434102;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 
@@ -393,7 +394,7 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
     Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
 
     // payload should never be null here as we should have already returned in that case
-    assert payload != null;
+    verify(payload != null);
     if (payload.checkIfExecuted()) {
       logger.atInfo().log("Vulnerability confirmed via Callback Server.");
       return true;
