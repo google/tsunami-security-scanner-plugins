@@ -149,7 +149,9 @@ public final class Cve202323752VulnDetector implements VulnDetector {
           }
         }
       }
-    } catch (IllegalStateException | JsonSyntaxException | IOException | AssertionError e) {
+    } catch (NoSuchElementException | IllegalStateException | JsonSyntaxException e) {
+      return false;
+    } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
       return false;
     }
