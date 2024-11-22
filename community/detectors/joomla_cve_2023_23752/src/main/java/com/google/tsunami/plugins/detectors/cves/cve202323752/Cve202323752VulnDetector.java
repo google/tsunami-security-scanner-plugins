@@ -48,6 +48,7 @@ import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.NoSuchElementException;
 import javax.inject.Inject;
 
 /** A {@link VulnDetector} that detects the CVE-2023-23752 vulnerability. */
@@ -136,7 +137,7 @@ public final class Cve202323752VulnDetector implements VulnDetector {
 
       // Check if body values match our detection rules
       if (!appConfHttpResponse.bodyString().get().contains("password")
-              || !appConfHttpResponse.bodyString().get().contains("user")) {
+          || !appConfHttpResponse.bodyString().get().contains("user")) {
         return false;
       }
 

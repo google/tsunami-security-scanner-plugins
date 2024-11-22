@@ -130,7 +130,7 @@ public final class Cve202323752VulnDetectorTest {
           if (request.getPath().equals("/api/index.php/v1/config/application?public=true")) {
             return new MockResponse()
                 .addHeader("Content-Type", "application/json; charset=utf-8")
-                .setBody(LeakedDataJsonSample)
+                .setBody(LEAKED_DATA_JSON_SAMPLE)
                 .setResponseCode(HttpStatus.OK.code());
           }
           return new MockResponse().setResponseCode(404);
@@ -167,7 +167,7 @@ public final class Cve202323752VulnDetectorTest {
                     .setRecommendation("Upgrade Joomla to 4.2.8 and above versions.")
                     .addAdditionalDetails(
                         AdditionalDetail.newBuilder()
-                            .setTextData(TextData.newBuilder().setText(LeakedDataJsonSample))))
+                            .setTextData(TextData.newBuilder().setText(LEAKED_DATA_JSON_SAMPLE))))
             .build();
 
     // Vulnerable to CVE202323752
