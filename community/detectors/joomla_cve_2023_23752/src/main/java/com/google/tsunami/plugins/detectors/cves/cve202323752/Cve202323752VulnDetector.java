@@ -134,19 +134,27 @@ public final class Cve202323752VulnDetector implements VulnDetector {
         return false;
       }
 
-      // check for body values match our detection rules
-      if (appConfHttpResponse.bodyString().get().contains("password")
-          && appConfHttpResponse.bodyString().get().contains("user")) {
+      // Check if body values match our detection rules
+      if (!appConfHttpResponse.bodyString().get().contains("password")
+              || !appConfHttpResponse.bodyString().get().contains("user")) {
+        return false;
+      }
 
-        JsonObject jsonResponse = (JsonObject) appConfHttpResponse.bodyJson().get();
-        if (jsonResponse.keySet().contains("data")) {
-          JsonArray jsonArray = jsonResponse.getAsJsonArray("data");
-          for (int i = 0; i < jsonArray.size(); i++) {
-            if (jsonArray.get(i).getAsJsonObject().keySet().contains("attributes")) {
-              exposedConfig = appConfHttpResponse.bodyString().get();
-              return true;
-            }
-          }
+      // Check if body is JSON
+      if (appConfHttpResponse.bodyJson().isEmpty()) {
+        return false;
+      }
+
+      JsonObject jsonResponse = appConfHttpResponse.bodyJson().get().getAsJsonObject();
+      if (!jsonResponse.has("data")) {
+        return false;
+      }
+
+      JsonArray jsonArray = jsonResponse.getAsJsonArray("data");
+      for (int i = 0; i < jsonArray.size(); i++) {
+        if (jsonArray.get(i).getAsJsonObject().has("attributes")) {
+          exposedConfig = appConfHttpResponse.bodyString().get();
+          return true;
         }
       }
     } catch (NoSuchElementException | IllegalStateException | JsonSyntaxException e) {
