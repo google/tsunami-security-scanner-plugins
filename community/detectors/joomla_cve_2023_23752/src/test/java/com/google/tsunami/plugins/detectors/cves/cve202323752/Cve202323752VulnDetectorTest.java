@@ -138,7 +138,7 @@ public final class Cve202323752VulnDetectorTest {
       };
 
   @Test
-  public void DetectCVE202323752() {
+  public void detect_whenVulnerable_returnsVulnerability() {
     mockWebServer.setDispatcher(dispatcher);
     DetectionReportList mockWebServerDetectionReports =
         detector.detect(targetInfo, ImmutableList.of(joomlaService));
