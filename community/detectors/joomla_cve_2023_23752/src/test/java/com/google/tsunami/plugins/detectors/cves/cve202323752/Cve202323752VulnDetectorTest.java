@@ -61,7 +61,7 @@ public final class Cve202323752VulnDetectorTest {
   private final MockWebServer mockWebServer = new MockWebServer();
 
   private NetworkService joomlaService;
-  private static final String LeakedDataJsonSample =
+  private static final String LEAKED_DATA_JSON_SAMPLE =
       "{\n"
           + "    \"data\": [\n"
           + "        {\n"
