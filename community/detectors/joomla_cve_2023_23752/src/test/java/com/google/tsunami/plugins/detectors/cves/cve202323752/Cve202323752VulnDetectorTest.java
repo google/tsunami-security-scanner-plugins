@@ -187,6 +187,6 @@ public final class Cve202323752VulnDetectorTest {
 
     DetectionReportList mockWebServerDetectionReports =
         detector.detect(targetInfo, ImmutableList.of(joomlaService));
-    assert (mockWebServerDetectionReports.getDetectionReportsList().isEmpty());
+    assertThat(mockWebServerDetectionReports.getDetectionReportsList()).isEmpty();
   }
 }
