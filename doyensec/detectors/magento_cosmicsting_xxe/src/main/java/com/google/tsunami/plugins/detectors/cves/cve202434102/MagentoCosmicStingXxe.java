@@ -108,7 +108,7 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
           + " https://helpx.adobe.com/security/products/magento/apsb24-40.html.";
 
   static final String DTD_FILE_URL =
-      "https://raw.githubusercontent.com/doyensec/tsunami-security-scanner-plugins/magento-cosmicsting-xxe/payloads/magento-cosmicsting-xxe/dtd.xml";
+      "https://raw.githubusercontent.com/google/tsunami-security-scanner-plugins/master/payloads/magento-cosmicsting-xxe/dtd.xml";
   private static final String PAYLOAD_TEMPLATE =
       "<?xml version=\"1.0\" ?>\n"
           + "<!DOCTYPE r [\n"
