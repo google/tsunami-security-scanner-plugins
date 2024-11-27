@@ -59,12 +59,12 @@ import javax.inject.Inject;
 @ForWebService
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "SlurmRestApiDaemonRceVulnDetector",
+    name = "SlurmExposedRestApiVulnDetector",
     version = "0.1",
-    description = "This detector checks for exposed slurm rest api server",
+    description = "This detector checks for an exposed Slurm REST API",
     author = "lancedD00m",
-    bootstrapModule = SlurmExposedRestApiDaemonDetectorBootstrapModule.class)
-public class SlurmExposedRestApiDaemonDetector implements VulnDetector {
+    bootstrapModule = SlurmExposedRestApiDetectorBootstrapModule.class)
+public class SlurmExposedRestApiDetector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
