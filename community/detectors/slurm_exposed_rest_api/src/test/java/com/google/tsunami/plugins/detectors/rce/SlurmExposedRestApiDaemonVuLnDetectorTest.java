@@ -144,9 +144,9 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
         new Dispatcher() {
           @Override
           public MockResponse dispatch(RecordedRequest request) {
-            if (Objects.equals(request.getPath(), "/openapi/v3")) {
-              if (request.getMethod().equals("GET")
-                  && request.getBody().readString(StandardCharsets.UTF_8).isEmpty()) {
+            if (Objects.equals(request.getPath(), "/openapi/v3")
+                && request.getMethod().equals("GET")
+                && request.getBody().readString(StandardCharsets.UTF_8).isEmpty()) {
                 return new MockResponse()
                     .setBody(
                         "\"\\/slurm\\/v0.0.39\\/job\\/submit\": "
