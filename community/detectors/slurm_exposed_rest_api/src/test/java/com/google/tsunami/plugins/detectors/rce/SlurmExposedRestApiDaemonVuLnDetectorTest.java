@@ -169,7 +169,6 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
         };
     mockTargetService.setDispatcher(dispatcher);
     mockTargetService.start();
-    mockTargetService.url("/");
 
     targetNetworkService =
         NetworkService.newBuilder()
