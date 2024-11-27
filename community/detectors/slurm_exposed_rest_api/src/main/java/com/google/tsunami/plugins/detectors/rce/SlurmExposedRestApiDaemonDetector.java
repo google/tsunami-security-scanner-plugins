@@ -203,8 +203,9 @@ public class SlurmExposedRestApiDetector implements VulnDetector {
                     "This detector checks for exposed slurm rest api servers by submitting a job "
                         + "and checking a callback response on tsunami callback server")
                 .setRecommendation(
-                    "set proper authentication method for slurm rest api server or "
-                        + "remove the public access to rest api"))
+                    "Set proper authentication for the Slurm Rest API server and "
+                        + "ensure the API is not publicly exposed through a "
+                         + "misconfigured reverse proxy."))
         .build();
   }
 }
