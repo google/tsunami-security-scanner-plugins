@@ -18,27 +18,25 @@ package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialde
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.tsunami.common.data.NetworkServiceUtils.buildWebApplicationRootUrl;
+import static com.google.tsunami.common.data.NetworkServiceUtils.isWebService;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.ByteString;
+import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
-import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
 import com.google.tsunami.proto.NetworkService;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -54,11 +52,7 @@ public final class KubeflowCredentialTester extends CredentialTester {
 
   @Inject
   KubeflowCredentialTester(HttpClient httpClient) {
-    this.httpClient =
-        checkNotNull(httpClient, "HttpClient cannot be null.")
-            .modify()
-            .setFollowRedirects(false)
-            .build();
+    this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
   }
 
   @Override
@@ -73,12 +67,12 @@ public final class KubeflowCredentialTester extends CredentialTester {
 
   @Override
   public boolean canAccept(NetworkService networkService) {
-    return NetworkServiceUtils.isWebService(networkService);
+    return NetworkServiceUtils.getWebServiceName(networkService).equals("kubeflow");
   }
 
   @Override
   public boolean batched() {
-    return false;
+    return true;
   }
 
   @Override
@@ -86,6 +80,7 @@ public final class KubeflowCredentialTester extends CredentialTester {
       NetworkService networkService, List<TestCredential> credentials) {
     // Always return 1st weak credential to gracefully handle no auth configured case, where we
     // return empty credential instead of all the weak credentials
+    logger.atWarning().log("======  ======== ");
     return credentials.stream()
         .filter(cred -> isKubeflowAccessible(networkService, cred))
         .findFirst()
@@ -94,8 +89,8 @@ public final class KubeflowCredentialTester extends CredentialTester {
   }
 
   private boolean isKubeflowAccessible(NetworkService networkService, TestCredential credential) {
-    final String rootUri = buildWebApplicationRootUrl(networkService);
     //    logger.atWarning().log("======================= '%s'", credential.username());
+    final String rootUri = buildWebApplicationRootUrl(networkService);
     try {
       HttpResponse rsp =
           httpClient.send(

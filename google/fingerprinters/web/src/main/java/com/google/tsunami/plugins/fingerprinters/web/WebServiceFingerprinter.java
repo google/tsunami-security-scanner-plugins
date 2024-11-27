@@ -280,6 +280,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
 
     checkForMlflow(detectedSoftware, networkService, startingUrl);
     checkForZenMl(detectedSoftware, networkService, startingUrl);
+    checkForKubeflow(detectedSoftware, networkService, startingUrl);
     return ImmutableSet.copyOf(detectedSoftware);
   }
 
@@ -371,5 +372,20 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", loginUrl);
     }
+  }
+
+  private void checkForKubeflow(
+      HashSet<DetectedSoftware> detectedSoftware,
+      NetworkService networkService,
+      String startingUrl) {
+
+    logger.atInfo().log("probing Kubeflow login page and login api - custom fingerprint phase");
+
+    detectedSoftware.add(
+        DetectedSoftware.builder()
+            .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("kubeflow").build())
+            .setRootPath(startingUrl)
+            .setContentHashes(ImmutableMap.of())
+            .build());
   }
 }

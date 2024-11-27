@@ -28,6 +28,9 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
+import com.google.tsunami.proto.ServiceContext;
+import com.google.tsunami.proto.Software;
+import com.google.tsunami.proto.WebServiceContext;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -50,6 +53,10 @@ public class KubeflowCredentialTesterTest {
       TestCredential.create("user@example.com", Optional.of("12341234"));
   private static final TestCredential WRONG_CRED_1 =
       TestCredential.create("wrong", Optional.of("wrong"));
+  private static final ServiceContext.Builder kubeServiceContext =
+      ServiceContext.newBuilder()
+          .setWebServiceContext(
+              WebServiceContext.newBuilder().setSoftware(Software.newBuilder().setName("jenkins")));
 
   @Before
   public void setup() {
@@ -64,6 +71,9 @@ public class KubeflowCredentialTesterTest {
         NetworkService.newBuilder()
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setServiceName("http")
+            .setServiceContext(kubeServiceContext)
+            .setSoftware(Software.newBuilder().setName("http"))
             .build();
 
     assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WEAK_CRED_1)))
@@ -77,6 +87,9 @@ public class KubeflowCredentialTesterTest {
         NetworkService.newBuilder()
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setServiceName("http")
+            .setServiceContext(kubeServiceContext)
+            .setSoftware(Software.newBuilder().setName("http"))
             .build();
     assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WRONG_CRED_1)))
         .isEmpty();

@@ -69,6 +69,7 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
 
     Multibinder<CredentialTester> credentialTesterBinder =
         Multibinder.newSetBinder(binder(), CredentialTester.class);
+    credentialTesterBinder.addBinding().to(KubeflowCredentialTester.class);
     credentialTesterBinder.addBinding().to(JenkinsCredentialTester.class);
     credentialTesterBinder.addBinding().to(MlFlowCredentialTester.class);
     credentialTesterBinder.addBinding().to(MysqlCredentialTester.class);
@@ -81,7 +82,6 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
     credentialTesterBinder.addBinding().to(RStudioCredentialTester.class);
     credentialTesterBinder.addBinding().to(RabbitMQCredentialTester.class);
     credentialTesterBinder.addBinding().to(ZenMlCredentialTester.class);
-    credentialTesterBinder.addBinding().to(KubeflowCredentialTester.class);
 
     Multibinder<CredentialProvider> credentialProviderBinder =
         Multibinder.newSetBinder(binder(), CredentialProvider.class);
