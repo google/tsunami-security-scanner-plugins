@@ -120,6 +120,26 @@ public class SlurmExposedRestApiDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
+    final String rootUri = buildWebApplicationRootUrl(networkService);
+
+    HttpResponse openapiV3Response = null;
+    try {
+      openapiV3Response =
+          httpClient.send(get(rootUri + "openapi/v3").withEmptyHeaders().build(), networkService);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    if (openapiV3Response.status() != HttpStatus.OK || openapiV3Response.bodyString().isEmpty()) {
+      return false;
+    }
+    Matcher m =
+        Pattern.compile("\"\\\\/slurm\\\\/(v0.0.\\d\\d)\\\\/job\\\\/submit\"")
+            .matcher(openapiV3Response.bodyString().get());
+    if (!m.find()) {
+      return false;
+    }
+    String apiVersion = m.group(1);
+
     var payload = getTsunamiCallbackHttpPayload();
     if (payload == null || !payload.getPayloadAttributes().getUsesCallbackServer()) {
       logger.atWarning().log(
@@ -129,22 +149,7 @@ public class SlurmExposedRestApiDetector implements VulnDetector {
     }
     String cmd = payload.getPayload();
 
-    final String rootUri = buildWebApplicationRootUrl(networkService);
-
     try {
-      // Submitting a slurm job
-      HttpResponse openapiV3Response =
-          httpClient.send(get(rootUri + "openapi/v3").withEmptyHeaders().build(), networkService);
-      if (openapiV3Response.status() != HttpStatus.OK || openapiV3Response.bodyString().isEmpty()) {
-        return false;
-      }
-      Matcher m =
-          Pattern.compile("\"\\\\/slurm\\\\/(v0.0.\\d\\d)\\\\/job\\\\/submit\"")
-              .matcher(openapiV3Response.bodyString().get());
-      if (!m.find()) {
-        return false;
-      }
-      String apiVersion = m.group(1);
       // Submitting a slurm job
       httpClient.send(
           post(String.format(rootUri + "slurm/%s/job/submit", apiVersion))
