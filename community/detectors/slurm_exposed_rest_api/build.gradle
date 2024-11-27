@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'Tsunami Slurm Exposed REST API Detector VulnDetector plugin.'
+description = 'Slurm Exposed REST API VulnDetector plugin.'
 group = 'com.google.tsunami'
 version = '0.0.1-SNAPSHOT'
 
