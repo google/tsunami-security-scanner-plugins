@@ -15,16 +15,21 @@
  */
 package com.google.tsunami.plugins.detectors.rce;
 
-import com.google.tsunami.plugin.PluginBootstrapModule;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
 
-/**
- * An Exposed Slurm Rest Server Detector Guice module that bootstraps the {@link
- * SlurmExposedRestApiDetector}.
- */
-public final class SlurmExposedRestApiDaemonDetectorBootstrapModule extends PluginBootstrapModule {
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  @Override
-  protected void configurePlugin() {
-    registerPlugin(SlurmExposedRestApiDetector.class);
-  }
+/** Annotation for {@link SlurmExposedRestApiDetector}. */
+final class Annotations {
+  @Qualifier
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({PARAMETER, METHOD, FIELD})
+  @interface OobSleepDuration {}
+
+  private Annotations() {}
 }

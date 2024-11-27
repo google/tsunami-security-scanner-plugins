@@ -22,11 +22,16 @@ import static com.google.tsunami.plugins.detectors.rce.SlurmExposedRestApiDetect
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
+import com.google.inject.testing.fieldbinder.Bind;
+import com.google.inject.testing.fieldbinder.BoundFieldModule;
+import com.google.inject.util.Modules;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
+import com.google.tsunami.plugins.detectors.rce.Annotations.OobSleepDuration;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
@@ -74,6 +79,10 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
         }
       };
 
+  @Bind(lazy = true)
+  @OobSleepDuration
+  private int sleepDuration = 1;
+
   @Before
   public void setUp() throws IOException {
     mockCallbackServer.start();
@@ -84,7 +93,8 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
                 .setCallbackServer(mockCallbackServer)
                 .setSecureRng(testSecureRandom)
                 .build(),
-            new SlurmExposedRestApiDaemonDetectorBootstrapModule())
+            Modules.override(new SlurmExposedRestApiDetectorBootstrapModule())
+                .with(BoundFieldModule.of(this)))
         .injectMembers(this);
   }
 
@@ -96,7 +106,7 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-    startMockWebServer(true);
+    startMockWebServer();
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
     DetectionReportList detectionReports =
@@ -132,14 +142,15 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
 
   @Test
   public void detect_ifNotVulnerable_doesNotReportVuln() throws IOException {
-    startMockWebServer(false);
+    startMockWebServer();
+    mockCallbackServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
     assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
   }
 
-  private void startMockWebServer(boolean withAnExistingModel) throws IOException {
+  private void startMockWebServer() throws IOException {
     final Dispatcher dispatcher =
         new Dispatcher() {
           @Override
