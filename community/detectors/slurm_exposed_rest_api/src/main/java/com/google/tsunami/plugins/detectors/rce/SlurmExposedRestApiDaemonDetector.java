@@ -196,7 +196,7 @@ public class SlurmExposedRestApiDetector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("SlurmRestApiDaemonRce"))
+                        .setValue("SlurmExposedRestApi"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Exposed Slurm REST API Server")
                 .setDescription(
