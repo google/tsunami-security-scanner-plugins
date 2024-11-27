@@ -31,6 +31,7 @@ import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -110,11 +111,6 @@ public class SlurmExposedRestApiDetector implements VulnDetector {
         .build();
   }
 
-  @VisibleForTesting
-  String buildRootUri(NetworkService networkService) {
-    return buildWebApplicationRootUrl(networkService);
-  }
-
   private boolean isServiceVulnerable(NetworkService networkService) {
     var payload = getTsunamiCallbackHttpPayload();
     if (payload == null || !payload.getPayloadAttributes().getUsesCallbackServer()) {
@@ -125,13 +121,13 @@ public class SlurmExposedRestApiDetector implements VulnDetector {
     }
     String cmd = payload.getPayload();
 
-    final String rootUri = buildRootUri(networkService);
+    final String rootUri = buildWebApplicationRootUrl(networkService);
 
     try {
       // Submitting a slurm job
       HttpResponse openapiV3Response =
           httpClient.send(get(rootUri + "openapi/v3").withEmptyHeaders().build(), networkService);
-      if (openapiV3Response.bodyString().isEmpty()) {
+      if (openapiV3Response.status() != HttpStatus.OK || openapiV3Response.bodyString().isEmpty()) {
         return false;
       }
       Matcher m =
@@ -149,8 +145,7 @@ public class SlurmExposedRestApiDetector implements VulnDetector {
               .build(),
           networkService);
     } catch (RuntimeException | IOException e) {
-      logger.atWarning().withCause(e).log(
-          "Fail to exploit '%s'. Maybe it is not vulnerable", rootUri);
+      logger.atWarning().withCause(e).log("Request to target %s failed", rootUri);
       return false;
     }
 
@@ -200,8 +195,8 @@ public class SlurmExposedRestApiDetector implements VulnDetector {
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Exposed Slurm REST API Server")
                 .setDescription(
-                    "This detector checks for exposed slurm rest api servers by submitting a job "
-                        + "and checking a callback response on tsunami callback server")
+                    "Exposed slurm rest api servers Can be exploited by attackers to submit a job and "
+                        + "therefore execute arbitrary OS-level commands on slurm compute nodes")
                 .setRecommendation(
                     "Set proper authentication for the Slurm Rest API server and "
                         + "ensure the API is not publicly exposed through a "
