@@ -136,7 +136,7 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
+   assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
   }
 
   private void startMockWebServer(boolean withAnExistingModel) throws IOException {
