@@ -154,8 +154,8 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
                     .setResponseCode(200);
               }
             }
-            if (request.getPath().matches("/slurm/v0\\.0\\.\\d\\d/job/submit")) {
-              if (request.getMethod().equals("POST")
+            if (request.getPath().matches("/slurm/v0\\.0\\.\\d\\d/job/submit")
+                && request.getMethod().equals("POST")
                   && request.getBody().readString(StandardCharsets.UTF_8).isEmpty()
                   && request
                       .getBody()
