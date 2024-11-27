@@ -126,8 +126,8 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
                             "set proper authentication method for slurm rest api server or "
                                 + "remove the public access to rest api"))
                 .build());
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
-    Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
+   assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
+   assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
   }
 
   @Test
