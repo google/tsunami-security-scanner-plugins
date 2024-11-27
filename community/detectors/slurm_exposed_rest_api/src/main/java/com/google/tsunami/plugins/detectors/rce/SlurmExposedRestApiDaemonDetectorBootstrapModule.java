@@ -19,12 +19,12 @@ import com.google.tsunami.plugin.PluginBootstrapModule;
 
 /**
  * An Exposed Slurm Rest Server Detector Guice module that bootstraps the {@link
- * SlurmExposedRestApiDaemonDetector}.
+ * SlurmExposedRestApiDetector}.
  */
 public final class SlurmExposedRestApiDaemonDetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    registerPlugin(SlurmExposedRestApiDaemonDetector.class);
+    registerPlugin(SlurmExposedRestApiDetector.class);
   }
 }

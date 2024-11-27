@@ -63,7 +63,7 @@ import javax.inject.Inject;
     version = "0.1",
     description = "This detector checks for an exposed Slurm REST API",
     author = "lancedD00m",
-    bootstrapModule = SlurmExposedRestApiDetectorBootstrapModule.class)
+    bootstrapModule = SlurmExposedRestApiDaemonDetectorBootstrapModule.class)
 public class SlurmExposedRestApiDetector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
@@ -89,7 +89,7 @@ public class SlurmExposedRestApiDetector implements VulnDetector {
   private final Clock utcClock;
 
   @Inject
-  SlurmExposedRestApiDaemonDetector(
+  SlurmExposedRestApiDetector(
       HttpClient httpClient, @UtcClock Clock utcClock, PayloadGenerator payloadGenerator) {
     this.httpClient = checkNotNull(httpClient);
     this.utcClock = checkNotNull(utcClock);
@@ -205,7 +205,7 @@ public class SlurmExposedRestApiDetector implements VulnDetector {
                 .setRecommendation(
                     "Set proper authentication for the Slurm Rest API server and "
                         + "ensure the API is not publicly exposed through a "
-                         + "misconfigured reverse proxy."))
+                        + "misconfigured reverse proxy."))
         .build();
   }
 }

@@ -16,12 +16,11 @@
 
 package com.google.tsunami.plugins.detectors.rce;
 
-import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.rce.SlurmExposedRestApiDaemonDetector.JOB_PAYLOAD;
+import static com.google.tsunami.plugins.detectors.rce.SlurmExposedRestApiDetector.JOB_PAYLOAD;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.truth.Truth;
 import com.google.inject.Guice;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
@@ -54,7 +53,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Unit tests for {@link SlurmExposedRestApiDaemonDetector}. */
+/** Unit tests for {@link SlurmExposedRestApiDetector}. */
 @RunWith(JUnit4.class)
 public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
   private final FakeUtcClock fakeUtcClock =
@@ -63,7 +62,7 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
   private final MockWebServer mockTargetService = new MockWebServer();
   private final MockWebServer mockCallbackServer = new MockWebServer();
 
-  @Inject private SlurmExposedRestApiDaemonDetector detector;
+  @Inject private SlurmExposedRestApiDetector detector;
 
   TargetInfo targetInfo;
   NetworkService targetNetworkService;
@@ -116,18 +115,19 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
                         .setMainId(
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("SlurmRestApiDaemonRce"))
+                                .setValue("SlurmExposedRestApi"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Exposed Slurm REST API Server")
                         .setDescription(
                             "This detector checks for exposed slurm rest api servers by submitting a job "
                                 + "and checking a callback response on tsunami callback server")
                         .setRecommendation(
-                            "set proper authentication method for slurm rest api server or "
-                                + "remove the public access to rest api"))
+                            "Set proper authentication for the Slurm Rest API server and "
+                                + "ensure the API is not publicly exposed through a "
+                                + "misconfigured reverse proxy."))
                 .build());
-   assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
-   assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
+    assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
+    assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
   }
 
   @Test
@@ -136,7 +136,7 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-   assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
+    assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
   }
 
   private void startMockWebServer(boolean withAnExistingModel) throws IOException {
@@ -147,22 +147,20 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
             if (Objects.equals(request.getPath(), "/openapi/v3")
                 && request.getMethod().equals("GET")
                 && request.getBody().readString(StandardCharsets.UTF_8).isEmpty()) {
-                return new MockResponse()
-                    .setBody(
-                        "\"\\/slurm\\/v0.0.39\\/job\\/submit\": "
-                            + "{\"post\": {\"tags\": [\"slurm\"],},")
-                    .setResponseCode(200);
-              }
+              return new MockResponse()
+                  .setBody(
+                      "\"\\/slurm\\/v0.0.39\\/job\\/submit\": "
+                          + "{\"post\": {\"tags\": [\"slurm\"],},")
+                  .setResponseCode(200);
             }
             if (request.getPath().matches("/slurm/v0\\.0\\.\\d\\d/job/submit")
                 && request.getMethod().equals("POST")
-                  && request.getBody().readString(StandardCharsets.UTF_8).isEmpty()
-                  && request
-                      .getBody()
-                      .readString(StandardCharsets.UTF_8)
-                      .startsWith(JOB_PAYLOAD.substring(0, 60))) {
-                return new MockResponse().setResponseCode(200);
-              }
+                && request.getBody().readString(StandardCharsets.UTF_8).isEmpty()
+                && request
+                    .getBody()
+                    .readString(StandardCharsets.UTF_8)
+                    .startsWith(JOB_PAYLOAD.substring(0, 60))) {
+              return new MockResponse().setResponseCode(200);
             }
             return new MockResponse().setResponseCode(403);
           }
