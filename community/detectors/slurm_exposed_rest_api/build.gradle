@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'Geoserver RCE (CVE-2024-36401) VulnDetector plugin.'
+description = 'Slurm Exposed REST API VulnDetector plugin.'
 group = 'com.google.tsunami'
 version = '0.0.1-SNAPSHOT'
 

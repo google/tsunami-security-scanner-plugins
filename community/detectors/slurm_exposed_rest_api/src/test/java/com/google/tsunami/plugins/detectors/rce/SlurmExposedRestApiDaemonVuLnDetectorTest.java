@@ -129,8 +129,8 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Exposed Slurm REST API Server")
                         .setDescription(
-                            "Exposed slurm rest api servers Can be exploited by attackers to submit a job and "
-                                + "therefore execute arbitrary OS-level commands on slurm compute nodes")
+                            "An exposed Slurm REST API server can be exploited by attackers to submit a job and "
+                                + "therefore execute arbitrary OS-level commands on Slurm compute nodes")
                         .setRecommendation(
                             "Set proper authentication for the Slurm Rest API server and "
                                 + "ensure the API is not publicly exposed through a "
