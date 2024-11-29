@@ -74,7 +74,7 @@ public final class Cve202231137Detector implements VulnDetector {
       @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
 
     this.utcClock = checkNotNull(utcClock);
-    this.httpClient = checkNotNull(httpClient).modify().setTrustAllCertificates(true).build();
+    this.httpClient = checkNotNull(httpClient);
     this.payloadGenerator = checkNotNull(payloadGenerator);
   }
 
