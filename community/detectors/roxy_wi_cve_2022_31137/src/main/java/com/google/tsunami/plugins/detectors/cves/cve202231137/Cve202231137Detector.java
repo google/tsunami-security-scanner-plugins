@@ -46,6 +46,8 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -111,7 +113,10 @@ public final class Cve202231137Detector implements VulnDetector {
     Payload payload = payloadGenerator.generate(config);
     String cmd = payload.getPayload();
 
-    HttpResponse response = sendRequest(networkService, String.format(HTTP_PARAMETERS, cmd));
+    HttpResponse response =
+        sendRequest(
+            networkService,
+            String.format(HTTP_PARAMETERS, URLEncoder.encode(cmd, StandardCharsets.UTF_8)));
     if (response != null) {
       if (response.bodyString().isEmpty()) {
         return false;
@@ -133,7 +138,9 @@ public final class Cve202231137Detector implements VulnDetector {
     Payload payload = payloadGenerator.generate(config);
     String cmd = payload.getPayload();
 
-    sendRequest(networkService, String.format(HTTP_PARAMETERS, cmd));
+    sendRequest(
+        networkService,
+        String.format(HTTP_PARAMETERS, URLEncoder.encode(cmd, StandardCharsets.UTF_8)));
 
     return payload.checkIfExecuted();
   }
