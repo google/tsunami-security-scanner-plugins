@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ public final class Cve202222954VulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(Cve202222954VulnDetector::isWebServiceOrUnknownService)
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
@@ -132,7 +132,7 @@ public final class Cve202222954VulnDetector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2022_22954"))
+                        .setValue("CVE-2022-22954"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2022-22954 VMware Workspace ONE Access - Freemarker SSTI")
                 .setRecommendation(
@@ -142,24 +142,3 @@ public final class Cve202222954VulnDetector implements VulnDetector {
         .build();
   }
 
-  private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
-    return networkService.getServiceName().isEmpty()
-        || NetworkServiceUtils.isWebService(networkService)
-        || NetworkServiceUtils.getServiceName(networkService).equals("unknown");
-  }
-
-  private static String buildTargetUrl(NetworkService networkService) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      // Assume the service uses HTTP protocol when the scanner cannot identify the actual service.
-      targetUrlBuilder
-          .append("http://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    targetUrlBuilder.append(CHECK_VUL_PATH);
-    return targetUrlBuilder.toString();
-  }
-}
