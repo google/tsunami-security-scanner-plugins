@@ -33,8 +33,10 @@ public final class WebServiceFingerprinterConfigs {
   private static final ImmutableList<String> DEFAULT_FILE_EXTENSION_EXCLUSIONS =
       ImmutableList.of("application/zip", "application/gzip");
 
-  private final WebServiceFingerprinterCliOptions cliOptions;
-  private final WebServiceFingerprinterConfigProperties configProperties;
+  private static final ImmutableList<String> DEFAULT_PATH_EXCLUSIONS = ImmutableList.of();
+
+  final WebServiceFingerprinterCliOptions cliOptions;
+  final WebServiceFingerprinterConfigProperties configProperties;
 
   @Inject
   WebServiceFingerprinterConfigs(
@@ -95,8 +97,19 @@ public final class WebServiceFingerprinterConfigs {
     }
   }
 
+  public List<String> getPathExclusions() {
+    if (cliOptions.pathExclusions != null) {
+      return cliOptions.pathExclusions;
+    } else if (configProperties.pathExclusions != null) {
+      return configProperties.pathExclusions;
+    } else {
+      return DEFAULT_PATH_EXCLUSIONS;
+    }
+  }
+
+  /** CLI options for {@link WebServiceFingerprinter}. */
   @Parameters(separators = "=")
-  static final class WebServiceFingerprinterCliOptions implements CliOption {
+  public static final class WebServiceFingerprinterCliOptions implements CliOption {
 
     @Parameter(
         names = "--web-service-fingerprinter-enforce-crawling-scope-check",
@@ -148,12 +161,18 @@ public final class WebServiceFingerprinterConfigs {
                 + "purpose.")
     List<String> contentTypeExclusions;
 
+    @Parameter(
+        names = "--web-service-fingerprinter-crawl-path-exclusions",
+        description = "A comma separated list of path regexes to exclude during crawling.")
+    List<String> pathExclusions;
+
     @Override
     public void validate() {}
   }
 
+  /** Config properties for {@link WebServiceFingerprinter}. */
   @ConfigProperties("plugins.google.fingerprinter.web")
-  static final class WebServiceFingerprinterConfigProperties {
+  public static final class WebServiceFingerprinterConfigProperties {
 
     /**
      * Configuration options for the {@code
@@ -186,5 +205,11 @@ public final class WebServiceFingerprinterConfigs {
      * CLI flag's description for more details.
      */
     List<String> contentTypeExclusions;
+
+    /**
+     * Configuration option for the @code --web-service-fingerprinter-crawl-path-exclusions} CLI
+     * flag. See the CLI flag's description for more details.
+     */
+    List<String> pathExclusions;
   }
 }

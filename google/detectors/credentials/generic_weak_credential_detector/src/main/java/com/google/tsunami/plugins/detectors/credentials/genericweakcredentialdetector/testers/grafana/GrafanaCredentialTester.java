@@ -20,11 +20,11 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
@@ -64,23 +64,6 @@ public final class GrafanaCredentialTester extends CredentialTester {
     return "Grafana credential tester.";
   }
 
-  private static String buildTargetUrl(NetworkService networkService, String path) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-
-    } else {
-      // Default to HTTP protocol when the scanner cannot identify the actual service.
-      targetUrlBuilder
-          .append("http://")
-          .append(NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    targetUrlBuilder.append(path);
-    return targetUrlBuilder.toString();
-  }
-
   /**
    * Determines if this tester can accept the {@link NetworkService} based on the name of the
    * service or a custom fingerprint. The fingerprint is necessary since nmap doesn't recognize a
@@ -99,9 +82,13 @@ public final class GrafanaCredentialTester extends CredentialTester {
       return true;
     }
 
+    if (!NetworkServiceUtils.isWebService(networkService)) {
+      return false;
+    }
+
     boolean canAcceptByCustomFingerprint = false;
 
-    var url = buildTargetUrl(networkService, "");
+    var url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     try {
       logger.atInfo().log("probing Grafana home - custom fingerprint phase");
 
@@ -109,7 +96,8 @@ public final class GrafanaCredentialTester extends CredentialTester {
 
       // the endpoint /api/health is one of the available unauthenticated endpoint - see
       // https://grafana.com/docs/grafana/latest/developers/http_api/other/#health-api
-      var healthApiUrl = buildTargetUrl(networkService, "api/health");
+      var healthApiUrl =
+          NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "api/health";
       HttpResponse apiHealthResponse =
           httpClient.send(get(healthApiUrl).withEmptyHeaders().build());
 
@@ -133,13 +121,18 @@ public final class GrafanaCredentialTester extends CredentialTester {
     return canAcceptByCustomFingerprint;
   }
 
+  @Override
+  public boolean batched() {
+    return true;
+  }
+
   // Checks if the response body contains elements of a grafana page - custom fingerprinting phase
   private static boolean bodyContainsGrafanaElements(String responseBody) {
     Document doc = Jsoup.parse(responseBody);
     String title = doc.title();
     String body = doc.body().toString();
 
-    if (title.toLowerCase().contains(GRAFANA_PAGE_TITLE)
+    if (Ascii.toLowerCase(title).contains(GRAFANA_PAGE_TITLE)
         && body.contains(GRAFANA_LOADING)
         && body.contains(GRAFANA_BOOT_DATA)) {
       logger.atInfo().log(
@@ -184,7 +177,7 @@ public final class GrafanaCredentialTester extends CredentialTester {
   }
 
   private boolean isGrafanaAccessible(NetworkService networkService, TestCredential credential) {
-    var url = buildTargetUrl(networkService, "api/user");
+    var url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "api/user";
     try {
       logger.atInfo().log(
           "url: %s, username: %s, password: %s",

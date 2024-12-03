@@ -145,6 +145,15 @@ public final class CommonTestData {
           .build();
   public static final Hash SOFTWARE_3_CSS_HASH =
       Hash.newBuilder().setHexString("1ebae34d06fc5a9be81b852a7c354041").build();
+
+  public static final CrawlResult SOFTWARE_4_MLFLOW =
+      CrawlResult.newBuilder()
+          .setCrawlTarget(
+              CrawlTarget.newBuilder().setUrl(fakeUrl("/login?from")).setHttpMethod("GET"))
+          .setResponseCode(200)
+          .setContent(ByteString.copyFromUtf8("MLFLOW"))
+          .build();
+
   public static final CrawlResult UNKNOWN_CONTENT =
       CrawlResult.newBuilder()
           .setCrawlTarget(CrawlTarget.newBuilder().setUrl(fakeUrl("/unknown")).setHttpMethod("GET"))
@@ -157,6 +166,9 @@ public final class CommonTestData {
       SoftwareIdentity.newBuilder().setSoftware("Software2").build();
   public static final SoftwareIdentity SOFTWARE_IDENTITY_3 =
       SoftwareIdentity.newBuilder().setSoftware("Software3").build();
+
+  public static final SoftwareIdentity SOFTWARE_IDENTITY_4 =
+      SoftwareIdentity.newBuilder().setSoftware("mlflow").build();
   public static final FingerprintData FINGERPRINT_DATA_1 =
       FingerprintData.fromProto(
           Fingerprints.newBuilder()

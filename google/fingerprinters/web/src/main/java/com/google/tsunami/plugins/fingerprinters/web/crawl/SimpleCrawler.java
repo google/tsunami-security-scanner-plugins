@@ -26,6 +26,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpMethod;
+import com.google.tsunami.plugins.fingerprinters.web.WebServiceFingerprinterConfigs;
 import com.google.tsunami.proto.CrawlConfig;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
@@ -45,15 +46,18 @@ public final class SimpleCrawler implements Crawler {
   private final ForkJoinPool forkJoinPool;
   private final ListeningExecutorService schedulingPool;
   private final HttpClient httpClient;
+  private final WebServiceFingerprinterConfigs configs;
 
   @Inject
   SimpleCrawler(
       @SimpleCrawlerWorkerPool ForkJoinPool forkJoinPool,
       @SimpleCrawlerSchedulingPool ListeningExecutorService schedulingPool,
-      HttpClient httpClient) {
+      HttpClient httpClient,
+      WebServiceFingerprinterConfigs configs) {
     this.forkJoinPool = checkNotNull(forkJoinPool);
     this.schedulingPool = checkNotNull(schedulingPool);
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
+    this.configs = checkNotNull(configs);
   }
 
   @Override
@@ -76,7 +80,7 @@ public final class SimpleCrawler implements Crawler {
       CrawlConfig crawlConfig, String url, SimpleCrawlerResults crawlerResults) {
     CrawlTarget crawlTarget =
         CrawlTarget.newBuilder().setHttpMethod(HttpMethod.GET.toString()).setUrl(url).build();
-    return new SimpleCrawlAction(0, httpClient, crawlConfig, crawlTarget, crawlerResults);
+    return new SimpleCrawlAction(0, httpClient, crawlConfig, crawlTarget, crawlerResults, configs);
   }
 
   private ListenableFuture<Void> startCrawlAction(

@@ -16,9 +16,9 @@
 package com.google.tsunami.plugins.detectors.directorytraversal.genericpathtraversaldetector;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.truth.Truth8;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.proto.NetworkService;
 import org.junit.Test;
@@ -138,7 +138,7 @@ public final class GetParameterInjectionTest {
         INJECTION_POINT.injectPayload(
             MINIMAL_NETWORK_SERVICE, requestWithPromisingParameterName, PAYLOAD);
 
-    assertThat(exploits.stream().map(PotentialExploit::priority))
+    Truth8.assertThat(exploits.stream().map(PotentialExploit::priority))
         .containsExactly(PotentialExploit.Priority.LOW, PotentialExploit.Priority.HIGH);
   }
 

@@ -48,7 +48,7 @@ java {
 ext {
     autoValueVersion = '1.7'
     okhttpVersion = '3.12.0'
-    tsunamiVersion = '0.0.14'
+    tsunamiVersion = 'latest.release'
 
     junitVersion = '4.13'
     truthVersion = '1.0.1'

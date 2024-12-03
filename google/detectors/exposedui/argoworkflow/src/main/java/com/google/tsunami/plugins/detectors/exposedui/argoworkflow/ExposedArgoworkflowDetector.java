@@ -17,11 +17,9 @@ package com.google.tsunami.plugins.detectors.exposedui.argoworkflow;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
 import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.util.Timestamps;
@@ -72,12 +70,6 @@ public final class ExposedArgoworkflowDetector implements VulnDetector {
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
   }
 
-  private static final ImmutableSet<String> HTTP_EQUIVALENT_SERVICE_NAMES =
-      ImmutableSet.of(
-          "",
-          "unknown", // nmap could not determine the service name, we try to exploit anyway.
-          "ssl/cpudpencap");
-
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
@@ -85,26 +77,11 @@ public final class ExposedArgoworkflowDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                // filter services which are in scope
-                .filter(this::isInScopeService)
-                // check if the services are vulnerable
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isServiceVulnerable)
-                // Build a DetectionReport when the web service is vulnerable.
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
-  }
-
-  private boolean isInScopeService(NetworkService networkService) {
-    return NetworkServiceUtils.isWebService(networkService)
-        || HTTP_EQUIVALENT_SERVICE_NAMES.contains(networkService.getServiceName());
-  }
-
-  private String buildRootUri(NetworkService networkService) {
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      return NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    }
-    return String.format("https://%s/", toUriAuthority(networkService.getNetworkEndpoint()));
   }
 
   private boolean isArgoWorkflowExposed(HttpResponse response) {
@@ -117,7 +94,7 @@ public final class ExposedArgoworkflowDetector implements VulnDetector {
   private boolean isServiceVulnerable(NetworkService networkService) {
 
     // the target URL of the target is built
-    String rootUri = buildRootUri(networkService);
+    String rootUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
 
     String targetUri = rootUri + "api/v1/info";
     logger.atInfo().log("targetUri is %s", targetUri);

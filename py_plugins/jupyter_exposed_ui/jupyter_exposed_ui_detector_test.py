@@ -18,20 +18,20 @@ from absl.testing import absltest
 import requests_mock
 
 
-from google3.third_party.java_src.tsunami.plugin_server.py.common.data import network_endpoint_utils
-from google3.third_party.java_src.tsunami.plugin_server.py.common.net.http.requests_http_client import RequestsHttpClientBuilder
-from google3.third_party.java_src.tsunami.plugin_server.py.plugin.payload.payload_generator import PayloadGenerator
-from google3.third_party.java_src.tsunami.plugin_server.py.plugin.payload.payload_secret_generator import PayloadSecretGenerator
-from google3.third_party.java_src.tsunami.plugin_server.py.plugin.payload.payload_utility import get_parsed_payload
-from google3.third_party.java_src.tsunami.plugin_server.py.plugin.tcs_client import TcsClient
-from google3.third_party.java_src.tsunami.proto import detection_pb2
-from google3.third_party.java_src.tsunami.proto import network_pb2
-from google3.third_party.java_src.tsunami.proto import network_service_pb2
-from google3.third_party.java_src.tsunami.proto import reconnaissance_pb2
-from google3.third_party.java_src.tsunami.proto import software_pb2
-from google3.third_party.java_src.tsunami.proto import vulnerability_pb2
-from google3.third_party.tsunami_plugins.py_plugins.jupyter_exposed_ui import jupyter_exposed_ui_detector
-from google3.third_party.tsunami_plugins.py_plugins.jupyter_exposed_ui.jupyter_exposed_ui_detector import _VULN_REMEDIATION
+from common.data import network_endpoint_utils
+from common.net.http.requests_http_client import RequestsHttpClientBuilder
+from plugin.payload.payload_generator import PayloadGenerator
+from plugin.payload.payload_secret_generator import PayloadSecretGenerator
+from plugin.payload.payload_utility import get_parsed_payload
+from plugin.tcs_client import TcsClient
+import detection_pb2
+import network_pb2
+import network_service_pb2
+import reconnaissance_pb2
+import software_pb2
+import vulnerability_pb2
+from third_party.tsunami_plugins.py_plugins.jupyter_exposed_ui import jupyter_exposed_ui_detector
+from third_party.tsunami_plugins.py_plugins.jupyter_exposed_ui.jupyter_exposed_ui_detector import _VULN_REMEDIATION
 
 
 _TARGET_URL = 'vuln-target.com'
