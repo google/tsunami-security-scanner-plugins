@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.airflow;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.tsunami.common.net.http.HttpRequest.post;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
+import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
