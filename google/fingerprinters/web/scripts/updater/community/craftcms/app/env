@@ -1,0 +1,28 @@
+# Read about configuration, here:
+# https://craftcms.com/docs/4.x/config/
+
+# The application ID used to to uniquely store session and cache data, mutex locks, and more
+CRAFT_APP_ID=
+
+# The environment Craft is currently running in (dev, staging, production, etc.)
+CRAFT_ENVIRONMENT=production
+
+# The secure key Craft will use for hashing and encrypting data
+CRAFT_SECURITY_KEY=root
+
+# Database connection settings
+CRAFT_DB_DRIVER=mysql
+CRAFT_DB_SERVER=mysql
+CRAFT_DB_PORT=3306
+CRAFT_DB_DATABASE=dev_craftcms
+CRAFT_DB_USER=craftcms
+CRAFT_DB_PASSWORD=SecretPassword
+CRAFT_DB_SCHEMA=public
+CRAFT_DB_TABLE_PREFIX=
+
+# General settings (see config/general.php)
+DEV_MODE=false
+ALLOW_ADMIN_CHANGES=false
+DISALLOW_ROBOTS=false
+
+PRIMARY_SITE_URL=http://localhost:8080
