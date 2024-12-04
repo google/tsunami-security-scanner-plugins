@@ -42,29 +42,22 @@ mkdir -p "${TMP_RELEASE_FILES}"
 BINPROTO="${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/community/craftcms.binproto"
 
 StartCraftCMS() {
-  pushd "${TMP_RELEASE_FILES}" >/dev/null
-    docker compose up --wait -d
+  local version="$1"
+  pushd "${APP_PATH}" >/dev/null
+    CRAFT_VERSION="$version" docker compose up --build --wait -d
     docker exec -it craftcms-web-1 php craft install/craft --email test@test.com --username admin --password tsunami --site-name local --site-url http://localhost:8080 --language en-us
   popd >/dev/null
 }
 
 StopCraftCMS() {
-  pushd "${TMP_RELEASE_FILES}" >/dev/null
+  pushd "${APP_PATH}" >/dev/null
     docker compose down --volumes --remove-orphans
-    rm -rf {,.[!.],..?}*
   popd >/dev/null
 }
 
 CreateFingerprintForCraftCMS(){
   local version="$1"
-  local envFile="$2"
-  echo https://github.com/craftcms/cms/releases/download/"${version}"/CraftCMS-"${version}".zip
-  curl -L https://github.com/craftcms/cms/releases/download/"${version}"/CraftCMS-"${version}".zip --output "${TMP_RELEASE_FILES}"/CraftCMS.zip
-  unzip -o "${TMP_RELEASE_FILES}"/CraftCMS.zip -d "${TMP_RELEASE_FILES}"
-  cp "${APP_PATH}"/"${envFile}" "${TMP_RELEASE_FILES}"/.env
-  cp "${APP_PATH}"/docker-compose.yml "${TMP_RELEASE_FILES}"/docker-compose.yml
-  chown -R 82:82 "${TMP_RELEASE_FILES}"
-  StartCraftCMS
+  StartCraftCMS "$version"
   checkOutRepo "${GIT_REPO}" "${version}"
   RESOURCES_PATH="${GIT_REPO}"
   updateFingerprint \
@@ -74,7 +67,6 @@ CreateFingerprintForCraftCMS(){
     "${RESOURCES_PATH}" \
     "http://localhost:8080"
   StopCraftCMS
-
 }
 
 # Convert the existing data file to a human-readable json file.
