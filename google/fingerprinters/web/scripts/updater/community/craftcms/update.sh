@@ -27,7 +27,7 @@ APP_PATH="${SCRIPT_PATH}/app"
 TMP_DATA="/tmp/craftcms_fingerprints"
 # Path to CraftCMS Releases files
 TMP_RELEASE_FILES="${TMP_DATA}/craftcms_instance"
-# Path to the local git repository for adminer codebase.
+# Path to the local git repository for Craft CMS codebase.
 GIT_REPO="${TMP_DATA}/repo"
 # Path to the directory of all the updated fingerprints data.
 FINGERPRINTS_PATH="${TMP_DATA}/fingerprints"
