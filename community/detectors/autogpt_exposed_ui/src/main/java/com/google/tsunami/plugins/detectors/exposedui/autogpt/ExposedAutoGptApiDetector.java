@@ -29,10 +29,7 @@ import com.google.gson.JsonParser;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
-import com.google.tsunami.common.net.http.HttpClient;
-import com.google.tsunami.common.net.http.HttpHeaders;
-import com.google.tsunami.common.net.http.HttpRequest;
-import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.*;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.NotImplementedException;
@@ -150,6 +147,7 @@ public final class ExposedAutoGptApiDetector implements VulnDetector {
       if (response.bodyString().isEmpty()) {
         return false;
       }
+
       String taskId;
       try {
         taskId =
@@ -160,6 +158,7 @@ public final class ExposedAutoGptApiDetector implements VulnDetector {
       } catch (IllegalStateException | NullPointerException | JsonParseException e) {
         return false;
       }
+
       // Request to Run the command
       String stepUrl = String.format("%sap/v1/agent/tasks/%s/steps", targetUrl, taskId);
       HttpRequest stepReq =
@@ -167,9 +166,16 @@ public final class ExposedAutoGptApiDetector implements VulnDetector {
               .setHeaders(
                   HttpHeaders.builder().addHeader("Content-Type", "application/json").build())
               .build();
-      httpClient.send(stepReq, networkService);
+      response = httpClient.send(stepReq, networkService);
+      if (response.status() != HttpStatus.OK) {
+        return false;
+      }
+
       // Execute the Command
-      httpClient.send(stepReq, networkService);
+      response = httpClient.send(stepReq, networkService);
+      if (response.status() != HttpStatus.OK) {
+        return false;
+      }
 
       Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
       if (callbackPayload.checkIfExecuted()) {

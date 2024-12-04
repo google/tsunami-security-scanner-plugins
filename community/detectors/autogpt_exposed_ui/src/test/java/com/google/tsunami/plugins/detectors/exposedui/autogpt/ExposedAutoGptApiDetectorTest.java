@@ -179,7 +179,7 @@ public final class ExposedAutoGptApiDetectorTest {
                   .setBody(String.format("{\"task_id\":\"%s\"}", fakeTaskId))
                   .setResponseCode(200);
             }
-            if (request.getPath().startsWith("/v1/agent/tasks/")
+            if (request.getPath().startsWith("/ap/v1/agent/tasks/")
                 && request.getPath().endsWith("/steps")
                 && request.getMethod().equals("POST")) {
               return new MockResponse().setResponseCode(200);
