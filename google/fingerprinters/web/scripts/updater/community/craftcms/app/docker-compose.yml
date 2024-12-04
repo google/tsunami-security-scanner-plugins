@@ -29,6 +29,3 @@ services:
       - 6379:6379
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-
-volumes:
-  db_data:
