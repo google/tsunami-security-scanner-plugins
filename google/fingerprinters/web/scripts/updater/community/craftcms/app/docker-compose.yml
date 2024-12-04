@@ -5,8 +5,6 @@ services:
     ports:
       - 8080:8080
     env_file: .env
-    environment:
-      XDEBUG_CONFIG: client_host=host.docker.internal
     depends_on:
       redis:
         condition: service_healthy
@@ -21,8 +19,6 @@ services:
 
   mysql:
     image: mysql:5.7
-    ports:
-      - 3306:3306
     environment:
       MYSQL_ROOT_PASSWORD: SuperPassword123456!
       MYSQL_DATABASE: dev_craftcms
@@ -35,7 +31,5 @@ services:
 
   redis:
     image: redis:5-alpine
-    ports:
-      - 6379:6379
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
