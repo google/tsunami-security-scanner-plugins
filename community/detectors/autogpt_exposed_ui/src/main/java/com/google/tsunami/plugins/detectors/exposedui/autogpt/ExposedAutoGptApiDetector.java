@@ -163,7 +163,6 @@ public final class ExposedAutoGptApiDetector implements VulnDetector {
       }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUrl);
-      return false;
     }
     return false;
   }
