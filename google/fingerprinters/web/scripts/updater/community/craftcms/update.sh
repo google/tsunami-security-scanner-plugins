@@ -50,7 +50,7 @@ StartCraftCMS() {
 
 StopCraftCMS() {
   pushd "${TMP_RELEASE_FILES}" >/dev/null
-    docker-compose down --volumes --remove-orphans
+    docker compose down --volumes --remove-orphans
     rm -rf {,.[!.],..?}*
   popd >/dev/null
 }
