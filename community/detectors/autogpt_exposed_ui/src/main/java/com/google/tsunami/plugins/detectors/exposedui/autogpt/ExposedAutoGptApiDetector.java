@@ -29,14 +29,18 @@ import com.google.gson.JsonParser;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
-import com.google.tsunami.common.net.http.*;
+import com.google.tsunami.common.net.http.HttpClient;
+import com.google.tsunami.common.net.http.HttpHeaders;
+import com.google.tsunami.common.net.http.HttpRequest;
+import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
+import com.google.tsunami.plugin.PluginType;
+import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.NotImplementedException;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.plugin.PluginType;
-import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugins.detectors.exposedui.autogpt.Annotations.OobSleepDuration;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
@@ -219,9 +223,11 @@ public final class ExposedAutoGptApiDetector implements VulnDetector {
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("AutoGPT API server Exposed")
                 .setDescription(
-                    "Publicly exposed and misconfigured AutoGPT API Servers can allow attackers to execute local system commands. ")
+                    "Publicly exposed and misconfigured AutoGPT API Servers can allow attackers to"
+                        + " execute local system commands. ")
                 .setRecommendation(
-                    "Run the AutoGPT API server with an authentication proxy and in an isolated environment"))
+                    "Run the AutoGPT API server with an authentication proxy and in an isolated"
+                        + " environment"))
         .build();
   }
 }

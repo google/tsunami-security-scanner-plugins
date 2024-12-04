@@ -52,9 +52,9 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.junit.Test;
 
 /** Unit tests for {@link ExposedAutoGptApiDetector}. */
 @RunWith(JUnit4.class)
@@ -131,9 +131,11 @@ public final class ExposedAutoGptApiDetectorTest {
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("AutoGPT API server Exposed")
                         .setDescription(
-                            "Publicly exposed and misconfigured AutoGPT API Servers can allow attackers to execute local system commands. ")
+                            "Publicly exposed and misconfigured AutoGPT API Servers can allow"
+                                + " attackers to execute local system commands. ")
                         .setRecommendation(
-                            "Run the AutoGPT API server with an authentication proxy and in an isolated environment"))
+                            "Run the AutoGPT API server with an authentication proxy and in an"
+                                + " isolated environment"))
                 .build());
     Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
