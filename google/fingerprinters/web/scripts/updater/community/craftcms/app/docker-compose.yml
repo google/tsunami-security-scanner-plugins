@@ -22,8 +22,6 @@ services:
       MYSQL_DATABASE: dev_craftcms
       MYSQL_USER: craftcms
       MYSQL_PASSWORD: SecretPassword
-    volumes:
-      - ./mysql/db_data:/var/lib/mysql
 
   redis:
     image: redis:5-alpine
