@@ -43,8 +43,8 @@ BINPROTO="${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/community/c
 
 StartCraftCMS() {
   pushd "${TMP_RELEASE_FILES}" >/dev/null
-    docker-compose up -d
-    docker exec -it craftcms_instance_web_1 php craft install/craft --email test@test.com --username admin --password tsunami --site-name local --site-url http://localhost:8080 --language en-us
+    docker compose up --wait -d
+    docker exec -it craftcms-web-1 php craft install/craft --email test@test.com --username admin --password tsunami --site-name local --site-url http://localhost:8080 --language en-us
   popd >/dev/null
 }
 
