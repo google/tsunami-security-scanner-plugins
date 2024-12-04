@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.exposedui.autogpt;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
@@ -98,10 +99,24 @@ public final class ExposedAutoGptApiDetector implements VulnDetector {
         .addAllDetectionReports(
             matchedServices.stream()
                 .filter(NetworkServiceUtils::isWebService)
+                .filter(this::checkAutoGptWebService)
                 .filter(this::checkExposedAutoGptWithOutOfBandCallback)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
+  }
+
+  private boolean checkAutoGptWebService(NetworkService networkService) {
+    String targetUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    try {
+      HttpResponse response =
+          httpClient.send(get(targetUrl + "ap/v1/").withEmptyHeaders().build(), networkService);
+      return response.bodyString().isPresent()
+          && response.bodyString().get().contains("Welcome to the AutoGPT Forge");
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUrl);
+      return false;
+    }
   }
 
   private boolean checkExposedAutoGptWithOutOfBandCallback(NetworkService networkService) {

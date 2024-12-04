@@ -136,7 +136,7 @@ public final class ExposedAutoGptApiDetectorTest {
                         .setRecommendation(
                             "Run the AutoGPT API server with an authentication proxy and in an isolated environment"))
                 .build());
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(3);
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
   }
 
@@ -149,7 +149,7 @@ public final class ExposedAutoGptApiDetectorTest {
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(3);
+    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
   }
 
   @Test
@@ -169,6 +169,11 @@ public final class ExposedAutoGptApiDetectorTest {
           @Override
           public MockResponse dispatch(RecordedRequest request) {
             String fakeTaskId = "7c925655-38c0-461a-b37d-f7aa05f747e4";
+            if (Objects.equals(request.getPath(), "/ap/v1/") && request.getMethod().equals("GET")) {
+              return new MockResponse()
+                  .setBody("Welcome to the AutoGPT Forge")
+                  .setResponseCode(200);
+            }
             if (Objects.equals(request.getPath(), "/ap/v1/agent/tasks")
                 && request.getMethod().equals("POST")) {
               return new MockResponse()
