@@ -85,12 +85,12 @@ readarray -t ALL_VERSIONS_4 < "${SCRIPT_PATH}/versions4.txt"
 
 # Version 3 uses different .env file format.
 for craftcms_version in "${ALL_VERSIONS_3[@]}"; do
-  CreateFingerprintForCraftCMS "${craftcms_version}" ".env_3"
+  CreateFingerprintForCraftCMS "${craftcms_version}" "env_3"
 done
 
 # Version 4 uses different .env file format.
 for craftcms_version in "${ALL_VERSIONS_4[@]}"; do
-  CreateFingerprintForCraftCMS "${craftcms_version}" ".env_4"
+  CreateFingerprintForCraftCMS "${craftcms_version}" "env_4"
 done
 
 convertFingerprint "${JSON_DATA}" "${BIN_DATA}"
