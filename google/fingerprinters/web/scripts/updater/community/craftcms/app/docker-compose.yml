@@ -1,4 +1,4 @@
-version: "3.6"
+name: craftcms
 services:
   web:
     image: craftcms/nginx:8.2-dev
