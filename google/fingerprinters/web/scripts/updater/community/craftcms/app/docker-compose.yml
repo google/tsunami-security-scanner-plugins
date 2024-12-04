@@ -1,17 +1,5 @@
 version: "3.6"
 services:
-  console:
-    image: craftcms/cli:8.2-dev
-    env_file: .env
-    environment:
-      XDEBUG_CONFIG: client_host=host.docker.internal
-    depends_on:
-      redis:
-        condition: service_healthy
-    volumes:
-      - .:/app
-    command: php craft queue/listen
-
   web:
     image: craftcms/nginx:8.2-dev
     ports:
