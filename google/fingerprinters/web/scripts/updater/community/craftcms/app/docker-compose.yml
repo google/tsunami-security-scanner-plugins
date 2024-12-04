@@ -22,6 +22,10 @@ services:
       MYSQL_DATABASE: dev_craftcms
       MYSQL_USER: craftcms
       MYSQL_PASSWORD: SecretPassword
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-pSuperPassword123456!"]
+      timeout: 20s
+      retries: 10
 
   redis:
     image: redis:5-alpine
