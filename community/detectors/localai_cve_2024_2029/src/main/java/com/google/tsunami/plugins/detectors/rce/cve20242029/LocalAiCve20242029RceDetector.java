@@ -36,14 +36,13 @@ import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
-import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
+import com.google.tsunami.plugin.PluginType;
+import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.NotImplementedException;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.plugin.PluginType;
-import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugins.detectors.rce.cve20242029.Annotations.OobSleepDuration;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
@@ -56,9 +55,6 @@ import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -186,7 +182,8 @@ public final class LocalAiCve20242029RceDetector implements VulnDetector {
                           HttpHeaders.builder()
                               .addHeader(
                                   CONTENT_TYPE,
-                                  "multipart/form-data; boundary=------------------------YMvF9bJTpBcQA5CcxzUEx3")
+                                  "multipart/form-data;"
+                                      + " boundary=------------------------YMvF9bJTpBcQA5CcxzUEx3")
                               .addHeader(USER_AGENT, "TSUNAMI_SCANNER")
                               .build())
                       .setRequestBody(ByteString.copyFrom(out))
