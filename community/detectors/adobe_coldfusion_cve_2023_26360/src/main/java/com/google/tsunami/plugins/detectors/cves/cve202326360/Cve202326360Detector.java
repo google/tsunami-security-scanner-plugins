@@ -116,7 +116,6 @@ public final class Cve202326360Detector implements VulnDetector {
                       .setRequestBody(ByteString.copyFromUtf8(payload))
                       .build(),
                   networkService);
-          // System.out.println("Response Body: " + response);
           if (response.bodyString().isPresent()) {
             if (VULNERABLE_RESPONSE_PATTERN.matcher(response.bodyString().get()).find()) {
               return true;
