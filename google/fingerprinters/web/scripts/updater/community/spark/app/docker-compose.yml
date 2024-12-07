@@ -11,6 +11,7 @@ services:
     environment:
       - SPARK_MASTER_HOST=spark-master
       - SPARK_MASTER_PORT=7077
+      - SPARK_LOCAL_HOSTNAME=127.0.0.1
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
 
   spark-worker:
