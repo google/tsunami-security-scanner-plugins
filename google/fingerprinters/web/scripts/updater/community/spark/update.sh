@@ -42,12 +42,14 @@ startSpark() {
   pushd "${SPARK_APP_PATH}" >/dev/null
     # if version-python3 exists then we have a spark container with python3
     # otherwise we must install python3
-    if SPARK_VERSION="${version}-python3" docker compose up -d | grep -q "manifest unknown"
-    then
-      echo -e "\nInstalling python3 into worker container" && \
-      SPARK_VERSION="${version}" docker compose up -d && \
-      installPython3InSpark "${version}"
-    fi
+    $(SPARK_VERSION="${version}-python3" docker compose up -d &&
+        sleep 10) || \
+      (
+        echo -e "\nInstalling python3 into worker container"
+        SPARK_VERSION="${version}" docker compose up -d
+        sleep 10
+        installPython3InSpark "${version}"
+      )
   popd >/dev/null
 }
 
@@ -75,9 +77,6 @@ createFingerprintForWebUI() {
   echo "Fingerprinting Spark version ${spark_version} ..."
   # Start a live instance of Spark.
   startSpark "${spark_version}"
-  # Arbitrarily chosen so that Spark is up and running.
-  echo "Waiting for Spark ${spark_version} to be ready ..."
-  sleep 30
 
   # Checkout the repository to the correct tag.
   if [[ ${spark_version:0:1} == "v" ]]; then
