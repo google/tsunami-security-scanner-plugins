@@ -44,7 +44,7 @@ startSpark() {
     # otherwise we must install python3
     if SPARK_VERSION="${version}-python3" docker compose up -d | grep -q "manifest unknown"
     then
-      echo "\nInstalling python3 into worker container" && \
+      echo -e "\nInstalling python3 into worker container" && \
       SPARK_VERSION="${version}" docker compose up -d && \
       installPython3InSpark "${version}"
     fi
