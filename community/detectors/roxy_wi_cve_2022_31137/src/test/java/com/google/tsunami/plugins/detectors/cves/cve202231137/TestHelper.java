@@ -64,7 +64,8 @@ final class TestHelper {
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Roxy-wi RCE (CVE-2022-31137)")
                 .setDescription(
-                    "Roxy-wi Versions prior to 6.1.1.0 are subject to a remote code execution vulnerability."))
+                    "Roxy-wi Versions prior to 6.1.1.0 are subject to a remote code execution"
+                        + " vulnerability."))
         .build();
   }
 }

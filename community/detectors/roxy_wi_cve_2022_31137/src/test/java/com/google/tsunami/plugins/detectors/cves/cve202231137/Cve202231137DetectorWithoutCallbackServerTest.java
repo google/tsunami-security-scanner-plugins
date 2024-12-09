@@ -72,14 +72,19 @@ public final class Cve202231137DetectorWithoutCallbackServerTest {
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws InterruptedException {
     mockWebServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody("A Co<title>Login page - Roxy-WI</title>nstant Response"));
+    mockWebServer.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("A Constant Response"));
     detector.detect(targetInfo, ImmutableList.of(service));
-    RecordedRequest firstRequest = mockWebServer.takeRequest();
-    assertThat(firstRequest.getBody().toString())
-        .contains("alert_consumer=1&serv=127.0.0.1&ipbackend=\";");
-    assertThat(firstRequest.getPath()).isEqualTo("/" + VULNERABLE_REQUEST_PATH);
-    assertThat(firstRequest.getHeaders().toString()).contains("X-Requested-With: XMLHttpRequest");
-    assertThat(firstRequest.getHeaders().toString())
+    mockWebServer.takeRequest();
+    RecordedRequest secondRequest = mockWebServer.takeRequest();
+    assertThat(secondRequest.getBody().toString())
+        .contains("alert_consumer=1&serv=127.0.0.1&ipbackend=");
+    assertThat(secondRequest.getPath()).isEqualTo("/" + VULNERABLE_REQUEST_PATH);
+    assertThat(secondRequest.getHeaders().toString()).contains("X-Requested-With: XMLHttpRequest");
+    assertThat(secondRequest.getHeaders().toString())
         .contains("Content-Type: application/x-www-form-urlencoded; charset=UTF-8");
   }
 

@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.cves.cve202231137;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
@@ -51,7 +50,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import javax.inject.Inject;
 
@@ -61,7 +59,7 @@ import javax.inject.Inject;
     name = "Roxy-wi RCE CVE-2022-31137 Detector",
     version = "0.1",
     description = "This detector checks Roxy-wi RCE (CVE-2022-31137)",
-    author = "amammad",
+    author = "am0o0",
     bootstrapModule = Cve202231137DetectorBootstrapModule.class)
 public final class Cve202231137Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
@@ -203,7 +201,8 @@ public final class Cve202231137Detector implements VulnDetector {
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Roxy-wi RCE (CVE-2022-31137)")
                 .setDescription(
-                    "Roxy-wi Versions prior to 6.1.1.0 are subject to a remote code execution vulnerability."))
+                    "Roxy-wi Versions prior to 6.1.1.0 are subject to a remote code execution"
+                        + " vulnerability."))
         .build();
   }
 }

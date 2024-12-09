@@ -17,6 +17,7 @@ package com.google.tsunami.plugins.detectors.cves.cve202231137;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.protobuf.util.JsonFormat;
@@ -80,6 +81,10 @@ public final class Cve202231137DetectorWithCallbackServerTest {
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
     mockWebServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody("<title>Login page - Roxy-WI</title>"));
+    mockWebServer.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("Some Constant Body"));
     PollingResult log = PollingResult.newBuilder().setHasHttpInteraction(true).build();
     String body = JsonFormat.printer().preservingProtoFieldNames().print(log);
@@ -90,7 +95,7 @@ public final class Cve202231137DetectorWithCallbackServerTest {
 
     assertThat(detectionReports.getDetectionReportsList())
         .containsExactly(TestHelper.buildValidDetectionReport(targetInfo, service, fakeUtcClock));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
   }
 
