@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
+import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -50,6 +51,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import javax.inject.Inject;
 
 /** A {@link VulnDetector} that detects Roxy-wi RCE CVE-2022-31137. */
@@ -89,10 +92,26 @@ public final class Cve202231137Detector implements VulnDetector {
         .addAllDetectionReports(
             matchedServices.stream()
                 .filter(NetworkServiceUtils::isWebService)
+                .filter(this::isRoxyWiWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
+  }
+
+  private boolean isRoxyWiWebService(NetworkService networkService) {
+    // note that this fingerprint phase is only for vulnerable versions,
+    // because newer Roxy-Wi versions have different endpoints for login
+    String targetUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "app/login.py";
+    try {
+      Optional<String> response =
+          httpClient.send(get(targetUrl).withEmptyHeaders().build(), networkService).bodyString();
+      return response.isPresent() && response.get().contains("<title>Login page - Roxy-WI</title>");
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
+    }
+    return false;
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
@@ -153,7 +172,7 @@ public final class Cve202231137Detector implements VulnDetector {
             .build();
 
     String targetVulnerabilityUrl =
-        buildTarget(networkService).append(VULNERABLE_REQUEST_PATH).toString();
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + VULNERABLE_REQUEST_PATH;
     try {
       return httpClient.send(
           post(targetVulnerabilityUrl)
@@ -165,19 +184,6 @@ public final class Cve202231137Detector implements VulnDetector {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
       return null;
     }
-  }
-
-  private static StringBuilder buildTarget(NetworkService networkService) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      targetUrlBuilder
-          .append("http://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    return targetUrlBuilder;
   }
 
   @VisibleForTesting
