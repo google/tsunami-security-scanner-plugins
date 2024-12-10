@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,12 +80,8 @@ public final class Cve202231137DetectorWithoutCallbackServerTest {
     detector.detect(targetInfo, ImmutableList.of(service));
     mockWebServer.takeRequest();
     RecordedRequest secondRequest = mockWebServer.takeRequest();
-    assertThat(secondRequest.getBody().toString())
-        .contains("alert_consumer=1&serv=127.0.0.1&ipbackend=");
+    assertThat(secondRequest.getBody().toString()).contains("alert_consumer=1&ipbackend=\";");
     assertThat(secondRequest.getPath()).isEqualTo("/" + VULNERABLE_REQUEST_PATH);
-    assertThat(secondRequest.getHeaders().toString()).contains("X-Requested-With: XMLHttpRequest");
-    assertThat(secondRequest.getHeaders().toString())
-        .contains("Content-Type: application/x-www-form-urlencoded; charset=UTF-8");
   }
 
   @Test

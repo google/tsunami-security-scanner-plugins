@@ -18,18 +18,10 @@ package com.google.tsunami.plugins.detectors.cves.cve202231137;
 
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 
-import com.google.protobuf.util.Timestamps;
-import com.google.tsunami.common.time.testing.FakeUtcClock;
-import com.google.tsunami.proto.DetectionReport;
-import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
-import java.time.Instant;
 import okhttp3.mockwebserver.MockWebServer;
 
 final class TestHelper {
@@ -46,26 +38,5 @@ final class TestHelper {
 
   static TargetInfo buildTargetInfo(NetworkEndpoint networkEndpoint) {
     return TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint).build();
-  }
-
-  static DetectionReport buildValidDetectionReport(
-      TargetInfo targetInfo, NetworkService service, FakeUtcClock fakeUtcClock) {
-    return DetectionReport.newBuilder()
-        .setTargetInfo(targetInfo)
-        .setNetworkService(service)
-        .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
-        .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE-2022-31137"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Roxy-wi RCE (CVE-2022-31137)")
-                .setDescription(
-                    "Roxy-wi Versions prior to 6.1.1.0 are subject to a remote code execution"
-                        + " vulnerability."))
-        .build();
   }
 }
