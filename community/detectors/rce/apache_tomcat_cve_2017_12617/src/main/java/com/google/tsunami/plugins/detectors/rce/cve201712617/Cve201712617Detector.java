@@ -69,17 +69,18 @@ public final class Cve201712617Detector implements VulnDetector {
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION =
-      "Tomcat instances containing a servlet context configured with readonly=false within the"
-          + " web.xml configuration, allow unauthenticated actors to upload arbitrary JSP files to"
-          + " the server via a specially crafted request. The uploaded JSP file could then be"
-          + " requested and any code it contained would be executed by the server, leading to"
-          + " Remote Code Execution (RCE).";
+      "Vulnerable Apache Tomcat versions (9.0.0.M1 to 9.0.0, 8.5.0 to 8.5.22, 8.0.0.RC1 to 8.0.46"
+          + " and 7.0.0 to 7.0.81) containing a servlet context configured with readonly=false"
+          + " within the web.xml configuration, allow unauthenticated actors to upload arbitrary"
+          + " JSP files to the server via a specially crafted request. The uploaded JSP file could"
+          + " then be requested and any code it contained would be executed by the server, leading"
+          + " to Remote Code Execution (RCE).";
 
   @VisibleForTesting
   static final String RECOMMENDATION =
-      "Update vulnerable instances and ensure that readonly is set to true for the default servlet,"
-          + " and for the webdav servlet. Block HTTP Methods that allow untrusted users to modify"
-          + " server's resources";
+      "Upgrade to non-vulnerable versions of Apache Tomcat (>= 9.0.1, 8.5.23, 8.0.47, 7.0.82) and"
+          + " ensure that readonly is set to true for the default servlet, and for the webdav"
+          + " servlet. Block HTTP Methods that allow untrusted users to modify server's resources";
 
   // filename that will be uploaded to tomcat root dir
   private static final String JSP_FILENAME = String.format("%s.jsp", UUID.randomUUID());
