@@ -160,7 +160,7 @@ public final class Cve201712617Detector implements VulnDetector {
       return false;
     }
 
-    // cleanup
+    // Clean Up
     targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + JSP_FILENAME + "/";
     logger.atInfo().log("Cleaning JSP file at '%s'", targetUri);
     try {
