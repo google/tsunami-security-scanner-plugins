@@ -110,10 +110,6 @@ public final class Cve202231137Detector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    return isVulnerableWithoutCallback(networkService);
-  }
-
-  private boolean isVulnerableWithoutCallback(NetworkService networkService) {
     PayloadGeneratorConfig config =
         PayloadGeneratorConfig.newBuilder()
             .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
