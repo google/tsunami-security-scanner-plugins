@@ -23,6 +23,7 @@ import static com.google.tsunami.common.net.http.HttpRequest.post;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
@@ -34,6 +35,7 @@ import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
+import com.google.tsunami.plugins.detectors.cves.cve202231137.Annotations.OobSleepDuration;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -47,6 +49,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -66,16 +69,21 @@ public final class Cve202231137Detector implements VulnDetector {
 
   private final Clock utcClock;
   private final HttpClient httpClient;
+  private final int oobSleepDuration;
 
   private final PayloadGenerator payloadGenerator;
 
   @Inject
   Cve202231137Detector(
-      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
+      @UtcClock Clock utcClock,
+      HttpClient httpClient,
+      PayloadGenerator payloadGenerator,
+      @OobSleepDuration int oobSleepDuration) {
 
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
     this.payloadGenerator = checkNotNull(payloadGenerator);
+    this.oobSleepDuration = oobSleepDuration;
   }
 
   @Override
@@ -120,6 +128,13 @@ public final class Cve202231137Detector implements VulnDetector {
             .build();
 
     Payload payload = payloadGenerator.generate(config);
+    // Check callback server is enabled
+    if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
+      logger.atInfo().log(
+          "The Tsunami callback server is not setup for this environment, so we cannot confirm the"
+              + " RCE callback");
+      return false;
+    }
     String cmd = payload.getPayload();
 
     HttpResponse response = null;
@@ -142,8 +157,14 @@ public final class Cve202231137Detector implements VulnDetector {
     if (response == null || response.bodyString().isEmpty()) {
       return false;
     }
-
-    return payload.checkIfExecuted(response.bodyString().get());
+    // If there is an RCE, the execution isn't immediate
+    logger.atInfo().log("Waiting for RCE callback.");
+    Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
+    if (payload.checkIfExecuted(response.bodyString().get())) {
+      logger.atInfo().log("RCE payload executed!");
+      return true;
+    }
+    return false;
   }
 
   @VisibleForTesting

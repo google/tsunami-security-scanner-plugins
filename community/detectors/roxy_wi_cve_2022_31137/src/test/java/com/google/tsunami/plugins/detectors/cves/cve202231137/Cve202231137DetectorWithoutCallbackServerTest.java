@@ -17,10 +17,14 @@ package com.google.tsunami.plugins.detectors.cves.cve202231137;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
+import static com.google.tsunami.plugins.detectors.cves.cve202231137.Annotations.OobSleepDuration;
 import static com.google.tsunami.plugins.detectors.cves.cve202231137.Cve202231137Detector.VULNERABLE_REQUEST_PATH;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
+import com.google.inject.testing.fieldbinder.Bind;
+import com.google.inject.testing.fieldbinder.BoundFieldModule;
+import com.google.inject.util.Modules;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
@@ -51,14 +55,19 @@ public final class Cve202231137DetectorWithoutCallbackServerTest {
   private TargetInfo targetInfo;
   @Inject private Cve202231137Detector detector;
 
+  @Bind(lazy = true)
+  @OobSleepDuration
+  private int sleepDuration = 1;
+
   @Before
   public void setUp() {
     mockWebServer = new MockWebServer();
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
-            FakePayloadGeneratorModule.builder().build(),
-            new Cve202231137DetectorBootstrapModule())
+            FakePayloadGeneratorModule.builder().setCallbackServer(mockWebServer).build(),
+            Modules.override(new Cve202231137DetectorBootstrapModule())
+                .with(BoundFieldModule.of(this)))
         .injectMembers(this);
     service = TestHelper.createWebService(mockWebServer);
     targetInfo = TestHelper.buildTargetInfo(forHostname(mockWebServer.getHostName()));
@@ -74,7 +83,7 @@ public final class Cve202231137DetectorWithoutCallbackServerTest {
     mockWebServer.enqueue(
         new MockResponse()
             .setResponseCode(HttpStatus.OK.code())
-            .setBody("A Co<title>Login page - Roxy-WI</title>nstant Response"));
+            .setBody("<title>Login page - Roxy-WI</title>"));
     mockWebServer.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("A Constant Response"));
     detector.detect(targetInfo, ImmutableList.of(service));

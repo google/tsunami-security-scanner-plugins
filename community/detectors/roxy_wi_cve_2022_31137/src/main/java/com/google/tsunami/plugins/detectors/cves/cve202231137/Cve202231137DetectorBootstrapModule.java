@@ -15,13 +15,27 @@
  */
 package com.google.tsunami.plugins.detectors.cves.cve202231137;
 
+import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
+import com.google.tsunami.plugins.detectors.cves.cve202231137.Annotations.OobSleepDuration;
 
-/** A {@link PluginBootstrapModule} for {@link Cve202231137Detector}. */
+/**
+ * A Roxy-Wi Cve-2022-3113 Rce Detector Guice module that bootstraps the {@link
+ * Cve202231137Detector}.
+ */
 public final class Cve202231137DetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
     registerPlugin(Cve202231137Detector.class);
+  }
+
+  @Provides
+  @OobSleepDuration
+  int provideOobSleepDuration(Cve202231137DetectorConfigs configs) {
+    if (configs.oobSleepDuration == 0) {
+      return 10;
+    }
+    return configs.oobSleepDuration;
   }
 }
