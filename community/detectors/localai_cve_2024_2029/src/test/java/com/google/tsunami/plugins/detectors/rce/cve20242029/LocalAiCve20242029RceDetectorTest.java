@@ -53,9 +53,9 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.junit.Test;
 
 /** Unit tests for {@link LocalAiCve20242029RceDetector}. */
 @RunWith(JUnit4.class)
@@ -132,13 +132,14 @@ public final class LocalAiCve20242029RceDetectorTest {
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("CVE-2024-2029 LocalAI Remote Code Execution")
                         .setRecommendation(
-                            "LocalAI user should upgrade the LocalAI to the versions v2.10.0 and above.")
+                            "LocalAI user should upgrade the LocalAI to the versions v2.10.0 and"
+                                + " above.")
                         .setDescription(
                             "Publicly exposed LocalAI instances before v2.7.0 are vulnerable to"
-                                + " Remote Code Execution Vulnerability. Attackers can inject arbitrary "
-                                + "OS commands within the audio filename filed during uploading"
-                                + " the audio file with a POST HTTP request and send it to the "
-                                + "v1/audio/transcriptions endpoint."))
+                                + " Remote Code Execution Vulnerability. Attackers can inject"
+                                + " arbitrary OS commands within the audio filename filed during"
+                                + " uploading the audio file with a POST HTTP request and send it"
+                                + " to the v1/audio/transcriptions endpoint."))
                 .build());
     Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(3);
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
