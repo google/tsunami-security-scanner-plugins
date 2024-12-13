@@ -138,12 +138,6 @@ public final class LocalAiCve20242029RceDetector implements VulnDetector {
                 .setExecutionEnvironment(
                     PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
                 .build());
-    if (payload == null || !payload.getPayloadAttributes().getUsesCallbackServer()) {
-      logger.atWarning().log(
-          "The Tsunami callback server is not setup for this environment, so we cannot confirm the"
-              + " RCE callback");
-      return false;
-    }
 
     String targetUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
 
