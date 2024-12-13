@@ -101,8 +101,7 @@ public final class WeblogicUnsafeDeserialization implements VulnDetector {
 
   @VisibleForTesting
   static final String FINGERPRINT_HTML_14 =
-      "<span id=\"product-brand-name\">WebLogic Server</span><span"
-          + " id=\"product-name\">Administration Console 14.1.1</span>";
+      "<span id=\"product-brand-name\">WebLogic Server</span>";
 
   static final String WEBLOGIC_CONTEXT_FACTORY_CLASS = "weblogic.jndi.WLInitialContextFactory";
 

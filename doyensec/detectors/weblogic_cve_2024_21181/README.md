@@ -16,8 +16,8 @@ it's outside the scope of the scanner.
 
 ## Affected Versions
 
--  v12.2.1.4.0
--  v14.1.1.0.0
+-  WebLogic Server 12 <= v12.2.1.4.0
+-  WebLogic Server 14 <= v14.1.1.0.0
 
 ## Build the plugin
 
