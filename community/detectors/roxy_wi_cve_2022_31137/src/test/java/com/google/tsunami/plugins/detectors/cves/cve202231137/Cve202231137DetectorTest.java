@@ -47,7 +47,7 @@ import org.junit.runners.JUnit4;
 
 /** Unit tests for {@link Cve202231137Detector}. */
 @RunWith(JUnit4.class)
-public final class Cve202231137DetectorWithoutCallbackServerTest {
+public final class Cve202231137DetectorTest {
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2022-05-23T00:00:00.00Z"));
   private MockWebServer mockWebServer;

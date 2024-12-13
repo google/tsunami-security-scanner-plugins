@@ -128,13 +128,6 @@ public final class Cve202231137Detector implements VulnDetector {
             .build();
 
     Payload payload = payloadGenerator.generate(config);
-    // Check callback server is enabled
-    if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
-      logger.atInfo().log(
-          "The Tsunami callback server is not setup for this environment, so we cannot confirm the"
-              + " RCE callback");
-      return false;
-    }
     String cmd = payload.getPayload();
 
     HttpResponse response = null;
@@ -157,14 +150,11 @@ public final class Cve202231137Detector implements VulnDetector {
     if (response == null || response.bodyString().isEmpty()) {
       return false;
     }
-    // If there is an RCE, the execution isn't immediate
-    logger.atInfo().log("Waiting for RCE callback.");
-    Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
-    if (payload.checkIfExecuted(response.bodyString().get())) {
-      logger.atInfo().log("RCE payload executed!");
-      return true;
+    if (payload.getPayloadAttributes().getUsesCallbackServer()) {
+      logger.atInfo().log("Waiting for RCE callback.");
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
     }
-    return false;
+    return payload.checkIfExecuted(response.bodyString().get());
   }
 
   @VisibleForTesting
