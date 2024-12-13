@@ -131,7 +131,15 @@ public final class LocalAiCve20242029RceDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    var payload = getTsunamiCallbackHttpPayload();
+    var payload =
+        this.payloadGenerator.generate(
+            PayloadGeneratorConfig.newBuilder()
+                .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
+                .setInterpretationEnvironment(
+                    PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
+                .setExecutionEnvironment(
+                    PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+                .build());
     if (payload == null || !payload.getPayloadAttributes().getUsesCallbackServer()) {
       logger.atWarning().log(
           "The Tsunami callback server is not setup for this environment, so we cannot confirm the"
@@ -190,8 +198,10 @@ public final class LocalAiCve20242029RceDetector implements VulnDetector {
         if (httpResponse.bodyString().isEmpty()) {
           continue;
         }
-        Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
-        return payload.checkIfExecuted();
+        if (payload.getPayloadAttributes().getUsesCallbackServer()) {
+          Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
+        }
+        return payload.checkIfExecuted(httpResponse.bodyString().get());
       }
     } catch (IllegalStateException | NullPointerException | JsonParseException e) {
       logger.atWarning().withCause(e).log("Unable to parse response body as json");
@@ -199,21 +209,6 @@ public final class LocalAiCve20242029RceDetector implements VulnDetector {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUrl);
     }
     return false;
-  }
-
-  private Payload getTsunamiCallbackHttpPayload() {
-    try {
-      return this.payloadGenerator.generate(
-          PayloadGeneratorConfig.newBuilder()
-              .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
-              .setInterpretationEnvironment(
-                  PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
-              .setExecutionEnvironment(
-                  PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
-              .build());
-    } catch (NotImplementedException n) {
-      return null;
-    }
   }
 
   private DetectionReport buildDetectionReport(
