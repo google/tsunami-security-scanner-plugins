@@ -7,11 +7,12 @@ services:
       - "8080:8080"
       - "4040:4040"
     volumes:
-       - ./examples:/opt/spark/examples/src/main/python
+      - ./examples:/opt/spark/examples/src/main/python
     environment:
       - SPARK_MASTER_HOST=spark-master
       - SPARK_MASTER_PORT=7077
       - SPARK_LOCAL_HOSTNAME=127.0.0.1
+      - DEBIAN_FRONTEND=noninteractive
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
 
   spark-worker:
@@ -21,7 +22,7 @@ services:
     ports:
       - "8081:8081"
     volumes:
-       - ./examples:/opt/spark/examples/src/main/python
+      - ./examples:/opt/spark/examples/src/main/python
     environment:
       - SPARK_MASTER=spark://spark-master:7077
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077

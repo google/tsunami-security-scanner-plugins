@@ -42,23 +42,24 @@ startSpark() {
   pushd "${SPARK_APP_PATH}" >/dev/null
     # if version-python3 exists then we have a spark container with python3
     # otherwise we must install python3
-    $(SPARK_VERSION="${version}-python3" docker compose up -d &&
-        sleep 10) || \
-      (
-        echo -e "\nInstalling python3 into worker container"
+      if g "apache/spark:${version}-python3" 2>/dev/null ; then
+        SPARK_VERSION="${version}-python3" docker compose up -d
+        sleep 10
+      else
         SPARK_VERSION="${version}" docker compose up -d
         sleep 10
+        echo -e "\nInstalling python3 into worker container"
         installPython3InSpark "${version}"
-      )
+      fi
   popd >/dev/null
 }
 
 installPython3InSpark() {
   local version="$1"
   pushd "${SPARK_APP_PATH}" >/dev/null
-    docker exec  -it -u 0 spark-master apt update >/dev/null
-    docker exec  -it -u 0 spark-master apt install python3 python3-pip -y >/dev/null
-    docker exec  -it -u 0 spark-master pip3 install pyspark=="${version}" >/dev/null
+      docker exec -it -u 0 spark-master apt-get update >/dev/null
+      docker exec -it -u 0 spark-master apt-get install python3 python3-pip -y >/dev/null
+      docker exec -it -u 0 spark-master pip3 install pyspark=="${version}" >/dev/null
   popd >/dev/null
 }
 
