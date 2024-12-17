@@ -1,0 +1,62 @@
+# Downloaded and slimmed down from https://raw.githubusercontent.com/datahub-project/datahub/master/docker/quickstart/docker-compose-without-neo4j-m1.quickstart.yml
+
+networks:
+  default:
+    name: datahub_network
+services:
+  datahub-frontend-X:
+    container_name: ${DATAHUB_FRONTEND_TYPE}
+    depends_on:
+    - broker
+    environment:
+    - DATAHUB_GMS_HOST=datahub-gms
+    - DATAHUB_GMS_PORT=8080
+    - DATAHUB_SECRET=YouKnowNothing
+    - DATAHUB_APP_VERSION=1.0
+    - DATAHUB_PLAY_MEM_BUFFER_SIZE=10MB
+    - JAVA_OPTS=-Xms512m -Xmx512m -Dhttp.port=9002 -Dconfig.file=datahub-frontend/conf/application.conf
+      -Djava.security.auth.login.config=datahub-frontend/conf/jaas.conf -Dlogback.configurationFile=datahub-frontend/conf/logback.xml
+      -Dlogback.debug=false -Dpidfile.path=/dev/null
+    - KAFKA_BOOTSTRAP_SERVER=broker:29092
+    - DATAHUB_TRACKING_TOPIC=DataHubUsageEvent_v1
+    - ELASTIC_CLIENT_HOST=elasticsearch
+    - ELASTIC_CLIENT_PORT=9200
+    hostname: ${DATAHUB_FRONTEND_TYPE}
+    image: linkedin/${DATAHUB_FRONTEND_TYPE}:${DATAHUB_VERSION}
+    ports:
+    - 9002:9002
+
+  broker:
+    container_name: broker
+    depends_on:
+    - zookeeper
+    environment:
+    - KAFKA_BROKER_ID=1
+    - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+    - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+    - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+    - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
+    - KAFKA_HEAP_OPTS=-Xms256m -Xmx256m
+    - KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE=false
+    hostname: broker
+    image: confluentinc/cp-kafka:7.2.2
+    ports:
+    - 9092:9092
+
+  zookeeper:
+    container_name: zookeeper
+    environment:
+    - ZOOKEEPER_CLIENT_PORT=2181
+    - ZOOKEEPER_TICK_TIME=2000
+    hostname: zookeeper
+    image: confluentinc/cp-zookeeper:7.2.2
+    ports:
+    - 2181:2181
+    volumes:
+    - zkdata:/var/lib/zookeeper
+version: '2.3'
+volumes:
+  esdata: null
+  mysqldata: null
+  zkdata: null

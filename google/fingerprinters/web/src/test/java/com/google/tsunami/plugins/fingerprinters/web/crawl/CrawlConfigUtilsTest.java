@@ -17,7 +17,10 @@ package com.google.tsunami.plugins.fingerprinters.web.crawl;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableList;
 import com.google.tsunami.proto.CrawlConfig;
 import com.google.tsunami.proto.CrawlConfig.Scope;
 import com.google.tsunami.proto.CrawlTarget;
@@ -71,9 +74,11 @@ public final class CrawlConfigUtilsTest {
             CrawlTarget.newBuilder().setUrl("http://localhost:8080/in-scope/index.html").build()))
         .isTrue();
     assertThat(
-        CrawlConfigUtils.isCrawlTargetInScope(
-            crawlConfig,
-            CrawlTarget.newBuilder().setUrl("http://localhost:8080/not-in-scope/index.html").build()))
+            CrawlConfigUtils.isCrawlTargetInScope(
+                crawlConfig,
+                CrawlTarget.newBuilder()
+                    .setUrl("http://localhost:8080/not-in-scope/index.html")
+                    .build()))
         .isTrue();
   }
 
@@ -123,5 +128,21 @@ public final class CrawlConfigUtilsTest {
                     .setUrl("http://localhost:8080/more/not-in-scope/path")
                     .build()))
         .isFalse();
+  }
+
+  @Test
+  public void isCrawlTargetInBlockList_inBlockList_returnsTrue() {
+    ImmutableList<String> blockList = ImmutableList.of(".*/quit$", ".*/logout$");
+    CrawlTarget target = CrawlTarget.newBuilder().setUrl("http://127.0.0.1/logout").build();
+
+    assertTrue(CrawlConfigUtils.isCrawlTargetInBlockList(target, blockList));
+  }
+
+  @Test
+  public void isCrawlTargetInBlockList_notInBlockList_returnsFalse() {
+    ImmutableList<String> blockList = ImmutableList.of(".*/quit$", ".*/logout$");
+    CrawlTarget target = CrawlTarget.newBuilder().setUrl("http://127.0.0.1/login").build();
+
+    assertFalse(CrawlConfigUtils.isCrawlTargetInBlockList(target, blockList));
   }
 }

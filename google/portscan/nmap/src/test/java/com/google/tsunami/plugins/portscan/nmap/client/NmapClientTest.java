@@ -22,6 +22,7 @@ import static org.mockito.Mockito.RETURNS_SMART_NULLS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.google.tsunami.common.command.CommandExecutor;
 import com.google.tsunami.common.command.CommandExecutorFactory;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
@@ -348,6 +349,32 @@ public class NmapClientTest {
             "test2",
             "--script-args",
             "e,f",
+            "1.1.1.1",
+            "-oX",
+            report.getAbsolutePath());
+  }
+
+  @Test
+  public void buildRunCommandArgs_withExtraCommandLineArgs_returnsCorrectCommandLine() {
+    client
+        .withTargetNetworkEndpoint(NetworkEndpointUtils.forIp("1.1.1.1"))
+        .withExtraCommandLineOptions(ImmutableList.of("--foo", "--bar"))
+        .withScript("test1", "a", "b")
+        .withScript("test2", "e", "f");
+
+    assertThat(client.buildRunCommandArgs())
+        .containsExactly(
+            nmapFile.getAbsolutePath(),
+            "--script",
+            "test1",
+            "--script-args",
+            "a,b",
+            "--script",
+            "test2",
+            "--script-args",
+            "e,f",
+            "--foo",
+            "--bar",
             "1.1.1.1",
             "-oX",
             report.getAbsolutePath());

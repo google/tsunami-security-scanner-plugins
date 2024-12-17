@@ -240,7 +240,7 @@ public final class SoftwareDetector {
 
     /** Builder for {@link DetectedSoftware}. */
     @AutoValue.Builder
-    abstract static class Builder {
+    public abstract static class Builder {
       public abstract Builder setSoftwareIdentity(SoftwareIdentity value);
       public abstract Builder setRootPath(String value);
       public abstract Builder setContentHashes(ImmutableMap<CrawlResult, Hash> value);

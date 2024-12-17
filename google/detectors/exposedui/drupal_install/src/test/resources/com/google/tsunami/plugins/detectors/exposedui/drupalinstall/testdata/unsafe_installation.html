@@ -1,0 +1,298 @@
+
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="Generator" content="Drupal 9 (https://www.drupal.org)" />
+    <meta name="MobileOptimized" content="width" />
+    <meta name="HandheldFriendly" content="true" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="shortcut icon" href="/drupal/core/misc/favicon.ico" type="image/vnd.microsoft.icon" />
+
+    <title>Database configuration | Drupal</title>
+    <link rel="stylesheet" media="all" href="/drupal/core/assets/vendor/normalize-css/normalize.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/misc/normalize-fixes.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/ajax-progress.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/align.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/autocomplete-loading.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/fieldgroup.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/container-inline.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/clearfix.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/details.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/hidden.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/item-list.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/js.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/nowrap.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/position-container.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/progress.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/reset-appearance.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/resize.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/sticky-header.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/tabledrag.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/tablesort.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/components/tree-child.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/system.admin.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/modules/system/css/system.maintenance.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/base/elements.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/base/typography.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/base/print.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/layout/layout.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/messages.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/action-links.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/breadcrumb.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/button.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/collapse-processed.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/container-inline.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/exposed-filters.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/field.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/form.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/icons.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/inline-form.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/item-list.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/link.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/links.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/menu.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/more-link.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/pager.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/tabledrag.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/tableselect.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/tablesort.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/tabs.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/textarea.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/classy/components/ui-dialog.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/admin-list.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/content-header.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/container-inline.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/container-inline.module.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/breadcrumb.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/buttons.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/details.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/messages.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/dropbutton.component.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/entity-meta.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/field-ui.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/form.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/help.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/menus-and-lists.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/modules-page.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/node.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/page-title.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/pager.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/panel.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/skip-link.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/tables.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/search-admin-settings.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/tablesort-indicator.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/system-status-report-general-info.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/system-status-report.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/tabs.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/system-status-report-counters.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/system-status-counter.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/components/views-ui.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/theme/colors.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/theme/maintenance-page.css?0" />
+    <link rel="stylesheet" media="all" href="/drupal/core/themes/seven/css/theme/install-page.css?0" />
+
+    <script src="/drupal/core/assets/vendor/modernizr/modernizr.min.js?v=3.8.0"></script>
+    <script src="/drupal/core/misc/modernizr-additional-tests.js?v=3.8.0"></script>
+
+</head>
+<body class="install-page path-frontpage db-offline">
+<a href="#main-content" class="visually-hidden focusable skip-link">
+    Skip to main content
+</a>
+
+<div class="dialog-off-canvas-main-canvas" data-off-canvas-main-canvas>
+    <div class="layout-container">
+
+        <header role="banner">
+            <h1 class="page-title">
+                Drupal
+                <span class="site-version">9.1.2</span>
+            </h1>
+        </header>
+
+        <aside class="layout-sidebar-first" role="complementary">
+            <h2 class="visually-hidden">Installation tasks</h2>
+            <ol class="task-list">
+                <li class="done">
+                    Choose language
+                    <span class="visually-hidden"> (done)</span>  </li>
+                <li class="done">
+                    Choose profile
+                    <span class="visually-hidden"> (done)</span>  </li>
+                <li class="done">
+                    Verify requirements
+                    <span class="visually-hidden"> (done)</span>  </li>
+                <li class="is-active">
+                    Set up database
+                    <span class="visually-hidden"> (active)</span>  </li>
+                <li>
+                    Install site
+                </li>
+                <li>
+                    Configure site
+                </li>
+            </ol>
+
+        </aside>
+        <main role="main">
+            <h2 class="heading-a">Database configuration</h2>
+
+            <form class="install-settings-form" data-drupal-selector="install-settings-form" action="/drupal/core/install.php?langcode=en&amp;profile=standard&amp;continue=1" method="post" id="install-settings-form" accept-charset="UTF-8">
+                <fieldset data-drupal-selector="edit-driver" id="edit-driver--wrapper" class="fieldgroup form-composite required js-form-item form-item js-form-wrapper form-wrapper" required="required" aria-required="true">
+                    <legend>
+                        <span class="fieldset-legend js-form-required form-required">Database type</span>
+                    </legend>
+                    <div class="fieldset-wrapper">
+                        <div id="edit-driver" class="form-radios"><div class="js-form-item form-item js-form-type-radio form-type-radio js-form-item-driver form-item-driver">
+                            <input data-drupal-selector="edit-driver-mysql" type="radio" id="edit-driver-mysql" name="driver" value="mysql" checked="checked" class="form-radio" />
+
+                            <label for="edit-driver-mysql" class="option">MySQL, MariaDB, Percona Server, or equivalent</label>
+                        </div>
+                            <div class="js-form-item form-item js-form-type-radio form-type-radio js-form-item-driver form-item-driver">
+                                <input data-drupal-selector="edit-driver-sqlite" type="radio" id="edit-driver-sqlite" name="driver" value="sqlite" class="form-radio" />
+
+                                <label for="edit-driver-sqlite" class="option">SQLite</label>
+                            </div>
+                            <div class="js-form-item form-item js-form-type-radio form-type-radio js-form-item-driver form-item-driver">
+                                <input data-drupal-selector="edit-driver-pgsql" type="radio" id="edit-driver-pgsql" name="driver" value="pgsql" class="form-radio" />
+
+                                <label for="edit-driver-pgsql" class="option">PostgreSQL</label>
+                            </div>
+                        </div>
+
+                    </div>
+                </fieldset>
+                <h2 class="js-hide">MySQL, MariaDB, Percona Server, or equivalent settings</h2><div data-drupal-selector="edit-mysql" data-drupal-states="{&quot;visible&quot;:{&quot;:input[name=driver]&quot;:{&quot;value&quot;:&quot;mysql&quot;}}}" id="edit-mysql" class="js-form-wrapper form-wrapper"><div class="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-mysql-database form-item-mysql-database">
+                <label for="edit-mysql-database" class="js-form-required form-required">Database name</label>
+                <input data-drupal-selector="edit-mysql-database" type="text" id="edit-mysql-database" name="mysql[database]" value="" size="45" maxlength="128" class="form-text required" required="required" aria-required="true" data-drupal-states="{&quot;required&quot;:{&quot;:input[name=driver]&quot;:{&quot;value&quot;:&quot;mysql&quot;}}}" />
+
+            </div>
+                <div class="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-mysql-username form-item-mysql-username">
+                    <label for="edit-mysql-username" class="js-form-required form-required">Database username</label>
+                    <input data-drupal-selector="edit-mysql-username" type="text" id="edit-mysql-username" name="mysql[username]" value="" size="45" maxlength="128" class="form-text required" required="required" aria-required="true" data-drupal-states="{&quot;required&quot;:{&quot;:input[name=driver]&quot;:{&quot;value&quot;:&quot;mysql&quot;}}}" />
+
+                </div>
+                <div class="js-form-item form-item js-form-type-password form-type-password js-form-item-mysql-password form-item-mysql-password">
+                    <label for="edit-mysql-password">Database password</label>
+                    <input data-drupal-selector="edit-mysql-password" type="password" id="edit-mysql-password" name="mysql[password]" size="45" maxlength="128" class="form-text" />
+
+                </div>
+                <details data-drupal-selector="edit-mysql" id="edit-mysql--2" class="js-form-wrapper form-wrapper seven-details">    <summary role="button" aria-controls="edit-mysql--2" aria-expanded="false" aria-pressed="false" class="seven-details__summary">
+                    <span>Advanced options</span>
+                </summary><div class="seven-details__wrapper details-wrapper">
+                    <div class="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-mysql-host form-item-mysql-host">
+                        <label for="edit-mysql-host" class="js-form-required form-required">Host</label>
+                        <input data-drupal-selector="edit-mysql-host" type="text" id="edit-mysql-host" name="mysql[host]" value="localhost" size="45" maxlength="255" class="form-text required" required="required" aria-required="true" />
+
+                    </div>
+                    <div class="js-form-item form-item js-form-type-number form-type-number js-form-item-mysql-port form-item-mysql-port">
+                        <label for="edit-mysql-port">Port number</label>
+                        <input data-drupal-selector="edit-mysql-port" type="number" id="edit-mysql-port" name="mysql[port]" value="3306" step="1" min="0" max="65535" class="form-number" />
+
+                    </div>
+                    <div class="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-mysql-prefix form-item-mysql-prefix">
+                        <label for="edit-mysql-prefix">Table name prefix</label>
+                        <input data-drupal-selector="edit-mysql-prefix" aria-describedby="edit-mysql-prefix--description" type="text" id="edit-mysql-prefix" name="mysql[prefix]" value="" size="45" maxlength="128" class="form-text" />
+
+                        <div id="edit-mysql-prefix--description" class="description">
+                            If more than one application will be sharing this database, a unique table name prefix – such as <em class="placeholder">drupal_</em> – will prevent collisions.
+                        </div>
+                    </div>
+                </div>
+                </details>
+            </div>
+                <h2 class="js-hide">SQLite settings</h2><div data-drupal-selector="edit-sqlite" data-drupal-states="{&quot;visible&quot;:{&quot;:input[name=driver]&quot;:{&quot;value&quot;:&quot;sqlite&quot;}}}" id="edit-sqlite" class="js-form-wrapper form-wrapper"><div class="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-sqlite-database form-item-sqlite-database">
+                <label for="edit-sqlite-database" class="js-form-required form-required">Database file</label>
+                <input data-drupal-selector="edit-sqlite-database" aria-describedby="edit-sqlite-database--description" type="text" id="edit-sqlite-database" name="sqlite[database]" value="sites/default/files/.ht.sqlite" size="45" maxlength="128" class="form-text required" required="required" aria-required="true" data-drupal-states="{&quot;required&quot;:{&quot;:input[name=driver]&quot;:{&quot;value&quot;:&quot;sqlite&quot;}}}" />
+
+                <div id="edit-sqlite-database--description" class="description">
+                    The absolute path to the file where Drupal data will be stored. This must be writable by the web server and should exist outside of the web root.
+                </div>
+            </div>
+                <details data-drupal-selector="edit-sqlite" id="edit-sqlite--2" class="js-form-wrapper form-wrapper seven-details">    <summary role="button" aria-controls="edit-sqlite--2" aria-expanded="false" aria-pressed="false" class="seven-details__summary">
+                    <span>Advanced options</span>
+                </summary><div class="seven-details__wrapper details-wrapper">
+                    <div class="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-sqlite-prefix form-item-sqlite-prefix">
+                        <label for="edit-sqlite-prefix">Table name prefix</label>
+                        <input data-drupal-selector="edit-sqlite-prefix" aria-describedby="edit-sqlite-prefix--description" type="text" id="edit-sqlite-prefix" name="sqlite[prefix]" value="" size="45" maxlength="128" class="form-text" />
+
+                        <div id="edit-sqlite-prefix--description" class="description">
+                            If more than one application will be sharing this database, a unique table name prefix – such as <em class="placeholder">drupal_</em> – will prevent collisions.
+                        </div>
+                    </div>
+                </div>
+                </details>
+            </div>
+                <h2 class="js-hide">PostgreSQL settings</h2><div data-drupal-selector="edit-pgsql" data-drupal-states="{&quot;visible&quot;:{&quot;:input[name=driver]&quot;:{&quot;value&quot;:&quot;pgsql&quot;}}}" id="edit-pgsql" class="js-form-wrapper form-wrapper"><div class="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-pgsql-database form-item-pgsql-database">
+                <label for="edit-pgsql-database" class="js-form-required form-required">Database name</label>
+                <input data-drupal-selector="edit-pgsql-database" type="text" id="edit-pgsql-database" name="pgsql[database]" value="" size="45" maxlength="128" class="form-text required" required="required" aria-required="true" data-drupal-states="{&quot;required&quot;:{&quot;:input[name=driver]&quot;:{&quot;value&quot;:&quot;pgsql&quot;}}}" />
+
+            </div>
+                <div class="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-pgsql-username form-item-pgsql-username">
+                    <label for="edit-pgsql-username" class="js-form-required form-required">Database username</label>
+                    <input data-drupal-selector="edit-pgsql-username" type="text" id="edit-pgsql-username" name="pgsql[username]" value="" size="45" maxlength="128" class="form-text required" required="required" aria-required="true" data-drupal-states="{&quot;required&quot;:{&quot;:input[name=driver]&quot;:{&quot;value&quot;:&quot;pgsql&quot;}}}" />
+
+                </div>
+                <div class="js-form-item form-item js-form-type-password form-type-password js-form-item-pgsql-password form-item-pgsql-password">
+                    <label for="edit-pgsql-password">Database password</label>
+                    <input data-drupal-selector="edit-pgsql-password" type="password" id="edit-pgsql-password" name="pgsql[password]" size="45" maxlength="128" class="form-text" />
+
+                </div>
+                <details data-drupal-selector="edit-pgsql" id="edit-pgsql--2" class="js-form-wrapper form-wrapper seven-details">    <summary role="button" aria-controls="edit-pgsql--2" aria-expanded="false" aria-pressed="false" class="seven-details__summary">
+                    <span>Advanced options</span>
+                </summary><div class="seven-details__wrapper details-wrapper">
+                    <div class="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-pgsql-host form-item-pgsql-host">
+                        <label for="edit-pgsql-host" class="js-form-required form-required">Host</label>
+                        <input data-drupal-selector="edit-pgsql-host" type="text" id="edit-pgsql-host" name="pgsql[host]" value="localhost" size="45" maxlength="255" class="form-text required" required="required" aria-required="true" />
+
+                    </div>
+                    <div class="js-form-item form-item js-form-type-number form-type-number js-form-item-pgsql-port form-item-pgsql-port">
+                        <label for="edit-pgsql-port">Port number</label>
+                        <input data-drupal-selector="edit-pgsql-port" type="number" id="edit-pgsql-port" name="pgsql[port]" value="5432" step="1" min="0" max="65535" class="form-number" />
+
+                    </div>
+                    <div class="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-pgsql-prefix form-item-pgsql-prefix">
+                        <label for="edit-pgsql-prefix">Table name prefix</label>
+                        <input data-drupal-selector="edit-pgsql-prefix" aria-describedby="edit-pgsql-prefix--description" type="text" id="edit-pgsql-prefix" name="pgsql[prefix]" value="" size="45" maxlength="128" class="form-text" />
+
+                        <div id="edit-pgsql-prefix--description" class="description">
+                            If more than one application will be sharing this database, a unique table name prefix – such as <em class="placeholder">drupal_</em> – will prevent collisions.
+                        </div>
+                    </div>
+                </div>
+                </details>
+            </div>
+                <input autocomplete="off" data-drupal-selector="form-vgiqrv28zfmmo8as8x-koqmbdge4etzlekrzdfvy43s" type="hidden" name="form_build_id" value="form-vGiQRv28ZfMMO8AS8x-KOQmbDgE4ETzleKRzDFvy43s" />
+                <input data-drupal-selector="edit-install-settings-form" type="hidden" name="form_id" value="install_settings_form" />
+                <div data-drupal-selector="edit-actions" class="form-actions js-form-wrapper form-wrapper" id="edit-actions"><input data-drupal-selector="edit-save" formnovalidate="formnovalidate" type="submit" id="edit-save" name="op" value="Save and continue" class="button button--primary js-form-submit form-submit" />
+                </div>
+
+            </form>
+
+        </main>
+
+
+
+    </div>
+</div>
+
+
+<script type="application/json" data-drupal-selector="drupal-settings-json">{"path":{"baseUrl":"\/drupal\/core\/install.php\/","scriptPath":null,"pathPrefix":"","currentPath":"","currentPathIsAdmin":false,"isFront":false,"currentLanguage":"en","currentQuery":{"continue":"1","langcode":"en","profile":"standard"}},"pluralDelimiter":"\u0003","suppressDeprecationErrors":true,"ajaxTrustedUrl":{"form_action_p_pvdeGsVG5zNF_XLGPTvYSKCf43t8qZYSwcfZl2uzM":true}}</script>
+<script src="/drupal/core/assets/vendor/jquery/jquery.min.js?v=3.5.1"></script>
+<script src="/drupal/core/assets/vendor/jquery-once/jquery.once.min.js?v=2.2.3"></script>
+<script src="/drupal/core/misc/drupalSettingsLoader.js?v=9.1.2"></script>
+<script src="/drupal/core/misc/drupal.js?v=9.1.2"></script>
+<script src="/drupal/core/misc/drupal.init.js?v=9.1.2"></script>
+<script src="/drupal/core/misc/states.js?v=9.1.2"></script>
+<script src="/drupal/core/misc/debounce.js?v=9.1.2"></script>
+<script src="/drupal/core/misc/form.js?v=9.1.2"></script>
+<script src="/drupal/core/misc/details-summarized-content.js?v=9.1.2"></script>
+<script src="/drupal/core/misc/details-aria.js?v=9.1.2"></script>
+<script src="/drupal/core/misc/collapse.js?v=9.1.2"></script>
+<script src="/drupal/core/themes/seven/js/mobile.install.js?v=9.1.2"></script>
+
+</body>
+</html>

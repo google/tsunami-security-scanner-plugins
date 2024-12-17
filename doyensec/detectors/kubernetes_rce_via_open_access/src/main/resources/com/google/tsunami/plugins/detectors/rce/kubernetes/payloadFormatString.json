@@ -1,0 +1,41 @@
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "annotations": {
+      "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Pod\",\"metadata\":{\"annotations\":{},\"name\":\"pi\",\"namespace\":\"default\"},\"spec\":{\"containers\":[{\"args\":[\"-c\",\"curl http://192.168.49.1:1337/hifromkuber;exit 1\"],\"command\":[\"bash\"],\"image\":\"nginx\",\"name\":\"container\",\"volumeMounts\":[{\"mountPath\":\"/mnt\",\"name\":\"test\"}]}],\"restartPolicy\":\"Never\",\"volumes\":[{\"hostPath\":{\"path\":\"/\"},\"name\":\"test\"}]}}\n"
+    },
+    "name": "%s",
+    "namespace": "default"
+  },
+  "spec": {
+    "containers": [
+      {
+        "args": [
+          "-c",
+          "%s;exit 1"
+        ],
+        "command": [
+          "bash"
+        ],
+        "image": "nginx",
+        "name": "container",
+        "volumeMounts": [
+          {
+            "mountPath": "/mnt",
+            "name": "test"
+          }
+        ]
+      }
+    ],
+    "restartPolicy": "Never",
+    "volumes": [
+      {
+        "hostPath": {
+          "path": "/"
+        },
+        "name": "test"
+      }
+    ]
+  }
+}

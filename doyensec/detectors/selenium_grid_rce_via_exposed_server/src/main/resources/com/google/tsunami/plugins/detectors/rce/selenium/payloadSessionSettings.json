@@ -1,0 +1,1 @@
+{"capabilities": {"firstMatch": [{}], "alwaysMatch": {"browserName": "chrome", "pageLoadStrategy": "normal", "platformName": "linux", "goog:chromeOptions": {"extensions": [], "args": []}}}}

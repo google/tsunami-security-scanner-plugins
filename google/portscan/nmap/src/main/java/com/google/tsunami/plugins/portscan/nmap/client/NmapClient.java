@@ -21,6 +21,7 @@ import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.tsunami.common.command.CommandExecutor;
 import com.google.tsunami.common.command.CommandExecutorFactory;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
@@ -191,6 +192,7 @@ public class NmapClient {
   }
 
   private final String nmapBinaryPath;
+  private final List<String> extraCommandArgs = new ArrayList<>();
   private final List<NetworkEndpoint> networkEndpoints = new ArrayList<>();
   private final List<HostDiscoveryTechnique> hostDiscoveryTechniques = new ArrayList<>();
   private final List<String> dnsServers = new ArrayList<>();
@@ -321,6 +323,10 @@ public class NmapClient {
       runCommandArgs.add("-6");
     }
 
+    if (extraCommandArgs != null) {
+      runCommandArgs.addAll(extraCommandArgs);
+    }
+
     networkEndpoints.stream()
         .map(NmapClient::networkEndpointToCliRepresentation)
         .forEach(runCommandArgs::add);
@@ -351,6 +357,20 @@ public class NmapClient {
    */
   public NmapClient withTargetNetworkEndpoint(NetworkEndpoint networkEndpoint) {
     this.networkEndpoints.add(networkEndpoint);
+    return this;
+  }
+
+  /**
+   * Sets additional command line options for the Nmap scanning. They are appended at the end of
+   * nmap command invocation, right before the targets.
+   *
+   * @param commandArgs The extra command line options.
+   */
+  @CanIgnoreReturnValue
+  public NmapClient withExtraCommandLineOptions(List<String> commandArgs) {
+    if (commandArgs != null) {
+      this.extraCommandArgs.addAll(commandArgs);
+    }
     return this;
   }
 

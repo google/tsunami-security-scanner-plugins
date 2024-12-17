@@ -18,9 +18,9 @@ package com.google.tsunami.plugins.detectors.rce.cve202135464;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Ascii;
-import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
@@ -45,6 +45,7 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -79,7 +80,7 @@ public final class Cve202135464Detector implements VulnDetector {
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
     try {
       this.serializedBase64RCEPayload =
-          Resources.toString(Resources.getResource(this.getClass(), "payload.b64"), Charsets.UTF_8);
+          Resources.toString(Resources.getResource(this.getClass(), "payload.b64"), UTF_8);
     } catch (IOException e) {
       logger.atSevere().withCause(e).log(
           "Should never happen. Couldn't load payload resource file.");

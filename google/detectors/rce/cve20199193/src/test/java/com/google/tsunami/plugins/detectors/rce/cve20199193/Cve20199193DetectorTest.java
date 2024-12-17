@@ -22,7 +22,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.matches;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -249,16 +248,5 @@ public final class Cve20199193DetectorTest {
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(Cve20199193Detector.VULNERABILITY)
                 .build());
-  }
-
-  @Test
-  public void detect_noEndpoint_returnFalse() throws IOException, SQLException {
-    NetworkService targetNetworkService = NetworkService.getDefaultInstance();
-    TargetInfo targetInfo = TargetInfo.getDefaultInstance();
-
-    var report = detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
-
-    verify(mockConnectionProvider, never()).getConnection(any(), any(), any());
-    assertThat(report.getDetectionReportsList()).isEmpty();
   }
 }

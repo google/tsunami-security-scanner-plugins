@@ -15,6 +15,7 @@
  */
 package com.google.tsunami.plugins.fingerprinters.web.crawl;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.net.HttpHeaders.CONTENT_LOCATION;
@@ -29,6 +30,7 @@ import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.ByteString;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpMethod;
+import com.google.tsunami.proto.CrawlConfig;
 import com.google.tsunami.proto.CrawlTarget;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -188,6 +190,27 @@ public final class CrawlTargetUtils {
     }
 
     return crawlTargetsBuilder.build();
+  }
+
+  /**
+   * Normalize any crawlTarget pointing to localhost to the same host contained in the crawl scope.
+   * This handle the case where applications use localhost in their embedded links.
+   */
+  public static CrawlTarget normalizeHost(CrawlConfig crawlConfig, CrawlTarget crawlTarget) {
+    HttpUrl url = HttpUrl.parse(crawlTarget.getUrl());
+    checkArgument(url != null);
+
+    if (url.host().equals("localhost")) {
+      crawlTarget =
+          crawlTarget.toBuilder()
+              .setUrl(
+                  url.newBuilder()
+                      .host(ScopeUtils.getHost(crawlConfig.getScopes(0).getDomain()))
+                      .build()
+                      .toString())
+              .build();
+    }
+    return crawlTarget;
   }
 
   private static Map<String, String> getFormParameters(FormElement form) {

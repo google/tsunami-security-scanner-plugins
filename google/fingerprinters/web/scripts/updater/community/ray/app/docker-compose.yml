@@ -1,0 +1,6 @@
+services:
+  ray:
+    image: rayproject/ray:${RAY_VERSION}
+    ports:
+      - "8265:8265"
+    command: sh -c "ray start --head --dashboard-host=0.0.0.0 && tail -f /dev/null"

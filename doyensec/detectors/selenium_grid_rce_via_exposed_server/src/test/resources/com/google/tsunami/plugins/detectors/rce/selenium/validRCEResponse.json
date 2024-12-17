@@ -1,0 +1,118 @@
+{
+  "value": {
+    "error": "session not created",
+    "message": "Could not start a new session. Error while creating session with the driver service. Stopping driver service: Could not start a new session. Response code 500. Message: tab crashed\n  (Session info: chrome=117.0.5938.132) \nHost info: host: 'ef651ba6c070', ip: '172.17.0.2'\nBuild info: version: '4.13.0', revision: 'ba948ece5b*'\nSystem info: os.name: 'Linux', os.arch: 'amd64', os.version: '6.4.16-linuxkit', java.version: '11.0.20.1'\nDriver info: driver.version: unknown\nBuild info: version: '4.13.0', revision: 'ba948ece5b*'\nSystem info: os.name: 'Linux', os.arch: 'amd64', os.version: '6.4.16-linuxkit', java.version: '11.0.20.1'\nDriver info: driver.version: unknown",
+    "stacktrace": [
+      {
+        "fileName": "DriverServiceSessionFactory.java",
+        "moduleVersion": null,
+        "moduleName": null,
+        "nativeMethod": false,
+        "methodName": "apply",
+        "className": "org.openqa.selenium.grid.node.config.DriverServiceSessionFactory",
+        "lineNumber": 233,
+        "classLoaderName": null
+      },
+      {
+        "fileName": "DriverServiceSessionFactory.java",
+        "moduleVersion": null,
+        "moduleName": null,
+        "nativeMethod": false,
+        "methodName": "apply",
+        "className": "org.openqa.selenium.grid.node.config.DriverServiceSessionFactory",
+        "lineNumber": 73,
+        "classLoaderName": null
+      },
+      {
+        "fileName": "SessionSlot.java",
+        "moduleVersion": null,
+        "moduleName": null,
+        "nativeMethod": false,
+        "methodName": "apply",
+        "className": "org.openqa.selenium.grid.node.local.SessionSlot",
+        "lineNumber": 147,
+        "classLoaderName": null
+      },
+      {
+        "fileName": "LocalNode.java",
+        "moduleVersion": null,
+        "moduleName": null,
+        "nativeMethod": false,
+        "methodName": "newSession",
+        "className": "org.openqa.selenium.grid.node.local.LocalNode",
+        "lineNumber": 468,
+        "classLoaderName": null
+      },
+      {
+        "fileName": "LocalDistributor.java",
+        "moduleVersion": null,
+        "moduleName": null,
+        "nativeMethod": false,
+        "methodName": "startSession",
+        "className": "org.openqa.selenium.grid.distributor.local.LocalDistributor",
+        "lineNumber": 648,
+        "classLoaderName": null
+      },
+      {
+        "fileName": "LocalDistributor.java",
+        "moduleVersion": null,
+        "moduleName": null,
+        "nativeMethod": false,
+        "methodName": "newSession",
+        "className": "org.openqa.selenium.grid.distributor.local.LocalDistributor",
+        "lineNumber": 565,
+        "classLoaderName": null
+      },
+      {
+        "fileName": "LocalDistributor.java",
+        "moduleVersion": null,
+        "moduleName": null,
+        "nativeMethod": false,
+        "methodName": "handleNewSessionRequest",
+        "className": "org.openqa.selenium.grid.distributor.local.LocalDistributor$NewSessionRunnable",
+        "lineNumber": 829,
+        "classLoaderName": null
+      },
+      {
+        "fileName": "LocalDistributor.java",
+        "moduleVersion": null,
+        "moduleName": null,
+        "nativeMethod": false,
+        "methodName": "lambda$run$1",
+        "className": "org.openqa.selenium.grid.distributor.local.LocalDistributor$NewSessionRunnable",
+        "lineNumber": 787,
+        "classLoaderName": null
+      },
+      {
+        "fileName": "ThreadPoolExecutor.java",
+        "moduleVersion": "11.0.20.1",
+        "moduleName": "java.base",
+        "nativeMethod": false,
+        "methodName": "runWorker",
+        "className": "java.util.concurrent.ThreadPoolExecutor",
+        "lineNumber": 1128,
+        "classLoaderName": null
+      },
+      {
+        "fileName": "ThreadPoolExecutor.java",
+        "moduleVersion": "11.0.20.1",
+        "moduleName": "java.base",
+        "nativeMethod": false,
+        "methodName": "run",
+        "className": "java.util.concurrent.ThreadPoolExecutor$Worker",
+        "lineNumber": 628,
+        "classLoaderName": null
+      },
+      {
+        "fileName": "Thread.java",
+        "moduleVersion": "11.0.20.1",
+        "moduleName": "java.base",
+        "nativeMethod": false,
+        "methodName": "run",
+        "className": "java.lang.Thread",
+        "lineNumber": 829,
+        "classLoaderName": null
+      }
+    ]
+  }
+}

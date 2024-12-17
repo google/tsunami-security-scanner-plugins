@@ -288,7 +288,7 @@ public final class FingerprintUpdater {
     String extension = Files.getFileExtension(Ascii.toLowerCase(relativePath));
 
     // Ignores hidden files and folders.
-    if (extension.isEmpty() || relativePath.startsWith(".") || relativePath.contains("/.")) {
+    if (relativePath.startsWith(".") || relativePath.contains("/.")) {
       return true;
     }
     if (IGNORED_EXTENTIONS.contains(extension)) {

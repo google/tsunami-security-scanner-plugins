@@ -20,6 +20,7 @@ import static com.google.common.net.HttpHeaders.LINK;
 import static com.google.common.net.HttpHeaders.LOCATION;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Splitter;
@@ -27,6 +28,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpMethod;
+import com.google.tsunami.proto.CrawlConfig;
+import com.google.tsunami.proto.CrawlConfig.Scope;
 import com.google.tsunami.proto.CrawlTarget;
 import okhttp3.HttpUrl;
 import org.junit.Test;
@@ -40,6 +43,8 @@ import org.junit.runner.RunWith;
 @RunWith(Theories.class)
 public final class CrawlTargetUtilsTest {
   private static final String BASE_URL = "https://www.google.com";
+  private static final String LOCALHOST_URL = "http://localhost";
+  private static final String DOMAIN = "1.1.1.1";
 
   @Test
   public void extractFromHeaders_withLocationHeader_extractsAbsoluteUrl() {
@@ -316,5 +321,41 @@ public final class CrawlTargetUtilsTest {
   public void extractFromHtml_whenLinkAttributeHasNoValue_returnsEmpty() {
     String html = "<a href></a>";
     assertThat(CrawlTargetUtils.extractFromHtml(html, HttpUrl.parse(BASE_URL))).isEmpty();
+  }
+
+  @Test
+  public void normalizeHost_whenCrawlTargetContainLocalHost_normalize() {
+    CrawlTarget target =
+        CrawlTarget.newBuilder()
+            .setHttpMethod("GET")
+            .setUrl(LOCALHOST_URL + "/root/relative")
+            .build();
+    CrawlConfig config =
+        CrawlConfig.newBuilder().addScopes(Scope.newBuilder().setDomain(DOMAIN).build()).build();
+
+    CrawlTarget normalized = CrawlTargetUtils.normalizeHost(config, target);
+
+    assertThat(normalized.getUrl()).isEqualTo("http://" + DOMAIN + "/root/relative");
+  }
+
+  @Test
+  public void normalizeHost_whenCrawlTargetContainNoLocalHost_noOp() {
+    CrawlTarget target =
+        CrawlTarget.newBuilder().setHttpMethod("GET").setUrl(BASE_URL + "/root/relative").build();
+    CrawlConfig config =
+        CrawlConfig.newBuilder().addScopes(Scope.newBuilder().setDomain(DOMAIN).build()).build();
+
+    CrawlTarget normalized = CrawlTargetUtils.normalizeHost(config, target);
+
+    assertThat(normalized.getUrl()).isEqualTo(BASE_URL + "/root/relative");
+  }
+
+  @Test
+  public void normalizeHost_whenCrawlTargetContainNoUrl_throws() {
+    CrawlTarget target = CrawlTarget.newBuilder().setHttpMethod("GET").build();
+    CrawlConfig config =
+        CrawlConfig.newBuilder().addScopes(Scope.newBuilder().setDomain(DOMAIN).build()).build();
+
+    assertThrows(Exception.class, () -> CrawlTargetUtils.normalizeHost(config, target));
   }
 }

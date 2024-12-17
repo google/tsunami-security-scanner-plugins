@@ -126,7 +126,7 @@ public final class ScopeUtils {
     return scopeDomainBuilder.append(":").append(url.port()).toString();
   }
 
-  private static String getHost(String domain) {
+  public static String getHost(String domain) {
     return (CharMatcher.is(':').countIn(domain) == 1)
         ? Splitter.on(':').splitToList(domain).get(0)
         : domain;

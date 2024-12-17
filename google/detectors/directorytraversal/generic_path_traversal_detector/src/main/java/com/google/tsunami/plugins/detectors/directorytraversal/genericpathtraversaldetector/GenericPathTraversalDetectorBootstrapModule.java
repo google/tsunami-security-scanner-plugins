@@ -56,7 +56,7 @@ public final class GenericPathTraversalDetectorBootstrapModule extends PluginBoo
             new RootInjection(), new GetParameterInjection(), new PathParameterInjection()),
         /* maxCrawledUrlsToFuzz= */ 50,
         /* maxExploitsToTest= */ 250,
-        /**
+        /*
          * TODO(b/202565385) Add a command line parameter to configure the scanning mode. Ideally,
          * it should be possible to pass the scanning mode (QUICK/SMART/EXHAUSTIVE) via a command
          * line parameter to configure Tsunami to do either QUICK, SMART, or EXHAUSTIVE scanning.

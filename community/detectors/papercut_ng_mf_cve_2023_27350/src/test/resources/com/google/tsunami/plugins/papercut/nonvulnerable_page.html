@@ -1,0 +1,563 @@
+<!DOCTYPE HTML>
+<!-- Application: app-server -->
+<!-- Page: Dashboard -->
+<!-- Generated: -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
+    <title>PaperCut MF  : Dashboard : Dashboard</title>
+    <link rel="shortcut icon" href="images/icons3/favicon.ico" type="image/vnd.microsoft.icon"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
+    <link rel="stylesheet" type="text/css" href="/js/jquery/themes/custom-theme/jquery-ui-1.12.1.custom.min.css?57927papercut-mf" />
+    <!--[if IE 6]><script type="text/javascript" src="/js/jquery/external/bgiframe/jquery.bgiframe.min.js?57927papercut-mf"></script>
+    <![endif]-->
+    <link rel="stylesheet" type="text/css" href="/css/style.css?57927papercut-mf" />
+    <link rel="stylesheet" type="text/css" href="/css/style-override.css?57927papercut-mf" />
+    <link rel="stylesheet" type="text/css" href="/css/refresh.css?57927papercut-mf" />
+    <link rel="stylesheet" type="text/css" href="/css/jquery.lightbox-0.5.1.css?57927papercut-mf" />
+    <!--[if IE 9]><link rel="stylesheet" type="text/css" href="/css/style-ie9.css?57927papercut-mf" />
+    <![endif]-->
+    <!--[if IE 8]><link rel="stylesheet" type="text/css" href="/css/style-ie8.css?57927papercut-mf" />
+    <![endif]-->
+    <!--[if IE 7]><link rel="stylesheet" type="text/css" href="/css/style-ie7.css?57927papercut-mf" />
+    <![endif]-->
+    <!--[if IE 6]><link rel="stylesheet" type="text/css" href="/css/style-ie6.css?57927papercut-mf" />
+    <![endif]-->
+    <script type="text/javascript">var CacheParam = "57927papercut-mf";</script>
+    <script type="text/javascript" src="/js/jquery/jquery-3.5.1.min.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/jquery/jquery-migrate-3.3.1.min.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/jquery/config.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/json-js/json2.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/jquery/plugins/jquery.lightbox-0.5.1.min.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/jquery/plugins/jquery.are-you-sure.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/jquery/plugins/jquery.fileDownload.min.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/jquery/ui/jquery-ui-1.12.1.custom.min.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/lib/underscore/underscore-min.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/common.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/lib/require.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/pages/configure.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/pages/AdminAnalytics.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/refresh.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/jquery/plugins/jquery.scrollTo-min.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/jquery/plugins/jquery.jqplot.min.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/jquery/plugins/jqplot.dateAxisRenderer.min.js?57927papercut-mf"></script>
+    <script type="text/javascript" src="/js/jquery/plugins/jqplot.highlighter.min.js?57927papercut-mf"></script>
+</head>
+
+<body class="no-gutter dashboard">
+<!-- Tips -->
+<script type="text/javascript">
+    var csrfToken = 'IeO8nvOtW977cHzTYT3k';
+    var CacheParam = '57927papercut-mf';
+
+    if (!window.messages) window.messages = {};
+messages.dirtyFormWarning = 'You have unsaved changes.';
+insertScript('/js/pages/Border.js');
+    insertScript('/js/pages/BorderCommon.js');
+</script>
+<div class="notification-container license-notification">
+    <div class="content"></div>
+</div>
+<table id="header" cellspacing="0" cellpadding="0">
+    <tbody>
+    <tr>
+
+
+        <td id="logo">
+            <img alt="" src="/images/header-logo3.png?57927papercut-mf"></img>
+        </td>
+
+
+
+
+
+        <td id="info">
+            <div class="info-wrapper">
+                <div class="info-left">&nbsp;</div><!--
+             --><div class="info-content-wrapper">
+                <div class="info-content">
+<span class="user">
+<span id="username" aria-label="User:">admin</span>
+</span> <span class="help">
+
+<a href="/content/help/home-mf-installed.html?language=en" class="help" target="_blank"><img src="/images/icons3/16x16/header-help.png?57927papercut-mf" border="0" class="icon16"/></a>
+
+<a href="/content/help/home-mf-installed.html?language=en" class="help" target="_blank">Help</a> </span>
+                    <span class="logout">
+<a href="/app?service=direct/1/Dashboard/$Border.logoutLink">
+<img src="/images/icons3/16x16/header-logout.png?57927papercut-mf" border="0" class="icon16"/>
+Log out</a> </span>
+                </div>
+            </div>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<div id="mainnav">
+    <ul class="tabList">
+        <li class="tab active"><!--
+         --><div class="wrapper"><!--
+            --><a href="/app?service=page/Dashboard" onclick=""><!--
+                --><!--
+                --><span class="left">&nbsp;</span><!--
+                --><span class="content-wrapper"><span class="content">Dashboard</span></span><!--
+                --><span class="right">&nbsp;</span><!--
+              --></a><!--
+            --></div><!--
+          --></li><li class="tab"><!--
+         --><div class="wrapper"><!--
+            --><a href="/app?service=page/UserList" onclick=""><!--
+                --><!--
+                --><span class="left">&nbsp;</span><!--
+                --><span class="content-wrapper"><span class="content">Users</span></span><!--
+                --><span class="right">&nbsp;</span><!--
+              --></a><!--
+            --></div><!--
+          --></li><li class="tab"><!--
+         --><div class="wrapper"><!--
+            --><a href="/app?service=page/GroupList" onclick=""><!--
+                --><!--
+                --><span class="left">&nbsp;</span><!--
+                --><span class="content-wrapper"><span class="content">Groups</span></span><!--
+                --><span class="right">&nbsp;</span><!--
+              --></a><!--
+            --></div><!--
+          --></li><li class="tab"><!--
+         --><div class="wrapper"><!--
+            --><a href="/app?service=page/AccountList" onclick=""><!--
+                --><!--
+                --><span class="left">&nbsp;</span><!--
+                --><span class="content-wrapper"><span class="content">Accounts</span></span><!--
+                --><span class="right">&nbsp;</span><!--
+              --></a><!--
+            --></div><!--
+          --></li><li class="tab"><!--
+         --><div class="wrapper"><!--
+            --><a href="/app?service=page/PrinterList" onclick=""><!--
+                --><!--
+                --><span class="left">&nbsp;</span><!--
+                --><span class="content-wrapper"><span class="content">Printers</span></span><!--
+                --><span class="right">&nbsp;</span><!--
+              --></a><!--
+            --></div><!--
+          --></li><li class="tab"><!--
+         --><div class="wrapper"><!--
+            --><a href="/app?service=page/DeviceList" onclick=""><!--
+                --><!--
+                --><span class="left">&nbsp;</span><!--
+                --><span class="content-wrapper"><span class="content">Devices</span></span><!--
+                --><span class="right">&nbsp;</span><!--
+              --></a><!--
+            --></div><!--
+          --></li><li class="tab"><!--
+         --><div class="wrapper"><!--
+            --><a href="/app?service=page/PrintDeploy" onclick=""><!--
+                --><!--
+                --><span class="left">&nbsp;</span><!--
+                --><span class="content-wrapper"><span class="content">Enable Printing</span></span><!--
+                --><span class="right">&nbsp;</span><!--
+              --></a><!--
+            --></div><!--
+          --></li><li class="tab"><!--
+         --><div class="wrapper"><!--
+            --><a href="/app?service=page/ReportsUser" onclick=""><!--
+                --><!--
+                --><span class="left">&nbsp;</span><!--
+                --><span class="content-wrapper"><span class="content">Reports</span></span><!--
+                --><span class="right">&nbsp;</span><!--
+              --></a><!--
+            --></div><!--
+          --></li><li class="tab"><!--
+         --><div class="wrapper"><!--
+            --><a href="/app?service=page/TopUpCardList" onclick=""><!--
+                --><!--
+                --><span class="left">&nbsp;</span><!--
+                --><span class="content-wrapper"><span class="content">Cards</span></span><!--
+                --><span class="right">&nbsp;</span><!--
+              --></a><!--
+            --></div><!--
+          --></li><li class="tab"><!--
+         --><div class="wrapper"><!--
+            --><a href="/app?service=page/OptionsGeneral" onclick=""><!--
+                --><!--
+                --><span class="left">&nbsp;</span><!--
+                --><span class="content-wrapper"><span class="content">Options</span></span><!--
+                --><span class="right">&nbsp;</span><!--
+              --></a><!--
+            --></div><!--
+          --></li><li class="tab"><!--
+         --><div class="wrapper"><!--
+            --><a href="/app?service=page/PrinterLog" onclick=""><!--
+                --><!--
+                --><span class="left">&nbsp;</span><!--
+                --><span class="content-wrapper"><span class="content">Logs</span></span><!--
+                --><span class="right">&nbsp;</span><!--
+              --></a><!--
+            --></div><!--
+          --></li><li class="tab"><!--
+         --><div class="wrapper"><!--
+            --><a href="/app?service=page/About" onclick=""><!--
+                --><!--
+                --><span class="left">&nbsp;</span><!--
+                --><span class="content-wrapper"><span class="content">About</span></span><!--
+                --><span class="right">&nbsp;</span><!--
+              --></a><!--
+            --></div><!--
+          --></li> </ul>
+</div>
+<!-- pre-load hover images -->
+<img src="/images/layout/tab-main-hover-left.png" style="display:none">
+<img src="/images/layout/tab-main-hover-content.png" style="display:none">
+<img src="/images/layout/tab-main-hover-right.png" style="display:none">
+<div id="crumb">
+    <span class="location">Location</span>
+    <img src="/images/layout/crumb-separator.png?57927papercut-mf" border="0" class="separator"/>
+
+    <a href="/app?service=page/Dashboard">Dashboard</a>
+    <img src="/images/layout/crumb-separator.png?57927papercut-mf" border="0" class="separator"/>
+
+
+    Dashboard </div>
+<div id="title" class=""> <div id="mf-overlay-title"></div>
+    <h1>
+        <img src="/images/icons3/32x32/control_panel.png?57927papercut-mf" border="0" class="icon32"/>
+        <span title="Dashboard">
+Dashboard
+</span> </h1>
+</div>
+<div id="content-wrapper" class=""> <div id="mf-overlay" >
+    <div id="mf-upsell">
+        <div>For control of Multi-Function Devices check out PaperCut MF</div>
+        <a href="/app?service=direct/1/Dashboard/$Border.$DirectLink$0" class="ui-button ui-state-default" onclick="openUpsellDialog()"><span class="ui-button-text">More Information</span></a> </div>
+</div>
+    <div id="content">
+
+        <div class="pageContent"> <div class="status-messages">
+
+
+
+
+
+
+
+
+        </div>
+
+            <div style="margin-left: -70px;">
+                <script type="text/javascript">
+                    insertScript('/js/pages/Dashboard.js');
+                    insertScript('/js/pages/modules/support-info.js');
+                </script>
+                <link rel="stylesheet" href="/js/jquery/plugins/jquery.jqplot.min.css" type="text/css" media="all" />
+                <div id="gadget-whats-next" class="gadget box gadget-3"> <table class="box-table padded">
+                    <tr>
+                        <td class="box-nw"></td>
+                        <td class="box-n"></td>
+                        <td class="box-ne"></td>
+                    </tr>
+                    <tr>
+                        <td class="box-w"></td>
+                        <td class="box-content">
+                            <div class="header">
+                                <div class="controls">
+                                    <a href="/app?service=direct/1/Dashboard/$DirectLink" class="close"> <div class="ui-state-default ui-corner-all"><span class="ui-icon ui-icon-close"></span></div>
+                                    </a> </div>
+                                <div style="margin-right: 30px;">
+                                    <img src="/images/icons3/24x24/lightbulb_on.png?57927papercut-mf" border="0" alt="" class="icon24"/> <span class="heading">What's Next?</span>
+                                </div>
+                            </div>
+                            <div class="scroll-x">
+                                <ul class="items">
+                                    <!--  if you add items to this and see things not lining up go to style.css and increase the value of
+                                    #gadget-whats-next .items {    width: 2765px; -->
+                                    <li class="item">
+                                        <div class="icon"><img src="/images/icons3/48x48/users_family.png?57927papercut-mf" border="0" alt="" class="icon48"/></div>
+                                        <div class="title">Add some groups</div>
+                                        <div class="desc">User groups can be used to manage initial balances and settings, quotas, access rights and more.</div>
+                                        <div class="action">
+                                            <img src="/images/icons3/16x16/check.png" alt="" class="icon16" />
+                                            <a href="/app?service=page/GroupList">Go to the Groups tab</a> </div>
+                                    </li>
+                                    <li class="item">
+                                        <div class="icon"><img src="/images/icons3/48x48/printer.png?57927papercut-mf" border="0" alt="" class="icon48"/></div>
+                                        <div class="title">Configure printer costs</div>
+                                        <div class="desc">Charge more for your expensive-to-run printers and less for your cheaper ones. Provide discounts for duplex and grayscale printing.</div>
+                                        <div class="action">
+                                            <img src="/images/icons3/16x16/check.png" alt="" class="icon16" />
+                                            <a href="/app?service=page/PrinterList">Go to the Printers tab</a> </div>
+                                    </li>
+                                    <li class="item">
+                                        <div class="icon"><img src="/images/icons3/48x48/mobile.png?57927papercut-mf" border="0" alt="" class="icon48"/></div>
+                                        <div class="title">Set up Mobile &amp; BYOD printing</div>
+                                        <div class="desc">Plan your mobile device print management strategy.</div>
+                                        <div class="action">
+                                            <img src="/images/icons3/16x16/check.png" alt="" class="icon16" />
+                                            <a href="/app?service=page/OptionsMobile">Go to Enable Printing -&gt; Mobile &amp; BYOD</a> </div>
+                                    </li>
+                                    <li class="item">
+                                        <div class="icon"><img src="/images/icons3/48x48/mail_server.png?57927papercut-mf" border="0" alt="" class="icon48"/></div>
+                                        <div class="title">Set up email notifications</div>
+                                        <div class="desc">Get notified when printers error. Email users when their balance is low.</div>
+                                        <div class="action">
+                                            <img src="/images/icons3/16x16/check.png" alt="" class="icon16" />
+                                            <a href="/app?service=page/OptionsNotify">Configure notifications at Options -&gt; Notifications</a> </div>
+                                    </li>
+                                    <li class="item">
+                                        <div class="icon"><img src="/images/icons3/48x48/health_monitor.png?57927papercut-mf" border="0" alt="" class="icon48"/></div>
+                                        <div class="title">Maximize your printing uptime</div>
+                                        <div class="desc">Use your existing monitoring software to track the health of your print environment, enabling preemptive maintenance.</div>
+                                        <div class="action">
+                                            <img src="/images/icons3/16x16/check.png" alt="" class="icon16"/>
+
+                                            <a href="/content/help/common/topics/tools-monitor-system-health-api.html?language=en" class="help" target="_blank">User manual - Monitoring system health</a> </div>
+                                    </li>
+                                    <li class="item">
+                                        <div class="icon"><img src="/images/icons3/48x48/hand_paper.png?57927papercut-mf" border="0" alt="" class="icon48"/></div>
+                                        <div class="title">Set up scheduled reports</div>
+                                        <div class="desc">Get reports delivered direct to your inbox.</div>
+                                        <div class="action">
+                                            <img src="/images/icons3/16x16/check.png" alt="" class="icon16" />
+                                            <a href="/app?service=page/ReportSchedule">Go to Reports -&gt; Schedule / Email Reports</a> </div>
+                                    </li>
+                                    <li class="item">
+                                        <div class="icon"><img src="/images/icons3/48x48/preferences.png?57927papercut-mf" border="0" alt="" class="icon48"/></div>
+                                        <div class="title">Discover the top 10 hidden features</div>
+                                        <div class="desc">Some of the most useful features are the ones you can't see. Learn about the top 10 hidden features in the user manual.</div>
+                                        <div class="action">
+                                            <img src="/images/icons3/16x16/check.png" alt="" class="icon16" />
+
+                                            <a href="/content/help/common/topics/feature-top-ten.html?language=en" class="help" target="_blank">User manual - Top 10 hidden features</a> </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="footer" style="display: none;">
+                                <div class="controls">
+                                    <button class="prev"><span class="ui-icon" /></button>
+                                    <button class="next"><span class="ui-icon" /></button>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="box-e"></td>
+                    </tr>
+                    <tr>
+                        <td class="box-sw"></td>
+                        <td class="box-s"></td>
+                        <td class="box-se"></td>
+                    </tr>
+                </table>
+                </div> <div class="gadget-container">
+                <div class="gadget-1">
+                    <div id="gadget-system-status" class="gadget">
+                        <div class="box-white">
+                            <table class="box-table">
+                                <tr>
+                                    <td class="box-nw-title"></td>
+                                    <td class="box-n-title">System Status<td class="box-ne-title"></td>
+
+                                </tr>
+                                <tr>
+                                    <td class="box-w"></td>
+                                    <td class="box-content">
+                                        <table class="system-status">
+                                            <tr style="height: 150px;"><td>&nbsp;</td></tr>
+                                        </table>
+                                    </td>
+                                    <td class="box-e"></td>
+                                </tr>
+                                <tr>
+                                    <td class="box-sw"></td>
+                                    <td class="box-s"></td>
+                                    <td class="box-se"></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="gadget-environmental-impact" class="gadget">
+                        <div class="box-white">
+                            <table class="box-table">
+                                <tr>
+                                    <td class="box-nw-title"></td>
+                                    <td class="box-n-title">Environmental Impact</td>
+                                    <td class="box-ne-title"></td>
+                                </tr>
+                                <tr>
+                                    <td class="box-w"></td>
+                                    <td class="box-content">
+                                        <ul class="env-impact-stats">
+                                            <li class="trees">
+                                                <img src="/images/icons3/16x16/tree.png?57927papercut-mf" border="0" alt="" class="icon16"/> <span class="value"></span>
+                                            </li>
+                                            <li class="co2">
+                                                <img src="/images/icons3/16x16/data.png?57927papercut-mf" border="0" alt="" class="icon16"/> <span class="value"></span>&nbsp;of CO<sub>2</sub></li>
+                                            <li class="energy">
+                                                <img src="/images/icons3/16x16/lightbulb_on.png?57927papercut-mf" border="0" alt="" class="icon16"/> <span class="value"></span>&nbsp;running a 60W bulb</li>
+                                            <li class="since-date">
+                                                Since&nbsp;<span class="value"></span>
+                                            </li>
+                                        </ul>
+                                    </td>
+                                    <td class="box-e"></td>
+                                </tr>
+                                <tr>
+                                    <td class="box-sw"></td>
+                                    <td class="box-s"></td>
+                                    <td class="box-se"></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="gadget-news" class="gadget"> <div class="box-white">
+                        <table class="box-table">
+                            <tr>
+                                <td class="box-nw-title"></td>
+                                <td class="box-n-title">News</td>
+                                <td class="box-ne-title"></td>
+                            </tr>
+                            <tr>
+                                <td class="box-w"></td>
+                                <td class="box-content">
+                                    <span data-src="https://www.papercut.com/products/mf/dashboard-news/?ver-major=20&amp;ver-minor=1&amp;ver-patch=4&amp;ver-suffix=&amp;ver-build=57927&amp;install-date=2023-08-12&amp;edition=mf&amp;app-name=PaperCut%20MF%20&amp;org=Trial%20License&amp;org-type=&amp;exp-date=2023-09-21&amp;modules=print&amp;server-uid=fe19afe5-5077-4551-a82b-4eed0260c0cb&amp;licensed-users=-1&amp;purchased-users=0&amp;licensed-release-stations=-1&amp;license-id=&amp;support-exp-date=&amp;support-current=N&amp;central-reports-servers=0&amp;db-type=Derby&amp;db-version=Apache%20Derby%2010.14.2.0%20-%20%281828579%29&amp;os=Linux&amp;os-version=Ubuntu%2022.04.2%20LTS&amp;os-arch=amd64&amp;os-host=c4e7d9722c75&amp;runtime-version=11.0.9.1%2B12-LTS&amp;runtime-arch=amd64&amp;sys-max-memory-mb=440&amp;sys-cpus=2&amp;sys-printers=0&amp;sys-unique-network-printers=0&amp;sys-unique-local-printers=0&amp;direct-printers=0&amp;direct-virtual-printers=0&amp;direct-print-queues=0&amp;direct-virtual-print-queues=0&amp;direct-max-print-queues=0&amp;sys-devices=0&amp;sys-virtual=0&amp;sys-network-proxy-address=&amp;sys-network-proxy-port=0&amp;sys-network-proxy-required-auth=false&amp;syslocale=en_US&amp;user-count=5&amp;print-logs=-1&amp;print-logs-last-week=0&amp;active-shared-accounts=0&amp;gcp-printers=0&amp;etp-printers=0&amp;webprint-printers=0&amp;watermarking-header=0&amp;watermarking-footer=0&amp;watermarking-fullpage=0&amp;watermarking-custom=0&amp;block-web-release-on-printer-error=false&amp;block-release-on-error-devices=0&amp;archiving-printers=0&amp;spool-file-encryption=false&amp;script-printers=0&amp;webcash-enabled=false&amp;rel-stations=0&amp;daily-reports=0&amp;weekly-reports=0&amp;fortnightly-reports=0&amp;monthly-reports=0&amp;quarterly-reports=0&amp;yearly-reports=0&amp;data-integrations=0&amp;data-integration-export-types=&amp;scan-actions=1&amp;scan-actions-email=1&amp;scan-actions-folder=0&amp;scan-actions-cloud=0&amp;scan-actions-ocr=0&amp;scan-actions-blank-page-splitting=0&amp;scan-actions-blank-page-removal=0&amp;scan-actions-n-page-splitting=0&amp;scan-actions-deskew=0&amp;scan-actions-despeckle=0&amp;int-scan-devices=0&amp;int-scan-total-jobs=0&amp;int-scan-total-jobs-auto-paper-size=0&amp;language-selection-devices=0&amp;status=VALID&amp;monitored-health-simple-minutes-ago=-1&amp;monitored-health-stats-minutes-ago=-1&amp;monitored-health-individual-printer-device-minutes-ago=-1&amp;monitored-health-recent-jobs-minutes-ago=-1&amp;monitored-health-advanced-minutes-ago=-1&amp;webprint-sandbox-servers=0&amp;server-uptime=32&amp;print-release-from-devices-logs=0&amp;print-release-from-external-logs=0&amp;print-release-from-web-logs=0&amp;print-release-from-mobile-logs=0&amp;held-page-count=0&amp;released-pages-count=0&amp;secondary-servers=0&amp;mobility-print-servers=0&amp;CA-signed=false&amp;pages-converted-grayscale-settings=0&amp;sheets-saved-duplex-settings=0&amp;pages-converted-grayscale-chps=0&amp;sheets-saved-duplex-chps=0&amp;primary-sync-source=UNIX_PAM&amp;secondary-sync-source=NONE&amp;release-station-acct-sel-jobs=0&amp;release-station-acct-sel-mobility-jobs=0&amp;active-users-week=0&amp;active-users-month=0&amp;active-users-3-months=0&amp;active-users-6-months=0&amp;user-sync-win-ad-upn=false&amp;user-sync-gsuite-username-with-domain=false&amp;script-devices=0&amp;bulk-device-creation-jobs-run=0&amp;bulk-device-creation-jobs-devices-created=0&amp;high-availability=false&amp;fd-csv-all=0&amp;fd-device-creation-all=0&amp;payment-gateway-topup-plugin=&amp;payment-gateway-topup-requests=0" id="gadget-news-content"></span> </td>
+                                <td class="box-e"></td>
+                            </tr>
+                            <tr>
+                                <td class="box-sw"></td>
+                                <td class="box-s"></td>
+                                <td class="box-se"></td>
+                            </tr>
+                        </table>
+                    </div>
+                    </div> </div>
+                <div class="gadget-2">
+
+                    <div id="gadget-pages-printed" class="gadget">
+                        <div id="gadget-pages-printed-box" class="box-white">
+                            <table class="box-table">
+                                <tr>
+                                    <td class="box-nw-title"></td>
+                                    <td class="box-n-title">Pages Printed (per day, last 30 days)</td>
+                                    <td class="box-ne-title"></td>
+                                </tr>
+                                <tr>
+                                    <td class="box-w"></td>
+                                    <td class="box-content">
+                                        <div style="margin: 15px;">
+                                            <div id="gadget-pages-printed-chart" style="height:200px; width:470px;"/>
+                                        </div>
+                                    </td>
+                                    <td class="box-e"></td>
+                                </tr>
+                                <tr>
+                                    <td class="box-sw"></td>
+                                    <td class="box-s"></td>
+                                    <td class="box-se"></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="gadget-printer-status" class="gadget">
+                        <input name="printer-status-refresh-interval" id="printer-status-refresh-interval" type="hidden" value="20"></input> <div class="box-white">
+                        <table class="box-table">
+                            <tr>
+                                <td class="box-nw-title"></td>
+                                <td class="box-n-title">Printer Status</td>
+                                <td class="box-ne-title"></td>
+                            </tr>
+                            <tr>
+                                <td class="box-w"></td>
+                                <td class="box-content">
+                                    <div class="printer-status-wrapper">
+                                        <table class="printer-status" cellspacing="0">
+                                        </table>
+                                    </div>
+                                </td>
+                                <td class="box-e"></td>
+                            </tr>
+                            <tr>
+                                <td class="box-sw"></td>
+                                <td class="box-s"></td>
+                                <td class="box-se"></td>
+                            </tr>
+                        </table>
+                    </div>
+                    </div>
+
+                    <div id="gadget-rt-activity" class="gadget gadget-2">
+                        <div class="box-white">
+                            <table class="box-table">
+                                <tr>
+                                    <td class="box-nw-title"></td>
+                                    <td class="box-n-title">Real-time Activity</td>
+                                    <td class="box-ne-title"></td>
+                                </tr>
+                                <tr>
+                                    <td class="box-w"></td>
+                                    <td class="box-content">
+                                        <div id="gadget-rt-activity-content">
+                                            <table cellspacing="0">
+                                                <tr>
+                                                    <td>&nbsp;</td>
+                                                    <td>&nbsp;</td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        <div id="gadget-rt-controls">
+                                            <a href="javascript:void(0);" id="gadget-rt-expand">Expand</a> |
+                                            <a href="javascript:void(0);" id="gadget-rt-pause">Pause</a>
+                                            <a href="javascript:void(0);" id="gadget-rt-resume" style="display:none;color:#FF0000">Resume</a>
+                                        </div>
+                                    </td>
+                                    <td class="box-e"></td>
+                                </tr>
+                                <tr>
+                                    <td class="box-sw"></td>
+                                    <td class="box-s"></td>
+                                    <td class="box-se"></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+                <hr class="clear" />
+            </div>
+                <div class="support-information-prefetch"></div>
+            </div>
+            <div id="cssCheck" style="display:none"/>
+
+        </div> </div>
+</div> <div id="footer">
+    <div class="product-details">
+        <div class="logo"><img src="/images/footer-logo2.png?57927papercut-mf" border="0"/></div>
+
+        <div class="text">
+            <span class="product"><a href="https://www.papercut.com/products/mf/?clicked=app-footer">PaperCut MF</a></span>
+
+            <span>20.1.4</span>
+            <span>(Build 57927</span>
+            <span>2021-08-26</span>)
+            <div>
+                Print Management Software</div>
+            <div element="div" class="licensed-to">
+
+                <span class="licensed-to-org">PaperCut MF  trial license, 39 days remaining.</span> </div>
+            <div class="copyright">
+                &copy; Copyright 1999-2023. PaperCut Software International Pty Ltd. All rights reserved. </div>
+        </div>
+    </div>
+</div>
+
+<script id="in-product-js" type="text/javascript">
+    setTimeout(function () {
+      insertInProductScript('https://cdn1.papercut.com/in-product/app.js.gz');
+    });
+</script>
+</body>
+</html>
+<!-- Render time: ~ 1470 ms -->
+

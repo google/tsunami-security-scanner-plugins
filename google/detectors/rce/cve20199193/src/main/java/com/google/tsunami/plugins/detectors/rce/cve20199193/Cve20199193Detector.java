@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -100,28 +101,12 @@ public final class Cve20199193Detector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    var endpoint = networkService.getNetworkEndpoint();
-    String host;
-    if (endpoint.hasHostname()) {
-      host = endpoint.getHostname().getName();
-    } else if (endpoint.hasIpAddress()) {
-      host = endpoint.getIpAddress().getAddress();
-    } else {
-      logger.atSevere().log("Need IP or hostname!");
-      return false;
-    }
-
-    int port;
-    if (endpoint.hasPort()) {
-      port = endpoint.getPort().getPortNumber();
-    } else {
-      logger.atWarning().log("No port given, using default port (5432)");
-      port = 5432;
-    }
-
     boolean result = false;
     try {
-      var url = String.format("jdbc:postgresql://%s:%d/postgres", host, port);
+      var url =
+          String.format(
+              "jdbc:postgresql://%s/postgres",
+              NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint()));
       logger.atInfo().log("url: %s", url);
       Connection conn = connectionProvider.getConnection(url, USER, PASSWORD);
 
