@@ -103,8 +103,10 @@ public final class Axis2CredentialTester extends CredentialTester {
     return canAcceptByCustomFingerprint;
   }
 
-  // Checks if the response body contains elements of a axis2 home page - custom
-  // fingerprinting phase
+  /**
+   * Checks if the response body contains elements of a axis2 home page - custom fingerprinting
+   * phase
+   */
   private static boolean bodyContainsAxis2Elements(String responseBody) {
     Document doc = Jsoup.parse(responseBody);
     String title = doc.title();
@@ -117,8 +119,8 @@ public final class Axis2CredentialTester extends CredentialTester {
     }
   }
 
-  // Checks if the response body contains title for successful authentication
   private static boolean bodyContainsAxis2AdminElements(String responseBody) {
+    // Checks if the response body contains title for successful authentication
     return Ascii.toLowerCase(responseBody).contains(AXIS_LOGIN_TITLE);
   }
 
@@ -126,11 +128,14 @@ public final class Axis2CredentialTester extends CredentialTester {
   public ImmutableList<TestCredential> testValidCredentials(
       NetworkService networkService, List<TestCredential> credentials) {
 
-    // workaround because nmap identifies the service as http
+    /**
+     * Added default credentials for Axis2 as reported within the documentation
+     * https://axis.apache.org/axis2/java/core/docs/webadminguide.html#login
+     */
     TestCredential defaultUser = TestCredential.create(AXIS_USERNAME, Optional.of(AXIS_PASSWORD));
     if (isAxis2Accessible(networkService, defaultUser)) return ImmutableList.of(defaultUser);
 
-    // Axis2 only supoports a single user
+    // Returning only first match since Axis2 supports a single user
     return credentials.stream()
         .filter(cred -> isAxis2Accessible(networkService, cred))
         .findFirst()
@@ -162,7 +167,8 @@ public final class Axis2CredentialTester extends CredentialTester {
   /*
    * setFollowRedirects(true) in order to manage different behaviors of Axis2
    * Axis2 1.7.3 to 1.8.2 (latest) returns 302 to index when credentials are ok, to welcome otherwise
-   * Axis2 before 1.7.3 returns 200 in both case, with different title
+   * Axis2 before 1.7.3 returns 200 in both cases
+   * All versions contain the same title after the redirect
    */
   private HttpResponse sendRequestWithCredentials(String url, TestCredential credential)
       throws IOException {
