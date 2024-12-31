@@ -42,7 +42,7 @@ startSpark() {
   pushd "${SPARK_APP_PATH}" >/dev/null
     # if version-python3 exists then we have a spark container with python3
     # otherwise we must install python3
-      if g "apache/spark:${version}-python3" 2>/dev/null ; then
+      if docker manifest inspect "apache/spark:${version}-python3" 2>/dev/null ; then
         SPARK_VERSION="${version}-python3" docker compose up -d
         sleep 10
       else
