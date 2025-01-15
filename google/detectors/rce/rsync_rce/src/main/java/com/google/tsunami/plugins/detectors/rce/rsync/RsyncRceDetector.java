@@ -46,12 +46,16 @@ import javax.inject.Inject;
     type = PluginType.VULN_DETECTION,
     name = "RsyncRceDetector",
     version = "0.1",
-    description = "Detects rsync RCE.",
+    description = "Detects rsync RCE CVE-2024-12084.",
     author = "Tsunami Team (tsunami-dev@google.com)",
     bootstrapModule = RsyncRceDetectorBootstrapModule.class)
 @ForServiceName({"rsync"})
 public final class RsyncRceDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+  // WARNING: This is false-positive prone until the information of the CVE is
+  // fully disclosed. This relies on a rsync commit at
+  // https://github.com/RsyncProject/rsync/commit/536ae3f4efbcd95bee1f9794bbeceb50ba5f0dba
+  // to be ported by OS vendors from upstream.
   private static final Pattern VULNERABLE_BANNER_PATTERN =
       Pattern.compile("@RSYNCD:\\s31.0(\\s\\w+)+");
 
