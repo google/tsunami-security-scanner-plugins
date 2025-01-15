@@ -97,7 +97,7 @@ public class Cve202233891DetectorWithoutCallbackServerTest {
     // It is a blind RCE, body is not important. This is a part of a valid response.
     mockWebServer.enqueue(
         new MockResponse()
-            .setBodyDelay(5, SECONDS)
+            .setBodyDelay(15, SECONDS)
             .setResponseCode(403)
             .setBody(
                 "<tr><th>SERVLET:</th><td>org.apache.spark.ui.JettyUtils$$anon$1-7439513f</td></tr>\n"));
