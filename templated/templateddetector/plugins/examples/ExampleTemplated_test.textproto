@@ -1,0 +1,24 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ExampleTemplated"
+
+  # Important note: This plugin is used for unit testing. Running tests for this
+  # plugin should never be disabled.
+  disabled: false
+}
+
+tests: {
+  name: "always_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+      }
+    ]
+  }
+}
