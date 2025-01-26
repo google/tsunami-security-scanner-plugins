@@ -32,9 +32,12 @@ import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.TargetInfo;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.List;
 import javax.inject.Inject;
+import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,27 +55,17 @@ public final class CredentialsDisclosureInGrafanaZabbixIntegrationDetectorTest {
 
   private MockWebServer mockGrafanaService;
 
-  private final String disclosedCredentialGrafanaLoginResponse;
-  private final String secureGrafanaLoginResponse;
-  private final String disclosedCredentialGrafanaWelcomeResponse;
-  private final String secureGrafanaWelcomeResponse;
+  private final String disclosedCredentialGrafanaResponse;
+  private final String secureGrafanaResponse;
 
   public CredentialsDisclosureInGrafanaZabbixIntegrationDetectorTest() throws IOException {
-    this.disclosedCredentialGrafanaLoginResponse =
+    disclosedCredentialGrafanaResponse =
         Resources.toString(
-            Resources.getResource(this.getClass(), "disclosedCredentialGrafanaLoginResponse.html"),
+            Resources.getResource(this.getClass(), "disclosedCredentialGrafanaResponse.html"),
             UTF_8);
-    this.secureGrafanaLoginResponse =
+    secureGrafanaResponse =
         Resources.toString(
-            Resources.getResource(this.getClass(), "secureGrafanaLoginResponse.html"), UTF_8);
-    this.disclosedCredentialGrafanaWelcomeResponse =
-        Resources.toString(
-            Resources.getResource(
-                this.getClass(), "disclosedCredentialGrafanaWelcomeResponse.html"),
-            UTF_8);
-    this.secureGrafanaWelcomeResponse =
-        Resources.toString(
-            Resources.getResource(this.getClass(), "secureGrafanaWelcomeResponse.html"), UTF_8);
+            Resources.getResource(this.getClass(), "secureGrafanaResponse.html"), UTF_8);
   }
 
   @Before
@@ -95,29 +88,20 @@ public final class CredentialsDisclosureInGrafanaZabbixIntegrationDetectorTest {
   @Test
   public void detect_whenVulnerable_reportsVulnerability()
       throws IOException, InterruptedException {
-    // response with password disclosed
-    mockGrafanaService.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setBody(disclosedCredentialGrafanaLoginResponse));
-    mockGrafanaService.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setBody(disclosedCredentialGrafanaLoginResponse));
-    mockGrafanaService.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setBody(disclosedCredentialGrafanaWelcomeResponse));
-    mockGrafanaService.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setBody(disclosedCredentialGrafanaWelcomeResponse));
+
+    List<String> vulnerablePaths =
+        CredentialsDisclosureInGrafanaZabbixIntegrationDetector.VULNERABLE_PATHS;
+
+    mockGrafanaService.setDispatcher(
+        new EndpointDispatcher(disclosedCredentialGrafanaResponse, vulnerablePaths));
 
     NetworkService service = TestHelper.createGrafanaService(mockGrafanaService);
 
     TargetInfo target = TestHelper.buildTargetInfo(forHostname(mockGrafanaService.getHostName()));
 
     DetectionReportList detectionReports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(mockGrafanaService.getRequestCount()).isEqualTo(1);
 
     // The plugin should report the vuln
     assertThat(detectionReports.getDetectionReportsList())
@@ -128,22 +112,11 @@ public final class CredentialsDisclosureInGrafanaZabbixIntegrationDetectorTest {
   public void detect_whenNotVulnerable_doesNotReportVulnerability()
       throws IOException, InterruptedException {
     // response without password disclosed
-    mockGrafanaService.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setBody(secureGrafanaLoginResponse));
-    mockGrafanaService.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setBody(secureGrafanaLoginResponse));
-    mockGrafanaService.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setBody(secureGrafanaWelcomeResponse));
-    mockGrafanaService.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setBody(secureGrafanaWelcomeResponse));
+    List<String> vulnerablePaths =
+        CredentialsDisclosureInGrafanaZabbixIntegrationDetector.VULNERABLE_PATHS;
+
+    mockGrafanaService.setDispatcher(
+        new EndpointDispatcher(secureGrafanaResponse, vulnerablePaths));
 
     NetworkService service = TestHelper.createGrafanaService(mockGrafanaService);
 
@@ -151,7 +124,34 @@ public final class CredentialsDisclosureInGrafanaZabbixIntegrationDetectorTest {
         detector.detect(
             TestHelper.buildTargetInfo(forHostname(mockGrafanaService.getHostName())),
             ImmutableList.of(service));
+
+    // since the vulnerability is not present all the VULNEREABLE_PATHS should be tried
+    assertThat(mockGrafanaService.getRequestCount()).isEqualTo(vulnerablePaths.size());
+
     // the plugin should not report the vuln
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  private final class EndpointDispatcher extends Dispatcher {
+    private final String response;
+    private final List<String> registeredPaths;
+
+    EndpointDispatcher(final String response, final List<String> registeredPaths) {
+      this.response = response;
+      this.registeredPaths = registeredPaths;
+    }
+
+    @Override
+    public MockResponse dispatch(RecordedRequest recordedRequest) {
+      // remove the first "/"
+      String path = recordedRequest.getPath().substring(1);
+
+      // Return BAD_REQUEST if path is not in the registered list
+      if (!registeredPaths.contains(path)) {
+        return new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+      }
+
+      return new MockResponse().setBody(response).setResponseCode(HttpStatus.OK.code());
+    }
   }
 }

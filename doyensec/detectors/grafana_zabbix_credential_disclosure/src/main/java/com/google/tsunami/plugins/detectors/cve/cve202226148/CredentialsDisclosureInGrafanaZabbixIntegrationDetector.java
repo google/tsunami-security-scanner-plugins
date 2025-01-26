@@ -98,6 +98,11 @@ public final class CredentialsDisclosureInGrafanaZabbixIntegrationDetector imple
   private static final Pattern ZABBIX_PASSWORD_PATTERN =
       Pattern.compile("\"jsonData\"\\s*:\\s*\\{.*?\"password\"\\s*:\\s*\"");
 
+  // this are the potential path where the Zabbix password could be disclosed
+  @VisibleForTesting
+  static final List<String> VULNERABLE_PATHS =
+      List.of("/login?redirect=%2F", "/login", "/", "/?orgId=1");
+
   private static final String GRAFANA_SERVICE_NAME = "Grafana";
 
   @Inject
@@ -151,10 +156,7 @@ public final class CredentialsDisclosureInGrafanaZabbixIntegrationDetector imple
     </html>
   */
   private boolean isServiceVulnerable(NetworkService networkService) {
-    // this are the potential path where the Zabbix password could be disclosed
-    List<String> paths = List.of("/login?redirect=%2F", "/login", "/", "/?orgId=1");
-
-    for (String path : paths) {
+    for (String path : VULNERABLE_PATHS) {
       String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + path;
 
       logger.atInfo().log("Checking Grafana endpoint '%s'", targetUri);
