@@ -6,6 +6,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
@@ -119,6 +120,16 @@ public final class TemplatedDetector implements VulnDetector {
 
   private final boolean dispatchAction(
       NetworkService service, PluginAction action, Environment environment) {
+    // if the action type is HTTP, we need to ensure that we are dealing with an HTTP-aware service.
+    if (action.getAnyActionCase() == PluginAction.AnyActionCase.HTTP_REQUEST) {
+      if (!NetworkServiceUtils.isWebService(service)) {
+        logger.atInfo().log(
+            "Service on port %d is not a web service, skipping action '%s'",
+            service.getNetworkEndpoint().getPort().getPortNumber(), action.getName());
+        return false;
+      }
+    }
+
     return getRunnerForAction(action).run(service, action, environment);
   }
 
