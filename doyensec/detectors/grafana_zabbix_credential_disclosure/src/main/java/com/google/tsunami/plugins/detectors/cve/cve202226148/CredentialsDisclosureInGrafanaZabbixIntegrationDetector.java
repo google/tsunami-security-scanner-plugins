@@ -98,7 +98,7 @@ public final class CredentialsDisclosureInGrafanaZabbixIntegrationDetector imple
   private static final Pattern ZABBIX_PASSWORD_PATTERN =
       Pattern.compile("\"jsonData\"\\s*:\\s*\\{.*?\"password\"\\s*:\\s*\"");
 
-  // this are the potential path where the Zabbix password could be disclosed
+  // these are the potential paths where the Zabbix password could be disclosed
   @VisibleForTesting
   static final List<String> VULNERABLE_PATHS =
       List.of("/login?redirect=%2F", "/login", "/", "/?orgId=1");
