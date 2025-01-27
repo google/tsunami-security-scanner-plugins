@@ -51,12 +51,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 
-/** A Tsunami plugin that detects Zabbix password disclousure in Grafana web services. */
+/** A Tsunami plugin that detects Zabbix password disclosure in Grafana web services. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "CredentialsDisclosureInGrafanaZabbixIntegrationDetector",
     version = "0.1",
-    description = "This plugin detects Zabbix password disclousure in Grafana web services.",
+    description = "This plugin detects Zabbix password disclosure in Grafana web services.",
     author = "Alessandro Versari (alessandroversari1@gmail.com)",
     bootstrapModule = CredentialsDisclosureInGrafanaZabbixIntegrationDetectorBootstrapModule.class)
 public final class CredentialsDisclosureInGrafanaZabbixIntegrationDetector implements VulnDetector {

@@ -125,7 +125,7 @@ public final class CredentialsDisclosureInGrafanaZabbixIntegrationDetectorTest {
             TestHelper.buildTargetInfo(forHostname(mockGrafanaService.getHostName())),
             ImmutableList.of(service));
 
-    // since the vulnerability is not present all the VULNEREABLE_PATHS should be tried
+    // since the vulnerability is not present all the VULNERABLE_PATHS should be tried
     assertThat(mockGrafanaService.getRequestCount()).isEqualTo(vulnerablePaths.size());
 
     // the plugin should not report the vuln
