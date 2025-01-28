@@ -62,7 +62,7 @@ public final class Cve202233891VulnDetector implements VulnDetector {
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
 
-  private static final short SLEEP_CMD_WAIT_DURATION_SECONDS = 5;
+  private static final short SLEEP_CMD_WAIT_DURATION_SECONDS = 15;
 
   @Inject
   Cve202233891VulnDetector(
@@ -121,7 +121,7 @@ public final class Cve202233891VulnDetector implements VulnDetector {
       logger.atInfo().log("Callback server is not available!");
       Stopwatch stopwatch = Stopwatch.createUnstarted();
       String targetUri =
-          NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "?doAs=`sleep 5`";
+          NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "?doAs=`sleep 15`";
       var request = HttpRequest.get(targetUri).withEmptyHeaders().build();
       try {
         stopwatch.start();
