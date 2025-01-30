@@ -40,7 +40,7 @@ docker login container-registry.oracle.com
 docker pull container-registry.oracle.com/middleware/weblogic:12.2.1.4
 
 # Create a temporary container
-docker create --name weblogic-temp image-name
+docker create --name weblogic-temp container-registry.oracle.com/middleware/weblogic:12.2.1.4
 
 # Pull the library
 docker cp weblogic-temp:/u01/oracle/wlserver/server/lib/wlclient.jar .
