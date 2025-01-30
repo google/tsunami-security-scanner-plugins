@@ -77,18 +77,9 @@ if [[ ! -d "${GIT_REPO}" ]] ; then
   git clone https://github.com/craftcms/cms "${GIT_REPO}"
 fi
 
-# Read all released CraftCMS 3 versions to be fingerprinted.
-readarray -t ALL_VERSIONS_3 < "${SCRIPT_PATH}/versions3.txt"
-
-# Read all released CraftCMS 4 and 5 versions to be fingerprinted.
+# Read all released CraftCMS versions to be fingerprinted.
 readarray -t ALL_VERSIONS < "${SCRIPT_PATH}/versions.txt"
 
-# Version 3 uses different .env file format.
-for craftcms_version in "${ALL_VERSIONS_3[@]}"; do
-  CreateFingerprintForCraftCMS "${craftcms_version}" "env_3"
-done
-
-# Version 4 and 5 uses different .env file format.
 for craftcms_version in "${ALL_VERSIONS[@]}"; do
   CreateFingerprintForCraftCMS "${craftcms_version}" "env"
 done
