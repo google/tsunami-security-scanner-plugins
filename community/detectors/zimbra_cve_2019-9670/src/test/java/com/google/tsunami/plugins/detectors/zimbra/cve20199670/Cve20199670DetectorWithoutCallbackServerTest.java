@@ -34,6 +34,7 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
+import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -44,9 +45,7 @@ import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Arrays;
 import javax.inject.Inject;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -56,33 +55,28 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Unit tests for {@link Cve20199670DetectorTest}. */
+/** Unit tests for {@link Cve20199670DetectorWithoutCallbackServerTest}. */
 @RunWith(JUnit4.class)
-public final class Cve20199670DetectorTest {
+public final class Cve20199670DetectorWithoutCallbackServerTest {
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
   @Inject private Cve20199670Detector detector;
 
-  private final SecureRandom testSecureRandom =
-      new SecureRandom() {
-        @Override
-        public void nextBytes(byte[] bytes) {
-          Arrays.fill(bytes, (byte) 0xFF);
-        }
-      };
-
   private MockWebServer mockZimbraService;
 
   @Before
   public void setUp() throws IOException {
-
     mockZimbraService = new MockWebServer();
     mockZimbraService.start();
 
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
+            FakePayloadGeneratorModule.builder()
+                // Here the callback server is not needed
+                .setCallbackServer(null)
+                .build(),
             new Cve20199670DetectorBootstrapModule())
         .injectMembers(this);
   }
@@ -93,13 +87,13 @@ public final class Cve20199670DetectorTest {
   }
 
   @Test
-  public void detect_whenVulnerable_reportsVulnerability() throws IOException {
+  public void detect_whenVulnerableAndTcsNotAvailable_reportsVulnerability() throws IOException {
     // Zimbra is detected
     mockZimbraService.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(ZIMBRA_FINGERPRING));
     mockZimbraService.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
 
-    // Detects XXE
+    // Detects XXE with reflected payload, as no TCS is available
     mockZimbraService.enqueue(
         new MockResponse()
             .setResponseCode(HttpStatus.SERVICE_UNAVAILABLE.code())
@@ -142,7 +136,8 @@ public final class Cve20199670DetectorTest {
   }
 
   @Test
-  public void detect_whenNotVulnerable_doesNotReportVulnerability() throws IOException {
+  public void detect_whenNotVulnerableAndTcsNotAvailable_doesNotReportVulnerability()
+      throws IOException {
     // Zimbra is detected
     mockZimbraService.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(ZIMBRA_FINGERPRING));

