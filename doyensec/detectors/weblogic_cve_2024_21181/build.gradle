@@ -1,9 +1,8 @@
 plugins {
     id 'java-library'
-    id 'com.gradleup.shadow' version "9.0.0-beta2"
 }
 
-description = 'Weblogic T3/IIOP Deserialization (CVE-2024-21181)'
+description = 'WebLogic IIOP Unsafe Deserialization (CVE-2024-21181)'
 group = 'com.google.tsunami'
 version = '0.0.1-SNAPSHOT'
 
@@ -53,26 +52,23 @@ ext {
     truthVersion = '1.0.1'
     guiceVersion = '4.2.3'
     guavaVersion = '33.3.1-jre'
+    autoValueVersion = '1.11.0'
 }
 
 dependencies {
-    // Oracle WebLogic libs
-    if (new File("./libs/wlclient.jar").exists()) {
-        implementation files("libs/wlclient.jar")
-    } else {
-       println("WARNING: The plugin is being compiled without the Oracle WebLogic client library, therefore it will not be able to detect the vulnerability.")
-       println("Read the README on how to get it.")
-    }
+    implementation      "com.google.guava:guava:${guavaVersion}"
+    implementation      "com.google.tsunami:tsunami-common:${tsunamiVersion}"
+    implementation      "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
+    implementation      "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
+    implementation      "com.google.inject:guice:${guiceVersion}"
+    compileOnly         "com.google.auto.value:auto-value-annotations:${autoValueVersion}"
+    annotationProcessor "com.google.auto.value:auto-value:${autoValueVersion}"
 
-    // Tsunami libs
-    // Note: 'shadow' means that the libraries are linked but not included in the shadowJar
-    shadow "com.google.guava:guava:${guavaVersion}"
-    shadow "com.google.tsunami:tsunami-common:${tsunamiVersion}"
-    shadow "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
-    shadow "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
-    shadow "com.google.inject:guice:${guiceVersion}"
-}
-
-tasks.shadowJar {
-    setProperty("zip64", true)
+    testImplementation "junit:junit:${junitVersion}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "com.google.inject:guice:${guiceVersion}"
+    testImplementation "com.google.truth:truth:${truthVersion}"
+    testImplementation "com.google.inject.extensions:guice-testlib:${guiceVersion}"
+    testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
+    testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"
 }

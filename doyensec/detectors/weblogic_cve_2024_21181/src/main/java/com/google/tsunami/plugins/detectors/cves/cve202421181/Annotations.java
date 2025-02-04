@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Google LLC
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.google.tsunami.plugins.detectors.cves.cve202421181;
 
-import com.google.tsunami.plugin.PluginBootstrapModule;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
 
-/** A Guice module that bootstraps the {@link WeblogicUnsafeDeserialization}. */
-public final class WeblogicUnsafeDeserializationBootstrapModule extends PluginBootstrapModule {
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  @Override
-  protected void configurePlugin() {
-    registerPlugin(WeblogicUnsafeDeserialization.class);
-  }
+/** Annotation for {@link WeblogicUnsafeDeserializationDetector}. */
+final class Annotations {
+  @Qualifier
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({PARAMETER, METHOD, FIELD})
+  @interface OobSleepDuration {}
+
+  private Annotations() {}
 }
