@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package tsunami_templated_detector;
+
+option java_multiple_files = true;
+option java_package = "com.google.tsunami.templatedplugin.proto";
+
+// HttpAction is used to perform HTTP requests.
+message HttpAction {
+  enum HttpMethod {
+    METHOD_UNSPECIFIED = 0;
+    GET = 1;
+    POST = 2;
+    PUT = 3;
+    DELETE = 4;
+    HEAD = 5;
+  }
+
+  message HttpHeader {
+    // The name of the header.
+    string name = 1;
+
+    // The value of the header.
+    string value = 2;
+  }
+
+  message HttpResponse {
+    message Header {
+      // Name of the header.
+      string name = 1;
+    }
+
+    message Body {}
+
+    message Extract {
+      // The name of the variable to store the extracted value in.
+      string variable_name = 1;
+
+      // The regexp to use to extract the value from the response.
+      string regexp = 2;
+
+      // Where to extract the value from.
+      oneof extract {
+        Header from_header = 3;
+        Body from_body = 4;
+      }
+    }
+
+    message ExtractAll {
+      repeated Extract patterns = 1;
+    }
+
+    message ExtractAny {
+      repeated Extract patterns = 1;
+    }
+
+    message Expectation {
+      // The value to expect in the response.
+      string contains = 1;
+
+      // Where to expect the value.
+      oneof expectation {
+        Header header = 2;
+        Body body = 3;
+      }
+    }
+
+    message ExpectAny {
+      repeated Expectation conditions = 1;
+    }
+
+    message ExpectAll {
+      repeated Expectation conditions = 1;
+    }
+
+    // The HTTP status code to expect from the response.
+    int64 http_status = 1;
+
+    // A set of expectations to check for on the response. For example, does
+    // the header contains a specific value?
+    // The expectations can either be ALL (all conditions must be met) or ANY
+    // (matching stops at the first met condition).
+    oneof expectations {
+      ExpectAny expect_any = 2;
+      ExpectAll expect_all = 3;
+    }
+
+    // Extract a value from the response and stores it in a variable. Failure
+    // to extract all or one value (All/Any) causes the action to fail.
+    //
+    // ExtractAny: Matching stops at the first successful extraction.
+    // ExtractAll: All extractions must be successful and modifies the current
+    //             environment.
+    //
+    // IMPORTANT NOTE: Any extractions can be used to circumvent slight version
+    // variation in a product that would result in the same variable being set.
+    // For example, matching a version tag that might be present in different
+    // HTML tags depending on the version. It is STRONGLY recommended not to set
+    // different variables using an ExtractAny as there will be no guarantee
+    // which variable is set.
+    oneof extractions {
+      ExtractAny extract_any = 4;
+      ExtractAll extract_all = 5;
+    }
+  }
+
+  // The HTTP method to use (e.g. GET, POST, ...).
+  HttpMethod method = 1;
+
+  // One of several URIs to try (e.g. "/", "/somepage", ...). Tsunami will try
+  // each URI until one succeeds. Each URI will reuse the other parameters of
+  // the action (headers, extractions, etc...).
+  repeated string uri = 2;
+
+  // HTTP headers to add to the request.
+  repeated HttpHeader headers = 3;
+
+  // Body of the HTTP request. Tsunami does not perform additional encoding of
+  // this field. It should contain the raw data to be sent.
+  string data = 4;
+
+  // Actions to be performed on the HTTP response.
+  HttpResponse response = 5;
+}
