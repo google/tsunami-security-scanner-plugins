@@ -38,6 +38,7 @@ public final class Top100Passwords extends CredentialProvider {
 
   private static final ImmutableList<String> TOP_USER_NAMES =
       ImmutableList.of(
+          "",
           "anonymous",
           "root",
           "admin",
@@ -57,7 +58,8 @@ public final class Top100Passwords extends CredentialProvider {
           "ec2-user",
           "vagrant",
           "azureuser",
-          "cisco");
+          "cisco",
+          "rstudio");
 
   private static final ImmutableList<String> TOP_100_PASSWORDS =
       ImmutableList.of(
@@ -199,5 +201,11 @@ public final class Top100Passwords extends CredentialProvider {
   @Override
   public Iterator<TestCredential> generateTestCredentials(NetworkService unused) {
     return credentials.iterator();
+  }
+
+  @Override
+  // Top 100 passwords are tested after default credentials.
+  public int priority() {
+    return 2;
   }
 }

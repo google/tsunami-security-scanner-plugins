@@ -17,7 +17,6 @@ package com.google.tsunami.plugins.kubereadonly;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
@@ -149,8 +148,7 @@ public final class KubeReadOnlyPortDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String uriAuthority = toUriAuthority(networkService.getNetworkEndpoint());
-    String targetUri = String.format("http://%s%s", uriAuthority, "/pods");
+    String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "pods";
     HttpRequest req = HttpRequest.get(targetUri).withEmptyHeaders().build();
 
     try {

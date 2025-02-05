@@ -17,12 +17,12 @@ package com.google.tsunami.plugins.example;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
@@ -139,9 +139,7 @@ public final class ExampleVulnDetectorWithPayload implements VulnDetector {
 
     // Inject the payload into the vulnerable service
     String targetUri =
-        String.format(
-            "http://%s%s",
-            toUriAuthority(networkService.getNetworkEndpoint()), "/vulnerable-endpoint");
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "/vulnerable-endpoint";
     HttpRequest req =
         HttpRequest.put(targetUri)
             .withEmptyHeaders()

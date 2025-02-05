@@ -1,0 +1,73 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Cyberpanel_CVE_2024_51568"
+  disabled: false
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "csrftoken=1234567890; path=/" }
+        ]
+      },
+      {
+        uri: "/dataBases/upgrademysqlstatus"
+        status: 200
+        body_content: "tsunami1350"
+        condition: {
+          headers: [
+            { name: "Cookie" value: "csrftoken=1234567890" },
+            { name: "X-CSRFToken" value: "1234567890" },
+            { name: "Referer" value: "{{ T_NS_BASEURL }}" }
+          ]
+        }
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "csrftoken=1234567890; path=/" }
+        ]
+      },
+      {
+        uri: "/dataBases/upgrademysqlstatus"
+        status: 403
+        body_content: "Permission denied"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotCyperpanel_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_ANY_URI"
+        status: 200
+        body_content: "Login to your Drupal account"
+      }
+    ]
+  }
+}

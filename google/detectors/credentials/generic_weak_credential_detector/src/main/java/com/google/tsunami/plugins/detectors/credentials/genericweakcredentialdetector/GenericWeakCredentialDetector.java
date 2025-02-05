@@ -24,6 +24,7 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
@@ -56,6 +57,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
@@ -88,6 +90,9 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
   // If a tester prefer faster scanning, explicitly specify the types of credentials to be used.
   private static final ImmutableMultimap<String, CredentialType>
       SERVICE_SPECIFIC_CREDENTIALS_OVERRIDE = ImmutableMultimap.of();
+
+  private static final ImmutableMap<String, String> FINDING_SERVICE_OVERRIDE =
+      ImmutableMap.of("ms-wbt-server", "rdp");
 
   @Inject
   GenericWeakCredentialDetector(
@@ -152,7 +157,7 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
 
     // Multiple providers could give the same credentials, so create
     // a set to dedupe them before testing.
-    HashSet<TestCredential> credentials = new HashSet<>();
+    HashSet<TestCredential> credentials = new LinkedHashSet<>();
 
     String serviceName = NetworkServiceUtils.getServiceName(networkService);
 
@@ -166,12 +171,14 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
               .collect(toImmutableSet());
     }
 
-    for (CredentialProvider provider : effectiveProvider) {
+    // Sort all providers according to their priorities
+    ImmutableList<CredentialProvider> prioritizedCredProviders =
+        ImmutableList.sortedCopyOf(CredentialProvider.comparator(), effectiveProvider);
+    for (CredentialProvider provider : prioritizedCredProviders) {
       provider.generateTestCredentials(networkService).forEachRemaining(credentials::add);
     }
 
-    return new WeakCredentialComposer(
-            ImmutableList.sortedCopyOf(TestCredential.comparator(), credentials), tester)
+    return new WeakCredentialComposer(ImmutableList.copyOf(credentials), tester)
         .run(networkService);
   }
 
@@ -206,10 +213,13 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
   }
 
   private static String getServiceName(NetworkService networkService) {
+    String serviceName = NetworkServiceUtils.getServiceName(networkService);
+    if (FINDING_SERVICE_OVERRIDE.containsKey(serviceName)) {
+      return FINDING_SERVICE_OVERRIDE.get(serviceName);
+    }
+
     String webServiceName = NetworkServiceUtils.getWebServiceName(networkService);
-    return webServiceName.isEmpty()
-        ? NetworkServiceUtils.getServiceName(networkService)
-        : webServiceName;
+    return webServiceName.isEmpty() ? serviceName : webServiceName;
   }
 
   private static String buildTitle(NetworkService networkService) {

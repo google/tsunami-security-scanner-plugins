@@ -16,7 +16,6 @@
 package com.google.tsunami.plugins.fingerprinters.web.data;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth8.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
