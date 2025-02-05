@@ -218,7 +218,7 @@ public final class Cve20199670Detector implements VulnDetector {
     if (payload.getPayloadAttributes().getUsesCallbackServer()) {
       logger.atInfo().log("Waiting for RCE callback.");
       Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
-      return payload.checkIfExecuted(response.bodyString().get());
+      return payload.checkIfExecuted();
     }
 
     // To decrease false positive rate, when using reflective payload
