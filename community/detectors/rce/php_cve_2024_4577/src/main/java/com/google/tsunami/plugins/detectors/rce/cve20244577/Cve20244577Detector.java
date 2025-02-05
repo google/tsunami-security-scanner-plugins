@@ -35,6 +35,7 @@ import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
+import com.google.tsunami.plugins.detectors.rce.cve20244577.Annotations.OobSleepDuration;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -88,13 +89,18 @@ public final class Cve20244577Detector implements VulnDetector {
   private final Clock utcClock;
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
+  private final int oobSleepDuration;
 
   @Inject
   Cve20244577Detector(
-      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
+      @UtcClock Clock utcClock,
+      HttpClient httpClient,
+      PayloadGenerator payloadGenerator,
+      @OobSleepDuration int oobSleepDuration) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
     this.payloadGenerator = checkNotNull(payloadGenerator);
+    this.oobSleepDuration = oobSleepDuration;
   }
 
   @Override
@@ -151,7 +157,7 @@ public final class Cve20244577Detector implements VulnDetector {
       return false;
     }
     // Wait to receive callback
-    Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
+    Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
     return payload.checkIfExecuted();
   }
 

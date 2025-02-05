@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.rce.cve20244577;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static com.google.tsunami.plugins.detectors.rce.cve20244577.Annotations.OobSleepDuration;
 import static com.google.tsunami.plugins.detectors.rce.cve20244577.Cve20244577Detector.RECOMMENDATION;
 import static com.google.tsunami.plugins.detectors.rce.cve20244577.Cve20244577Detector.VULNERABILITY_REPORT_ID;
 import static com.google.tsunami.plugins.detectors.rce.cve20244577.Cve20244577Detector.VULNERABILITY_REPORT_PUBLISHER;
@@ -26,6 +27,9 @@ import static com.google.tsunami.plugins.detectors.rce.cve20244577.Cve20244577De
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
+import com.google.inject.testing.fieldbinder.Bind;
+import com.google.inject.testing.fieldbinder.BoundFieldModule;
+import com.google.inject.util.Modules;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.callbackserver.proto.PollingResult;
@@ -75,6 +79,10 @@ public final class Cve20244577DetectorWithCallbackServerTest {
   private MockWebServer mockPhpService;
   private MockWebServer mockCallbackServer;
 
+  @Bind(lazy = true)
+  @OobSleepDuration
+  private int sleepDuration = 1;
+
   @Before
   public void setUp() throws IOException {
 
@@ -90,7 +98,8 @@ public final class Cve20244577DetectorWithCallbackServerTest {
                 .setCallbackServer(mockCallbackServer)
                 .setSecureRng(testSecureRandom)
                 .build(),
-            new Cve20244577DetectorBootstrapModule())
+            Modules.override(new Cve20244577DetectorBootstrapModule())
+                .with(BoundFieldModule.of(this)))
         .injectMembers(this);
   }
 
