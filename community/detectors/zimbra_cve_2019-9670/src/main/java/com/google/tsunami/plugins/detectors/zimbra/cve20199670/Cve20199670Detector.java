@@ -160,7 +160,7 @@ public final class Cve20199670Detector implements VulnDetector {
     HttpRequest request = HttpRequest.get(targetUri).withEmptyHeaders().build();
 
     try {
-      HttpResponse response = response = this.httpClient.send(request, networkService);
+      HttpResponse response = this.httpClient.send(request, networkService);
       isZimbra =
           (response.status().code() == 200)
               && response.bodyString().map(body -> body.contains(ZIMBRA_FINGERPRING)).orElse(false);
@@ -174,7 +174,7 @@ public final class Cve20199670Detector implements VulnDetector {
     request = HttpRequest.get(targetUri).withEmptyHeaders().build();
 
     try {
-      HttpResponse response = response = this.httpClient.send(request, networkService);
+      HttpResponse response = this.httpClient.send(request, networkService);
       isZimbra = isZimbra && (response.status().code() == 200);
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target '%s' failed", targetUri);
