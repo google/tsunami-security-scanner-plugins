@@ -15,24 +15,9 @@
  */
 package com.google.tsunami.plugins.detectors.zimbra.cve20199670;
 
-import com.google.inject.Provides;
-import com.google.tsunami.plugin.PluginBootstrapModule;
-import com.google.tsunami.plugins.detectors.zimbra.cve20199670.Annotations.OobSleepDuration;
+import com.google.tsunami.common.config.annotations.ConfigProperties;
 
-/** A {@link PluginBootstrapModule} for {@link Cve20199670Detector}. */
-public final class Cve20199670DetectorBootstrapModule extends PluginBootstrapModule {
-
-  @Override
-  protected void configurePlugin() {
-    registerPlugin(Cve20199670Detector.class);
-  }
-
-  @Provides
-  @OobSleepDuration
-  int provideOobSleepDuration(Cve20199670DetectorConfigs configs) {
-    if (configs.oobSleepDuration == 0) {
-      return 10;
-    }
-    return configs.oobSleepDuration;
-  }
+@ConfigProperties("plugins.community.detectors.zimbra.cve20199670")
+final class Cve20199670DetectorConfigs {
+  int oobSleepDuration;
 }

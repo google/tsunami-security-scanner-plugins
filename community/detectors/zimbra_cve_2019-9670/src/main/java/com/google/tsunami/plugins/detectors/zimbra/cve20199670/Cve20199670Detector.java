@@ -35,6 +35,7 @@ import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
+import com.google.tsunami.plugins.detectors.zimbra.cve20199670.Annotations.OobSleepDuration;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -121,12 +122,18 @@ public final class Cve20199670Detector implements VulnDetector {
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
 
+  private final int oobSleepDuration;
+
   @Inject
   Cve20199670Detector(
-      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
+      @UtcClock Clock utcClock,
+      HttpClient httpClient,
+      PayloadGenerator payloadGenerator,
+      @OobSleepDuration int oobSleepDuration) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
     this.payloadGenerator = checkNotNull(payloadGenerator);
+    this.oobSleepDuration = oobSleepDuration;
   }
 
   @Override
@@ -150,23 +157,27 @@ public final class Cve20199670Detector implements VulnDetector {
 
     // Check presence of zimbra fingerpring in root
     String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    HttpRequest request = HttpRequest.get(targetUri).withEmptyHeaders().build();
+
     try {
-      HttpRequest request = HttpRequest.get(targetUri).withEmptyHeaders().build();
       HttpResponse response = response = this.httpClient.send(request, networkService);
       isZimbra =
           (response.status().code() == 200)
               && response.bodyString().map(body -> body.contains(ZIMBRA_FINGERPRING)).orElse(false);
     } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Request to target '%s' failed", targetUri);
       return false;
     }
 
     // Check presence of autodiscover endpoint
     targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + AUTODISCOVER_PATH;
+    request = HttpRequest.get(targetUri).withEmptyHeaders().build();
+
     try {
-      HttpRequest request = HttpRequest.get(targetUri).withEmptyHeaders().build();
       HttpResponse response = response = this.httpClient.send(request, networkService);
       isZimbra = isZimbra && (response.status().code() == 200);
     } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Request to target '%s' failed", targetUri);
       return false;
     }
 
@@ -174,21 +185,6 @@ public final class Cve20199670Detector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    if (payloadGenerator.isCallbackServerEnabled()) {
-      return testWithCallbackServer(networkService);
-    } else {
-      return testWithoutCallbackServer(networkService);
-    }
-  }
-
-  private boolean testWithCallbackServer(NetworkService networkService) {
-    boolean isVulnerable = false;
-
-    if (!payloadGenerator.isCallbackServerEnabled()) {
-      // Callback server is required
-      return false;
-    }
-
     PayloadGeneratorConfig config =
         PayloadGeneratorConfig.newBuilder()
             .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.SSRF)
@@ -196,55 +192,42 @@ public final class Cve20199670Detector implements VulnDetector {
                 PayloadGeneratorConfig.InterpretationEnvironment.INTERPRETATION_ANY)
             .setExecutionEnvironment(PayloadGeneratorConfig.ExecutionEnvironment.EXEC_ANY)
             .build();
+
     Payload payload = payloadGenerator.generate(config);
-    if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
-      // Callback server is required
-      return false;
+    String callbackUrl = payload.getPayload();
+
+    String xmlPayload;
+    if (payload.getPayloadAttributes().getUsesCallbackServer()) {
+      xmlPayload = String.format(PAYLOAD_TEMPLATE_OOB, callbackUrl);
+    } else {
+      xmlPayload = String.format(PAYLOAD_TEMPLATE_REFLECTED, TEST_STRING);
     }
 
-    // Construct the payload with URL that points to callback server
-    String oobCallbackUrl = payload.getPayload();
-    String oobPayload = String.format(PAYLOAD_TEMPLATE_OOB, oobCallbackUrl);
     String targetUri =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + AUTODISCOVER_PATH;
-    HttpRequest request = prepareRequest(targetUri, oobPayload);
+    HttpRequest request = prepareRequest(targetUri, xmlPayload);
+    HttpResponse response = null;
 
     try {
-      HttpResponse response = httpClient.send(request, networkService);
-      logger.atInfo().log("Waiting for XXE callback.");
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
-      isVulnerable = payload.checkIfExecuted();
+      response = httpClient.send(request, networkService);
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target '%s' failed", targetUri);
       return false;
     }
 
-    return isVulnerable;
-  }
-
-  private boolean testWithoutCallbackServer(NetworkService networkService) {
-    boolean isVulnerable = false;
-
-    String reflectedPayload = String.format(PAYLOAD_TEMPLATE_REFLECTED, TEST_STRING);
-    String targetUri =
-        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + AUTODISCOVER_PATH;
-    HttpRequest request = prepareRequest(targetUri, reflectedPayload);
-
-    try {
-      HttpResponse response = httpClient.send(request, networkService);
-      isVulnerable =
-          (response.status().code() == 503)
-              && response
-                  .bodyString()
-                  // To decrease false positive rate, match also with specific error message
-                  .map(body -> (body.contains(TEST_STRING) && body.contains(ERROR_MSG)))
-                  .orElse(false);
-    } catch (IOException e) {
-      logger.atWarning().withCause(e).log("Request to target '%s' failed", targetUri);
-      return false;
+    if (payload.getPayloadAttributes().getUsesCallbackServer()) {
+      logger.atInfo().log("Waiting for RCE callback.");
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
+      return payload.checkIfExecuted(response.bodyString().get());
     }
 
-    return isVulnerable;
+    // To decrease false positive rate, when using reflective payload
+    // match also with specific error message
+    return (response.status().code() == 503)
+        && response
+            .bodyString()
+            .map(body -> (body.contains(TEST_STRING) && body.contains(ERROR_MSG)))
+            .orElse(false);
   }
 
   private HttpRequest prepareRequest(String targetUri, String payload) {

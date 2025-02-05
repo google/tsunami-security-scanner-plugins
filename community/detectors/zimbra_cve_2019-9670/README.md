@@ -9,7 +9,6 @@ The XXE affects the mailboxd component of Synacor Zimbra Collaboration Suite and
 Specifically, by using the XXE (CVE-2019-9670) it is possible to read a configuration file that contains an LDAP password for the zimbra account. The zimbra credentials are then used to get a user authentication cookie with an AuthRequest message. Using the user cookie, a SSRF (CVE-2019-9621) in the Proxy Servlet is used to proxy an AuthRequest with the zimbra credentials to the admin port to retrieve an admin cookie. After gaining an admin cookie the Client Upload servlet is used to upload a JSP webshell that can be triggered from the web server to obtain RCE.
 
 **Affected Versions**
-:-----:|
 from 8.5 to 8.7.11p10
 
 ## References

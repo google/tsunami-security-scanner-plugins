@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.zimbra.cve20199670;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static com.google.tsunami.plugins.detectors.zimbra.cve20199670.Annotations.OobSleepDuration;
 import static com.google.tsunami.plugins.detectors.zimbra.cve20199670.Cve20199670Detector.ERROR_MSG;
 import static com.google.tsunami.plugins.detectors.zimbra.cve20199670.Cve20199670Detector.RECOMMENDATION;
 import static com.google.tsunami.plugins.detectors.zimbra.cve20199670.Cve20199670Detector.TEST_STRING;
@@ -29,7 +30,12 @@ import static com.google.tsunami.plugins.detectors.zimbra.cve20199670.Cve2019967
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
+import com.google.inject.testing.fieldbinder.Bind;
+import com.google.inject.testing.fieldbinder.BoundFieldModule;
+import com.google.inject.util.Modules;
+import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.callbackserver.proto.PollingResult;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
@@ -45,7 +51,9 @@ import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Arrays;
 import javax.inject.Inject;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -55,39 +63,61 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Unit tests for {@link Cve20199670DetectorWithoutCallbackServerTest}. */
+/** Unit tests for {@link Cve20199670DetectorTest}. */
 @RunWith(JUnit4.class)
-public final class Cve20199670DetectorWithoutCallbackServerTest {
+public final class Cve20199670DetectorTest {
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
+  @Bind(lazy = true)
+  @OobSleepDuration
+  private int sleepDuration = 1;
+
   @Inject private Cve20199670Detector detector;
 
+  private final SecureRandom testSecureRandom =
+      new SecureRandom() {
+        @Override
+        public void nextBytes(byte[] bytes) {
+          Arrays.fill(bytes, (byte) 0xFF);
+        }
+      };
+
   private MockWebServer mockZimbraService;
+  private MockWebServer mockCallbackServer;
 
   @Before
   public void setUp() throws IOException {
     mockZimbraService = new MockWebServer();
     mockZimbraService.start();
 
-    Guice.createInjector(
-            new FakeUtcClockModule(fakeUtcClock),
-            new HttpClientModule.Builder().build(),
-            FakePayloadGeneratorModule.builder()
-                // Here the callback server is not needed
-                .setCallbackServer(null)
-                .build(),
-            new Cve20199670DetectorBootstrapModule())
-        .injectMembers(this);
+    mockCallbackServer = new MockWebServer();
+    mockCallbackServer.start();
   }
 
   @After
   public void tearDown() throws Exception {
     mockZimbraService.shutdown();
+    mockCallbackServer.shutdown();
+  }
+
+  private void createInjector(boolean tcsAvailable) {
+    Guice.createInjector(
+            new FakeUtcClockModule(fakeUtcClock),
+            new HttpClientModule.Builder().build(),
+            FakePayloadGeneratorModule.builder()
+                .setCallbackServer(tcsAvailable ? mockCallbackServer : null)
+                .setSecureRng(testSecureRandom)
+                .build(),
+            Modules.override(new Cve20199670DetectorBootstrapModule())
+                .with(BoundFieldModule.of(this)))
+        .injectMembers(this);
   }
 
   @Test
   public void detect_whenVulnerableAndTcsNotAvailable_reportsVulnerability() throws IOException {
+    createInjector(false);
+
     // Zimbra is detected
     mockZimbraService.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(ZIMBRA_FINGERPRING));
@@ -136,8 +166,63 @@ public final class Cve20199670DetectorWithoutCallbackServerTest {
   }
 
   @Test
+  public void detect_whenVulnerableAndTcsAvailable_reportsVulnerability() throws IOException {
+    createInjector(true);
+
+    // Zimbra is detected
+    mockZimbraService.enqueue(
+        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(ZIMBRA_FINGERPRING));
+    mockZimbraService.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
+
+    // Detect XXE with TCS interaction
+    mockZimbraService.enqueue(new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()));
+
+    PollingResult log = PollingResult.newBuilder().setHasHttpInteraction(true).build();
+    String body = JsonFormat.printer().preservingProtoFieldNames().print(log);
+    mockCallbackServer.enqueue(
+        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(body));
+
+    NetworkService service =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockZimbraService.getHostName(), mockZimbraService.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setServiceName("http")
+            .build();
+
+    TargetInfo target =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockZimbraService.getHostName()))
+            .build();
+
+    DetectionReportList detectionReports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(detectionReports.getDetectionReportsList())
+        .containsExactly(
+            DetectionReport.newBuilder()
+                .setTargetInfo(target)
+                .setNetworkService(service)
+                .setDetectionTimestamp(
+                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                .setVulnerability(
+                    Vulnerability.newBuilder()
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
+                                .setValue(VULNERABILITY_REPORT_ID))
+                        .setSeverity(Severity.CRITICAL)
+                        .setTitle(VULNERABILITY_REPORT_TITLE)
+                        .setDescription(VULN_DESCRIPTION)
+                        .setRecommendation(RECOMMENDATION))
+                .build());
+  }
+
+  @Test
   public void detect_whenNotVulnerableAndTcsNotAvailable_doesNotReportVulnerability()
       throws IOException {
+    createInjector(false);
+
     // Zimbra is detected
     mockZimbraService.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(ZIMBRA_FINGERPRING));
@@ -165,7 +250,40 @@ public final class Cve20199670DetectorWithoutCallbackServerTest {
   }
 
   @Test
+  public void detect_whenNotVulnerableAndTcsAvailable_doesNotReportVulnerability()
+      throws IOException {
+    createInjector(true);
+
+    // Zimbra is detected
+    mockZimbraService.enqueue(
+        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(ZIMBRA_FINGERPRING));
+    mockZimbraService.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
+
+    // Does not detect XXE
+    mockZimbraService.enqueue(new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()));
+    mockCallbackServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
+
+    NetworkService service =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockZimbraService.getHostName(), mockZimbraService.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setServiceName("http")
+            .build();
+
+    TargetInfo target =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockZimbraService.getHostName()))
+            .build();
+
+    DetectionReportList detectionReports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
   public void detect_whenNonZimbraService_doesNotReportVulnerability() throws IOException {
+    createInjector(false);
     // Zimbra is not detected
     mockZimbraService.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
 
