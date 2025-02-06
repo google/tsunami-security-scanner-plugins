@@ -17,8 +17,6 @@ services:
       test: ["CMD", "nc" ,"-z", "127.0.0.1", "8080"]
       timeout: 20s
       retries: 10
-    volumes:
-      - .:/app
 
   mysql:
     image: mysql:5.7
