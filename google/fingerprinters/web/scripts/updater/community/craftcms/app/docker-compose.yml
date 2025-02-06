@@ -5,9 +5,9 @@ services:
       context: .
       args:
         CRAFT_VERSION: "${CRAFT_VERSION}"
-      ports:
-        - 8080:8080
-    env_file: .env
+    ports:
+      - 8080:8080
+    env_file: env
     depends_on:
       redis:
         condition: service_healthy
