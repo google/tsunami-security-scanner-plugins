@@ -1,4 +1,4 @@
-FROM craftcms/nginx:8.2-dev
+FROM craftcms/nginx:8.2
 
 ARG CRAFT_VERSION
 
