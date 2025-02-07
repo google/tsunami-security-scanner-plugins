@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.spring;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
-import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -60,6 +59,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import javax.inject.Inject;
 
 /** A {@link VulnDetector} that detects Spring Framework RCE(CVE-2022-22965) */
@@ -286,7 +286,7 @@ public final class SpringCve202222965Detector implements VulnDetector {
     urlsToCheck.add(tempUrl + JSP_FILENAME + ".jsp");
 
     // The JSP file may be in any subpath from our original target URI
-    List<String> pathSegments = HttpUrl.parse(targetUri).pathSegments();
+    List<String> pathSegments = Objects.requireNonNull(HttpUrl.parse(targetUri)).pathSegments();
     if (pathSegments.size() > 1) {
       for(String segment: pathSegments) {
         tempUrl += segment + "/";
@@ -334,7 +334,6 @@ public final class SpringCve202222965Detector implements VulnDetector {
         }
       } catch (IOException e) {
         logger.atWarning().withCause(e).log("Unable to query '%s'.", url);
-        continue;
       }
     }
     logger.atWarning().log("Could not find any uploaded JSP file. Target is probably not vulnerable.");
