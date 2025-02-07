@@ -68,11 +68,14 @@ public final class Cve202233891VulnDetector implements VulnDetector {
   private final int oobSleepDuration;
 
   private static final String FINGERPRINT_MASTER = "<title>Spark Master at ";
-  private static final String FINGERPRINT_WORKER = "<title>Spark Worker at " ;
+  private static final String FINGERPRINT_WORKER = "<title>Spark Worker at ";
 
   @Inject
   Cve202233891VulnDetector(
-      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator, @OobSleepDuration int oobSleepDuration) {
+      @UtcClock Clock utcClock,
+      HttpClient httpClient,
+      PayloadGenerator payloadGenerator,
+      @OobSleepDuration int oobSleepDuration) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient =
         checkNotNull(httpClient, "HttpClient cannot be null.")
@@ -101,12 +104,12 @@ public final class Cve202233891VulnDetector implements VulnDetector {
   public boolean isSpark(NetworkService networkService) {
     try {
       String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-      HttpResponse response = this.httpClient.send(HttpRequest.get(targetUri).withEmptyHeaders().build());
+      HttpResponse response =
+          this.httpClient.send(HttpRequest.get(targetUri).withEmptyHeaders().build());
 
-      return response.status() == HttpStatus.OK && (
-              response.bodyString().orElse("").contains(FINGERPRINT_MASTER)
-                      || response.bodyString().orElse("").contains(FINGERPRINT_WORKER)
-      );
+      return response.status() == HttpStatus.OK
+          && (response.bodyString().orElse("").contains(FINGERPRINT_MASTER)
+              || response.bodyString().orElse("").contains(FINGERPRINT_WORKER));
     } catch (IOException e) {
       return false;
     }

@@ -20,5 +20,5 @@ import com.google.tsunami.common.config.annotations.ConfigProperties;
 
 @ConfigProperties("plugins.detectors.spark_cve202233891")
 public class Cve202233891VulnDetectorConfigs {
-    int oobSleepDuration = -1;
+  int oobSleepDuration = -1;
 }

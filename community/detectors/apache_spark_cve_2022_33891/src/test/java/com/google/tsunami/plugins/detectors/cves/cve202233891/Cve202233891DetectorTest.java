@@ -22,8 +22,8 @@ import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAnd
 import static com.google.tsunami.plugins.detectors.cves.cve202233891.Annotations.OobSleepDuration;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.testing.fieldbinder.Bind;
 import com.google.inject.Guice;
+import com.google.inject.testing.fieldbinder.Bind;
 import com.google.inject.testing.fieldbinder.BoundFieldModule;
 import com.google.inject.util.Modules;
 import com.google.protobuf.util.Timestamps;
@@ -80,7 +80,7 @@ public class Cve202233891DetectorTest {
             new HttpClientModule.Builder().build(),
             FakePayloadGeneratorModule.builder().setCallbackServer(mockCallbackServer).build(),
             Modules.override(new Cve202233891VulnDetectorBootstrapModule())
-                    .with(BoundFieldModule.of(this)))
+                .with(BoundFieldModule.of(this)))
         .injectMembers(this);
 
     service =
@@ -108,10 +108,9 @@ public class Cve202233891DetectorTest {
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
     // For fingerprinting
     mockWebServer.enqueue(
-            new MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                            "<title>Spark Master at spark://testbed:7077</title>\n"));
+        new MockResponse()
+            .setResponseCode(200)
+            .setBody("<title>Spark Master at spark://testbed:7077</title>\n"));
     // Sample response to exploit request
     mockWebServer.enqueue(
         new MockResponse()
@@ -156,11 +155,11 @@ public class Cve202233891DetectorTest {
   public void detect_ifNotVulnerable_doesNotReportVuln() {
     // For fingerprinting
     mockWebServer.enqueue(
-            new MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                            "<title>Spark Master at spark://testbed:7077</title>\n"));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("Hello world!"));
+        new MockResponse()
+            .setResponseCode(200)
+            .setBody("<title>Spark Master at spark://testbed:7077</title>\n"));
+    mockWebServer.enqueue(
+        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("Hello world!"));
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
 
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
@@ -171,7 +170,8 @@ public class Cve202233891DetectorTest {
 
   @Test
   public void detect_ifNotSpark_doesNotReportVuln() {
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("This is not Spark"));
+    mockWebServer.enqueue(
+        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("This is not Spark"));
 
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();

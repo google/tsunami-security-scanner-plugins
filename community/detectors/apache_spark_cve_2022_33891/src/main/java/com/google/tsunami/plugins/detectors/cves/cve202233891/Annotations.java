@@ -16,21 +16,21 @@
 
 package com.google.tsunami.plugins.detectors.cves.cve202233891;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
+
 /** Annotation for {@link Cve202233891VulnDetector}. */
 public class Annotations {
-    @Qualifier
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({PARAMETER, METHOD, FIELD})
-    @interface OobSleepDuration {}
+  @Qualifier
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({PARAMETER, METHOD, FIELD})
+  @interface OobSleepDuration {}
 
-    private Annotations() {}
+  private Annotations() {}
 }
