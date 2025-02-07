@@ -152,8 +152,8 @@ class Cve20249070Detector(tsunami_plugin.VulnDetector):
             .build()
         )
         try:
-            self.http_client.send(request, network_service)
-        except TimeoutError:  # pylint: disable=broad-exception-caught
+            self.http_client.modify().set_timeout_sec(1).build().send(request, network_service)
+        except requests.exceptions.ReadTimeout:  # pylint: disable=broad-exception-caught
             # timeout is expected here because server won't return anything
             pass
         except Exception:  # pylint: disable=broad-exception-caught
