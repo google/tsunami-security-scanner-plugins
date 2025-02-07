@@ -71,14 +71,15 @@ public final class SpringCve202222965DetectorTest {
 
   private MockWebServer mockWebServer;
   private final SecureRandom testSecureRandom =
-          new SecureRandom() {
-            @Override
-            public void nextBytes(byte[] bytes) {
-              Arrays.fill(bytes, (byte) 0xFF);
-            }
-          };
+      new SecureRandom() {
+        @Override
+        public void nextBytes(byte[] bytes) {
+          Arrays.fill(bytes, (byte) 0xFF);
+        }
+      };
 
-  private final static String MOCK_PAYLOAD_EXECUTION = "TSUNAMI_PAYLOAD_STARTffffffffffffffffTSUNAMI_PAYLOAD_END";
+  private static final String MOCK_PAYLOAD_EXECUTION =
+      "TSUNAMI_PAYLOAD_STARTffffffffffffffffTSUNAMI_PAYLOAD_END";
 
   @Before
   public void setUp() {
@@ -86,12 +87,12 @@ public final class SpringCve202222965DetectorTest {
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             FakePayloadGeneratorModule.builder()
-                    .setCallbackServer(null)
-                    .setSecureRng(testSecureRandom)
-                    .build(),
+                .setCallbackServer(null)
+                .setSecureRng(testSecureRandom)
+                .build(),
             new HttpClientModule.Builder().build(),
             Modules.override(new SpringCve202222965DetectorBootstrapModule())
-                    .with(BoundFieldModule.of(this)))
+                .with(BoundFieldModule.of(this)))
         .injectMembers(this);
   }
 
@@ -102,7 +103,8 @@ public final class SpringCve202222965DetectorTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-    mockWebServer.setDispatcher(new VulnerabilityEndpointDispatcher(this.fakeJspPath, MOCK_PAYLOAD_EXECUTION));
+    mockWebServer.setDispatcher(
+        new VulnerabilityEndpointDispatcher(this.fakeJspPath, MOCK_PAYLOAD_EXECUTION));
     mockWebServer.start();
     NetworkService service =
         NetworkService.newBuilder()
@@ -159,26 +161,27 @@ public final class SpringCve202222965DetectorTest {
     We simulate a false positive by returning an incorrect response in the
     (supposedly) uploaded JSP page.
      */
-    mockWebServer.setDispatcher(new VulnerabilityEndpointDispatcher(this.fakeJspPath, "This is not the page you're looking for."));
+    mockWebServer.setDispatcher(
+        new VulnerabilityEndpointDispatcher(
+            this.fakeJspPath, "This is not the page you're looking for."));
     mockWebServer.start();
     NetworkService service =
-            NetworkService.newBuilder()
-                    .setNetworkEndpoint(
-                            forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-                    .setTransportProtocol(TransportProtocol.TCP)
-                    .setSoftware(Software.newBuilder().setName("http"))
-                    .setServiceName("http")
-                    .build();
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setSoftware(Software.newBuilder().setName("http"))
+            .setServiceName("http")
+            .build();
     TargetInfo targetInfo =
-            TargetInfo.newBuilder()
-                    .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-                    .build();
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
+            .build();
 
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
 
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
-
 
   static final class SafeEndpointDispatcher extends Dispatcher {
 
@@ -191,6 +194,7 @@ public final class SpringCve202222965DetectorTest {
   static final class VulnerabilityEndpointDispatcher extends Dispatcher {
     private final String jspPath;
     private final String jspResponse;
+
     VulnerabilityEndpointDispatcher(String jspPath, String jspResponse) {
       this.jspPath = jspPath;
       this.jspResponse = jspResponse;

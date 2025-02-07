@@ -20,11 +20,8 @@ import static com.google.tsunami.plugins.detectors.spring4shell.Annotations.Dela
 import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-/**
- * A {@link PluginBootstrapModule} for {@link SpringCve202222965Detector}
- */
-public final class SpringCve202222965DetectorBootstrapModule extends
-    PluginBootstrapModule {
+/** A {@link PluginBootstrapModule} for {@link SpringCve202222965Detector} */
+public final class SpringCve202222965DetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
