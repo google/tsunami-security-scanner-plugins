@@ -246,7 +246,7 @@ public final class SpringCve202222965Detector implements VulnDetector {
             .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
             .build();
 
-    Payload payload = this.payloadGenerator.generate(payloadGeneratorConfig);
+    Payload payload = this.payloadGenerator.generateNoCallback(payloadGeneratorConfig);
 
     return uploadJsp(targetUri, httpMethod, networkService, payload)
         && checkUploadedJsp(targetUri, networkService, payload);
