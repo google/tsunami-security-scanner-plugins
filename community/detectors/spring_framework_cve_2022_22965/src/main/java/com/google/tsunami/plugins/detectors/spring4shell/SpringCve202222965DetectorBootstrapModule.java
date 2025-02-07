@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Google LLC
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.spring;
+package com.google.tsunami.plugins.detectors.spring4shell;
 
+import static com.google.tsunami.plugins.detectors.spring4shell.Annotations.DelayBetweenRequests;
+
+import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
 /**
@@ -26,5 +29,15 @@ public final class SpringCve202222965DetectorBootstrapModule extends
   @Override
   protected void configurePlugin() {
     registerPlugin(SpringCve202222965Detector.class);
+  }
+
+  @Provides
+  @DelayBetweenRequests
+  int provideDelayBetweenRequests(SpringCve202222965DetectorConfigs configs) {
+    if (configs.delayBetweenRequests == -1) {
+      return 3;
+    }
+
+    return configs.delayBetweenRequests;
   }
 }
