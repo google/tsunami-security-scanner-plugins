@@ -19,5 +19,5 @@ import com.google.tsunami.common.config.annotations.ConfigProperties;
 
 @ConfigProperties("plugins.detectors.spring4shell_detector")
 public class SpringCve202222965DetectorConfigs {
-    int delayBetweenRequests = -1;
+  int delayBetweenRequests = -1;
 }

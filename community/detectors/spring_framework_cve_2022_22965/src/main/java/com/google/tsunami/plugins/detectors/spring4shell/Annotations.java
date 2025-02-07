@@ -27,10 +27,10 @@ import javax.inject.Qualifier;
 
 /** Annotation for {@link SpringCve202222965Detector}. */
 final class Annotations {
-    @Qualifier
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({PARAMETER, METHOD, FIELD})
-    @interface DelayBetweenRequests {}
+  @Qualifier
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({PARAMETER, METHOD, FIELD})
+  @interface DelayBetweenRequests {}
 
-    private Annotations() {}
+  private Annotations() {}
 }
