@@ -15,13 +15,19 @@
  */
 package com.google.tsunami.plugins.detectors.cves;
 
+import com.google.inject.multibindings.OptionalBinder;
 import com.google.tsunami.plugin.PluginBootstrapModule;
+import javax.net.SocketFactory;
 
 /** An Guice module that bootstraps the {@link Cve20220543Detector}. */
 public final class Cve20220543DetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
+    OptionalBinder.newOptionalBinder(binder(), SocketFactory.class)
+        .setDefault()
+        .toInstance(SocketFactory.getDefault());
+
     registerPlugin(Cve20220543Detector.class);
   }
 }

