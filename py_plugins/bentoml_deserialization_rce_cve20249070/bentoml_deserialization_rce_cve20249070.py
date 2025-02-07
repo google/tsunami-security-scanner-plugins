@@ -27,6 +27,7 @@ import plugin_representation_pb2
 import time
 import tsunami_plugin
 import vulnerability_pb2
+import requests
 
 _VULN_DESCRIPTION = (
     'The BentoML framework is vulnerable to an insecure deserialization issue that can'
