@@ -6,6 +6,7 @@ import "plugin_representation.proto";
 import "vulnerability.proto";
 import "action_http.proto";
 import "action_callbackserver.proto";
+import "action_utils.proto";
 
 option java_multiple_files = true;
 option java_package = "com.google.tsunami.templatedplugin.proto";
@@ -23,6 +24,7 @@ message PluginAction {
   oneof any_action {
     HttpAction http_request = 2;
     CallbackServerAction callback_server = 3;
+    UtilityAction utility = 4;
   }
 }
 

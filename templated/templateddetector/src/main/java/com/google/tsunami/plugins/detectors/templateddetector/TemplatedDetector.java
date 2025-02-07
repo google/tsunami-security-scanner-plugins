@@ -16,6 +16,7 @@ import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.PayloadSecretGenerator;
 import com.google.tsunami.plugins.detectors.templateddetector.actions.CallbackServerActionRunner;
 import com.google.tsunami.plugins.detectors.templateddetector.actions.HttpActionRunner;
+import com.google.tsunami.plugins.detectors.templateddetector.actions.UtilityActionRunner;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -112,6 +113,8 @@ public final class TemplatedDetector implements VulnDetector {
         return new HttpActionRunner(this.httpClient, this.proto.getConfig().getDebug());
       case CALLBACK_SERVER:
         return new CallbackServerActionRunner(this.tcsClient, this.proto.getConfig().getDebug());
+      case UTILITY:
+        return new UtilityActionRunner();
       default:
         throw new IllegalArgumentException(
             String.format("Unsupported action type: %s", action.getAnyActionCase()));
