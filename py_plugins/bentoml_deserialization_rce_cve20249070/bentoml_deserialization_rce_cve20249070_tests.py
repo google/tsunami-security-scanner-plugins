@@ -19,8 +19,8 @@ from plugin.payload.payload_generator import PayloadGenerator
 from plugin.payload.payload_secret_generator import PayloadSecretGenerator
 from plugin.payload.payload_utility import get_parsed_payload
 from plugin.tcs_client import TcsClient
-from py_plugins.bentoml_rce_detector import Cve20249070Detector
-from py_plugins.bentoml_rce_detector import _VULN_DESCRIPTION
+from py_plugins.bentoml_deserialization_rce_cve20249070 import Cve20249070Detector
+from py_plugins.bentoml_deserialization_rce_cve20249070 import _VULN_DESCRIPTION
 import detection_pb2
 import network_pb2
 import network_service_pb2
