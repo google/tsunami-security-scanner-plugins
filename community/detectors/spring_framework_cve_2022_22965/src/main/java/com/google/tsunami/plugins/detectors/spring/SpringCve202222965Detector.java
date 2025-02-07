@@ -212,7 +212,7 @@ public final class SpringCve202222965Detector implements VulnDetector {
       // Setting and unsetting the fileDateFormat field allows for executing the exploit multiple times
       // If re-running the exploit, this will create an artifact of {old_file_name}_.jsp
       // Running this in case there already was an exploit attempt on this instance
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
       httpClient.send(
               HttpRequest.builder()
                       .setMethod(httpMethod)
@@ -221,17 +221,6 @@ public final class SpringCve202222965Detector implements VulnDetector {
                       .build(),
               networkService
       );
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
-      httpClient.send(
-              HttpRequest.builder()
-                      .setMethod(HttpMethod.GET)
-                      .setUrl(targetUri)
-                      .setHeaders(httpHeaders)
-                      .build(),
-              networkService
-      );
-
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
 
       // Generate JSP content
       logger.atInfo().log("Setting log configuration to write JSP file.");
@@ -254,7 +243,7 @@ public final class SpringCve202222965Detector implements VulnDetector {
       );
 
       // Wait for changes to propagate
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
 
       // Send an arbitrary request to trigger the file writing
       // The headers are needed to generate the content correctly
@@ -272,25 +261,9 @@ public final class SpringCve202222965Detector implements VulnDetector {
                       .build(),
               networkService
       );
-      httpClient.send(
-              HttpRequest.builder()
-                      .setMethod(HttpMethod.GET)
-                      .setUrl(targetUri)
-                      .setHeaders(headers)
-                      .build(),
-              networkService
-      );
-      httpClient.send(
-              HttpRequest.builder()
-                      .setMethod(HttpMethod.GET)
-                      .setUrl(targetUri)
-                      .setHeaders(headers)
-                      .build(),
-              networkService
-      );
 
       // Wait for file to be written
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
 
       // Reset the pattern to prevent further data being written to the file
       logger.atInfo().log("Resetting log configuration.");
@@ -302,6 +275,9 @@ public final class SpringCve202222965Detector implements VulnDetector {
                       .build(),
               networkService
       );
+
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
+
     } catch (IOException e) {
       return false;
     }
@@ -331,10 +307,6 @@ public final class SpringCve202222965Detector implements VulnDetector {
                         .build(),
                 networkService
         );
-
-        if (response.status() == HttpStatus.OK) {
-          logger.atInfo().log("==================== " + response.bodyString().get());
-        }
 
         if (
                 response.status() == HttpStatus.OK
