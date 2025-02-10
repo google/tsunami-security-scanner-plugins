@@ -1,6 +1,6 @@
-# Example VulnDetector
+# Agentscope Studio Arbitrary File Download Detector
 
-This is an example implementation of a `VulnDetector` plugin for Tsunami.
+This plugin for Tsunami detects publicly exposed agentscope studio instances. The /api/file endpoint in modelscope/agentscope is vulnerable to Arbitrary File Download, allowing attackers to retrieve internal files without restriction. This could lead to the unintended exposure of sensitive information, including configuration files that contain database credentials.
 
 ## Build jar file for this plugin
 
