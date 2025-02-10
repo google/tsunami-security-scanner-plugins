@@ -17,28 +17,29 @@ package com.google.tsunami.plugins.detectors.cves.cve202231137;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
+import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 import static com.google.tsunami.plugins.detectors.cves.cve202231137.Annotations.OobSleepDuration;
-import static com.google.tsunami.plugins.detectors.cves.cve202231137.Cve202231137Detector.VULNERABLE_REQUEST_PATH;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.inject.testing.fieldbinder.Bind;
 import com.google.inject.testing.fieldbinder.BoundFieldModule;
 import com.google.inject.util.Modules;
+import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
-import com.google.tsunami.proto.DetectionReportList;
-import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
+import com.google.tsunami.proto.*;
+
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
+
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,8 +51,9 @@ import org.junit.runners.JUnit4;
 public final class Cve202231137DetectorTest {
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2022-05-23T00:00:00.00Z"));
-  private MockWebServer mockWebServer;
+  private MockWebServer mockTargetService;
   private NetworkService service;
+  private MockWebServer mockCallbackServer;
   private TargetInfo targetInfo;
   @Inject private Cve202231137Detector detector;
 
@@ -61,41 +63,76 @@ public final class Cve202231137DetectorTest {
 
   @Before
   public void setUp() {
-    mockWebServer = new MockWebServer();
+    mockTargetService = new MockWebServer();
+    mockCallbackServer = new MockWebServer();
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
-            FakePayloadGeneratorModule.builder().setCallbackServer(mockWebServer).build(),
+            FakePayloadGeneratorModule.builder().setCallbackServer(mockCallbackServer).build(),
             Modules.override(new Cve202231137DetectorBootstrapModule())
                 .with(BoundFieldModule.of(this)))
         .injectMembers(this);
-    service = TestHelper.createWebService(mockWebServer);
-    targetInfo = TestHelper.buildTargetInfo(forHostname(mockWebServer.getHostName()));
+    service = TestHelper.createWebService(mockTargetService);
+    targetInfo = TestHelper.buildTargetInfo(forHostname(mockTargetService.getHostName()));
   }
 
   @After
-  public void tearDown() throws IOException {
-    mockWebServer.shutdown();
+  public void tearDown() throws Exception {
+    mockTargetService.shutdown();
+    mockCallbackServer.shutdown();
   }
 
   @Test
-  public void detect_whenVulnerable_returnsVulnerability() throws InterruptedException {
-    mockWebServer.enqueue(
+  public void detect_withCallbackServer_onVulnerableTarget_returnsVulnerability()
+      throws IOException {
+    mockTargetService.enqueue(
         new MockResponse()
             .setResponseCode(HttpStatus.OK.code())
             .setBody("<title>Login page - Roxy-WI</title>"));
-    mockWebServer.enqueue(
+    mockTargetService.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("A Constant Response"));
-    detector.detect(targetInfo, ImmutableList.of(service));
-    mockWebServer.takeRequest();
-    RecordedRequest secondRequest = mockWebServer.takeRequest();
-    assertThat(secondRequest.getBody().toString()).contains("alert_consumer=1&ipbackend=\";");
-    assertThat(secondRequest.getPath()).isEqualTo("/" + VULNERABLE_REQUEST_PATH);
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setSoftware(Software.newBuilder().setName("http"))
+            .setServiceName("http")
+            .build();
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
+            .build();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList())
+        .containsExactly(
+            DetectionReport.newBuilder()
+                .setTargetInfo(targetInfo)
+                .setNetworkService(targetNetworkService)
+                .setDetectionTimestamp(
+                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                .setVulnerability(
+                    Vulnerability.newBuilder()
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("TSUNAMI_COMMUNITY")
+                                .setValue("CVE-2022-31137"))
+                        .setSeverity(Severity.CRITICAL)
+                        .setTitle("Roxy-wi RCE (CVE-2022-31137)")
+                        .setDescription(
+                            "Roxy-wi Versions prior to 6.1.1.0 are subject to a remote code execution"
+                                + " vulnerability."))
+                .build());
   }
 
   @Test
   public void detect_ifNotVulnerableHtmlResponse_doesNotReportVuln() {
-    mockWebServer.enqueue(
+    mockTargetService.enqueue(
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("A Constant Response"));
 
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
