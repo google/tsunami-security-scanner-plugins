@@ -188,6 +188,7 @@ public final class FingerprintUpdater {
             .addAllSeedingUrls(seedingUrls)
             .setMaxDepth(options.maxCrawlDepth)
             .addScopes(ScopeUtils.fromUrl(options.remoteUrl))
+            .setShouldEnforceScopeCheck(true)
             .setNetworkEndpoint(NetworkEndpoint.getDefaultInstance())
             .build();
     return crawler.crawl(crawlConfig).stream()
