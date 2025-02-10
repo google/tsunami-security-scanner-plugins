@@ -1,7 +1,7 @@
 name: craftcms
 services:
   web:
-    build: 
+    build:
       context: .
       args:
         CRAFT_VERSION: "${CRAFT_VERSION}"
