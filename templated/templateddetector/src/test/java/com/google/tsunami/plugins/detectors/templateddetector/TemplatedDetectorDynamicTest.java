@@ -35,6 +35,7 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
+import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
@@ -62,6 +63,7 @@ public final class TemplatedDetectorDynamicTest {
 
   private Environment environment;
   private MockWebServer mockWebServer;
+  private MockWebServer mockCallbackServer;
 
   private static final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
@@ -74,9 +76,10 @@ public final class TemplatedDetectorDynamicTest {
       };
 
   @Before
-  public void setupMockWebServer() throws IOException {
+  public void setupMockServers() throws IOException {
     environment = new Environment(false);
     mockWebServer = new MockWebServer();
+    mockCallbackServer = new MockWebServer();
     var baseUrl = "http://" + mockWebServer.getHostName() + ":" + mockWebServer.getPort() + "/";
     environment.set("T_NS_BASEURL", baseUrl);
   }
@@ -84,11 +87,22 @@ public final class TemplatedDetectorDynamicTest {
   @After
   public void tearDown() throws IOException {
     mockWebServer.shutdown();
+    mockCallbackServer.shutdown();
   }
 
   @Test
   @TestParameters(valuesProvider = TestProvider.class)
-  public void runTest(TemplatedDetector detector, TemplatedPluginTests.Test testCase) {
+  public void runTest(String pluginName, TemplatedPluginTests.Test testCase) {
+    var detectors = getDetectorsForCase(testCase);
+
+    if (!detectors.containsKey(pluginName)) {
+      throw new IllegalArgumentException(
+          "Plugin '"
+              + pluginName
+              + "' not found (ensure the tested_plugin field is set correctly).");
+    }
+
+    var detector = detectors.get(pluginName);
     switch (testCase.getAnyActionCase()) {
       case MOCK_HTTP_SERVER:
         forHttpAction(detector, testCase);
@@ -96,6 +110,38 @@ public final class TemplatedDetectorDynamicTest {
       default:
         throw new IllegalArgumentException("Unsupported action: " + testCase.getAnyActionCase());
     }
+  }
+
+  private final ImmutableMap<String, TemplatedDetector> getDetectorsForCase(
+      TemplatedPluginTests.Test testCase) {
+    // Inject the adequate callback server configuration.
+    FakePayloadGeneratorModule.Builder payloadGeneratorModuleBuilder =
+        FakePayloadGeneratorModule.builder().setSecureRng(testSecureRandom);
+
+    if (testCase.getMockCallbackServer().getEnabled()) {
+      payloadGeneratorModuleBuilder.setCallbackServer(mockCallbackServer);
+
+      try {
+        if (testCase.getMockCallbackServer().getHasInteraction()) {
+          mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
+        } else {
+          mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
+        }
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    // Inject dependencies and get the detectors.
+    var bootstrap = new TemplatedDetectorBootstrapModule();
+    bootstrap.setForceLoadDetectors(true);
+    Guice.createInjector(
+        new FakeUtcClockModule(fakeUtcClock),
+        new HttpClientModule.Builder().build(),
+        payloadGeneratorModuleBuilder.build(),
+        bootstrap);
+
+    return bootstrap.getDetectors();
   }
 
   private final void forHttpAction(TemplatedDetector detector, TemplatedPluginTests.Test testCase) {
@@ -199,34 +245,21 @@ public final class TemplatedDetectorDynamicTest {
   static final class TestProvider extends TestParametersValuesProvider {
     @Override
     public ImmutableList<TestParametersValues> provideValues(Context context) {
-      var detectors = getDetectors();
       return getResourceNames().stream()
           .map(TestProvider::loadPlugin)
           .filter(plugin -> plugin != null)
-          .flatMap(plugin -> parametersForPlugin(plugin, detectors).stream())
+          .flatMap(plugin -> parametersForPlugin(plugin).stream())
           .collect(toImmutableList());
     }
 
-    private static final ImmutableMap<String, TemplatedDetector> getDetectors() {
-      var bootstrap = new TemplatedDetectorBootstrapModule();
-      bootstrap.setForceLoadDetectors(true);
-      Guice.createInjector(
-          new FakeUtcClockModule(fakeUtcClock),
-          new HttpClientModule.Builder().build(),
-          FakePayloadGeneratorModule.builder().setSecureRng(testSecureRandom).build(),
-          bootstrap);
-      return bootstrap.getDetectors();
-    }
-
-    private static ImmutableList<TestParametersValues> generateCommonTests(
-        TemplatedDetector detector) {
+    private static ImmutableList<TestParametersValues> generateCommonTests(String pluginName) {
       // Echo server test: plugins should never return a vulnerability when the response just
       // contains the request.
-      var testName = detector.getName() + ", autogenerated_whenEchoServer_returnsFalse";
+      var testName = pluginName + ", autogenerated_whenEchoServer_returnsFalse";
       return ImmutableList.of(
           TestParametersValues.builder()
               .name(testName)
-              .addParameter("detector", detector)
+              .addParameter("pluginName", pluginName)
               .addParameter(
                   "testCase",
                   TemplatedPluginTests.Test.newBuilder()
@@ -242,7 +275,7 @@ public final class TemplatedDetectorDynamicTest {
     }
 
     private static ImmutableList<TestParametersValues> parametersForPlugin(
-        TemplatedPluginTests pluginTests, ImmutableMap<String, TemplatedDetector> detectors) {
+        TemplatedPluginTests pluginTests) {
       var pluginName = pluginTests.getConfig().getTestedPlugin();
 
       if (pluginTests.getConfig().getDisabled()) {
@@ -250,15 +283,9 @@ public final class TemplatedDetectorDynamicTest {
         return ImmutableList.of();
       }
 
-      if (!detectors.containsKey(pluginName)) {
-        logger.atWarning().log("Plugin '%s' not found or disabled. Skipping test.", pluginName);
-        return ImmutableList.of();
-      }
-
-      var detector = detectors.get(pluginName);
       var testsBuilder = ImmutableList.<TestParametersValues>builder();
       // Inject tests that are common to all plugins.
-      testsBuilder.addAll(generateCommonTests(detector));
+      testsBuilder.addAll(generateCommonTests(pluginName));
 
       // Tests defined in the plugin test file.
       pluginTests.getTestsList().stream()
@@ -266,7 +293,7 @@ public final class TemplatedDetectorDynamicTest {
               t ->
                   TestParametersValues.builder()
                       .name(pluginName + ", " + t.getName())
-                      .addParameter("detector", detector)
+                      .addParameter("pluginName", pluginName)
                       .addParameter("testCase", t)
                       .build())
           .forEach(testsBuilder::add);

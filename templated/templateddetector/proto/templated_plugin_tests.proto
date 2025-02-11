@@ -18,15 +18,29 @@ message TemplatedPluginTests {
   }
 
   message Test {
+    message MockCallbackConfig {
+      // Whether the callback server should be mocked.
+      // Disabled by default.
+      bool enabled = 1;
+
+      // The return value for the callback server. That is, whether the callback
+      // server reports the secret having been interracted with or not.
+      // Only used if enabled is true.
+      bool has_interaction = 2;
+    }
+
     // The name of the test.
     string name = 1;
 
     // Whether this test ensure that the vulnerability is found or not.
     bool expect_vulnerability = 2;
 
+    // Configuration for the mocking the callback server behavior.
+    MockCallbackConfig mock_callback_server = 3;
+
     // The action being tested.
     oneof anyAction {
-      HttpTestAction mock_http_server = 3;
+      HttpTestAction mock_http_server = 4;
     }
   }
 
