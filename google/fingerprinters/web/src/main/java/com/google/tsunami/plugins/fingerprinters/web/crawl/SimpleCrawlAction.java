@@ -28,6 +28,7 @@ import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpMethod;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.plugins.fingerprinters.web.WebServiceFingerprinterConfigs;
 import com.google.tsunami.proto.CrawlConfig;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
@@ -62,18 +63,21 @@ final class SimpleCrawlAction extends RecursiveAction {
   private final CrawlConfig crawlConfig;
   private final CrawlTarget crawlTarget;
   private final SimpleCrawlerResults crawlerResults;
+  private final WebServiceFingerprinterConfigs configs;
 
   SimpleCrawlAction(
       int currentDepth,
       HttpClient httpClient,
       CrawlConfig crawlConfig,
       CrawlTarget crawlTarget,
-      SimpleCrawlerResults crawlerResults) {
+      SimpleCrawlerResults crawlerResults,
+      WebServiceFingerprinterConfigs configs) {
     this.currentDepth = currentDepth;
     this.httpClient = checkNotNull(httpClient);
     this.crawlConfig = checkNotNull(crawlConfig);
     this.crawlTarget = checkNotNull(crawlTarget);
     this.crawlerResults = checkNotNull(crawlerResults);
+    this.configs = checkNotNull(configs);
   }
 
   String getTargetUrl() {
@@ -153,6 +157,10 @@ final class SimpleCrawlAction extends RecursiveAction {
             .map(crawlTarget -> normalizeHost(crawlConfig, crawlTarget))
             // Ignore out-of-scope URLs.
             .filter(crawlTarget -> CrawlConfigUtils.isCrawlTargetInScope(crawlConfig, crawlTarget))
+            .filter(
+                crawlTarget ->
+                    !CrawlConfigUtils.isCrawlTargetInBlockList(
+                        crawlTarget, configs.getPathExclusions()))
             .map(this::newCrawlAction)
             .collect(toImmutableSet());
     invokeAll(newCrawlActions);
@@ -166,6 +174,6 @@ final class SimpleCrawlAction extends RecursiveAction {
 
   private SimpleCrawlAction newCrawlAction(CrawlTarget newCrawlTarget) {
     return new SimpleCrawlAction(
-        currentDepth + 1, httpClient, crawlConfig, newCrawlTarget, crawlerResults);
+        currentDepth + 1, httpClient, crawlConfig, newCrawlTarget, crawlerResults, configs);
   }
 }

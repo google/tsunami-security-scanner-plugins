@@ -39,11 +39,16 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.grafana.GrafanaCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.hydra.HydraCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.jenkins.JenkinsCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.mlflow.MlFlowCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.mysql.MysqlCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.hive.HiveCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack.NcrackCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.postgres.PostgresCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.rabbitmq.RabbitMQCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.wordpress.WordpressCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.rstudio.RStudioCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.zenml.ZenMlCredentialTester;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -64,13 +69,17 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
     Multibinder<CredentialTester> credentialTesterBinder =
         Multibinder.newSetBinder(binder(), CredentialTester.class);
     credentialTesterBinder.addBinding().to(JenkinsCredentialTester.class);
+    credentialTesterBinder.addBinding().to(MlFlowCredentialTester.class);
     credentialTesterBinder.addBinding().to(MysqlCredentialTester.class);
+    credentialTesterBinder.addBinding().to(HiveCredentialTester.class);
     credentialTesterBinder.addBinding().to(HydraCredentialTester.class);
     credentialTesterBinder.addBinding().to(NcrackCredentialTester.class);
     credentialTesterBinder.addBinding().to(PostgresCredentialTester.class);
     credentialTesterBinder.addBinding().to(WordpressCredentialTester.class);
     credentialTesterBinder.addBinding().to(GrafanaCredentialTester.class);
+    credentialTesterBinder.addBinding().to(RStudioCredentialTester.class);
     credentialTesterBinder.addBinding().to(RabbitMQCredentialTester.class);
+    credentialTesterBinder.addBinding().to(ZenMlCredentialTester.class);
 
     Multibinder<CredentialProvider> credentialProviderBinder =
         Multibinder.newSetBinder(binder(), CredentialProvider.class);
