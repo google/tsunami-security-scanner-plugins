@@ -60,8 +60,10 @@ public class Axis2CredentialTesterTest {
   }
 
   /**
-   * No need for detect_weakCredentialsExist_returnsAllWeakCredentials since Axis2 only supports a
-   * single administrator user
+   * A separate test for detecting multiple weak credentials is unnecessary because Axis2 only
+   * supports a single administrator user. Therefore, this test
+   * (`detect_weakCredentialsExists_returnsWeakCredentials`) effectively covers the intended
+   * behavior.
    */
   @Test
   public void detect_weakCredentialsExists_returnsWeakCredentials() throws Exception {

@@ -77,30 +77,24 @@ public final class Axis2CredentialTester extends CredentialTester {
    */
   @Override
   public boolean canAccept(NetworkService networkService) {
-    boolean isWebService = NetworkServiceUtils.isWebService(networkService);
-
-    if (!isWebService) {
+    if (!NetworkServiceUtils.isWebService(networkService)) {
       return false;
     }
-    boolean canAcceptByCustomFingerprint = false;
-
     String url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "axis2/";
 
     try {
       logger.atInfo().log("probing Axis2 Home Page - custom fingerprint phase");
       HttpResponse response = httpClient.send(get(url).withEmptyHeaders().build());
 
-      canAcceptByCustomFingerprint =
-          response.status().isSuccess()
-              && response
-                  .bodyString()
-                  .map(Axis2CredentialTester::bodyContainsAxis2Elements)
-                  .orElse(false);
+      return response.status().isSuccess()
+          && response
+              .bodyString()
+              .map(Axis2CredentialTester::bodyContainsAxis2Elements)
+              .orElse(false);
     } catch (Exception e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", url);
       return false;
     }
-    return canAcceptByCustomFingerprint;
   }
 
   /**
@@ -111,12 +105,13 @@ public final class Axis2CredentialTester extends CredentialTester {
     Document doc = Jsoup.parse(responseBody);
     String title = doc.title();
 
-    if (Ascii.toLowerCase(title).contains(AXIS_PAGE_TITLE)) {
+    boolean containsAxisTitle = Ascii.toLowerCase(title).contains(AXIS_PAGE_TITLE);
+
+    if (containsAxisTitle) {
       logger.atInfo().log("Found Axis2 Home Page (AXIS_PAGE_TITLE string present in the page)");
-      return true;
-    } else {
-      return false;
     }
+
+    return containsAxisTitle;
   }
 
   private static boolean bodyContainsAxis2AdminElements(String responseBody) {
@@ -133,7 +128,9 @@ public final class Axis2CredentialTester extends CredentialTester {
      * https://axis.apache.org/axis2/java/core/docs/webadminguide.html#login
      */
     TestCredential defaultUser = TestCredential.create(AXIS_USERNAME, Optional.of(AXIS_PASSWORD));
-    if (isAxis2Accessible(networkService, defaultUser)) return ImmutableList.of(defaultUser);
+    if (isAxis2Accessible(networkService, defaultUser)) {
+      return ImmutableList.of(defaultUser);
+    }
 
     // Returning only first match since Axis2 supports a single user
     return credentials.stream()
