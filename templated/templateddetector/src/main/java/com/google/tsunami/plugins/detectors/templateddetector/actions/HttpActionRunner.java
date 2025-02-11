@@ -121,7 +121,7 @@ public final class HttpActionRunner implements ActionRunner {
       default:
         throw new IllegalArgumentException(
             String.format(
-                "Invalid expectation type: %s (did you specify from_body or from_header?)",
+                "Invalid expectation type: %s (did you specify body or header for your expectation?)",
                 expectation.getExpectationCase()));
     }
   }
