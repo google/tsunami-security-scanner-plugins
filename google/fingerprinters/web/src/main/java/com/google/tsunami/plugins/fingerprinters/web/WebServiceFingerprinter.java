@@ -280,6 +280,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
 
     checkForMlflow(detectedSoftware, networkService, startingUrl);
     checkForZenMl(detectedSoftware, networkService, startingUrl);
+    checkForAirbyte(detectedSoftware, networkService, startingUrl);
     return ImmutableSet.copyOf(detectedSoftware);
   }
 
@@ -370,6 +371,39 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
               .build());
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", loginUrl);
+    }
+  }
+
+  private void checkForAirbyte(
+      Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
+    logger.atInfo().log("probing Airbyte root page - custom fingerprint phase");
+
+    var rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    try {
+      HttpResponse rootResponse = httpClient.send(get(rootUrl).withEmptyHeaders().build());
+      // if the airbyte has basic authentication first condition will be pass
+      // if the airbyte doesn't have any authentication second condition will be pass
+      if (!(rootResponse.status() == HttpStatus.UNAUTHORIZED
+              && rootResponse.bodyString().isPresent()
+              && rootResponse.bodyString().get().contains("<title>Airbyte - Access Denied</title>"))
+          || (rootResponse.status() == HttpStatus.OK
+              && rootResponse.bodyString().isPresent()
+              && rootResponse
+                  .bodyString()
+                  .get()
+                  .contains(
+                      "content=\"Airbyte is the turnkey open-source data integration platform that "
+                          + "syncs data from applications, APIs and databases to warehouses.\""))) {
+        return;
+      }
+      software.add(
+          DetectedSoftware.builder()
+              .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("airbyte").build())
+              .setRootPath(startingUrl)
+              .setContentHashes(ImmutableMap.of())
+              .build());
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", rootUrl);
     }
   }
 }
