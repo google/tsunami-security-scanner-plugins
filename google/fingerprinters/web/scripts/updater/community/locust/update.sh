@@ -20,9 +20,9 @@ source ../../common.sh
 
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 # Root path to the web fingerprinter plugin.
-PROJECT_ROOT="$(cd -- "${SCRIPT_PATH}../../../../../google/fingerprinters/web/" >/dev/null 2>&1 ; pwd -P)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_PATH}/../../../.." >/dev/null 2>&1 ; pwd -P)"
 # Path to the configurations for starting a live instance of Locust.
-LC_APP_PATH="${SCRIPT_PATH}/app"
+APP_PATH="${SCRIPT_PATH}/app"
 # Path to the temporary data holder.
 TMP_DATA="/tmp/lc_fingerprints"
 # Path to the local git repository for Locsut codebase.
@@ -35,24 +35,29 @@ JSON_DATA="${FINGERPRINTS_PATH}/fingerprint.json"
 BIN_DATA="${FINGERPRINTS_PATH}/fingerprint.binproto"
 # Read all the versions to be fingerprinted.
 readarray -t ALL_VERSIONS < "${SCRIPT_PATH}/versions.txt"
+
 mkdir -p "${FINGERPRINTS_PATH}"
+
+BINPROTO="${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/google/locust.binproto"
 
 startLocust() {
   local version="$1"
-  pushd "${LC_APP_PATH}" >/dev/null
+  pushd "${APP_PATH}" >/dev/null
     LC_VERSION="${version}" docker compose up -d
   popd >/dev/null
 }
 
-stopLoscust() {
+stopLocust() {
   local version="$1"
-  pushd "${LC_APP_PATH}" >/dev/null
+  pushd "${APP_PATH}" >/dev/null
     LC_VERSION="${version}" docker compose down --volumes --remove-orphans
   popd >/dev/null
 }
 
 # Convert the existing data file to a human-readable json file.
-convertFingerprint "${BIN_DATA}" "${JSON_DATA}"
+convertFingerprint \
+  $BINPROTO \
+  "${JSON_DATA}"
 
 # Fetch Locust codebase.
 if [[ ! -d "${GIT_REPO}" ]] ; then
@@ -84,5 +89,8 @@ done
 
 convertFingerprint "${JSON_DATA}" "${BIN_DATA}"
 
-echo "Fingerprint updated for Locust. Please commit the following file:"
+echo "Fingerprint updated for MLflow. Please commit the following file:"
 echo "  ${BIN_DATA}"
+echo "to"
+echo "  ${BINPROTO}"
+
