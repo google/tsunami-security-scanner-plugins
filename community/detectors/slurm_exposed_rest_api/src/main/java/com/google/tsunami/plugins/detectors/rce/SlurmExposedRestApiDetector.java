@@ -41,7 +41,7 @@ import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.NotImplementedException;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.plugins.detectors.rce.Annotations.OobSleepDuration;
+import com.google.tsunami.plugins.detectors.rce.SlurmExposedRestApiDetectorAnnotations.SlurmExposedRestApiOobSleepDuration;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -99,7 +99,7 @@ public class SlurmExposedRestApiDetector implements VulnDetector {
       HttpClient httpClient,
       @UtcClock Clock utcClock,
       PayloadGenerator payloadGenerator,
-      @OobSleepDuration int oobSleepDuration) {
+      @SlurmExposedRestApiOobSleepDuration int oobSleepDuration) {
     this.httpClient = checkNotNull(httpClient);
     this.utcClock = checkNotNull(utcClock);
     this.payloadGenerator = checkNotNull(payloadGenerator);

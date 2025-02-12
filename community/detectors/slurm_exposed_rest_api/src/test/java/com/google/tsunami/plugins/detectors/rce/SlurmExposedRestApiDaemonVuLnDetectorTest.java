@@ -31,8 +31,8 @@ import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
-import com.google.tsunami.plugins.detectors.rce.Annotations.OobSleepDuration;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
+import com.google.tsunami.plugins.detectors.rce.SlurmExposedRestApiDetectorAnnotations.SlurmExposedRestApiOobSleepDuration;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -80,7 +80,7 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
       };
 
   @Bind(lazy = true)
-  @OobSleepDuration
+  @SlurmExposedRestApiOobSleepDuration
   private int sleepDuration = 1;
 
   @Before

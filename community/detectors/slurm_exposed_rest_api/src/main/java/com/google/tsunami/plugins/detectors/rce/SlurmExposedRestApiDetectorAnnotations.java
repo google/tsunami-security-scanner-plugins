@@ -25,11 +25,11 @@ import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
 /** Annotation for {@link SlurmExposedRestApiDetector}. */
-final class Annotations {
+final class SlurmExposedRestApiDetectorAnnotations {
   @Qualifier
   @Retention(RetentionPolicy.RUNTIME)
   @Target({PARAMETER, METHOD, FIELD})
-  @interface OobSleepDuration {}
+  @interface SlurmExposedRestApiOobSleepDuration {}
 
-  private Annotations() {}
+  private SlurmExposedRestApiDetectorAnnotations() {}
 }

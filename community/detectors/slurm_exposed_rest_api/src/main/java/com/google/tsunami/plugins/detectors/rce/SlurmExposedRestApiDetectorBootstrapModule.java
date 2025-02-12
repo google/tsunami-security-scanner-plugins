@@ -17,7 +17,7 @@ package com.google.tsunami.plugins.detectors.rce;
 
 import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
-import com.google.tsunami.plugins.detectors.rce.Annotations.OobSleepDuration;
+import com.google.tsunami.plugins.detectors.rce.SlurmExposedRestApiDetectorAnnotations.SlurmExposedRestApiOobSleepDuration;
 
 /**
  * An Exposed Slurm Rest Server Detector Guice module that bootstraps the {@link
@@ -31,7 +31,7 @@ public final class SlurmExposedRestApiDetectorBootstrapModule extends PluginBoot
   }
 
   @Provides
-  @OobSleepDuration
+  @SlurmExposedRestApiOobSleepDuration
   int provideOobSleepDuration(SlurmExposedRestApiDetectorConfigs configs) {
     if (configs.oobSleepDuration == 0) {
       return 10;
