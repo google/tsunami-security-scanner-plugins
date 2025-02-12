@@ -51,25 +51,44 @@ public final class TemplatedDetectorTest {
           Arrays.fill(bytes, (byte) 0xFF);
         }
       };
+  private static final PluginAction ACTION_RETURNS_TRUE =
+      PluginAction.newBuilder()
+          .setName("action_returns_true")
+          .setHttpRequest(
+              HttpAction.newBuilder()
+                  .setMethod(HttpAction.HttpMethod.GET)
+                  .addUri("/OK")
+                  .setResponse(HttpAction.HttpResponse.newBuilder().setHttpStatus(200)))
+          .build();
+  private static final PluginAction ACTION_RETURNS_FALSE =
+      PluginAction.newBuilder()
+          .setName("action_returns_false")
+          .setHttpRequest(
+              HttpAction.newBuilder()
+                  .setMethod(HttpAction.HttpMethod.GET)
+                  .addUri("/NOTFOUND")
+                  .setResponse(HttpAction.HttpResponse.newBuilder().setHttpStatus(200)))
+          .build();
+  private static final PluginAction ACTION_CLEANUP =
+      ACTION_RETURNS_TRUE.toBuilder()
+          .setName("action_cleanup")
+          .setHttpRequest(
+              HttpAction.newBuilder().setMethod(HttpAction.HttpMethod.GET).addUri("/CLEANUP"))
+          .build();
   private static final TemplatedPlugin BASE_PROTO =
       TemplatedPlugin.newBuilder()
           .setInfo(PluginInfo.newBuilder().setName("ExampleTemplated"))
+          .addActions(ACTION_CLEANUP)
+          .addActions(ACTION_RETURNS_TRUE)
           .addActions(
-              PluginAction.newBuilder()
-                  .setName("action_returns_true")
-                  .setHttpRequest(
-                      HttpAction.newBuilder()
-                          .setMethod(HttpAction.HttpMethod.GET)
-                          .addUri("/OK")
-                          .setResponse(HttpAction.HttpResponse.newBuilder().setHttpStatus(200))))
+              ACTION_RETURNS_TRUE.toBuilder()
+                  .setName("action_returns_true_with_cleanup")
+                  .addCleanupActions("action_cleanup"))
+          .addActions(ACTION_RETURNS_FALSE)
           .addActions(
-              PluginAction.newBuilder()
-                  .setName("action_returns_false")
-                  .setHttpRequest(
-                      HttpAction.newBuilder()
-                          .setMethod(HttpAction.HttpMethod.GET)
-                          .addUri("/NOTFOUND")
-                          .setResponse(HttpAction.HttpResponse.newBuilder().setHttpStatus(200))))
+              ACTION_RETURNS_FALSE.toBuilder()
+                  .setName("action_returns_false_with_cleanup")
+                  .addCleanupActions("action_cleanup"))
           .build();
 
   private MockWebServer mockWebServer;
@@ -215,6 +234,22 @@ public final class TemplatedDetectorTest {
   }
 
   @Test
+  public void detect_unknownCleanupNameInAction_throwsException() {
+    var proto =
+        BASE_PROTO.toBuilder()
+            .addActions(
+                PluginAction.newBuilder()
+                    .setName("action_with_undefined_cleanup")
+                    .addCleanupActions("undefined_cleanup"))
+            .addWorkflows(PluginWorkflow.newBuilder().addActions("action_with_undefined_cleanup"))
+            .build();
+    var detector = setupDetector(proto);
+
+    assertThrows(
+        IllegalArgumentException.class, () -> detector.detect(this.targetInfo, this.httpServices));
+  }
+
+  @Test
   public void detect_variableFromWorkflow_propagatedAndReturnsFindings()
       throws InterruptedException {
     var proto =
@@ -275,6 +310,62 @@ public final class TemplatedDetectorTest {
 
     assertThat(detector.detect(this.targetInfo, this.httpServices).getDetectionReportsList())
         .containsExactly(expect);
+  }
+
+  @Test
+  public void detect_cleanupOnFailingAction_cleanupDoesNotRun() throws InterruptedException {
+    var proto =
+        BASE_PROTO.toBuilder()
+            .addWorkflows(
+                PluginWorkflow.newBuilder().addActions("action_returns_false_with_cleanup"))
+            .build();
+    var detector = setupDetector(proto);
+
+    assertThat(detector.detect(this.targetInfo, this.httpServices).getDetectionReportsCount())
+        .isEqualTo(0);
+    assertThat(this.mockWebServer.getRequestCount()).isEqualTo(1);
+    assertThat(this.mockWebServer.takeRequest().getPath()).isEqualTo("/NOTFOUND");
+  }
+
+  @Test
+  public void detect_cleanupOnSuccessfulAction_cleanupRunsAfterLastSuccessAction()
+      throws InterruptedException {
+    var proto =
+        BASE_PROTO.toBuilder()
+            .addWorkflows(
+                PluginWorkflow.newBuilder()
+                    .addActions("action_returns_true_with_cleanup")
+                    .addActions("action_returns_true"))
+            .build();
+    var detector = setupDetector(proto);
+
+    assertThat(detector.detect(this.targetInfo, this.httpServices).getDetectionReportsCount())
+        .isEqualTo(1);
+    assertThat(this.mockWebServer.getRequestCount()).isEqualTo(3);
+    assertThat(this.mockWebServer.takeRequest().getPath()).isEqualTo("/OK");
+    assertThat(this.mockWebServer.takeRequest().getPath()).isEqualTo("/OK");
+    assertThat(this.mockWebServer.takeRequest().getPath()).isEqualTo("/CLEANUP");
+  }
+
+  @Test
+  public void detect_cleanupOnSuccessfulAction_cleanupRunsAfterLastFailAction()
+      throws InterruptedException {
+    var proto =
+        BASE_PROTO.toBuilder()
+            .addWorkflows(
+                PluginWorkflow.newBuilder()
+                    .addActions("action_returns_true_with_cleanup")
+                    .addActions("action_returns_false")
+                    .addActions("action_returns_true"))
+            .build();
+    var detector = setupDetector(proto);
+
+    assertThat(detector.detect(this.targetInfo, this.httpServices).getDetectionReportsCount())
+        .isEqualTo(0);
+    assertThat(this.mockWebServer.getRequestCount()).isEqualTo(3);
+    assertThat(this.mockWebServer.takeRequest().getPath()).isEqualTo("/OK");
+    assertThat(this.mockWebServer.takeRequest().getPath()).isEqualTo("/NOTFOUND");
+    assertThat(this.mockWebServer.takeRequest().getPath()).isEqualTo("/CLEANUP");
   }
 
   private TemplatedDetector setupDetector(TemplatedPlugin proto) {

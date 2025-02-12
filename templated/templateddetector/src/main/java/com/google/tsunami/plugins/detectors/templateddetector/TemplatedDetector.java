@@ -147,26 +147,60 @@ public final class TemplatedDetector implements VulnDetector {
       environment.set(parameter.getName(), value);
     }
 
+    // Run every individual action and inventorize clean up actions.
+    boolean success = true;
+    ImmutableList.Builder<String> cleanupActionsBuilder = ImmutableList.builder();
     for (String actionName : workflow.getActionsList()) {
       PluginAction action = this.actionsCache.get(actionName);
       if (!dispatchAction(service, action, environment)) {
         logger.atInfo().log("No vulnerability found because action '%s' failed.", actionName);
-        return false;
+        success = false;
+        break;
+      }
+
+      cleanupActionsBuilder.addAll(action.getCleanupActionsList());
+    }
+
+    var cleanupActions = cleanupActionsBuilder.build();
+    if (cleanupActions.isEmpty()) {
+      return success;
+    }
+
+    // Run all the clean up actions that were registered.
+    logger.atInfo().log("Running %d cleanup action(s)", cleanupActions.size());
+    for (String cleanupActionName : cleanupActions) {
+      PluginAction cleanupAction = this.actionsCache.get(cleanupActionName);
+      if (!dispatchAction(service, cleanupAction, environment)) {
+        logger.atWarning().log(
+            "Cleanup action '%s' failed: manual clean up of service on port %d might be needed",
+            cleanupActionName, service.getNetworkEndpoint().getPort().getPortNumber());
       }
     }
 
-    return true;
+    return success;
   }
 
   private final DetectionReportList useWorkflow(
       TargetInfo targetInfo,
       ImmutableList<NetworkService> matchedService,
       PluginWorkflow workflow) {
-    // First we precheck that all registered actions exists.
+    // First we check that all registered actions exists.
     for (String actionName : workflow.getActionsList()) {
       if (!this.actionsCache.containsKey(actionName)) {
         throw new IllegalArgumentException(
             String.format("Plugin definition error: action '%s' not found.", actionName));
+      }
+    }
+
+    // Also check that all registered cleanups are valid.
+    for (PluginAction action : this.actionsCache.values()) {
+      for (String cleanupActionName : action.getCleanupActionsList()) {
+        if (!this.actionsCache.containsKey(cleanupActionName)) {
+          throw new IllegalArgumentException(
+              String.format(
+                  "Plugin definition error: cleanup action '%s' defined in action '%s' not found.",
+                  cleanupActionName, action.getName()));
+        }
       }
     }
 
