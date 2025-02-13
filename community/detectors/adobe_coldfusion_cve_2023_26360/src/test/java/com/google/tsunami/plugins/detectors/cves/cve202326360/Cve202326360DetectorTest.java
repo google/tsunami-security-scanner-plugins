@@ -138,6 +138,9 @@ public final class Cve202326360DetectorTest {
   public void detect_whenNotVulnerable_returnsNoVulnerability() {
     MockResponse response = new MockResponse().setBody("x");
     mockWebServer.enqueue(response);
+    mockWebServer.enqueue(response);
+    mockWebServer.enqueue(response);
+    mockWebServer.enqueue(response);
     DetectionReportList findings = detector.detect(targetInfo, ImmutableList.of(service));
     assertThat(findings.getDetectionReportsList()).isEmpty();
   }
