@@ -52,12 +52,14 @@ ext {
     okhttpVersion = '3.12.0'
     truthVersion = '1.1.3'
     guiceVersion = '4.2.3'
+    jspecifyVersion = 'latest.release'
 }
 
 dependencies {
     implementation "com.google.tsunami:tsunami-common:${tsunamiVersion}"
     implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
     implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
+    implementation "org.jspecify:jspecify:${jspecifyVersion}"
 
     testImplementation "junit:junit:${junitVersion}"
     testImplementation "com.google.truth:truth:${truthVersion}"
