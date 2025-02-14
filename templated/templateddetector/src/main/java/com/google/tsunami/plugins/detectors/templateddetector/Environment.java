@@ -5,6 +5,7 @@ import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.plugin.TcsClient;
 import com.google.tsunami.plugin.payload.PayloadSecretGenerator;
 import com.google.tsunami.proto.NetworkService;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
@@ -18,14 +19,17 @@ public final class Environment {
   private static final int SECRET_LENGTH = 8;
   private final HashMap<String, String> environment;
   private final boolean debug;
+  private final Clock utcClock;
 
-  public Environment(boolean debug) {
+  public Environment(boolean debug, Clock utcClock) {
     this.environment = new HashMap<>();
     this.debug = debug;
+    this.utcClock = utcClock;
   }
 
   public void initializeFor(
       NetworkService networkService, TcsClient tcsClient, PayloadSecretGenerator secretGenerator) {
+    this.set("T_UTL_CURRENT_TIMESTAMP_MS", String.valueOf(utcClock.instant().toEpochMilli()));
     this.set("T_NS_BASEURL", NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
     this.set("T_NS_PROTOCOL", networkService.getTransportProtocol().toString().trim());
 

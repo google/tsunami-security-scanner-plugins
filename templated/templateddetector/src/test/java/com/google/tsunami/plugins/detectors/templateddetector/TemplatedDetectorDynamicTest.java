@@ -77,7 +77,7 @@ public final class TemplatedDetectorDynamicTest {
 
   @Before
   public void setupMockServers() throws IOException {
-    environment = new Environment(false);
+    environment = new Environment(false, fakeUtcClock);
     mockWebServer = new MockWebServer();
     mockCallbackServer = new MockWebServer();
     var baseUrl = "http://" + mockWebServer.getHostName() + ":" + mockWebServer.getPort() + "/";

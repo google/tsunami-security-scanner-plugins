@@ -139,7 +139,7 @@ public final class TemplatedDetector implements VulnDetector {
   // note: expect action names to have been validated already
   private final boolean runWorkflowForService(NetworkService service, PluginWorkflow workflow) {
     // We prepare a new environment for that workflow.
-    Environment environment = new Environment(this.proto.getConfig().getDebug());
+    Environment environment = new Environment(this.proto.getConfig().getDebug(), this.utcClock);
     environment.initializeFor(service, this.tcsClient, this.secretGenerator);
 
     for (var parameter : workflow.getVariablesList()) {

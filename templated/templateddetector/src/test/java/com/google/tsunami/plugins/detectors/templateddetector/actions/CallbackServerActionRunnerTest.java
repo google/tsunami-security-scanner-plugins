@@ -4,6 +4,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.inject.Guice;
 import com.google.tsunami.common.net.http.HttpClientModule;
+import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.plugin.TcsClient;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
@@ -13,6 +14,7 @@ import com.google.tsunami.templatedplugin.proto.CallbackServerAction;
 import com.google.tsunami.templatedplugin.proto.PluginAction;
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.Arrays;
 import javax.inject.Inject;
 import okhttp3.mockwebserver.MockWebServer;
@@ -31,6 +33,8 @@ public final class CallbackServerActionRunnerTest {
 
   @Inject private TcsClient tcsClient;
 
+  private static final FakeUtcClock utcClock =
+      FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
   private static final SecureRandom testSecureRandom =
       new SecureRandom() {
         @Override
@@ -41,7 +45,7 @@ public final class CallbackServerActionRunnerTest {
 
   @Before
   public void setup() {
-    this.environment = new Environment(false);
+    this.environment = new Environment(false, utcClock);
     this.environment.set("T_CBS_SECRET", "irrelevant");
     this.service = NetworkService.getDefaultInstance();
   }
