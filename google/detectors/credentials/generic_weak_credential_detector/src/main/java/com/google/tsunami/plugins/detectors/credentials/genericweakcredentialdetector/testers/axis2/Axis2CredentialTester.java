@@ -44,7 +44,14 @@ public final class Axis2CredentialTester extends CredentialTester {
 
   private static final String AXIS_PAGE_TITLE = "axis 2 - home";
   private static final String AXIS_LOGIN_TITLE = "<title>axis2 :: administration page</title>";
+
+  /**
+   * Default credentials are inserted here instead of in the appropriate proto file since nmap
+   * identifies the service name as "http". Due to this behavior, credentials have been inserted
+   * here to not test such credentials against each "http" service.
+   */
   private static final String AXIS_USERNAME = "admin";
+
   private static final String AXIS_PASSWORD = "axis2";
 
   @Inject
