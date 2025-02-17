@@ -26,6 +26,8 @@ message HttpTestAction {
     int32 status = 1;
 
     // The URI on which this mock response will be returned.
+    // Note that this represents the path part without any GET parameters. For
+    // example for `index.php?foo=bar` the URI is `index.php`.
     string uri = 2;
 
     // The HTTP headers that the mock response will contain.
