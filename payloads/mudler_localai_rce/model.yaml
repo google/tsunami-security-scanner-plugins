@@ -1,0 +1,6 @@
+name: "TsunamiScanner"
+
+download_files:
+  - filename: "app.bin"
+    uri: "https://raw.githubusercontent.com/google/tsunami-security-scanner-plugins/master/payloads/mudler_localai_rce/app.bin"
+
