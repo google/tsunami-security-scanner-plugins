@@ -32,13 +32,13 @@ public class InitRequestFactory {
 
   public static GiopPacket generate(int requestId) {
     return GiopPacket.builder()
-            .setVersion(GiopPacket.Version.VERSION_1_0)
-            .setType(GiopPacket.Type.GIOP_REQUEST)
-            .setIsFragment(false)
-            .setZiopSupported(false)
-            .setZiopEnabled(false)
-            .setIsLittleEndian(false)
-            .setPayload(generatePayload(requestId))
-            .build();
+        .setVersion(GiopPacket.Version.VERSION_1_0)
+        .setType(GiopPacket.Type.GIOP_REQUEST)
+        .setIsFragment(false)
+        .setZiopSupported(false)
+        .setZiopEnabled(false)
+        .setIsLittleEndian(false)
+        .setPayload(generatePayload(requestId))
+        .build();
   }
 }

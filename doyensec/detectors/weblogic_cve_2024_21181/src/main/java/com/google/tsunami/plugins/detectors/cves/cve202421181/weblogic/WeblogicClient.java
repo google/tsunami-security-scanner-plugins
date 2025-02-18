@@ -257,7 +257,8 @@ public class WeblogicClient {
   public GiopPacket performResolve(String referenceName) {
     GiopPacket reply;
     do {
-      GiopPacket request = ResolveRequestFactory.generate(this.requestId, this.keyAddress, referenceName);
+      GiopPacket request =
+          ResolveRequestFactory.generate(this.requestId, this.keyAddress, referenceName);
       this.sendRequest(request);
       reply = this.receiveResponse();
     } while (isLocationForward(reply));

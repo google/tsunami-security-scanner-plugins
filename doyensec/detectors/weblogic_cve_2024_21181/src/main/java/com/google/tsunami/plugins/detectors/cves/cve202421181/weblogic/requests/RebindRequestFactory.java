@@ -3,7 +3,6 @@ package com.google.tsunami.plugins.detectors.cves.cve202421181.weblogic.requests
 import com.google.tsunami.plugins.detectors.cves.cve202421181.Utils;
 import com.google.tsunami.plugins.detectors.cves.cve202421181.giop.Giop12Request;
 import com.google.tsunami.plugins.detectors.cves.cve202421181.giop.GiopPacket;
-import com.google.tsunami.plugins.detectors.cves.cve202421181.giop.GiopPacketPayload;
 import com.google.tsunami.plugins.detectors.cves.cve202421181.giop.GiopRequest;
 import java.nio.ByteBuffer;
 
@@ -42,17 +41,17 @@ public class RebindRequestFactory extends WeblogicIiopRequestFactory {
     return buf.array();
   }
 
-  public static GiopPacket generate(int requestId, byte[] keyAddress, String referenceName, byte[] exploitPayload) {
+  public static GiopPacket generate(
+      int requestId, byte[] keyAddress, String referenceName, byte[] exploitPayload) {
     return WeblogicIiopRequestFactory.builder()
-            .setPayload(
-                    Giop12Request.builder()
-                            .setRequestId(requestId)
-                            .setKeyAddress(keyAddress)
-                            .setOperation(GiopRequest.Operation.OP_REBIND_ANY)
-                            .setServiceContextList(generateServiceContexts())
-                            .setStubData(generateStubData(referenceName, exploitPayload))
-                            .build()
-            )
-            .build();
+        .setPayload(
+            Giop12Request.builder()
+                .setRequestId(requestId)
+                .setKeyAddress(keyAddress)
+                .setOperation(GiopRequest.Operation.OP_REBIND_ANY)
+                .setServiceContextList(generateServiceContexts())
+                .setStubData(generateStubData(referenceName, exploitPayload))
+                .build())
+        .build();
   }
 }

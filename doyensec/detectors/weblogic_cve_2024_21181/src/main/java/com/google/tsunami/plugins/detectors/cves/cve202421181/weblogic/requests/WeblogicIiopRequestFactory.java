@@ -37,11 +37,11 @@ public abstract class WeblogicIiopRequestFactory {
 
   protected static GiopPacket.Builder builder() {
     return GiopPacket.builder()
-            .setVersion(GiopPacket.Version.VERSION_1_2)
-            .setType(GiopPacket.Type.GIOP_REQUEST)
-            .setIsFragment(false)
-            .setZiopSupported(false)
-            .setZiopEnabled(false)
-            .setIsLittleEndian(false);
+        .setVersion(GiopPacket.Version.VERSION_1_2)
+        .setType(GiopPacket.Type.GIOP_REQUEST)
+        .setIsFragment(false)
+        .setZiopSupported(false)
+        .setZiopEnabled(false)
+        .setIsLittleEndian(false);
   }
 }

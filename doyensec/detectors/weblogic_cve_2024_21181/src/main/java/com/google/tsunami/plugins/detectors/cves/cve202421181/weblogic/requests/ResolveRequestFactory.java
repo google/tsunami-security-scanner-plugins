@@ -28,15 +28,14 @@ public class ResolveRequestFactory extends WeblogicIiopRequestFactory {
 
   public static GiopPacket generate(int requestId, byte[] keyAddress, String referenceName) {
     return WeblogicIiopRequestFactory.builder()
-            .setPayload(
-                    Giop12Request.builder()
-                            .setRequestId(requestId)
-                            .setKeyAddress(keyAddress)
-                            .setServiceContextList(generateServiceContexts())
-                            .setOperation(GiopRequest.Operation.OP_RESOLVE_ANY)
-                            .setStubData(generateStubData(referenceName))
-                            .build()
-            )
-            .build();
+        .setPayload(
+            Giop12Request.builder()
+                .setRequestId(requestId)
+                .setKeyAddress(keyAddress)
+                .setServiceContextList(generateServiceContexts())
+                .setOperation(GiopRequest.Operation.OP_RESOLVE_ANY)
+                .setStubData(generateStubData(referenceName))
+                .build())
+        .build();
   }
 }
