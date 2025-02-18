@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalAI API - v2.14.0 (b58274b8a26a3d22605e3c484cf39c5dd9a5cf8e)</title>
+    <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/styles/default.min.css"
+  />
+    <script
+    defer
+    src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/highlight.min.js"
+  ></script>
+    <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+  ></script>
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"
+  ></script>
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+  ></script>
+
+  <link href="/static/general.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link
+    href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,900&display=swap"
+    rel="stylesheet" />
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/tw-elements/css/tw-elements.min.css" />
+  <script src="https://cdn.tailwindcss.com/3.3.0"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        fontFamily: {
+          sans: ["Roboto", "sans-serif"],
+          body: ["Roboto", "sans-serif"],
+          mono: ["ui-monospace", "monospace"],
+        },
+      },
+      corePlugins: {
+        preflight: false,
+      },
+    };
+  </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
+</head>
+
+<body class="bg-gray-900 text-gray-200">
+<div class="flex flex-col min-h-screen">
+   
+    <nav class="bg-gray-800 shadow-lg">
+    <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                
+                <a href="/" class="text-white text-xl font-bold"><img src="https://github.com/go-skynet/LocalAI/assets/2420543/0966aa2a-166e-4f99-a3e5-6c915fc997dd" alt="LocalAI Logo" class="h-10 mr-3 border-2 border-gray-300 shadow rounded"></a>
+                <a href="/" class="text-white text-xl font-bold">LocalAI</a>
+            </div>
+            <div>
+                <a href="/" class="text-gray-400 hover:text-white px-3 py-2 rounded"><i class="fas fa-home pr-2"></i>Home</a>
+                <a href="https://localai.io" class="text-gray-400 hover:text-white px-3 py-2 rounded" target="_blank" ><i class="fas fa-book-reader pr-2"></i> Documentation</a>
+                <a href="/browse/" class="text-gray-400 hover:text-white px-3 py-2 rounded"><i class="fas fa-brain pr-2"></i> Models</a>
+                <a href="/chat/" class="text-gray-400 hover:text-white px-3 py-2 rounded"><i class="fa-solid fa-comments pr-2"></i> Chat</a>
+                <a href="/text2image/" class="text-gray-400 hover:text-white px-3 py-2 rounded"><i class="fas fa-image pr-2"></i> Generate images</a>
+                <a href="/tts/" class="text-gray-400 hover:text-white px-3 py-2 rounded"><i class="fa-solid fa-music pr-2"></i> TTS </a>
+                <a href="/swagger/" class="text-gray-400 hover:text-white px-3 py-2 rounded"><i class="fas fa-code pr-2"></i> API</a>
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <div class="container mx-auto px-4 flex-grow">
+        <div class="header text-center py-12">
+            <h1 class="text-5xl font-bold text-gray-100">Welcome to <i>your</i> LocalAI instance!</h1>
+            <div class="mt-6">
+                
+            </div>
+            <p class="mt-4 text-lg">The FOSS alternative to OpenAI, Claude, ...</p>
+            <a href="https://localai.io" target="_blank" class="mt-4 inline-block bg-blue-500 text-white py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out hover:bg-blue-700 hover:shadow-lg">
+                <i class="fas fa-book-reader pr-2"></i>Documentation
+            </a>
+        </div>
+
+        <div class="models mt-12">
+            <h2 class="text-center text-3xl font-semibold text-gray-100">Installed models</h2>
+            <p class="text-center mt-4 text-xl">We have 0 pre-loaded models available.</p>
+            <ul class="mt-8 space-y-4">
+                
+            </ul>
+        </div>
+    </div>
+
+    <footer class="text-center py-8">
+    LocalAI Version v2.14.0 (b58274b8a26a3d22605e3c484cf39c5dd9a5cf8e)<br>
+    <a href='https://localai.io' class="text-blue-400 hover:text-blue-600" target="_blank">LocalAI</a> © 2023-2024 <a href='https://mudler.pm' class="text-blue-400 hover:text-blue-600" target="_blank">Ettore Di Giacinto</a>
+</footer>
+</div>
+
+</body>
+</html>
