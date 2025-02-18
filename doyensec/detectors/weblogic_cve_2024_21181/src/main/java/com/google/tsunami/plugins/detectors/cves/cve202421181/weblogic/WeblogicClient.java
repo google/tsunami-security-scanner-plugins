@@ -8,9 +8,9 @@ import com.google.tsunami.plugins.detectors.cves.cve202421181.giop.Giop12Reply;
 import com.google.tsunami.plugins.detectors.cves.cve202421181.giop.GiopPacket;
 import com.google.tsunami.plugins.detectors.cves.cve202421181.giop.GiopReply;
 import com.google.tsunami.plugins.detectors.cves.cve202421181.giop.ServiceContext;
-import com.google.tsunami.plugins.detectors.cves.cve202421181.weblogic.requests.InitRequest;
-import com.google.tsunami.plugins.detectors.cves.cve202421181.weblogic.requests.RebindRequest;
-import com.google.tsunami.plugins.detectors.cves.cve202421181.weblogic.requests.ResolveRequest;
+import com.google.tsunami.plugins.detectors.cves.cve202421181.weblogic.requests.InitRequestFactory;
+import com.google.tsunami.plugins.detectors.cves.cve202421181.weblogic.requests.RebindRequestFactory;
+import com.google.tsunami.plugins.detectors.cves.cve202421181.weblogic.requests.ResolveRequestFactory;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -190,7 +190,7 @@ public class WeblogicClient {
   // INIT REQUEST
 
   public void sendInitRequest() {
-    GiopPacket packet = new InitRequest(requestId);
+    GiopPacket packet = InitRequestFactory.generate(requestId);
     this.sendRequest(packet);
   }
 
@@ -245,8 +245,8 @@ public class WeblogicClient {
   public GiopPacket performRebind(String referenceName, byte[] payload) {
     GiopPacket reply;
     do {
-      RebindRequest request =
-          new RebindRequest(this.requestId, this.keyAddress, referenceName, payload);
+      GiopPacket request =
+          RebindRequestFactory.generate(this.requestId, this.keyAddress, referenceName, payload);
       this.sendRequest(request);
       reply = this.receiveResponse();
     } while (isLocationForward(reply));
@@ -257,7 +257,7 @@ public class WeblogicClient {
   public GiopPacket performResolve(String referenceName) {
     GiopPacket reply;
     do {
-      ResolveRequest request = new ResolveRequest(this.requestId, this.keyAddress, referenceName);
+      GiopPacket request = ResolveRequestFactory.generate(this.requestId, this.keyAddress, referenceName);
       this.sendRequest(request);
       reply = this.receiveResponse();
     } while (isLocationForward(reply));

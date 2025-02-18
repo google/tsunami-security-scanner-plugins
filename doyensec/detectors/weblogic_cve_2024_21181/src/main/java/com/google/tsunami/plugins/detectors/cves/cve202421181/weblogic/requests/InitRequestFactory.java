@@ -7,49 +7,12 @@ import com.google.tsunami.plugins.detectors.cves.cve202421181.giop.GiopRequest;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-public class InitRequest extends GiopPacket {
+public class InitRequestFactory {
   /*
   Generic IIOP 1.0 request, does not follow the format of the other requests
    */
 
-  private final int requestId;
-
-  public InitRequest(int requestId) {
-    this.requestId = requestId;
-  }
-
-  @Override
-  public Version version() {
-    return Version.VERSION_1_0;
-  }
-
-  @Override
-  public Type type() {
-    return Type.GIOP_REQUEST;
-  }
-
-  @Override
-  public boolean isLittleEndian() {
-    return false;
-  }
-
-  @Override
-  public boolean ziopEnabled() {
-    return false;
-  }
-
-  @Override
-  public boolean ziopSupported() {
-    return false;
-  }
-
-  @Override
-  public boolean isFragment() {
-    return false;
-  }
-
-  @Override
-  public GiopPacketPayload payload() {
+  private static GiopPacketPayload generatePayload(int requestId) {
     // Prepare Stub Data
     String stubDataString = "NameService";
     // size = 4 (size) + len(str) + 1 (null byte)
@@ -65,5 +28,17 @@ public class InitRequest extends GiopPacket {
         .setObjectKey(Giop10Request.ObjectKey.KEY_INIT)
         .setStubData(stubData.array())
         .build();
+  }
+
+  public static GiopPacket generate(int requestId) {
+    return GiopPacket.builder()
+            .setVersion(GiopPacket.Version.VERSION_1_0)
+            .setType(GiopPacket.Type.GIOP_REQUEST)
+            .setIsFragment(false)
+            .setZiopSupported(false)
+            .setZiopEnabled(false)
+            .setIsLittleEndian(false)
+            .setPayload(generatePayload(requestId))
+            .build();
   }
 }

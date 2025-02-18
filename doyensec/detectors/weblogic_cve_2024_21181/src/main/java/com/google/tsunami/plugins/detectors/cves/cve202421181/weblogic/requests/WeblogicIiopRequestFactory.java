@@ -5,49 +5,12 @@ import com.google.tsunami.plugins.detectors.cves.cve202421181.Utils;
 import com.google.tsunami.plugins.detectors.cves.cve202421181.giop.GiopPacket;
 import com.google.tsunami.plugins.detectors.cves.cve202421181.giop.ServiceContext;
 
-public abstract class WeblogicIiopRequest extends GiopPacket {
+public abstract class WeblogicIiopRequestFactory {
   /*
   Common values shared among all WebLogic request packets
    */
-  protected byte[] keyAddress;
-  protected int requestId;
 
-  public WeblogicIiopRequest(int requestId, byte[] keyAddress) {
-    this.requestId = requestId;
-    this.keyAddress = keyAddress;
-  }
-
-  @Override
-  public Version version() {
-    return Version.VERSION_1_2;
-  }
-
-  @Override
-  public Type type() {
-    return Type.GIOP_REQUEST;
-  }
-
-  @Override
-  public boolean isLittleEndian() {
-    return false;
-  }
-
-  @Override
-  public boolean ziopEnabled() {
-    return false;
-  }
-
-  @Override
-  public boolean ziopSupported() {
-    return false;
-  }
-
-  @Override
-  public boolean isFragment() {
-    return false;
-  }
-
-  protected ImmutableList<ServiceContext> generateServiceContexts() {
+  protected static ImmutableList<ServiceContext> generateServiceContexts() {
     ServiceContext serviceContext1 =
         ServiceContext.builder()
             .setServiceId(0x11) // Unknown
@@ -70,5 +33,15 @@ public abstract class WeblogicIiopRequest extends GiopPacket {
             .build();
 
     return ImmutableList.of(serviceContext1, serviceContext2, serviceContext3, serviceContext4);
+  }
+
+  protected static GiopPacket.Builder builder() {
+    return GiopPacket.builder()
+            .setVersion(GiopPacket.Version.VERSION_1_2)
+            .setType(GiopPacket.Type.GIOP_REQUEST)
+            .setIsFragment(false)
+            .setZiopSupported(false)
+            .setZiopEnabled(false)
+            .setIsLittleEndian(false);
   }
 }
