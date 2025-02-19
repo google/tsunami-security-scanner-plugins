@@ -178,7 +178,16 @@ public final class TemplatedDetectorDynamicTest {
   private final void prepareMockServer(ImmutableList<HttpTestAction.MockResponse> mockResponses) {
     var responseMap =
         mockResponses.stream()
-            .collect(toImmutableMap(r -> this.environment.substitute(r.getUri()), r -> r));
+            .collect(
+                toImmutableMap(
+                    r -> {
+                      var uri = this.environment.substitute(r.getUri());
+                      if (!uri.startsWith("/")) {
+                        return "/" + uri;
+                      }
+                      return uri;
+                    },
+                    r -> r));
 
     Dispatcher dispatcher =
         new Dispatcher() {
@@ -204,6 +213,7 @@ public final class TemplatedDetectorDynamicTest {
               return new MockResponse().setBody(content);
             }
 
+            logger.atInfo().log("MockHTTP: No response for request to '%s'", request.getPath());
             return new MockResponse().setResponseCode(404);
           }
         };
