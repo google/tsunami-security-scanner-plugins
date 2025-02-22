@@ -26,17 +26,17 @@ import static java.util.stream.Collectors.joining;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
-import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.protobuf.ByteString;
+import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
-import com.google.tsunami.plugin.annotations.ForWebService;
-import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.ServiceFingerprinter;
+import com.google.tsunami.plugin.annotations.ForWebService;
+import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.Crawler;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.ScopeUtils;
 import com.google.tsunami.plugins.fingerprinters.web.data.FingerprintData;
@@ -377,7 +377,6 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
     }
   }
 
-
   private void checkForArgoCd(
       Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
     logger.atInfo().log("probing Argo CD - custom fingerprint phase");
@@ -435,7 +434,8 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
           .bodyString()
           .get()
           .contains(
-              "<button type=\"submit\" class=\"button block is-primary\">Sign in with Dex</button>")) {
+              "<button type=\"submit\" class=\"button block is-primary\">Sign in with"
+                  + " Dex</button>")) {
         software.add(
             DetectedSoftware.builder()
                 .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("kubeflow").build())
