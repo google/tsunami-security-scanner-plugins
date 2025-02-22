@@ -375,17 +375,32 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
   }
 
   private void checkForKubeflow(
-      HashSet<DetectedSoftware> detectedSoftware,
-      NetworkService networkService,
-      String startingUrl) {
+      Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
+    logger.atInfo().log("probing KubeFlow Dex Login - custom fingerprint phase");
 
-    logger.atInfo().log("probing Kubeflow login page and login api - custom fingerprint phase");
+    var loginUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    try {
+      HttpResponse loginPageResponse = httpClient.send(get(loginUrl).withEmptyHeaders().build());
 
-    detectedSoftware.add(
-        DetectedSoftware.builder()
-            .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("kubeflow").build())
-            .setRootPath(startingUrl)
-            .setContentHashes(ImmutableMap.of())
-            .build());
+      if (loginPageResponse.status() != HttpStatus.FORBIDDEN
+          && loginPageResponse.bodyString().isEmpty()) {
+        return;
+      }
+
+      if (loginPageResponse
+          .bodyString()
+          .get()
+          .contains(
+              "<button type=\"submit\" class=\"button block is-primary\">Sign in with Dex</button>")) {
+        software.add(
+            DetectedSoftware.builder()
+                .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("kubeflow").build())
+                .setRootPath(startingUrl)
+                .setContentHashes(ImmutableMap.of())
+                .build());
+      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", loginUrl);
+    }
   }
 }

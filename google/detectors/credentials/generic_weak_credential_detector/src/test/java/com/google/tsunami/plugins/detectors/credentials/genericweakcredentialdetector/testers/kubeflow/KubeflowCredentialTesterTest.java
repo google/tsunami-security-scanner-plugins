@@ -53,10 +53,6 @@ public class KubeflowCredentialTesterTest {
       TestCredential.create("user@example.com", Optional.of("12341234"));
   private static final TestCredential WRONG_CRED_1 =
       TestCredential.create("wrong", Optional.of("wrong"));
-  private static final ServiceContext.Builder kubeServiceContext =
-      ServiceContext.newBuilder()
-          .setWebServiceContext(
-              WebServiceContext.newBuilder().setSoftware(Software.newBuilder().setName("jenkins")));
 
   @Before
   public void setup() {
@@ -71,9 +67,7 @@ public class KubeflowCredentialTesterTest {
         NetworkService.newBuilder()
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .setServiceName("http")
-            .setServiceContext(kubeServiceContext)
-            .setSoftware(Software.newBuilder().setName("http"))
+            .setServiceName("kubeflow")
             .build();
 
     assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WEAK_CRED_1)))
@@ -87,9 +81,7 @@ public class KubeflowCredentialTesterTest {
         NetworkService.newBuilder()
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .setServiceName("http")
-            .setServiceContext(kubeServiceContext)
-            .setSoftware(Software.newBuilder().setName("http"))
+            .setServiceName("kubeflow")
             .build();
     assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WRONG_CRED_1)))
         .isEmpty();

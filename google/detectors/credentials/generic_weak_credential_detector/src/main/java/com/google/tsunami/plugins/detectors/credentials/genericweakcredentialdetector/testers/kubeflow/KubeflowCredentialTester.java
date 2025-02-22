@@ -17,8 +17,8 @@
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.kubeflow;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.tsunami.common.data.NetworkServiceUtils.buildWebApplicationRootUrl;
 import static com.google.tsunami.common.data.NetworkServiceUtils.isWebService;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
@@ -42,11 +42,13 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import javax.inject.Inject;
 
 /** Credential tester specifically for kubeflow. */
 public final class KubeflowCredentialTester extends CredentialTester {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+  private static final String KUBEFLOW_SERVICE = "kubeflow";
 
   private final HttpClient httpClient;
 
@@ -67,7 +69,7 @@ public final class KubeflowCredentialTester extends CredentialTester {
 
   @Override
   public boolean canAccept(NetworkService networkService) {
-    return NetworkServiceUtils.getWebServiceName(networkService).equals("kubeflow");
+    return NetworkServiceUtils.getWebServiceName(networkService).equals(KUBEFLOW_SERVICE);
   }
 
   @Override
@@ -80,18 +82,29 @@ public final class KubeflowCredentialTester extends CredentialTester {
       NetworkService networkService, List<TestCredential> credentials) {
     // Always return 1st weak credential to gracefully handle no auth configured case, where we
     // return empty credential instead of all the weak credentials
-    logger.atWarning().log("======  ======== ");
     return credentials.stream()
+        .filter(cred -> Objects.equals(cred.username(), "user@example.com"))
         .filter(cred -> isKubeflowAccessible(networkService, cred))
-        .findFirst()
-        .map(ImmutableList::of)
-        .orElseGet(ImmutableList::of);
+        .collect(toImmutableList());
   }
 
   private boolean isKubeflowAccessible(NetworkService networkService, TestCredential credential) {
-    //    logger.atWarning().log("======================= '%s'", credential.username());
-    final String rootUri = buildWebApplicationRootUrl(networkService);
+    checkNotNull(networkService);
+    String rootUri;
+    // the buildWebApplicationUri method doesn't work for kubeflow and return un-excepted error
+    if (!((networkService.getSupportedHttpMethodsCount() > 0)
+        || isWebService(Optional.of(networkService.getServiceName())))) {
+      rootUri =
+          "http://"
+              + NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint())
+              + "/";
+    } else {
+      return false;
+    }
     try {
+      logger.atInfo().log(
+          "url: %s, username: %s, password: %s",
+          rootUri, credential.username(), credential.password().orElse(""));
       HttpResponse rsp =
           httpClient.send(
               get(rootUri + "oauth2/start?rd=%2F").withEmptyHeaders().build(), networkService);
@@ -185,9 +198,7 @@ public final class KubeflowCredentialTester extends CredentialTester {
         return false;
       }
       JsonObject bodyJsonObj = rsp.bodyJson().get().getAsJsonObject();
-      if (bodyJsonObj.has("menuLinks")
-          || bodyJsonObj.has("documentationItems")
-          || bodyJsonObj.has("quickLinks")) {
+      if (isValidKubeflowResponse(bodyJsonObj)) {
         return true;
       }
     } catch (RuntimeException | IOException e) {
@@ -195,5 +206,17 @@ public final class KubeflowCredentialTester extends CredentialTester {
       return false;
     }
     return false;
+  }
+
+  private boolean isValidKubeflowResponse(JsonObject bodyJsonObj) {
+    return (bodyJsonObj.has("menuLinks")
+            && bodyJsonObj.get("menuLinks").isJsonArray()
+            && !bodyJsonObj.getAsJsonArray("menuLinks").isEmpty())
+        || (bodyJsonObj.has("documentationItems")
+            && bodyJsonObj.get("documentationItems").isJsonArray()
+            && !bodyJsonObj.getAsJsonArray("documentationItems").isEmpty())
+        || (bodyJsonObj.has("quickLinks")
+            && bodyJsonObj.get("quickLinks").isJsonArray()
+            && !bodyJsonObj.getAsJsonArray("quickLinks").isEmpty());
   }
 }
