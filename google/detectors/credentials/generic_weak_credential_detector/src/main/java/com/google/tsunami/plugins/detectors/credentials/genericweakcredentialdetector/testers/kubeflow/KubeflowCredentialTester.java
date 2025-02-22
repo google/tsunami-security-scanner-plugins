@@ -17,8 +17,8 @@
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.kubeflow;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.tsunami.common.data.NetworkServiceUtils.isWebService;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.tsunami.common.data.NetworkServiceUtils.isWebService;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
@@ -34,9 +34,6 @@ import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
 import com.google.tsunami.proto.NetworkService;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -44,6 +41,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 /** Credential tester specifically for kubeflow. */
 public final class KubeflowCredentialTester extends CredentialTester {

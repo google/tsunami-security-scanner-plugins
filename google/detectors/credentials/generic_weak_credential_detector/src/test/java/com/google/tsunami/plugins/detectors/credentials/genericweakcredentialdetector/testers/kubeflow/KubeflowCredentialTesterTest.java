@@ -28,18 +28,15 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
-import com.google.tsunami.proto.ServiceContext;
-import com.google.tsunami.proto.Software;
-import com.google.tsunami.proto.WebServiceContext;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.junit.Test;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
@@ -121,7 +118,8 @@ public class KubeflowCredentialTesterTest {
                           + "  <body class=\"theme-body\">\n"
                           + "<div class=\"theme-panel\">\n"
                           + "  <h2 class=\"theme-heading\">Log in to Your Account</h2>\n"
-                          + "  <form method=\"post\" action=\"/dex/auth/local/login?back=&amp;state=ncgzcbyfxo\">\n"
+                          + "  <form method=\"post\""
+                          + " action=\"/dex/auth/local/login?back=&amp;state=ncgzcbyfxo\">\n"
                           + "    <div class=\"theme-form-row\">\n"
                           + "      <div class=\"theme-form-label\">\n"
                           + "        <label for=\"userid\">Email Address</label>\n"
