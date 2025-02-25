@@ -170,6 +170,8 @@ public final class JavaJmxRceDetector implements VulnDetector {
       Socket socket = new Socket();
       socket.connect(
           new InetSocketAddress(hostAndPort.getHost(), hostAndPort.getPort()), 10 * 1000);
+      // ensure reads don't block for more than 2 seconds
+      socket.setSoTimeout(2 * 1000);
 
       DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
       DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
