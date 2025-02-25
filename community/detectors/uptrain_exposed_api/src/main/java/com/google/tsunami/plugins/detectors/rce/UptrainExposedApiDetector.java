@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Google LLC
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,17 +53,16 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import javax.inject.Inject;
-import org.jspecify.annotations.Nullable;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import okio.Buffer;
+import org.jspecify.annotations.Nullable;
 
 /** A {@link VulnDetector} that detects the exposed uptrain api server. */
 @ForWebService

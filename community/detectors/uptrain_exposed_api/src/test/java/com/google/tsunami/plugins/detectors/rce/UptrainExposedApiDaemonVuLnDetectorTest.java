@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Google LLC
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,9 +129,9 @@ public final class UptrainExposedApiDaemonVuLnDetectorTest {
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Exposed Uptrain API Server")
                         .setDescription(
-                            "An exposed Uptrain API server can be exploited by attackers to create a"
-                                + " project with malicious AI Model. This can lead to remote code execution"
-                                + " on the server.")
+                            "An exposed Uptrain API server can be exploited by attackers to create"
+                                + " a project with malicious AI Model. This can lead to remote code"
+                                + " execution on the server.")
                         .setRecommendation(
                             "Set proper authentication for the Uptrain API server and "
                                 + "ensure the API is not publicly exposed through a "
@@ -163,8 +163,8 @@ public final class UptrainExposedApiDaemonVuLnDetectorTest {
                   && request.getHeader("uptrain-access-token").equals("default_key")) {
                 return new MockResponse()
                     .setBody(
-                        "{\"detail\":[{\"type\":\"missing\",\"loc\""
-                            + ":[\"query\",\"project_id\"],\"msg\":\"Field required\",\"input\":null}]}")
+                        "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"query\",\"project_id\"],\"msg\":\"Field"
+                            + " required\",\"input\":null}]}")
                     .setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code());
               } else {
                 return new MockResponse()
@@ -178,8 +178,7 @@ public final class UptrainExposedApiDaemonVuLnDetectorTest {
               return new MockResponse()
                   .setResponseCode(200)
                   .setBody(
-                      "0:[\"development\",[[\"children\",\"evaluations\","
-                          + "[\"evaluations\",{\"children\":[\"__PAGE__\",{}]}],\"$L1\",[null,\"$L2\"]]]]\n"
+                      "0:[\"development\",[[\"children\",\"evaluations\",[\"evaluations\",{\"children\":[\"__PAGE__\",{}]}],\"$L1\",[null,\"$L2\"]]]]\n"
                           + "3:I[\"(app-pages-browser)");
             }
             if (Objects.equals(request.getPath(), "/api/public/create_project")
