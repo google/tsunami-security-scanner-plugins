@@ -66,4 +66,6 @@ dependencies {
     testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
     testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"
     testImplementation "com.squareup.okhttp3:mockwebserver:${okhttpVersion}"
+    testImplementation "com.squareup.okhttp3:mockwebserver:${okhttpVersion}"
+    testImplementation "com.squareup.okhttp3:okhttp-tls:${okhttpVersion}"
 }

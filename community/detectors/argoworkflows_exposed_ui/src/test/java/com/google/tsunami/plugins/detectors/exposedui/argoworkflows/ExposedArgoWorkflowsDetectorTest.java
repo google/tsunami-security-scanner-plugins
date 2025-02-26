@@ -49,6 +49,8 @@ import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
+import okhttp3.tls.HandshakeCertificates;
+import okhttp3.tls.HeldCertificate;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -177,6 +179,12 @@ public final class ExposedArgoWorkflowsDetectorTest {
     mockTargetService.setDispatcher(dispatcher);
     mockTargetService.start();
     mockTargetService.url("/");
+    // Generate a self-signed certificate
+    HeldCertificate localhostCertificate =
+        new HeldCertificate.Builder().addSubjectAlternativeName("localhost").build();
+    HandshakeCertificates serverCertificates =
+        new HandshakeCertificates.Builder().heldCertificate(localhostCertificate).build();
+    mockTargetService.useHttps(serverCertificates.sslSocketFactory(), false);
 
     targetNetworkService =
         NetworkService.newBuilder()
