@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2022 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,12 +38,12 @@ readarray -t ALL_VERSIONS < "${SCRIPT_PATH}/versions.txt"
 
 mkdir -p "${FINGERPRINTS_PATH}"
 
-BINPROTO="${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/google/locust.binproto"
+BINPROTO="${PROJECT_ROOT}/src/main/resources/fingerprinters/web/data/community/locust.binproto"
 
 startLocust() {
   local version="$1"
   pushd "${APP_PATH}" >/dev/null
-    LC_VERSION="${version}" docker compose up -d
+    LC_VERSION="${version}" docker compose up -d --wait
   popd >/dev/null
 }
 
@@ -69,15 +69,12 @@ for LC_VERSION in "${ALL_VERSIONS[@]}"; do
   echo "Fingerprinting Locust version ${LC_VERSION} ..."
   # Start a live instance of Locust.
   startLocust "${LC_VERSION}"
-  # Arbitrarily chosen so that Locust is up and running.
-  echo "Waiting for Locust ${LC_VERSION} to be ready ..."
-  sleep 30
   
   # Checkout the repository to the correct tag.
   checkOutRepo "${GIT_REPO}" "${LC_VERSION}"
 
   updateFingerprint \
-    "Locust" \
+    "locust" \
     "${LC_VERSION}" \
     "${FINGERPRINTS_PATH}" \
     "${GIT_REPO}" \

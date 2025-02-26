@@ -1,16 +1,12 @@
-version: '3'
-
 services:
   master:
     image: "locustio/locust:${LC_VERSION}"
     ports:
-     - "8089:8089"
+      - "8089:8089"
     volumes:
-      - ./:/mnt/locust
+      - ./locustfile.py:/mnt/locust/locustfile.py
     command: -f /mnt/locust/locustfile.py --master -H http://master:8089
-  
-  worker:
-    image: "locustio/locust:${LC_VERSION}"
-    volumes:
-      - ./:/mnt/locust
-    command: -f /mnt/locust/locustfile.py --worker --master-host master
+    healthcheck:
+      test: [ "CMD", "python3", "-c", "import socket; socket.create_connection(('localhost', 8089), timeout=1)" ]
+      interval: 3s
+      retries: 10
