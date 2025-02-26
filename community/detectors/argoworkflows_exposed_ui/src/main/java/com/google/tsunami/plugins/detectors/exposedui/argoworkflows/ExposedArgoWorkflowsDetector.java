@@ -161,7 +161,7 @@ public final class ExposedArgoWorkflowsDetector implements VulnDetector {
     logger.atInfo().log("Starting exposed Argo Workflows servers detection by response matching.");
     String targetUrl = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
 
-    String targetUri = targetUrl + "api/v1/workflows/";
+    String targetUri = "https://" + targetUrl + "/api/v1/workflows/";
     try {
       // This is a blocking call.
       HttpResponse response =
