@@ -101,7 +101,6 @@ public final class ExposedArgoWorkflowsDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isArgoWorkflows)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
