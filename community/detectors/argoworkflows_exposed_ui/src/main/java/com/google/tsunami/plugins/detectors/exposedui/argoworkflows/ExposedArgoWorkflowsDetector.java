@@ -110,7 +110,7 @@ public final class ExposedArgoWorkflowsDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String targetUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    String targetUrl = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
     Payload callbackPayload = getTsunamiCallbackHttpPayload();
     if (callbackPayload == null
         || !callbackPayload.getPayloadAttributes().getUsesCallbackServer()) {
