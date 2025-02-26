@@ -118,7 +118,7 @@ public final class ExposedArgoWorkflowsDetector implements VulnDetector {
               + " so we cannot confirm the RCE callback");
       return false;
     }
-    String defaultWorkflowUrl = targetUrl + "api/v1/workflows/default";
+    String defaultWorkflowUrl = "https://" + targetUrl + "/api/v1/workflows/default";
     try {
       HttpResponse response =
           httpClient.send(
