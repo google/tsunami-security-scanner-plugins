@@ -6,6 +6,7 @@ import static org.junit.Assert.assertThrows;
 import com.google.inject.Guice;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpClientModule;
+import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.plugin.TcsClient;
 import com.google.tsunami.plugin.payload.PayloadSecretGenerator;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
@@ -16,6 +17,7 @@ import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Port;
 import com.google.tsunami.proto.TransportProtocol;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.regex.PatternSyntaxException;
 import javax.inject.Inject;
@@ -37,13 +39,14 @@ public final class EnvironmentTest {
   @Inject private HttpClient httpClient;
   @Inject private PayloadSecretGenerator secretGenerator;
 
+  private static final FakeUtcClock utcClock =
+      FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
+
   @Before
   public void setup() {
     Guice.createInjector(
-        new HttpClientModule.Builder().build(),
-        FakePayloadGeneratorModule.builder()
-                .setSecureRng(testSecureRandom)
-                .build())
+            new HttpClientModule.Builder().build(),
+            FakePayloadGeneratorModule.builder().setSecureRng(testSecureRandom).build())
         .injectMembers(this);
   }
 
@@ -61,20 +64,22 @@ public final class EnvironmentTest {
                     .setPort(Port.newBuilder().setPortNumber(80)))
             .setTransportProtocol(TransportProtocol.TCP)
             .build();
-    Environment env = new Environment(false);
+    Environment env = new Environment(false, utcClock);
     env.initializeFor(networkService, tcsClient, secretGenerator);
 
+    assertThat(env.get("T_UTL_CURRENT_TIMESTAMP_MS")).isEqualTo("1577836800000");
     assertThat(env.get("T_NS_BASEURL")).isEqualTo("http://hostname:80/");
     assertThat(env.get("T_NS_PROTOCOL")).isEqualTo("TCP");
     assertThat(env.get("T_NS_HOSTNAME")).isEqualTo("hostname");
     assertThat(env.get("T_NS_PORT")).isEqualTo("80");
     assertThat(env.get("T_NS_IP")).isEqualTo("127.0.0.1");
-    assertThat(env.get("T_CBS_URI")).isEqualTo("http://1.2.3.4:1234/2f2f44946531433a8eec636344578b3e6a321a52ff328315f446dfe0");
+    assertThat(env.get("T_CBS_URI"))
+        .isEqualTo("http://1.2.3.4:1234/2f2f44946531433a8eec636344578b3e6a321a52ff328315f446dfe0");
     assertThat(env.get("T_CBS_ADDRESS")).isEqualTo("1.2.3.4");
     assertThat(env.get("T_CBS_PORT")).isEqualTo("1234");
     assertThat(env.get("T_CBS_SECRET")).isEqualTo("ffffffffffffffff");
   }
-  
+
   @Test
   public void initializeWithoutCallbackButWithSecrets_setsEnvironment() {
     TcsClient tcsClient = new TcsClient("", 0, "", httpClient);
@@ -89,9 +94,10 @@ public final class EnvironmentTest {
                     .setPort(Port.newBuilder().setPortNumber(80)))
             .setTransportProtocol(TransportProtocol.TCP)
             .build();
-    Environment env = new Environment(false);
+    Environment env = new Environment(false, utcClock);
     env.initializeFor(networkService, tcsClient, secretGenerator);
 
+    assertThat(env.get("T_UTL_CURRENT_TIMESTAMP_MS")).isEqualTo("1577836800000");
     assertThat(env.get("T_NS_BASEURL")).isEqualTo("http://hostname:80/");
     assertThat(env.get("T_NS_PROTOCOL")).isEqualTo("TCP");
     assertThat(env.get("T_NS_HOSTNAME")).isEqualTo("hostname");
@@ -117,9 +123,10 @@ public final class EnvironmentTest {
                     .setPort(Port.newBuilder().setPortNumber(80)))
             .setTransportProtocol(TransportProtocol.TCP)
             .build();
-    Environment env = new Environment(false);
+    Environment env = new Environment(false, utcClock);
     env.initializeFor(networkService, tcsClient, null);
 
+    assertThat(env.get("T_UTL_CURRENT_TIMESTAMP_MS")).isEqualTo("1577836800000");
     assertThat(env.get("T_NS_BASEURL")).isEqualTo("http://hostname:80/");
     assertThat(env.get("T_NS_PROTOCOL")).isEqualTo("TCP");
     assertThat(env.get("T_NS_HOSTNAME")).isEqualTo("hostname");
@@ -133,7 +140,7 @@ public final class EnvironmentTest {
 
   @Test
   public void setVariable_addsToEnvironment() {
-    Environment env = new Environment(false);
+    Environment env = new Environment(false, utcClock);
     env.set("var1", "value1");
     env.set("var2", "value2");
 
@@ -143,7 +150,7 @@ public final class EnvironmentTest {
 
   @Test
   public void substitute_replacesVariablesInTemplate() {
-    Environment env = new Environment(false);
+    Environment env = new Environment(false, utcClock);
     env.set("var1", "value1");
     env.set("var2", "value2");
 
@@ -156,7 +163,7 @@ public final class EnvironmentTest {
 
   @Test
   public void substituteWithInvalidTemplate_replacesNothing() {
-    Environment env = new Environment(false);
+    Environment env = new Environment(false, utcClock);
     env.set("var1", "value1");
 
     String template = "This is {var1}";
@@ -167,7 +174,7 @@ public final class EnvironmentTest {
 
   @Test
   public void substituteWithNonExistingVar_replacesNothing() {
-    Environment env = new Environment(false);
+    Environment env = new Environment(false, utcClock);
     env.set("var2", "value2");
 
     String template = "This is {{var1}}{{ var1 }}";
@@ -178,7 +185,7 @@ public final class EnvironmentTest {
 
   @Test
   public void extractWhenFound_addsToEnvironment() {
-    Environment env = new Environment(false);
+    Environment env = new Environment(false, utcClock);
 
     String template = "value1:12345";
     String pattern = "value1:([0-9]+)";
@@ -189,7 +196,7 @@ public final class EnvironmentTest {
 
   @Test
   public void extractWhenNotFound_returnsFalse() {
-    Environment env = new Environment(false);
+    Environment env = new Environment(false, utcClock);
 
     String template = "value1:abcdef";
     String pattern = "value1:([0-9]+)";
@@ -200,7 +207,7 @@ public final class EnvironmentTest {
 
   @Test
   public void extractWhenInvalidPattern_throwsException() {
-    Environment env = new Environment(false);
+    Environment env = new Environment(false, utcClock);
 
     String template = "value1:abcdef";
     String pattern = "value1:([0-9]+";
