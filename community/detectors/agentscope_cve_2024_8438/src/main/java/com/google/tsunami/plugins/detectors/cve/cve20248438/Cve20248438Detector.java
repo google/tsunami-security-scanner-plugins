@@ -19,6 +19,7 @@ package com.google.tsunami.plugins.detectors.cve.cve20248438;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -30,6 +31,7 @@ import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -51,7 +53,7 @@ import javax.inject.Inject;
 /** A {@link VulnDetector} that detects the CVE-2024-8438 . */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "ExampleVulnDetector",
+    name = "Cve20248438Detector",
     version = "0.1",
     description = Cve20248438Detector.VULN_DESCRIPTION,
     author = "rdj (rdj@crackatoa.id)",
@@ -60,7 +62,7 @@ import javax.inject.Inject;
 public final class Cve20248438Detector implements VulnDetector {
 
   @VisibleForTesting
-  static final String DETECTION_STRING = Pattern.compile("(root:[x*]:0:0:)");
+  static final Pattern DETECTION_PATTERN = Pattern.compile("(root:[x*]:0:0:)");
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION =
@@ -92,11 +94,34 @@ public final class Cve20248438Detector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(NetworkServiceUtils::isWebService)
+                .filter(this::isAgentscopeWebApplication)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
+  }
+
+  private boolean isAgentscopeWebApplication(NetworkService networkService) {
+    try {
+        String agentScopeUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+        HttpResponse httpResponse = httpClient.send(
+            get(agentScopeUrl)
+                .setHeaders(
+                    HttpHeaders.builder().addHeader(USER_AGENT, "TSUNAMI_SCANNER").build())
+                .build(),
+            networkService
+        );
+        return httpResponse.status() == HttpStatus.OK 
+            && httpResponse.bodyString().isPresent() 
+            && httpResponse.bodyString().get().contains("<title>AgentScope Studio</title>");
+
+    } catch (RuntimeException | IOException e) {
+        logger.atWarning().withCause(e).log(
+            "Request to target %s failed",
+            NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+        );
+        return false;
+    }
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
@@ -106,14 +131,13 @@ public final class Cve20248438Detector implements VulnDetector {
       HttpResponse httpResponse =
           httpClient.sendAsIs(
               get(targetVulnerabilityUrl)
-                  .setHeaders(
-                      HttpHeaders.builder()
-                          .addHeader(CONTENT_TYPE, MediaType.FORM_DATA.toString())
-                          .build())
-                  .build());
-      if (httpResponse.status().code() == 200
-          && httpResponse.bodyString().get().contains(DETECTION_STRING)) {
-        return true;
+                .setHeaders(
+                    HttpHeaders.builder().addHeader(USER_AGENT, "TSUNAMI_SCANNER").build())
+                .build());
+      if (httpResponse.status() == HttpStatus.OK && httpResponse.bodyString().isPresent()) {
+        if (DETECTION_PATTERN.matcher(httpResponse.bodyString().get()).find()) {
+            return true;
+        }
       }
     } catch (IOException | AssertionError e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
