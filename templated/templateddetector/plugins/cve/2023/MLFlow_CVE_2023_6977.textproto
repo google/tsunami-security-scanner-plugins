@@ -36,17 +36,12 @@ finding: {
   }
 }
 
-config: {
-  debug: true
-}
-
 ###########
 # ACTIONS #
 ###########
 
 actions: {
   name: "create_model"
-  cleanup_actions: ["clean_model"]
   http_request: {
     method: POST
     uri: "ajax-api/2.0/mlflow/registered-models/create"
@@ -63,6 +58,7 @@ actions: {
       }
     }
   }
+  cleanup_actions: "clean_model"
 }
 
 actions: {
