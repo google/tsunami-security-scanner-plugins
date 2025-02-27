@@ -33,10 +33,5 @@ RUN python3 -m pip install --upgrade pip && \
 # Set the working directory
 WORKDIR /src
 
-# Your build or run commands here
-# For example, to build a Rust project:
-# COPY . .
-# RUN cargo build --release
-
 # Start Bash
 CMD  /bin/bash
