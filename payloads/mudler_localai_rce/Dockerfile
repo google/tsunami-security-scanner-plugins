@@ -31,7 +31,8 @@ RUN python3 -m pip install --upgrade pip && \
   python3 -m pip install pyinstaller
 
 # Set the working directory
-WORKDIR /src
+WORKDIR /opt
+COPY app_bin_compile.py app_bin_compile.py
 
 # Start Bash
 CMD  /bin/bash
