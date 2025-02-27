@@ -304,7 +304,7 @@ public final class Cve20246983VulnDetector implements VulnDetector {
     Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(10));
     logger.atInfo().log("Triggering the malicious model");
     if (!triggerCreatedModel(networkService)) {
-        logger.atInfo().log("Expected Timeout");
+      logger.atInfo().log("Expected Timeout");
     }
     // Preloaded models cannot be deleted, but payload continues to work even if the same model
     // exists. That's why only delete payload file.
