@@ -1,21 +1,22 @@
 
 
-Locustf
-static/echarts.common.min.js"
- 8d7ae6f633f19a43e6ef73b2374786ba"
- 125c0bc14e6b5040b20b7c70065aacc8>
+Locust>
 static/style.css?v=1.1.1"
- 36b96eba07e80bcfa7d5fe63f2a0e746B
-static/img/logo.png?v=2.10.2"
- da72d5821eea202fae2d65afcb81cd23B
-static/img/logo.png?v=2.10.0"
- da72d5821eea202fae2d65afcb81cd23B
-static/img/logo.png?v=2.10.1"
+ 36b96eba07e80bcfa7d5fe63f2a0e746>
+assets/index-fcdc76c8.js"
+ e4e13fb97e25789eae9a7b32a51bf7c3B
+static/img/logo.png?v=2.18.4"
  da72d5821eea202fae2d65afcb81cd23?
 static/style.css?v=0.12.1"
  4edfec4d64359a346933dddc0ff1d74f?
 static/style.css?v=0.12.2"
- 29f1037a95944018904575e24c66f095>
+ 29f1037a95944018904575e24c66f095B
+static/img/logo.png?v=2.18.2"
+ da72d5821eea202fae2d65afcb81cd23B
+static/img/logo.png?v=2.18.3"
+ da72d5821eea202fae2d65afcb81cd23B
+static/img/logo.png?v=2.18.1"
+ da72d5821eea202fae2d65afcb81cd23>
 static/locust.js?v=2.4.1"
  b00214c7f06f1f78903df3256fa2b97f>
 static/locust.js?v=2.4.0"
@@ -41,9 +42,7 @@
 static/locust.js?v=1.6.0"
  d9e49adf6fabe0b03c6081118713b46eH
 "static/css/application.css?v=1.6.0"
- 5f3d84a76da1e6b47ff817013bbe15a5A
-static/img/logo.png?v=1.6.0"
- da72d5821eea202fae2d65afcb81cd23I
+ 5f3d84a76da1e6b47ff817013bbe15a5I
 #static/css/application.css?v=2.10.2"
  e02dfd9ec54e70f7e86c5297540af4f3I
 #static/css/application.css?v=2.10.1"
@@ -51,55 +50,41 @@
 static/tasks.js?v=2.9.0"
  a5bc2fa024e6679dfabeb77117c1290fA
 static/locust.js?v=0.1.dev1"
- b00214c7f06f1f78903df3256fa2b97f=
-static/chart.js?v=1.3.0"
- a02af2c8efeecbde724ba660e60f4564?
+ b00214c7f06f1f78903df3256fa2b97f>
+static/chart.js?v=2.18.2"
+ 0d898614ccac9e2105d9ddb54470eb44>
+static/chart.js?v=2.18.1"
+ 0d898614ccac9e2105d9ddb54470eb44>
+static/chart.js?v=2.18.4"
+ 0d898614ccac9e2105d9ddb54470eb44>
+static/chart.js?v=2.18.3"
+ 0d898614ccac9e2105d9ddb54470eb44?
 static/locust.js?v=2.10.1"
- 6f83fdfac13fe3f7928cacc2916afb33>
-static/chart.js?v=2.10.0"
- 1ef93a72376d890cd842084ea55eacc8A
-static/img/logo.png?v=2.4.2"
- da72d5821eea202fae2d65afcb81cd23H
+ 6f83fdfac13fe3f7928cacc2916afb33H
 "static/css/application.css?v=2.4.1"
- e02dfd9ec54e70f7e86c5297540af4f3=
-static/chart.js?v=1.3.1"
- a02af2c8efeecbde724ba660e60f4564?
+ e02dfd9ec54e70f7e86c5297540af4f3?
 static/locust.js?v=2.10.2"
- 6f83fdfac13fe3f7928cacc2916afb33A
-static/img/logo.png?v=2.4.1"
- da72d5821eea202fae2d65afcb81cd23H
+ 6f83fdfac13fe3f7928cacc2916afb33H
 "static/css/application.css?v=2.4.0"
- e02dfd9ec54e70f7e86c5297540af4f3=
-static/chart.js?v=1.3.2"
- a02af2c8efeecbde724ba660e60f4564>
-static/chart.js?v=2.10.2"
- 1ef93a72376d890cd842084ea55eacc8H
+ e02dfd9ec54e70f7e86c5297540af4f3H
 "static/css/application.css?v=2.4.3"
- e02dfd9ec54e70f7e86c5297540af4f3>
-static/chart.js?v=2.10.1"
- 1ef93a72376d890cd842084ea55eacc8A
-static/img/logo.png?v=2.4.3"
- da72d5821eea202fae2d65afcb81cd23H
+ e02dfd9ec54e70f7e86c5297540af4f3H
 "static/css/application.css?v=2.4.2"
  e02dfd9ec54e70f7e86c5297540af4f3?
 static/locust.js?v=2.10.0"
- 6f83fdfac13fe3f7928cacc2916afb33A
-static/img/logo.png?v=2.4.0"
- da72d5821eea202fae2d65afcb81cd23>
+ 6f83fdfac13fe3f7928cacc2916afb33>
 static/style.css?v=1.0.1"
  36b96eba07e80bcfa7d5fe63f2a0e746?
 static/style.css?v=0.13.5"
- 86bc6e774f7ccaafa7952b94ea8600be=
-static/chart.js?v=2.1.0"
- 1ef93a72376d890cd842084ea55eacc8>
+ 86bc6e774f7ccaafa7952b94ea8600beI
+#static/css/application.css?v=2.21.0"
+ e3255a2256779f54497e8de9c621c962B
+static/img/logo.png?v=2.17.0"
+ da72d5821eea202fae2d65afcb81cd23>
 static/style.css?v=1.0.3"
- 36b96eba07e80bcfa7d5fe63f2a0e746?
-static/locust.js?v=0.12.1"
- b34e37f2de58c5eebbc1418e2bcf635a>
+ 36b96eba07e80bcfa7d5fe63f2a0e746>
 static/style.css?v=1.0.2"
  36b96eba07e80bcfa7d5fe63f2a0e746?
-static/locust.js?v=0.12.2"
- acb86ba7d9d07f72f9e0b6aed7ff0e8a?
 static/style.css?v=0.13.0"
  86bc6e774f7ccaafa7952b94ea8600be?
 static/style.css?v=0.13.1"
@@ -113,77 +98,43 @@
 static/locust.js?v=2.5.0"
  4cc0c91d7c4846e4b48065e80e849ae6>
 static/locust.js?v=2.5.1"
- 4cc0c91d7c4846e4b48065e80e849ae6=
-static/tasks.js?v=2.2.3"
- c0abd69ba968407a89c00c4bfc946b97=
-static/tasks.js?v=2.2.2"
- c0abd69ba968407a89c00c4bfc946b97@
+ 4cc0c91d7c4846e4b48065e80e849ae6@
 static/jquery.tools.min.js"
  e6c6e78f6b9a8008917c718c7289db99=
 static/chart.js?v=2.9.0"
- 1ef93a72376d890cd842084ea55eacc8>
-static/tasks.js?v=2.14.0"
- 525fd22f708c603f89887744e306fdb2H
+ 1ef93a72376d890cd842084ea55eacc8H
 "static/css/application.css?v=1.5.3"
- 5f3d84a76da1e6b47ff817013bbe15a5A
-static/img/logo.png?v=1.5.3"
- da72d5821eea202fae2d65afcb81cd23H
+ 5f3d84a76da1e6b47ff817013bbe15a5H
 "static/css/application.css?v=1.5.2"
- 5f3d84a76da1e6b47ff817013bbe15a5>
-static/tasks.js?v=2.14.2"
- 525fd22f708c603f89887744e306fdb2A
-static/img/logo.png?v=1.5.2"
- da72d5821eea202fae2d65afcb81cd23H
+ 5f3d84a76da1e6b47ff817013bbe15a5H
 "static/css/application.css?v=1.5.1"
- 5f3d84a76da1e6b47ff817013bbe15a5>
-static/tasks.js?v=2.14.1"
- 525fd22f708c603f89887744e306fdb2A
-static/img/logo.png?v=1.5.1"
- da72d5821eea202fae2d65afcb81cd23H
+ 5f3d84a76da1e6b47ff817013bbe15a5H
 "static/css/application.css?v=1.5.0"
  5f3d84a76da1e6b47ff817013bbe15a5>
 static/locust.js?v=1.0b2"
  5f30f723dca65a3f2083e35831ad351f>
+static/chart.js?v=2.19.1"
+ 0d898614ccac9e2105d9ddb54470eb44>
 static/locust.js?v=1.0b1"
- 5f30f723dca65a3f2083e35831ad351fA
-static/img/logo.png?v=1.5.0"
- da72d5821eea202fae2d65afcb81cd23=
-static/chart.js?v=1.2.1"
- f0efa6e3c289bba7e44daa60cf431f3b?
+ 5f30f723dca65a3f2083e35831ad351f>
+static/chart.js?v=2.19.0"
+ 0d898614ccac9e2105d9ddb54470eb44?
 static/locust.js?v=2.11.0"
- 6f83fdfac13fe3f7928cacc2916afb33=
-static/chart.js?v=1.2.2"
- f0efa6e3c289bba7e44daa60cf431f3b?
+ 6f83fdfac13fe3f7928cacc2916afb33?
 static/locust.js?v=2.11.1"
- 6f83fdfac13fe3f7928cacc2916afb33=
-static/chart.js?v=1.2.3"
- f0efa6e3c289bba7e44daa60cf431f3b>
-static/chart.js?v=2.11.1"
- 1ef93a72376d890cd842084ea55eacc8>
-static/chart.js?v=2.11.0"
- 1ef93a72376d890cd842084ea55eacc8?
+ 6f83fdfac13fe3f7928cacc2916afb33?
 static/style.css?v=0.14.4"
- 86bc6e774f7ccaafa7952b94ea8600be?
-static/locust.js?v=0.13.2"
- f99b3a3dc3483e05628b07565854c566?
+ 86bc6e774f7ccaafa7952b94ea8600beB
+static/img/logo.png?v=2.16.0"
+ da72d5821eea202fae2d65afcb81cd23?
 static/style.css?v=0.14.5"
- 86bc6e774f7ccaafa7952b94ea8600be?
-static/locust.js?v=0.13.3"
- f99b3a3dc3483e05628b07565854c566?
+ 86bc6e774f7ccaafa7952b94ea8600beB
+static/img/logo.png?v=2.16.1"
+ da72d5821eea202fae2d65afcb81cd23?
 static/style.css?v=0.14.6"
- 86bc6e774f7ccaafa7952b94ea8600be?
-static/locust.js?v=0.13.0"
- f99b3a3dc3483e05628b07565854c566?
-static/locust.js?v=0.13.1"
- f99b3a3dc3483e05628b07565854c566=
-static/chart.js?v=2.2.2"
- 1ef93a72376d890cd842084ea55eacc8=
-static/chart.js?v=2.2.3"
- 1ef93a72376d890cd842084ea55eacc8?
-static/locust.js?v=0.13.4"
- f99b3a3dc3483e05628b07565854c566?
-static/locust.js?v=0.13.5"
- f99b3a3dc3483e05628b07565854c566?
+ 86bc6e774f7ccaafa7952b94ea8600be>
+static/tasks.js?v=2.21.0"
+ 525fd22f708c603f89887744e306fdb2?
 static/style.css?v=0.14.0"
  86bc6e774f7ccaafa7952b94ea8600be?
 static/style.css?v=0.14.1"
@@ -195,27 +146,27 @@
 static/locust.js?v=2.2.3"
  b00214c7f06f1f78903df3256fa2b97f>
 static/locust.js?v=2.2.2"
- b00214c7f06f1f78903df3256fa2b97fH
+ b00214c7f06f1f78903df3256fa2b97f?
+static/locust.js?v=2.20.0"
+ d33fbc15fbccd191119384e256b7421d?
+static/locust.js?v=2.20.1"
+ d33fbc15fbccd191119384e256b7421d>
+assets/index-941b6e82.js"
+ 8bde2c346945185f85547e2c6b1b72e4H
 "static/css/application.css?v=1.4.4"
  5f3d84a76da1e6b47ff817013bbe15a5>
 static/locust.js?v=1.4.4"
- d9e49adf6fabe0b03c6081118713b46eA
-static/img/logo.png?v=1.4.4"
- da72d5821eea202fae2d65afcb81cd23H
+ d9e49adf6fabe0b03c6081118713b46eH
 "static/css/application.css?v=1.4.3"
  5f3d84a76da1e6b47ff817013bbe15a5>
 static/locust.js?v=1.4.3"
- d9e49adf6fabe0b03c6081118713b46eA
-static/img/logo.png?v=1.4.3"
- da72d5821eea202fae2d65afcb81cd23>
+ d9e49adf6fabe0b03c6081118713b46e>
 static/locust.js?v=1.4.2"
  d5edf535484f53fce2e412e1ae05ba22H
 "static/css/application.css?v=1.4.2"
  5f3d84a76da1e6b47ff817013bbe15a5>
 static/locust.js?v=1.4.1"
- 678ce494219c5f403e2f1876086bcdd1A
-static/img/logo.png?v=1.4.2"
- da72d5821eea202fae2d65afcb81cd23<
+ 678ce494219c5f403e2f1876086bcdd1<
 static/img/favicon.ico"
  ae1eb99e09b092b5f565725b9503dd61>
 static/locust.js?v=1.4.0"
@@ -225,121 +176,63 @@
 #static/css/application.css?v=2.12.1"
  f8d77ebf9958b9b11067c554962e4c06I
 #static/css/application.css?v=2.12.0"
- f8d77ebf9958b9b11067c554962e4c06A
-static/img/logo.png?v=1.4.1"
- da72d5821eea202fae2d65afcb81cd23=
-static/chart.js?v=1.5.2"
- 1ef93a72376d890cd842084ea55eacc8A
-static/img/logo.png?v=1.4.0"
- da72d5821eea202fae2d65afcb81cd23=
-static/chart.js?v=1.5.3"
- 1ef93a72376d890cd842084ea55eacc8H
+ f8d77ebf9958b9b11067c554962e4c06>
+assets/index-CwF7Fst2.js"
+ 12f5bbf63b33cceeffb268e39829de0b>
+static/chart.js?v=2.16.1"
+ 0d898614ccac9e2105d9ddb54470eb44H
 "static/css/application.css?v=2.2.3"
- e02dfd9ec54e70f7e86c5297540af4f3A
-static/img/logo.png?v=2.2.3"
- da72d5821eea202fae2d65afcb81cd23H
+ e02dfd9ec54e70f7e86c5297540af4f3H
 "static/css/application.css?v=2.2.2"
- e02dfd9ec54e70f7e86c5297540af4f3=
-static/chart.js?v=1.5.0"
- 1ef93a72376d890cd842084ea55eacc8=
-static/chart.js?v=1.5.1"
- 1ef93a72376d890cd842084ea55eacc8>
-static/style.css?v=1.0b1"
- 36b96eba07e80bcfa7d5fe63f2a0e746B
+ e02dfd9ec54e70f7e86c5297540af4f3B
 static/img/logo.png?v=0.13.4"
  da72d5821eea202fae2d65afcb81cd23B
 static/img/logo.png?v=0.13.3"
  da72d5821eea202fae2d65afcb81cd23>
-static/style.css?v=1.0b2"
- 36b96eba07e80bcfa7d5fe63f2a0e746B
+static/chart.js?v=2.16.0"
+ 0d898614ccac9e2105d9ddb54470eb44B
 static/img/logo.png?v=0.13.5"
- da72d5821eea202fae2d65afcb81cd23@
-static/chart.js?v=0.1.dev1"
- 1ef93a72376d890cd842084ea55eacc8B
+ da72d5821eea202fae2d65afcb81cd23B
 static/img/logo.png?v=0.13.0"
  da72d5821eea202fae2d65afcb81cd23B
 static/img/logo.png?v=0.13.2"
  da72d5821eea202fae2d65afcb81cd23B
 static/img/logo.png?v=0.13.1"
- da72d5821eea202fae2d65afcb81cd23A
-static/img/logo.png?v=2.2.2"
  da72d5821eea202fae2d65afcb81cd23M
 'static/css/application.css?v=2.8.2.dev0"
- e02dfd9ec54e70f7e86c5297540af4f3?
-static/locust.js?v=0.14.1"
- 0e3d9c1fd58847878f93c20e4934eb63?
-static/chart.js?v=2.0.0b0"
- 1ef93a72376d890cd842084ea55eacc8?
-static/locust.js?v=0.14.2"
- 0e3d9c1fd58847878f93c20e4934eb63?
-static/chart.js?v=2.0.0b1"
- 1ef93a72376d890cd842084ea55eacc8?
-static/chart.js?v=2.0.0b2"
- 1ef93a72376d890cd842084ea55eacc8?
-static/locust.js?v=0.14.0"
- 0e3d9c1fd58847878f93c20e4934eb63?
-static/chart.js?v=2.0.0b3"
- 1ef93a72376d890cd842084ea55eacc8?
-static/locust.js?v=0.14.5"
- 0e3d9c1fd58847878f93c20e4934eb63?
-static/locust.js?v=0.14.6"
- 0e3d9c1fd58847878f93c20e4934eb63?
-static/locust.js?v=0.14.3"
- 0e3d9c1fd58847878f93c20e4934eb63?
-static/locust.js?v=0.14.4"
- 0e3d9c1fd58847878f93c20e4934eb63?
-static/img/logo.png?v=1.2"
- da72d5821eea202fae2d65afcb81cd23?
-static/img/logo.png?v=1.0"
- da72d5821eea202fae2d65afcb81cd23?
-static/img/logo.png?v=1.1"
- da72d5821eea202fae2d65afcb81cd23=
-static/tasks.js?v=2.4.1"
- c0abd69ba968407a89c00c4bfc946b97=
-static/tasks.js?v=2.4.0"
- c0abd69ba968407a89c00c4bfc946b97>
+ e02dfd9ec54e70f7e86c5297540af4f3B
+static/img/logo.png?v=2.15.1"
+ da72d5821eea202fae2d65afcb81cd23B
+static/img/logo.png?v=2.15.0"
+ da72d5821eea202fae2d65afcb81cd23>
+static/tasks.js?v=2.20.0"
+ 525fd22f708c603f89887744e306fdb2>
+static/tasks.js?v=2.20.1"
+ 525fd22f708c603f89887744e306fdb2>
+assets/index-093e1f62.js"
+ eea88252285a6ea79cd9529dc008b63d>
+assets/index-DzzqypJO.js"
+ 78a6c0d3ba3cd26653cc3d1bbf05c893?
+static/locust.js?v=2.21.0"
+ d33fbc15fbccd191119384e256b7421d>
+assets/index-DQd3Odi5.js"
+ f3034909f8b32d499744cfadeaa59c5f>
 static/locust.js?v=1.5.3"
  d9e49adf6fabe0b03c6081118713b46e>
 static/locust.js?v=1.5.2"
- d9e49adf6fabe0b03c6081118713b46eJ
-$static/css/application.css?v=2.0.0b1"
- 5f3d84a76da1e6b47ff817013bbe15a5>
+ d9e49adf6fabe0b03c6081118713b46e>
 static/locust.js?v=1.5.1"
- d9e49adf6fabe0b03c6081118713b46eJ
-$static/css/application.css?v=2.0.0b0"
- 5f3d84a76da1e6b47ff817013bbe15a5>
+ d9e49adf6fabe0b03c6081118713b46e>
 static/locust.js?v=1.5.0"
  d9e49adf6fabe0b03c6081118713b46eI
 #static/css/application.css?v=2.11.1"
  63d2613739af0d568b958c69a419de16I
 #static/css/application.css?v=2.11.0"
- 63d2613739af0d568b958c69a419de16=
-static/tasks.js?v=2.4.3"
- c0abd69ba968407a89c00c4bfc946b97=
-static/tasks.js?v=2.4.2"
- c0abd69ba968407a89c00c4bfc946b97A
-static/img/logo.png?v=1.3.2"
- da72d5821eea202fae2d65afcb81cd23H
-"static/css/application.css?v=2.9.0"
- e02dfd9ec54e70f7e86c5297540af4f3J
-$static/css/application.css?v=2.0.0b3"
- 5f3d84a76da1e6b47ff817013bbe15a5=
-static/chart.js?v=1.4.3"
- 1ef93a72376d890cd842084ea55eacc8A
-static/img/logo.png?v=1.3.1"
- da72d5821eea202fae2d65afcb81cd23J
-$static/css/application.css?v=2.0.0b2"
- 5f3d84a76da1e6b47ff817013bbe15a5=
-static/chart.js?v=1.4.4"
- 1ef93a72376d890cd842084ea55eacc8A
-static/img/logo.png?v=1.3.0"
- da72d5821eea202fae2d65afcb81cd23=
-static/chart.js?v=1.4.0"
- a02af2c8efeecbde724ba660e60f4564=
-static/chart.js?v=1.4.1"
- a02af2c8efeecbde724ba660e60f4564=
-static/chart.js?v=1.4.2"
- 1ef93a72376d890cd842084ea55eacc8H
+ 63d2613739af0d568b958c69a419de16>
+static/chart.js?v=2.17.0"
+ 0d898614ccac9e2105d9ddb54470eb44=
+assets/favicon-dark.png"
+ 64401b00be71fbe46f729ff5a065b888H
 "static/css/application.css?v=2.1.0"
  5f3d84a76da1e6b47ff817013bbe15a5A
 static/img/logo.png?v=2.9.0"
@@ -347,8 +240,6 @@ $static/css/application.css?v=2.0.0b2"
 static/img/logo.png?v=0.12.1"
  da72d5821eea202fae2d65afcb81cd23B
 static/img/logo.png?v=0.12.2"
- da72d5821eea202fae2d65afcb81cd23A
-static/img/logo.png?v=2.1.0"
  da72d5821eea202fae2d65afcb81cd23>
 static/chart.js?v=0.14.0"
  d3fcfec3f1f90cfe5e02a8346f1d22c1B
@@ -397,25 +288,9 @@ $static/css/application.css?v=2.0.0b2"
 static/chart.js?v=0.14.1"
  d3fcfec3f1f90cfe5e02a8346f1d22c1>
 static/locust.js?v=2.8.2"
- 4cc0c91d7c4846e4b48065e80e849ae6>
-static/locust.js?v=1.2.3"
- 3484afaf33f417a8f442dd6272a3cc9b>
-static/locust.js?v=1.2.2"
- 3484afaf33f417a8f442dd6272a3cc9bI
-#static/css/application.css?v=2.14.0"
- f8d77ebf9958b9b11067c554962e4c06>
-static/locust.js?v=1.2.1"
- 3484afaf33f417a8f442dd6272a3cc9b>
-static/tasks.js?v=2.11.1"
- 525fd22f708c603f89887744e306fdb2>
-static/tasks.js?v=2.11.0"
- 525fd22f708c603f89887744e306fdb2A
-static/img/logo.png?v=2.8.6"
- da72d5821eea202fae2d65afcb81cd23H
+ 4cc0c91d7c4846e4b48065e80e849ae6H
 "static/css/application.css?v=2.8.5"
- e02dfd9ec54e70f7e86c5297540af4f3A
-static/img/logo.png?v=2.8.5"
- da72d5821eea202fae2d65afcb81cd23H
+ e02dfd9ec54e70f7e86c5297540af4f3H
 "static/css/application.css?v=2.8.4"
  e02dfd9ec54e70f7e86c5297540af4f3=
 static/chart.js?v=1.0b1"
@@ -428,8 +303,6 @@ $static/css/application.css?v=2.0.0b2"
  c0abd69ba968407a89c00c4bfc946b97A
 static/img/logo.png?v=1.2.3"
  da72d5821eea202fae2d65afcb81cd23A
-static/jquery.jqote2.min.js"
- b568916296a96da7f66805d8bba3dc4dA
 static/img/logo.png?v=1.2.2"
  da72d5821eea202fae2d65afcb81cd23H
 "static/css/application.css?v=2.8.0"
@@ -437,29 +310,19 @@ $static/css/application.css?v=2.0.0b2"
 static/img/logo.png?v=1.2.1"
  da72d5821eea202fae2d65afcb81cd23H
 "static/css/application.css?v=2.8.3"
- e02dfd9ec54e70f7e86c5297540af4f3H
+ e02dfd9ec54e70f7e86c5297540af4f3>
+assets/index-K5xg1SLs.js"
+ c92c738ae6ade40449dc29dcb3ca246aH
 "static/css/application.css?v=2.8.2"
- e02dfd9ec54e70f7e86c5297540af4f3A
-static/img/logo.png?v=2.8.0"
- da72d5821eea202fae2d65afcb81cd23?
+ e02dfd9ec54e70f7e86c5297540af4f3?
 static/locust.js?v=2.14.0"
  91d7af9846760079e95c249d8b890701>
 static/chart.js?v=2.14.0"
- 1ef93a72376d890cd842084ea55eacc8A
-static/img/logo.png?v=2.8.2"
- da72d5821eea202fae2d65afcb81cd23>
+ 1ef93a72376d890cd842084ea55eacc8>
 static/chart.js?v=2.14.2"
- 1ef93a72376d890cd842084ea55eacc8A
-static/img/logo.png?v=2.8.4"
- da72d5821eea202fae2d65afcb81cd23>
+ 1ef93a72376d890cd842084ea55eacc8>
 static/chart.js?v=2.14.1"
- 1ef93a72376d890cd842084ea55eacc8A
-static/img/logo.png?v=2.8.3"
- da72d5821eea202fae2d65afcb81cd23I
-#static/css/application.css?v=2.14.2"
- f8d77ebf9958b9b11067c554962e4c06I
-#static/css/application.css?v=2.14.1"
- f8d77ebf9958b9b11067c554962e4c06?
+ 1ef93a72376d890cd842084ea55eacc8?
 static/locust.js?v=2.14.1"
  91d7af9846760079e95c249d8b890701?
 static/locust.js?v=2.14.2"
@@ -477,13 +340,7 @@ $static/css/application.css?v=2.0.0b2"
 static/img/logo.png?v=2.13.0"
  da72d5821eea202fae2d65afcb81cd23=
 static/chart.js?v=2.5.0"
- 1ef93a72376d890cd842084ea55eacc8>
-static/style.css?v=1.4.1"
- b0cfbdee2f32dcd5df2dc43f39a20c34>
-static/style.css?v=1.4.0"
- b0cfbdee2f32dcd5df2dc43f39a20c34>
-static/locust.js?v=2.1.0"
- d9e49adf6fabe0b03c6081118713b46e=
+ 1ef93a72376d890cd842084ea55eacc8=
 static/chart.js?v=2.5.1"
  1ef93a72376d890cd842084ea55eacc8@
 static/locust.js?v=2.0.0b0"
@@ -498,8 +355,449 @@ $static/css/application.css?v=2.0.0b2"
  d3fcfec3f1f90cfe5e02a8346f1d22c1>
 static/chart.js?v=0.13.3"
  d3fcfec3f1f90cfe5e02a8346f1d22c1>
+static/tasks.js?v=2.19.1"
+ 525fd22f708c603f89887744e306fdb2>
 static/chart.js?v=0.13.2"
  46d3399c39c6c43381156a9ccdeb94ac>
+static/tasks.js?v=2.19.0"
+ 525fd22f708c603f89887744e306fdb2=
+static/tasks.js?v=2.6.1"
+ fa83fcf2c7e1f0ac9437522f4dcfd8ab=
+static/tasks.js?v=2.6.0"
+ fa83fcf2c7e1f0ac9437522f4dcfd8abH
+"static/css/application.css?v=2.7.2"
+ e02dfd9ec54e70f7e86c5297540af4f3H
+"static/css/application.css?v=2.7.1"
+ e02dfd9ec54e70f7e86c5297540af4f3A
+static/img/logo.png?v=1.1.1"
+ da72d5821eea202fae2d65afcb81cd23H
+"static/css/application.css?v=2.7.3"
+ e02dfd9ec54e70f7e86c5297540af4f3H
+"static/css/application.css?v=2.7.0"
+ e02dfd9ec54e70f7e86c5297540af4f3=
+static/chart.js?v=1.6.0"
+ 1ef93a72376d890cd842084ea55eacc8>
+static/chart.js?v=2.15.1"
+ 0d898614ccac9e2105d9ddb54470eb44>
+static/chart.js?v=2.15.0"
+ 0d898614ccac9e2105d9ddb54470eb44?
+static/locust.js?v=2.15.0"
+ 91d7af9846760079e95c249d8b890701?
+static/locust.js?v=2.15.1"
+ d33fbc15fbccd191119384e256b7421d>
+static/chart.js?v=0.12.2"
+ a56f755b5ab84009037a1a931873cc92I
+#static/css/application.css?v=2.20.1"
+ e3255a2256779f54497e8de9c621c962>
+static/chart.js?v=0.12.1"
+ a56f755b5ab84009037a1a931873cc92I
+#static/css/application.css?v=2.20.0"
+ e3255a2256779f54497e8de9c621c962B
+static/img/logo.png?v=2.12.2"
+ da72d5821eea202fae2d65afcb81cd23B
+static/img/logo.png?v=2.12.0"
+ da72d5821eea202fae2d65afcb81cd23B
+static/img/logo.png?v=2.12.1"
+ da72d5821eea202fae2d65afcb81cd23>
+assets/index-sZjNzlO0.js"
+ 8f66bac9b65e34f0d8c653ba62c4afbe>
+static/locust.js?v=2.6.1"
+ 4cc0c91d7c4846e4b48065e80e849ae6@
+static/tasks.js?v=0.1.dev1"
+ c0abd69ba968407a89c00c4bfc946b97>
+static/locust.js?v=2.6.0"
+ 4cc0c91d7c4846e4b48065e80e849ae6=
+static/chart.js?v=2.6.0"
+ 1ef93a72376d890cd842084ea55eacc8=
+static/chart.js?v=2.6.1"
+ 1ef93a72376d890cd842084ea55eacc8@
+static/locust.js?v=2.0.0b2"
+ d9e49adf6fabe0b03c6081118713b46e@
+static/locust.js?v=2.0.0b3"
+ d9e49adf6fabe0b03c6081118713b46e<
+static/style.css?v=1.1"
+ 36b96eba07e80bcfa7d5fe63f2a0e746A
+static/img/logo.png?v=1.0.1"
+ da72d5821eea202fae2d65afcb81cd23=
+static/tasks.js?v=2.7.2"
+ fa83fcf2c7e1f0ac9437522f4dcfd8ab<
+static/style.css?v=1.0"
+ 36b96eba07e80bcfa7d5fe63f2a0e746=
+static/tasks.js?v=2.7.1"
+ fa83fcf2c7e1f0ac9437522f4dcfd8ab=
+static/tasks.js?v=2.7.0"
+ fa83fcf2c7e1f0ac9437522f4dcfd8abA
+static/img/logo.png?v=1.0.3"
+ da72d5821eea202fae2d65afcb81cd23<
+static/style.css?v=1.2"
+ 7e7f908200465bd63c8afa4835d30dd2A
+static/img/logo.png?v=1.0.2"
+ da72d5821eea202fae2d65afcb81cd23=
+static/tasks.js?v=2.7.3"
+ ee85d7f5e6ad15c7cba8b0bac72835ec?
+static/locust.js?v=2.12.0"
+ 6f83fdfac13fe3f7928cacc2916afb33?
+static/locust.js?v=2.12.1"
+ 6f83fdfac13fe3f7928cacc2916afb33>
+static/chart.js?v=2.12.0"
+ 1ef93a72376d890cd842084ea55eacc8H
+"static/css/application.css?v=2.6.1"
+ e02dfd9ec54e70f7e86c5297540af4f3?
+static/locust.js?v=2.12.2"
+ 6f83fdfac13fe3f7928cacc2916afb33H
+"static/css/application.css?v=2.6.0"
+ e02dfd9ec54e70f7e86c5297540af4f3>
+static/chart.js?v=2.12.2"
+ 1ef93a72376d890cd842084ea55eacc8>
+static/chart.js?v=2.12.1"
+ 1ef93a72376d890cd842084ea55eacc8>
+assets/index-LlbhTJVf.js"
+ fb36d6afa6aeeae539e4143d98a97097B
+static/img/logo.png?v=2.11.1"
+ da72d5821eea202fae2d65afcb81cd23B
+static/img/logo.png?v=2.11.0"
+ da72d5821eea202fae2d65afcb81cd23>
+assets/index-BDkpo_Sn.js"
+ abb8812bed661b1b89b7f48b0b4eb440>
+static/locust.js?v=2.7.0"
+ 4cc0c91d7c4846e4b48065e80e849ae6=
+static/chart.js?v=2.7.1"
+ 1ef93a72376d890cd842084ea55eacc8=
+static/chart.js?v=2.7.2"
+ 1ef93a72376d890cd842084ea55eacc8=
+static/chart.js?v=2.7.0"
+ 1ef93a72376d890cd842084ea55eacc8>
+static/locust.js?v=2.7.2"
+ 4cc0c91d7c4846e4b48065e80e849ae6>
+static/locust.js?v=2.7.1"
+ 4cc0c91d7c4846e4b48065e80e849ae6=
+static/chart.js?v=2.7.3"
+ 1ef93a72376d890cd842084ea55eacc8>
+static/locust.js?v=2.7.3"
+ 4cc0c91d7c4846e4b48065e80e849ae6>
+assets/favicon-light.png"
+ 4deb8927aa4d73128377413162f68c0d=
+static/tasks.js?v=2.8.6"
+ a5bc2fa024e6679dfabeb77117c1290f=
+static/tasks.js?v=2.8.0"
+ a5bc2fa024e6679dfabeb77117c1290f>
+assets/index-Bcn8JR9P.js"
+ 1e14e47cdd108e507418c5aa399546bf=
+static/tasks.js?v=2.8.5"
+ a5bc2fa024e6679dfabeb77117c1290f=
+static/tasks.js?v=2.8.4"
+ a5bc2fa024e6679dfabeb77117c1290f=
+static/tasks.js?v=2.8.3"
+ a5bc2fa024e6679dfabeb77117c1290f=
+static/tasks.js?v=2.8.2"
+ a5bc2fa024e6679dfabeb77117c1290fH
+"static/css/application.css?v=2.5.0"
+ e02dfd9ec54e70f7e86c5297540af4f3?
+static/locust.js?v=2.13.0"
+ 91d7af9846760079e95c249d8b890701?
+static/locust.js?v=2.13.1"
+ 91d7af9846760079e95c249d8b890701H
+"static/css/application.css?v=2.5.1"
+ e02dfd9ec54e70f7e86c5297540af4f3>
+static/chart.js?v=2.13.1"
+ 1ef93a72376d890cd842084ea55eacc8>
+static/chart.js?v=2.13.0"
+ 1ef93a72376d890cd842084ea55eacc8>
+static/chart.js?v=2.13.2"
+ 1ef93a72376d890cd842084ea55eacc8?
+static/locust.js?v=2.13.2"
+ 91d7af9846760079e95c249d8b890701f
+static/echarts.common.min.js"
+ 8d7ae6f633f19a43e6ef73b2374786ba"
+ 125c0bc14e6b5040b20b7c70065aacc8B
+static/img/logo.png?v=2.10.2"
+ da72d5821eea202fae2d65afcb81cd23B
+static/img/logo.png?v=2.10.0"
+ da72d5821eea202fae2d65afcb81cd23B
+static/img/logo.png?v=2.10.1"
+ da72d5821eea202fae2d65afcb81cd23>
+static/chart.js?v=2.21.0"
+ 0d898614ccac9e2105d9ddb54470eb44>
+static/tasks.js?v=2.16.1"
+ 525fd22f708c603f89887744e306fdb2>
+static/tasks.js?v=2.15.1"
+ 525fd22f708c603f89887744e306fdb2A
+static/img/logo.png?v=1.6.0"
+ da72d5821eea202fae2d65afcb81cd23>
+static/tasks.js?v=2.15.0"
+ 525fd22f708c603f89887744e306fdb2B
+static/img/logo.png?v=2.21.0"
+ da72d5821eea202fae2d65afcb81cd23>
+assets/index-C1Bs-IUT.js"
+ cd96c1bd7a9a962983e9c11ef60ef6f6=
+static/chart.js?v=1.3.0"
+ a02af2c8efeecbde724ba660e60f4564>
+static/chart.js?v=2.10.0"
+ 1ef93a72376d890cd842084ea55eacc8A
+static/img/logo.png?v=2.4.2"
+ da72d5821eea202fae2d65afcb81cd23=
+static/chart.js?v=1.3.1"
+ a02af2c8efeecbde724ba660e60f4564A
+static/img/logo.png?v=2.4.1"
+ da72d5821eea202fae2d65afcb81cd23=
+static/chart.js?v=1.3.2"
+ a02af2c8efeecbde724ba660e60f4564>
+static/chart.js?v=2.10.2"
+ 1ef93a72376d890cd842084ea55eacc8>
+static/chart.js?v=2.10.1"
+ 1ef93a72376d890cd842084ea55eacc8A
+static/img/logo.png?v=2.4.3"
+ da72d5821eea202fae2d65afcb81cd23?
+static/locust.js?v=2.18.1"
+ d33fbc15fbccd191119384e256b7421d8
+assets/favicon.ico"
+ ae1eb99e09b092b5f565725b9503dd61?
+static/locust.js?v=2.18.2"
+ d33fbc15fbccd191119384e256b7421d?
+static/locust.js?v=2.18.3"
+ d33fbc15fbccd191119384e256b7421d?
+static/locust.js?v=2.18.4"
+ d33fbc15fbccd191119384e256b7421dI
+#static/css/application.css?v=2.18.4"
+ e3255a2256779f54497e8de9c621c962I
+#static/css/application.css?v=2.18.3"
+ e3255a2256779f54497e8de9c621c962A
+static/img/logo.png?v=2.4.0"
+ da72d5821eea202fae2d65afcb81cd23I
+#static/css/application.css?v=2.18.2"
+ e3255a2256779f54497e8de9c621c962I
+#static/css/application.css?v=2.18.1"
+ e3255a2256779f54497e8de9c621c962=
+static/chart.js?v=2.1.0"
+ 1ef93a72376d890cd842084ea55eacc8?
+static/locust.js?v=0.12.1"
+ b34e37f2de58c5eebbc1418e2bcf635a?
+static/locust.js?v=0.12.2"
+ acb86ba7d9d07f72f9e0b6aed7ff0e8a=
+static/tasks.js?v=2.2.3"
+ c0abd69ba968407a89c00c4bfc946b97=
+static/tasks.js?v=2.2.2"
+ c0abd69ba968407a89c00c4bfc946b97>
+static/tasks.js?v=2.14.0"
+ 525fd22f708c603f89887744e306fdb2A
+static/img/logo.png?v=1.5.3"
+ da72d5821eea202fae2d65afcb81cd23>
+static/tasks.js?v=2.14.2"
+ 525fd22f708c603f89887744e306fdb2A
+static/img/logo.png?v=1.5.2"
+ da72d5821eea202fae2d65afcb81cd23>
+static/tasks.js?v=2.14.1"
+ 525fd22f708c603f89887744e306fdb2A
+static/img/logo.png?v=1.5.1"
+ da72d5821eea202fae2d65afcb81cd23B
+static/img/logo.png?v=2.20.1"
+ da72d5821eea202fae2d65afcb81cd23A
+static/img/logo.png?v=1.5.0"
+ da72d5821eea202fae2d65afcb81cd23=
+static/chart.js?v=1.2.1"
+ f0efa6e3c289bba7e44daa60cf431f3b=
+static/chart.js?v=1.2.2"
+ f0efa6e3c289bba7e44daa60cf431f3b=
+static/chart.js?v=1.2.3"
+ f0efa6e3c289bba7e44daa60cf431f3b>
+static/chart.js?v=2.11.1"
+ 1ef93a72376d890cd842084ea55eacc8>
+static/chart.js?v=2.11.0"
+ 1ef93a72376d890cd842084ea55eacc8B
+static/img/logo.png?v=2.20.0"
+ da72d5821eea202fae2d65afcb81cd23?
+static/locust.js?v=2.19.0"
+ d33fbc15fbccd191119384e256b7421d?
+static/locust.js?v=2.19.1"
+ d33fbc15fbccd191119384e256b7421dI
+#static/css/application.css?v=2.17.0"
+ 97b1eb18ec982cea7ead191e338bf372?
+static/locust.js?v=0.13.2"
+ f99b3a3dc3483e05628b07565854c566?
+static/locust.js?v=0.13.3"
+ f99b3a3dc3483e05628b07565854c566?
+static/locust.js?v=0.13.0"
+ f99b3a3dc3483e05628b07565854c566?
+static/locust.js?v=0.13.1"
+ f99b3a3dc3483e05628b07565854c566=
+static/chart.js?v=2.2.2"
+ 1ef93a72376d890cd842084ea55eacc8=
+static/chart.js?v=2.2.3"
+ 1ef93a72376d890cd842084ea55eacc8?
+static/locust.js?v=0.13.4"
+ f99b3a3dc3483e05628b07565854c566?
+static/locust.js?v=0.13.5"
+ f99b3a3dc3483e05628b07565854c566>
+static/tasks.js?v=2.18.4"
+ 525fd22f708c603f89887744e306fdb2>
+static/tasks.js?v=2.18.3"
+ 525fd22f708c603f89887744e306fdb2>
+static/tasks.js?v=2.18.2"
+ 525fd22f708c603f89887744e306fdb2>
+static/tasks.js?v=2.18.1"
+ 525fd22f708c603f89887744e306fdb2A
+static/img/logo.png?v=1.4.4"
+ da72d5821eea202fae2d65afcb81cd23A
+static/img/logo.png?v=1.4.3"
+ da72d5821eea202fae2d65afcb81cd23A
+static/img/logo.png?v=1.4.2"
+ da72d5821eea202fae2d65afcb81cd23A
+static/img/logo.png?v=1.4.1"
+ da72d5821eea202fae2d65afcb81cd23=
+static/chart.js?v=1.5.2"
+ 1ef93a72376d890cd842084ea55eacc8A
+static/img/logo.png?v=1.4.0"
+ da72d5821eea202fae2d65afcb81cd23=
+static/chart.js?v=1.5.3"
+ 1ef93a72376d890cd842084ea55eacc8A
+static/img/logo.png?v=2.2.3"
+ da72d5821eea202fae2d65afcb81cd23=
+static/chart.js?v=1.5.0"
+ 1ef93a72376d890cd842084ea55eacc8=
+static/chart.js?v=1.5.1"
+ 1ef93a72376d890cd842084ea55eacc8>
+static/style.css?v=1.0b1"
+ 36b96eba07e80bcfa7d5fe63f2a0e746>
+assets/index-fd3e763b.js"
+ aa18063acab960cacf51d7b192e418da>
+assets/index-DnScW665.js"
+ 808e24effc7c73461665e0af8ae05ba0>
+static/style.css?v=1.0b2"
+ 36b96eba07e80bcfa7d5fe63f2a0e746@
+static/chart.js?v=0.1.dev1"
+ 1ef93a72376d890cd842084ea55eacc8?
+static/locust.js?v=2.16.0"
+ d33fbc15fbccd191119384e256b7421dA
+static/img/logo.png?v=2.2.2"
+ da72d5821eea202fae2d65afcb81cd23?
+static/locust.js?v=2.16.1"
+ d33fbc15fbccd191119384e256b7421d?
+static/locust.js?v=0.14.1"
+ 0e3d9c1fd58847878f93c20e4934eb63?
+static/chart.js?v=2.0.0b0"
+ 1ef93a72376d890cd842084ea55eacc8?
+static/locust.js?v=0.14.2"
+ 0e3d9c1fd58847878f93c20e4934eb63?
+static/chart.js?v=2.0.0b1"
+ 1ef93a72376d890cd842084ea55eacc8?
+static/chart.js?v=2.0.0b2"
+ 1ef93a72376d890cd842084ea55eacc8?
+static/locust.js?v=0.14.0"
+ 0e3d9c1fd58847878f93c20e4934eb63?
+static/chart.js?v=2.0.0b3"
+ 1ef93a72376d890cd842084ea55eacc8?
+static/locust.js?v=0.14.5"
+ 0e3d9c1fd58847878f93c20e4934eb63?
+static/locust.js?v=0.14.6"
+ 0e3d9c1fd58847878f93c20e4934eb63?
+static/locust.js?v=0.14.3"
+ 0e3d9c1fd58847878f93c20e4934eb63?
+static/locust.js?v=0.14.4"
+ 0e3d9c1fd58847878f93c20e4934eb63?
+static/img/logo.png?v=1.2"
+ da72d5821eea202fae2d65afcb81cd23?
+static/img/logo.png?v=1.0"
+ da72d5821eea202fae2d65afcb81cd23?
+static/img/logo.png?v=1.1"
+ da72d5821eea202fae2d65afcb81cd23>
+static/chart.js?v=2.20.1"
+ 0d898614ccac9e2105d9ddb54470eb44>
+static/chart.js?v=2.20.0"
+ 0d898614ccac9e2105d9ddb54470eb44=
+static/tasks.js?v=2.4.1"
+ c0abd69ba968407a89c00c4bfc946b97=
+static/tasks.js?v=2.4.0"
+ c0abd69ba968407a89c00c4bfc946b97>
+static/tasks.js?v=2.17.0"
+ 525fd22f708c603f89887744e306fdb2J
+$static/css/application.css?v=2.0.0b1"
+ 5f3d84a76da1e6b47ff817013bbe15a5>
+static/tasks.js?v=2.16.0"
+ 525fd22f708c603f89887744e306fdb2J
+$static/css/application.css?v=2.0.0b0"
+ 5f3d84a76da1e6b47ff817013bbe15a5=
+static/tasks.js?v=2.4.3"
+ c0abd69ba968407a89c00c4bfc946b97=
+static/tasks.js?v=2.4.2"
+ c0abd69ba968407a89c00c4bfc946b97A
+static/img/logo.png?v=1.3.2"
+ da72d5821eea202fae2d65afcb81cd23H
+"static/css/application.css?v=2.9.0"
+ e02dfd9ec54e70f7e86c5297540af4f3J
+$static/css/application.css?v=2.0.0b3"
+ 5f3d84a76da1e6b47ff817013bbe15a5=
+static/chart.js?v=1.4.3"
+ 1ef93a72376d890cd842084ea55eacc8>
+assets/index-5730ea01.js"
+ b20d99e1da4941517b865cb7681db430A
+static/img/logo.png?v=1.3.1"
+ da72d5821eea202fae2d65afcb81cd23J
+$static/css/application.css?v=2.0.0b2"
+ 5f3d84a76da1e6b47ff817013bbe15a5=
+static/chart.js?v=1.4.4"
+ 1ef93a72376d890cd842084ea55eacc8A
+static/img/logo.png?v=1.3.0"
+ da72d5821eea202fae2d65afcb81cd23=
+static/chart.js?v=1.4.0"
+ a02af2c8efeecbde724ba660e60f4564>
+assets/index-C35vpr6y.js"
+ dbd7f80197451c1410601a534bdf346b=
+static/chart.js?v=1.4.1"
+ a02af2c8efeecbde724ba660e60f4564=
+static/chart.js?v=1.4.2"
+ 1ef93a72376d890cd842084ea55eacc8A
+static/img/logo.png?v=2.1.0"
+ da72d5821eea202fae2d65afcb81cd23I
+#static/css/application.css?v=2.19.1"
+ e3255a2256779f54497e8de9c621c962?
+static/locust.js?v=2.17.0"
+ d33fbc15fbccd191119384e256b7421dI
+#static/css/application.css?v=2.19.0"
+ e3255a2256779f54497e8de9c621c962>
+assets/index-BfmYk8ph.js"
+ 7dcc02dd40f9f4a7862c9d025ddac5db>
+assets/index-BdLZCA0W.js"
+ 83e2a34c154cded502023306ac064d84>
+static/locust.js?v=1.2.3"
+ 3484afaf33f417a8f442dd6272a3cc9b>
+static/locust.js?v=1.2.2"
+ 3484afaf33f417a8f442dd6272a3cc9bI
+#static/css/application.css?v=2.14.0"
+ f8d77ebf9958b9b11067c554962e4c06>
+static/locust.js?v=1.2.1"
+ 3484afaf33f417a8f442dd6272a3cc9b>
+static/tasks.js?v=2.11.1"
+ 525fd22f708c603f89887744e306fdb2>
+static/tasks.js?v=2.11.0"
+ 525fd22f708c603f89887744e306fdb2A
+static/img/logo.png?v=2.8.6"
+ da72d5821eea202fae2d65afcb81cd23A
+static/img/logo.png?v=2.8.5"
+ da72d5821eea202fae2d65afcb81cd23A
+static/jquery.jqote2.min.js"
+ b568916296a96da7f66805d8bba3dc4dA
+static/img/logo.png?v=2.8.0"
+ da72d5821eea202fae2d65afcb81cd23A
+static/img/logo.png?v=2.8.2"
+ da72d5821eea202fae2d65afcb81cd23A
+static/img/logo.png?v=2.8.4"
+ da72d5821eea202fae2d65afcb81cd23A
+static/img/logo.png?v=2.8.3"
+ da72d5821eea202fae2d65afcb81cd23I
+#static/css/application.css?v=2.14.2"
+ f8d77ebf9958b9b11067c554962e4c06I
+#static/css/application.css?v=2.14.1"
+ f8d77ebf9958b9b11067c554962e4c06>
+static/style.css?v=1.4.1"
+ b0cfbdee2f32dcd5df2dc43f39a20c34>
+static/style.css?v=1.4.0"
+ b0cfbdee2f32dcd5df2dc43f39a20c34>
+static/locust.js?v=2.1.0"
+ d9e49adf6fabe0b03c6081118713b46e>
+assets/index-CmqwOkja.js"
+ 7cd710733867b3d92accc2e0478a7131>
+assets/index-8515c9b5.js"
+ ddfa068803db3fbee7a6ee2f25cbb2e6>
 static/locust.js?v=1.3.2"
  678ce494219c5f403e2f1876086bcdd1D
 static/img/logo.png?v=0.1.dev1"
@@ -517,29 +815,15 @@ $static/css/application.css?v=2.0.0b2"
 static/tasks.js?v=2.10.2"
  525fd22f708c603f89887744e306fdb2>
 static/tasks.js?v=2.10.1"
- 525fd22f708c603f89887744e306fdb2=
-static/tasks.js?v=2.6.1"
- fa83fcf2c7e1f0ac9437522f4dcfd8ab=
-static/tasks.js?v=2.6.0"
- fa83fcf2c7e1f0ac9437522f4dcfd8abH
-"static/css/application.css?v=2.7.2"
- e02dfd9ec54e70f7e86c5297540af4f3H
-"static/css/application.css?v=2.7.1"
- e02dfd9ec54e70f7e86c5297540af4f3A
-static/img/logo.png?v=1.1.1"
- da72d5821eea202fae2d65afcb81cd23H
-"static/css/application.css?v=2.7.3"
- e02dfd9ec54e70f7e86c5297540af4f3B
+ 525fd22f708c603f89887744e306fdb2B
 static/img/logo.png?v=0.14.6"
  da72d5821eea202fae2d65afcb81cd23A
 static/img/logo.png?v=2.7.1"
- da72d5821eea202fae2d65afcb81cd23H
-"static/css/application.css?v=2.7.0"
- e02dfd9ec54e70f7e86c5297540af4f3A
+ da72d5821eea202fae2d65afcb81cd23>
+assets/index-84c63e70.js"
+ 924b2a5265c790b243a038791601466cA
 static/img/logo.png?v=2.7.0"
- da72d5821eea202fae2d65afcb81cd23=
-static/chart.js?v=1.6.0"
- 1ef93a72376d890cd842084ea55eacc8B
+ da72d5821eea202fae2d65afcb81cd23B
 static/img/logo.png?v=0.14.3"
  da72d5821eea202fae2d65afcb81cd23A
 static/img/logo.png?v=2.7.3"
@@ -558,18 +842,10 @@ $static/css/application.css?v=2.0.0b2"
  da72d5821eea202fae2d65afcb81cd23I
 #static/css/application.css?v=2.13.2"
  f8d77ebf9958b9b11067c554962e4c06>
-static/chart.js?v=0.12.2"
- a56f755b5ab84009037a1a931873cc92>
-static/chart.js?v=0.12.1"
- a56f755b5ab84009037a1a931873cc92>
 static/style.css?v=1.3.0"
- b0cfbdee2f32dcd5df2dc43f39a20c34B
-static/img/logo.png?v=2.12.2"
- da72d5821eea202fae2d65afcb81cd23B
-static/img/logo.png?v=2.12.0"
- da72d5821eea202fae2d65afcb81cd23B
-static/img/logo.png?v=2.12.1"
- da72d5821eea202fae2d65afcb81cd23A
+ b0cfbdee2f32dcd5df2dc43f39a20c34>
+assets/index-0d6d578a.js"
+ c46523a6e5f309a17deb313789c56012A
 static/jquery-1.11.3.min.js"
  be732a390ea83e11354d6c5a825ad076>
 static/style.css?v=1.3.2"
@@ -582,76 +858,32 @@ $static/css/application.css?v=2.0.0b2"
  5f30f723dca65a3f2083e35831ad351f<
 static/locust.js?v=1.0"
  5f30f723dca65a3f2083e35831ad351f>
-static/locust.js?v=2.6.1"
- 4cc0c91d7c4846e4b48065e80e849ae6@
-static/tasks.js?v=0.1.dev1"
- c0abd69ba968407a89c00c4bfc946b97>
-static/locust.js?v=2.6.0"
- 4cc0c91d7c4846e4b48065e80e849ae6=
-static/chart.js?v=2.6.0"
- 1ef93a72376d890cd842084ea55eacc8=
-static/chart.js?v=2.6.1"
- 1ef93a72376d890cd842084ea55eacc8>
+assets/index-f31faefc.js"
+ f9d628404ed443717ba49b8eefec9dc7>
 static/tasks.js?v=2.13.1"
  525fd22f708c603f89887744e306fdb2>
 static/tasks.js?v=2.13.0"
  525fd22f708c603f89887744e306fdb2>
 static/tasks.js?v=2.13.2"
- 525fd22f708c603f89887744e306fdb2@
-static/locust.js?v=2.0.0b2"
- d9e49adf6fabe0b03c6081118713b46e>
+ 525fd22f708c603f89887744e306fdb2>
 static/locust.js?v=1.0.3"
- 5f30f723dca65a3f2083e35831ad351f@
-static/locust.js?v=2.0.0b3"
- d9e49adf6fabe0b03c6081118713b46e>
+ 5f30f723dca65a3f2083e35831ad351f>
 static/locust.js?v=1.0.2"
  5f30f723dca65a3f2083e35831ad351f>
 static/locust.js?v=1.0.1"
- 5f30f723dca65a3f2083e35831ad351f<
-static/style.css?v=1.1"
- 36b96eba07e80bcfa7d5fe63f2a0e746A
-static/img/logo.png?v=1.0.1"
- da72d5821eea202fae2d65afcb81cd23=
-static/tasks.js?v=2.7.2"
- fa83fcf2c7e1f0ac9437522f4dcfd8ab<
-static/style.css?v=1.0"
- 36b96eba07e80bcfa7d5fe63f2a0e746=
-static/tasks.js?v=2.7.1"
- fa83fcf2c7e1f0ac9437522f4dcfd8abB
+ 5f30f723dca65a3f2083e35831ad351fB
 static/chart.js?v=2.8.2.dev0"
- 1ef93a72376d890cd842084ea55eacc8=
-static/tasks.js?v=2.7.0"
- fa83fcf2c7e1f0ac9437522f4dcfd8abA
-static/img/logo.png?v=1.0.3"
- da72d5821eea202fae2d65afcb81cd23<
-static/style.css?v=1.2"
- 7e7f908200465bd63c8afa4835d30dd2A
-static/img/logo.png?v=1.0.2"
- da72d5821eea202fae2d65afcb81cd23=
-static/tasks.js?v=2.7.3"
- ee85d7f5e6ad15c7cba8b0bac72835ecA
+ 1ef93a72376d890cd842084ea55eacc8A
 static/img/logo.png?v=2.6.0"
- da72d5821eea202fae2d65afcb81cd23?
-static/locust.js?v=2.12.0"
- 6f83fdfac13fe3f7928cacc2916afb33?
-static/locust.js?v=2.12.1"
- 6f83fdfac13fe3f7928cacc2916afb33>
-static/chart.js?v=2.12.0"
- 1ef93a72376d890cd842084ea55eacc8H
-"static/css/application.css?v=2.6.1"
- e02dfd9ec54e70f7e86c5297540af4f3?
-static/locust.js?v=2.12.2"
- 6f83fdfac13fe3f7928cacc2916afb33A
+ da72d5821eea202fae2d65afcb81cd23A
 static/img/logo.png?v=2.6.1"
- da72d5821eea202fae2d65afcb81cd23H
-"static/css/application.css?v=2.6.0"
- e02dfd9ec54e70f7e86c5297540af4f3>
-static/chart.js?v=2.12.2"
- 1ef93a72376d890cd842084ea55eacc8>
-static/chart.js?v=2.12.1"
- 1ef93a72376d890cd842084ea55eacc8=
+ da72d5821eea202fae2d65afcb81cd23=
 static/chart.js?v=1.1.1"
- f0efa6e3c289bba7e44daa60cf431f3bC
+ f0efa6e3c289bba7e44daa60cf431f3bI
+#static/css/application.css?v=2.16.1"
+ 97b1eb18ec982cea7ead191e338bf372I
+#static/css/application.css?v=2.16.0"
+ 97b1eb18ec982cea7ead191e338bf372C
 static/img/logo.png?v=2.0.0b1"
  da72d5821eea202fae2d65afcb81cd23C
 static/img/logo.png?v=2.0.0b2"
@@ -659,91 +891,96 @@ $static/css/application.css?v=2.0.0b2"
 static/style.css?v=1.2.1"
  7e7f908200465bd63c8afa4835d30dd2C
 static/img/logo.png?v=2.0.0b0"
- da72d5821eea202fae2d65afcb81cd23B
-static/img/logo.png?v=2.11.1"
  da72d5821eea202fae2d65afcb81cd23C
 static/img/logo.png?v=2.0.0b3"
- da72d5821eea202fae2d65afcb81cd23B
-static/img/logo.png?v=2.11.0"
  da72d5821eea202fae2d65afcb81cd23>
 static/style.css?v=1.2.3"
- 7e7f908200465bd63c8afa4835d30dd2>
+ 7e7f908200465bd63c8afa4835d30dd2B
+static/img/logo.png?v=2.19.1"
+ da72d5821eea202fae2d65afcb81cd23>
 static/style.css?v=1.2.2"
- 7e7f908200465bd63c8afa4835d30dd2>
-static/locust.js?v=2.7.0"
- 4cc0c91d7c4846e4b48065e80e849ae6;
+ 7e7f908200465bd63c8afa4835d30dd2B
+static/img/logo.png?v=2.19.0"
+ da72d5821eea202fae2d65afcb81cd23;
 static/chart.js?v=1.0"
  d3fcfec3f1f90cfe5e02a8346f1d22c1F
  static/img/logo.png?v=2.8.2.dev0"
- da72d5821eea202fae2d65afcb81cd23=
-static/chart.js?v=2.7.1"
- 1ef93a72376d890cd842084ea55eacc8=
-static/chart.js?v=2.7.2"
- 1ef93a72376d890cd842084ea55eacc8;
+ da72d5821eea202fae2d65afcb81cd238
+assets/favicon.png"
+ cb1f1f525922bf0f4734eb10aa360287;
 static/chart.js?v=1.1"
  f0efa6e3c289bba7e44daa60cf431f3b;
 static/chart.js?v=1.2"
- f0efa6e3c289bba7e44daa60cf431f3b=
-static/chart.js?v=2.7.0"
- 1ef93a72376d890cd842084ea55eacc8>
-static/locust.js?v=2.7.2"
- 4cc0c91d7c4846e4b48065e80e849ae6>
-static/locust.js?v=2.7.1"
- 4cc0c91d7c4846e4b48065e80e849ae6=
-static/chart.js?v=2.7.3"
- 1ef93a72376d890cd842084ea55eacc8>
-static/locust.js?v=2.7.3"
- 4cc0c91d7c4846e4b48065e80e849ae6>
+ f0efa6e3c289bba7e44daa60cf431f3b>
 static/tasks.js?v=2.12.2"
  525fd22f708c603f89887744e306fdb2>
 static/tasks.js?v=2.12.1"
- 525fd22f708c603f89887744e306fdb2=
-static/tasks.js?v=2.8.6"
- a5bc2fa024e6679dfabeb77117c1290fA
+ 525fd22f708c603f89887744e306fdb2A
 static/img/logo.png?v=1.0b1"
  da72d5821eea202fae2d65afcb81cd23>
 static/locust.js?v=1.1.1"
  5f30f723dca65a3f2083e35831ad351f>
 static/tasks.js?v=2.12.0"
  525fd22f708c603f89887744e306fdb2=
-static/tasks.js?v=2.8.0"
- a5bc2fa024e6679dfabeb77117c1290f=
-static/tasks.js?v=2.8.5"
- a5bc2fa024e6679dfabeb77117c1290f=
-static/tasks.js?v=2.8.4"
- a5bc2fa024e6679dfabeb77117c1290f=
-static/tasks.js?v=2.8.3"
- a5bc2fa024e6679dfabeb77117c1290f=
-static/tasks.js?v=2.8.2"
- a5bc2fa024e6679dfabeb77117c1290f=
 static/chart.js?v=1.0.2"
  d3fcfec3f1f90cfe5e02a8346f1d22c1A
 static/img/logo.png?v=2.5.1"
- da72d5821eea202fae2d65afcb81cd23H
-"static/css/application.css?v=2.5.0"
- e02dfd9ec54e70f7e86c5297540af4f3=
+ da72d5821eea202fae2d65afcb81cd23=
 static/chart.js?v=1.0.1"
  d3fcfec3f1f90cfe5e02a8346f1d22c1A
 static/img/logo.png?v=2.5.0"
- da72d5821eea202fae2d65afcb81cd23?
-static/locust.js?v=2.13.0"
- 91d7af9846760079e95c249d8b890701?
-static/locust.js?v=2.13.1"
- 91d7af9846760079e95c249d8b890701H
-"static/css/application.css?v=2.5.1"
- e02dfd9ec54e70f7e86c5297540af4f3>
-static/chart.js?v=2.13.1"
- 1ef93a72376d890cd842084ea55eacc8>
-static/chart.js?v=2.13.0"
- 1ef93a72376d890cd842084ea55eacc8=
+ da72d5821eea202fae2d65afcb81cd23=
 static/chart.js?v=1.0.3"
- d3fcfec3f1f90cfe5e02a8346f1d22c1>
-static/chart.js?v=2.13.2"
- 1ef93a72376d890cd842084ea55eacc8A
+ d3fcfec3f1f90cfe5e02a8346f1d22c1I
+#static/css/application.css?v=2.15.1"
+ 545b7d0d92356176da9f869ad98c2f5eA
 static/img/logo.png?v=1.0b2"
- da72d5821eea202fae2d65afcb81cd23?
-static/locust.js?v=2.13.2"
- 91d7af9846760079e95c249d8b890701π
+ da72d5821eea202fae2d65afcb81cd23I
+#static/css/application.css?v=2.15.0"
+ 545b7d0d92356176da9f869ad98c2f5e>
+assets/index-BXPhYgcX.js"
+ 3eb73170d7e307d8adbd3397e427ed7d8
+"
+ 545b7d0d92356176da9f869ad98c2f5e
+2.15.1
+2.15.0ò
+"
+ d9e49adf6fabe0b03c6081118713b46e
+2.1.0	
+2.0.0b3	
+2.0.0b2	
+2.0.0b1	
+2.0.0b0
+1.6.0
+1.5.3
+1.5.2
+1.5.1
+1.5.0
+1.4.4
+1.4.3h
+"
+ 5f30f723dca65a3f2083e35831ad351f
+1.1.1
+1.1
+1.0b2
+1.0b1
+1.0.3
+1.0.2
+1.0.1
+1.0Q
+"
+ a02af2c8efeecbde724ba660e60f4564
+1.4.1
+1.4.0
+1.3.2
+1.3.1
+1.3.0.
+"
+ fb36d6afa6aeeae539e4143d98a97097
+2.32.1.
+"
+ 4edfec4d64359a346933dddc0ff1d74f
+0.12.1≈
 "
  be732a390ea83e11354d6c5a825ad076
 1.4.1
@@ -829,7 +1066,64 @@ $static/css/application.css?v=2.0.0b2"
 1.5.0
 1.4.4
 1.4.3
-1.4.2ê
+1.4.2
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.08
+"
+ f3034909f8b32d499744cfadeaa59c5f
+2.31.6
+2.31.5°
+"
+ 5f3d84a76da1e6b47ff817013bbe15a5
+2.1.0	
+2.0.0b3	
+2.0.0b2	
+2.0.0b1	
+2.0.0b0
+1.6.0
+1.5.3
+1.5.2
+1.5.1
+1.5.0
+1.4.4
+1.4.3
+1.4.2l
+"
+ a5bc2fa024e6679dfabeb77117c1290f
+2.9.0
+2.8.6
+2.8.5
+2.8.4
+2.8.3
+2.8.2
+2.8.1
+2.8.0.
+"
+ e4e13fb97e25789eae9a7b32a51bf7c3
+2.23.1.
+"
+ 7cd710733867b3d92accc2e0478a7131
+2.32.78
+"
+ 63d2613739af0d568b958c69a419de16
+2.11.1
+2.11.08
+"
+ a56f755b5ab84009037a1a931873cc92
+0.12.2
+0.12.1ê
 "
  1ef93a72376d890cd842084ea55eacc8
 2.14.2
@@ -883,23 +1177,18 @@ $static/css/application.css?v=2.0.0b2"
 1.5.0
 1.4.4
 1.4.3
-1.4.2∞
+1.4.2F
 "
- 525fd22f708c603f89887744e306fdb2
-2.14.2
-2.14.1
-2.14.0
-2.13.2
-2.13.1
-2.13.0
-2.12.2
-2.12.1
-2.12.0
-2.11.1
-2.11.0
-2.10.2
-2.10.1
-2.10.0º
+ 3484afaf33f417a8f442dd6272a3cc9b
+1.2.3
+1.2.2
+1.2.1
+1.2B
+"
+ 8bde2c346945185f85547e2c6b1b72e4
+2.27.0
+2.26.0
+2.25.0º
 "
  d3fcfec3f1f90cfe5e02a8346f1d22c1
 1.0b2
@@ -917,674 +1206,7 @@ $static/css/application.css?v=2.0.0b2"
 0.14.0
 0.13.5
 0.13.4
-0.13.3π
-"
- ae1eb99e09b092b5f565725b9503dd61
-1.4.1
-1.4.0
-1.3.2
-1.3.1
-1.3.0
-1.2.3
-1.2.2
-1.2.1
-1.2
-1.1.1
-1.1
-1.0b2
-1.0b1
-1.0.3
-1.0.2
-1.0.1
-1.0
-0.14.6
-0.14.5
-0.14.4
-0.14.3
-0.14.2
-0.14.1
-0.14.0
-0.13.5
-0.13.4
-0.13.3
-0.13.2
-0.13.1
-0.13.0
-0.12.2
-0.12.1
-2.14.2
-2.14.1
-2.14.0
-2.13.2
-2.13.1
-2.13.0
-2.12.2
-2.12.1
-2.12.0
-2.11.1
-2.11.0
-2.10.2
-2.10.1
-2.10.0
-2.9.0
-2.8.6
-2.8.5
-2.8.4
-2.8.3
-2.8.2
-2.8.1
-2.8.0
-2.7.3
-2.7.2
-2.7.1
-2.7.0
-2.6.1
-2.6.0
-2.5.1
-2.5.0
-2.4.3
-2.4.2
-2.4.1
-2.4.0
-2.2.3
-2.2.2
-2.2.1	
-2.2.0b0
-2.2.0
-2.1.0	
-2.0.0b3	
-2.0.0b2	
-2.0.0b1	
-2.0.0b0
-1.6.0
-1.5.3
-1.5.2
-1.5.1
-1.5.0
-1.4.4
-1.4.3
-1.4.2.
-"
- acb86ba7d9d07f72f9e0b6aed7ff0e8a
-0.12.2h
-"
- 5f30f723dca65a3f2083e35831ad351f
-1.1.1
-1.1
-1.0b2
-1.0b1
-1.0.3
-1.0.2
-1.0.1
-1.0Q
-"
- 678ce494219c5f403e2f1876086bcdd1
-1.4.1
-1.4.0
-1.3.2
-1.3.1
-1.3.0°
-"
- 5f3d84a76da1e6b47ff817013bbe15a5
-2.1.0	
-2.0.0b3	
-2.0.0b2	
-2.0.0b1	
-2.0.0b0
-1.6.0
-1.5.3
-1.5.2
-1.5.1
-1.5.0
-1.4.4
-1.4.3
-1.4.2.
-"
- 4edfec4d64359a346933dddc0ff1d74f
-0.12.18
-"
- a56f755b5ab84009037a1a931873cc92
-0.12.2
-0.12.1π
-"
- e6c6e78f6b9a8008917c718c7289db99
-1.4.1
-1.4.0
-1.3.2
-1.3.1
-1.3.0
-1.2.3
-1.2.2
-1.2.1
-1.2
-1.1.1
-1.1
-1.0b2
-1.0b1
-1.0.3
-1.0.2
-1.0.1
-1.0
-0.14.6
-0.14.5
-0.14.4
-0.14.3
-0.14.2
-0.14.1
-0.14.0
-0.13.5
-0.13.4
-0.13.3
-0.13.2
-0.13.1
-0.13.0
-0.12.2
-0.12.1
-2.14.2
-2.14.1
-2.14.0
-2.13.2
-2.13.1
-2.13.0
-2.12.2
-2.12.1
-2.12.0
-2.11.1
-2.11.0
-2.10.2
-2.10.1
-2.10.0
-2.9.0
-2.8.6
-2.8.5
-2.8.4
-2.8.3
-2.8.2
-2.8.1
-2.8.0
-2.7.3
-2.7.2
-2.7.1
-2.7.0
-2.6.1
-2.6.0
-2.5.1
-2.5.0
-2.4.3
-2.4.2
-2.4.1
-2.4.0
-2.2.3
-2.2.2
-2.2.1	
-2.2.0b0
-2.2.0
-2.1.0	
-2.0.0b3	
-2.0.0b2	
-2.0.0b1	
-2.0.0b0
-1.6.0
-1.5.3
-1.5.2
-1.5.1
-1.5.0
-1.4.4
-1.4.3
-1.4.2.
-"
- b34e37f2de58c5eebbc1418e2bcf635a
-0.12.1-
-"
- ee85d7f5e6ad15c7cba8b0bac72835ec
-2.7.3¶
-"
- 86bc6e774f7ccaafa7952b94ea8600be
-0.14.6
-0.14.5
-0.14.4
-0.14.3
-0.14.2
-0.14.1
-0.14.0
-0.13.5
-0.13.4
-0.13.3
-0.13.2
-0.13.1
-0.13.0`
-"
- 91d7af9846760079e95c249d8b890701
-2.14.2
-2.14.1
-2.14.0
-2.13.2
-2.13.1
-2.13.0l
-"
- a5bc2fa024e6679dfabeb77117c1290f
-2.9.0
-2.8.6
-2.8.5
-2.8.4
-2.8.3
-2.8.2
-2.8.1
-2.8.0F
-"
- 3484afaf33f417a8f442dd6272a3cc9b
-1.2.3
-1.2.2
-1.2.1
-1.2F
-"
- 7e7f908200465bd63c8afa4835d30dd2
-1.2.3
-1.2.2
-1.2.1
-1.2Q
-"
- fa83fcf2c7e1f0ac9437522f4dcfd8ab
-2.7.2
-2.7.1
-2.7.0
-2.6.1
-2.6.0Ω
-"
- 4cc0c91d7c4846e4b48065e80e849ae6
-2.8.6
-2.8.5
-2.8.4
-2.8.3
-2.8.2
-2.8.1
-2.8.0
-2.7.3
-2.7.2
-2.7.1
-2.7.0
-2.6.1
-2.6.0
-2.5.1
-2.5.0
-2.4.3
-2.4.2V
-"
- f0efa6e3c289bba7e44daa60cf431f3b
-1.2.3
-1.2.2
-1.2.1
-1.2
-1.1.1
-1.1h
-"
- 36b96eba07e80bcfa7d5fe63f2a0e746
-1.1.1
-1.1
-1.0b2
-1.0b1
-1.0.3
-1.0.2
-1.0.1
-1.0ê
-"
- 125c0bc14e6b5040b20b7c70065aacc8
-2.14.2
-2.14.1
-2.14.0
-2.13.2
-2.13.1
-2.13.0
-2.12.2
-2.12.1
-2.12.0
-2.11.1
-2.11.0
-2.10.2
-2.10.1
-2.10.0
-2.9.0
-2.8.6
-2.8.5
-2.8.4
-2.8.3
-2.8.2
-2.8.1
-2.8.0
-2.7.3
-2.7.2
-2.7.1
-2.7.0
-2.6.1
-2.6.0
-2.5.1
-2.5.0
-2.4.3
-2.4.2
-2.4.1
-2.4.0
-2.2.3
-2.2.2
-2.2.1	
-2.2.0b0
-2.2.0
-2.1.0	
-2.0.0b3	
-2.0.0b2	
-2.0.0b1	
-2.0.0b0
-1.6.0
-1.5.3
-1.5.2
-1.5.1
-1.5.0
-1.4.4
-1.4.3
-1.4.2π
-"
- da72d5821eea202fae2d65afcb81cd23
-1.4.1
-1.4.0
-1.3.2
-1.3.1
-1.3.0
-1.2.3
-1.2.2
-1.2.1
-1.2
-1.1.1
-1.1
-1.0b2
-1.0b1
-1.0.3
-1.0.2
-1.0.1
-1.0
-0.14.6
-0.14.5
-0.14.4
-0.14.3
-0.14.2
-0.14.1
-0.14.0
-0.13.5
-0.13.4
-0.13.3
-0.13.2
-0.13.1
-0.13.0
-0.12.2
-0.12.1
-2.14.2
-2.14.1
-2.14.0
-2.13.2
-2.13.1
-2.13.0
-2.12.2
-2.12.1
-2.12.0
-2.11.1
-2.11.0
-2.10.2
-2.10.1
-2.10.0
-2.9.0
-2.8.6
-2.8.5
-2.8.4
-2.8.3
-2.8.2
-2.8.1
-2.8.0
-2.7.3
-2.7.2
-2.7.1
-2.7.0
-2.6.1
-2.6.0
-2.5.1
-2.5.0
-2.4.3
-2.4.2
-2.4.1
-2.4.0
-2.2.3
-2.2.2
-2.2.1	
-2.2.0b0
-2.2.0
-2.1.0	
-2.0.0b3	
-2.0.0b2	
-2.0.0b1	
-2.0.0b0
-1.6.0
-1.5.3
-1.5.2
-1.5.1
-1.5.0
-1.4.4
-1.4.3
-1.4.28
-"
- 63d2613739af0d568b958c69a419de16
-2.11.1
-2.11.0â
-"
- c0abd69ba968407a89c00c4bfc946b97
-2.5.1
-2.5.0
-2.4.3
-2.4.2
-2.4.1
-2.4.0
-2.2.3
-2.2.2
-2.2.1	
-2.2.0b0
-2.2.0•
-"
- e02dfd9ec54e70f7e86c5297540af4f3
-2.10.2
-2.10.1
-2.10.0
-2.9.0
-2.8.6
-2.8.5
-2.8.4
-2.8.3
-2.8.2
-2.8.1
-2.8.0
-2.7.3
-2.7.2
-2.7.1
-2.7.0
-2.6.1
-2.6.0
-2.5.1
-2.5.0
-2.4.3
-2.4.2
-2.4.1
-2.4.0
-2.2.3
-2.2.2
-2.2.1	
-2.2.0b0
-2.2.0e
-"
- b00214c7f06f1f78903df3256fa2b97f
-2.4.1
-2.4.0
-2.2.3
-2.2.2
-2.2.1	
-2.2.0b0
-2.2.0}
-"
- 6f83fdfac13fe3f7928cacc2916afb33
-2.12.2
-2.12.1
-2.12.0
-2.11.1
-2.11.0
-2.10.2
-2.10.1
-2.10.0
-2.9.0j
-"
- 0e3d9c1fd58847878f93c20e4934eb63
-0.14.6
-0.14.5
-0.14.4
-0.14.3
-0.14.2
-0.14.1
-0.14.0π
-"
- b568916296a96da7f66805d8bba3dc4d
-1.4.1
-1.4.0
-1.3.2
-1.3.1
-1.3.0
-1.2.3
-1.2.2
-1.2.1
-1.2
-1.1.1
-1.1
-1.0b2
-1.0b1
-1.0.3
-1.0.2
-1.0.1
-1.0
-0.14.6
-0.14.5
-0.14.4
-0.14.3
-0.14.2
-0.14.1
-0.14.0
-0.13.5
-0.13.4
-0.13.3
-0.13.2
-0.13.1
-0.13.0
-0.12.2
-0.12.1
-2.14.2
-2.14.1
-2.14.0
-2.13.2
-2.13.1
-2.13.0
-2.12.2
-2.12.1
-2.12.0
-2.11.1
-2.11.0
-2.10.2
-2.10.1
-2.10.0
-2.9.0
-2.8.6
-2.8.5
-2.8.4
-2.8.3
-2.8.2
-2.8.1
-2.8.0
-2.7.3
-2.7.2
-2.7.1
-2.7.0
-2.6.1
-2.6.0
-2.5.1
-2.5.0
-2.4.3
-2.4.2
-2.4.1
-2.4.0
-2.2.3
-2.2.2
-2.2.1	
-2.2.0b0
-2.2.0
-2.1.0	
-2.0.0b3	
-2.0.0b2	
-2.0.0b1	
-2.0.0b0
-1.6.0
-1.5.3
-1.5.2
-1.5.1
-1.5.0
-1.4.4
-1.4.3
-1.4.2`
-"
- f99b3a3dc3483e05628b07565854c566
-0.13.5
-0.13.4
-0.13.3
-0.13.2
-0.13.1
-0.13.0Õ
-"
- 8d7ae6f633f19a43e6ef73b2374786ba
-1.4.1
-1.4.0
-1.3.2
-1.3.1
-1.3.0
-1.2.3
-1.2.2
-1.2.1
-1.2
-1.1.1
-1.1
-1.0b2
-1.0b1
-1.0.3
-1.0.2
-1.0.1
-1.0
-0.14.6
-0.14.5
-0.14.4
-0.14.3
-0.14.2
-0.14.1
-0.14.0
-0.13.5
-0.13.4
-0.13.3
-0.13.2
-0.13.1
-0.13.0
-0.12.2
-0.12.1Q
-"
- b0cfbdee2f32dcd5df2dc43f39a20c34
-1.4.1
-1.4.0
-1.3.2
-1.3.1
-1.3.0Q
-"
- a02af2c8efeecbde724ba660e60f4564
-1.4.1
-1.4.0
-1.3.2
-1.3.1
-1.3.0π
+0.13.3≈
 "
  ad5e292086cde99653b55745262b2901
 1.4.1
@@ -1670,12 +1292,117 @@ $static/css/application.css?v=2.0.0b2"
 1.5.0
 1.4.4
 1.4.3
-1.4.2-
+1.4.2
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.0.
 "
- d5edf535484f53fce2e412e1ae05ba22
-1.4.2ò
+ cb1f1f525922bf0f4734eb10aa360287
+2.31.3.
 "
- d9e49adf6fabe0b03c6081118713b46e
+ b34e37f2de58c5eebbc1418e2bcf635a
+0.12.1¶
+"
+ d33fbc15fbccd191119384e256b7421d
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1B
+"
+ 97b1eb18ec982cea7ead191e338bf372
+2.17.0
+2.16.1
+2.16.0Q
+"
+ fa83fcf2c7e1f0ac9437522f4dcfd8ab
+2.7.2
+2.7.1
+2.7.0
+2.6.1
+2.6.0Ω
+"
+ 4cc0c91d7c4846e4b48065e80e849ae6
+2.8.6
+2.8.5
+2.8.4
+2.8.3
+2.8.2
+2.8.1
+2.8.0
+2.7.3
+2.7.2
+2.7.1
+2.7.0
+2.6.1
+2.6.0
+2.5.1
+2.5.0
+2.4.3
+2.4.2.
+"
+ 7dcc02dd40f9f4a7862c9d025ddac5db
+2.31.1ú
+"
+ 125c0bc14e6b5040b20b7c70065aacc8
+2.14.2
+2.14.1
+2.14.0
+2.13.2
+2.13.1
+2.13.0
+2.12.2
+2.12.1
+2.12.0
+2.11.1
+2.11.0
+2.10.2
+2.10.1
+2.10.0
+2.9.0
+2.8.6
+2.8.5
+2.8.4
+2.8.3
+2.8.2
+2.8.1
+2.8.0
+2.7.3
+2.7.2
+2.7.1
+2.7.0
+2.6.1
+2.6.0
+2.5.1
+2.5.0
+2.4.3
+2.4.2
+2.4.1
+2.4.0
+2.2.3
+2.2.2
+2.2.1	
+2.2.0b0
+2.2.0
 2.1.0	
 2.0.0b3	
 2.0.0b2	
@@ -1687,27 +1414,24 @@ $static/css/application.css?v=2.0.0b2"
 1.5.1
 1.5.0
 1.4.4
-1.4.3~
+1.4.3
+1.4.2
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.0≈
 "
- f8d77ebf9958b9b11067c554962e4c06
-2.14.2
-2.14.1
-2.14.0
-2.13.2
-2.13.1
-2.13.0
-2.12.2
-2.12.1
-2.12.0B
-"
- 46d3399c39c6c43381156a9ccdeb94ac
-0.13.2
-0.13.1
-0.13.0.
-"
- 29f1037a95944018904575e24c66f095
-0.12.2"≥
-static/echarts.common.min.js
+ da72d5821eea202fae2d65afcb81cd23
 1.4.1
 1.4.0
 1.3.2
@@ -1791,19 +1515,709 @@ $static/css/application.css?v=2.0.0b2"
 1.5.0
 1.4.4
 1.4.3
+1.4.2
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.0h
+"
+ 36b96eba07e80bcfa7d5fe63f2a0e746
+1.1.1
+1.1
+1.0b2
+1.0b1
+1.0.3
+1.0.2
+1.0.1
+1.0∞
+"
+ 0d898614ccac9e2105d9ddb54470eb44
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.0.
+"
+ ddfa068803db3fbee7a6ee2f25cbb2e6
+2.28.0œ
+"
+ 64401b00be71fbe46f729ff5a065b888
+2.33.0	
+2.32.10
+2.32.9
+2.32.8
+2.32.7
+2.32.6
+2.32.5
+2.32.4
+2.32.3
+2.32.2
+2.32.1
+2.32.0
+2.31.8
+2.31.7
+2.31.6
+2.31.5
+2.31.4≈
+"
+ b568916296a96da7f66805d8bba3dc4d
+1.4.1
+1.4.0
+1.3.2
+1.3.1
+1.3.0
+1.2.3
+1.2.2
+1.2.1
+1.2
+1.1.1
+1.1
+1.0b2
+1.0b1
+1.0.3
+1.0.2
+1.0.1
+1.0
+0.14.6
+0.14.5
+0.14.4
+0.14.3
+0.14.2
+0.14.1
+0.14.0
+0.13.5
+0.13.4
+0.13.3
+0.13.2
+0.13.1
+0.13.0
+0.12.2
+0.12.1
+2.14.2
+2.14.1
+2.14.0
+2.13.2
+2.13.1
+2.13.0
+2.12.2
+2.12.1
+2.12.0
+2.11.1
+2.11.0
+2.10.2
+2.10.1
+2.10.0
+2.9.0
+2.8.6
+2.8.5
+2.8.4
+2.8.3
+2.8.2
+2.8.1
+2.8.0
+2.7.3
+2.7.2
+2.7.1
+2.7.0
+2.6.1
+2.6.0
+2.5.1
+2.5.0
+2.4.3
+2.4.2
+2.4.1
+2.4.0
+2.2.3
+2.2.2
+2.2.1	
+2.2.0b0
+2.2.0
+2.1.0	
+2.0.0b3	
+2.0.0b2	
+2.0.0b1	
+2.0.0b0
+1.6.0
+1.5.3
+1.5.2
+1.5.1
+1.5.0
+1.4.4
+1.4.3
+1.4.2
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.0.
+"
+ b20d99e1da4941517b865cb7681db430
+2.23.0F
+"
+ 7e7f908200465bd63c8afa4835d30dd2
+1.2.3
+1.2.2
+1.2.1
+1.2~
+"
+ e3255a2256779f54497e8de9c621c962
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1.
+"
+ 8f66bac9b65e34f0d8c653ba62c4afbe
+2.31.7.
+"
+ eea88252285a6ea79cd9529dc008b63d
+2.31.0.
+"
+ abb8812bed661b1b89b7f48b0b4eb440
+2.31.3•
+"
+ e02dfd9ec54e70f7e86c5297540af4f3
+2.10.2
+2.10.1
+2.10.0
+2.9.0
+2.8.6
+2.8.5
+2.8.4
+2.8.3
+2.8.2
+2.8.1
+2.8.0
+2.7.3
+2.7.2
+2.7.1
+2.7.0
+2.6.1
+2.6.0
+2.5.1
+2.5.0
+2.4.3
+2.4.2
+2.4.1
+2.4.0
+2.2.3
+2.2.2
+2.2.1	
+2.2.0b0
+2.2.0—
+"
+ ae1eb99e09b092b5f565725b9503dd61
+1.4.1
+1.4.0
+1.3.2
+1.3.1
+1.3.0
+1.2.3
+1.2.2
+1.2.1
+1.2
+1.1.1
+1.1
+1.0b2
+1.0b1
+1.0.3
+1.0.2
+1.0.1
+1.0
+0.14.6
+0.14.5
+0.14.4
+0.14.3
+0.14.2
+0.14.1
+0.14.0
+0.13.5
+0.13.4
+0.13.3
+0.13.2
+0.13.1
+0.13.0
+0.12.2
+0.12.1
+2.14.2
+2.14.1
+2.14.0
+2.13.2
+2.13.1
+2.13.0
+2.12.2
+2.12.1
+2.12.0
+2.11.1
+2.11.0
+2.10.2
+2.10.1
+2.10.0
+2.9.0
+2.8.6
+2.8.5
+2.8.4
+2.8.3
+2.8.2
+2.8.1
+2.8.0
+2.7.3
+2.7.2
+2.7.1
+2.7.0
+2.6.1
+2.6.0
+2.5.1
+2.5.0
+2.4.3
+2.4.2
+2.4.1
+2.4.0
+2.2.3
+2.2.2
+2.2.1	
+2.2.0b0
+2.2.0
+2.1.0	
+2.0.0b3	
+2.0.0b2	
+2.0.0b1	
+2.0.0b0
+1.6.0
+1.5.3
+1.5.2
+1.5.1
+1.5.0
+1.4.4
+1.4.3
+1.4.2
+2.31.2
+2.31.1
+2.31.0
+2.29.1
+2.29.0
+2.28.0
+2.27.0
+2.26.0
+2.25.0
+2.24.1
+2.24.0
+2.23.1
+2.23.0
+2.22.0
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.0.
+"
+ c92c738ae6ade40449dc29dcb3ca246a
+2.31.4.
+"
+ acb86ba7d9d07f72f9e0b6aed7ff0e8a
+0.12.2C
+"
+ 808e24effc7c73461665e0af8ae05ba0	
+2.32.10
+2.32.9
+2.32.8.
+"
+ c46523a6e5f309a17deb313789c56012
+2.24.0œ
+"
+ 4deb8927aa4d73128377413162f68c0d
+2.33.0	
+2.32.10
+2.32.9
+2.32.8
+2.32.7
+2.32.6
+2.32.5
+2.32.4
+2.32.3
+2.32.2
+2.32.1
+2.32.0
+2.31.8
+2.31.7
+2.31.6
+2.31.5
+2.31.4º
+"
+ 525fd22f708c603f89887744e306fdb2
+2.14.2
+2.14.1
+2.14.0
+2.13.2
+2.13.1
+2.13.0
+2.12.2
+2.12.1
+2.12.0
+2.11.1
+2.11.0
+2.10.2
+2.10.1
+2.10.0
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.0.
+"
+ 3eb73170d7e307d8adbd3397e427ed7d
+2.32.3¶
+"
+ 86bc6e774f7ccaafa7952b94ea8600be
+0.14.6
+0.14.5
+0.14.4
+0.14.3
+0.14.2
+0.14.1
+0.14.0
+0.13.5
+0.13.4
+0.13.3
+0.13.2
+0.13.1
+0.13.0.
+"
+ 78a6c0d3ba3cd26653cc3d1bbf05c893
+2.32.2.
+"
+ 1e14e47cdd108e507418c5aa399546bf
+2.33.0.
+"
+ cd96c1bd7a9a962983e9c11ef60ef6f6
+2.31.8.
+"
+ f9d628404ed443717ba49b8eefec9dc7
+2.22.0-
+"
+ ee85d7f5e6ad15c7cba8b0bac72835ec
+2.7.3j
+"
+ 91d7af9846760079e95c249d8b890701
+2.14.2
+2.14.1
+2.14.0
+2.13.2
+2.13.1
+2.13.0
+2.15.08
+"
+ 924b2a5265c790b243a038791601466c
+2.29.1
+2.29.0.
+"
+ aa18063acab960cacf51d7b192e418da
+2.24.1Q
+"
+ b0cfbdee2f32dcd5df2dc43f39a20c34
+1.4.1
+1.4.0
+1.3.2
+1.3.1
+1.3.0V
+"
+ f0efa6e3c289bba7e44daa60cf431f3b
+1.2.3
+1.2.2
+1.2.1
+1.2
+1.1.1
+1.1j
+"
+ 0e3d9c1fd58847878f93c20e4934eb63
+0.14.6
+0.14.5
+0.14.4
+0.14.3
+0.14.2
+0.14.1
+0.14.0≈
+"
+ e6c6e78f6b9a8008917c718c7289db99
+1.4.1
+1.4.0
+1.3.2
+1.3.1
+1.3.0
+1.2.3
+1.2.2
+1.2.1
+1.2
+1.1.1
+1.1
+1.0b2
+1.0b1
+1.0.3
+1.0.2
+1.0.1
+1.0
+0.14.6
+0.14.5
+0.14.4
+0.14.3
+0.14.2
+0.14.1
+0.14.0
+0.13.5
+0.13.4
+0.13.3
+0.13.2
+0.13.1
+0.13.0
+0.12.2
+0.12.1
+2.14.2
+2.14.1
+2.14.0
+2.13.2
+2.13.1
+2.13.0
+2.12.2
+2.12.1
+2.12.0
+2.11.1
+2.11.0
+2.10.2
+2.10.1
+2.10.0
+2.9.0
+2.8.6
+2.8.5
+2.8.4
+2.8.3
+2.8.2
+2.8.1
+2.8.0
+2.7.3
+2.7.2
+2.7.1
+2.7.0
+2.6.1
+2.6.0
+2.5.1
+2.5.0
+2.4.3
+2.4.2
+2.4.1
+2.4.0
+2.2.3
+2.2.2
+2.2.1	
+2.2.0b0
+2.2.0
+2.1.0	
+2.0.0b3	
+2.0.0b2	
+2.0.0b1	
+2.0.0b0
+1.6.0
+1.5.3
+1.5.2
+1.5.1
+1.5.0
+1.4.4
+1.4.3
+1.4.2
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.0e
+"
+ b00214c7f06f1f78903df3256fa2b97f
+2.4.1
+2.4.0
+2.2.3
+2.2.2
+2.2.1	
+2.2.0b0
+2.2.0Õ
+"
+ 8d7ae6f633f19a43e6ef73b2374786ba
+1.4.1
+1.4.0
+1.3.2
+1.3.1
+1.3.0
+1.2.3
+1.2.2
+1.2.1
+1.2
+1.1.1
+1.1
+1.0b2
+1.0b1
+1.0.3
+1.0.2
+1.0.1
+1.0
+0.14.6
+0.14.5
+0.14.4
+0.14.3
+0.14.2
+0.14.1
+0.14.0
+0.13.5
+0.13.4
+0.13.3
+0.13.2
+0.13.1
+0.13.0
+0.12.2
+0.12.1.
+"
+ 83e2a34c154cded502023306ac064d84
+2.31.2.
+"
+ dbd7f80197451c1410601a534bdf346b
+2.32.0Q
+"
+ 678ce494219c5f403e2f1876086bcdd1
+1.4.1
+1.4.0
+1.3.2
+1.3.1
+1.3.0B
+"
+ 12f5bbf63b33cceeffb268e39829de0b
+2.32.6
+2.32.5
+2.32.4~
+"
+ f8d77ebf9958b9b11067c554962e4c06
+2.14.2
+2.14.1
+2.14.0
+2.13.2
+2.13.1
+2.13.0
+2.12.2
+2.12.1
+2.12.0â
+"
+ c0abd69ba968407a89c00c4bfc946b97
+2.5.1
+2.5.0
+2.4.3
+2.4.2
+2.4.1
+2.4.0
+2.2.3
+2.2.2
+2.2.1	
+2.2.0b0
+2.2.0.
+"
+ 29f1037a95944018904575e24c66f095
+0.12.2`
+"
+ f99b3a3dc3483e05628b07565854c566
+0.13.5
+0.13.4
+0.13.3
+0.13.2
+0.13.1
+0.13.0B
+"
+ 46d3399c39c6c43381156a9ccdeb94ac
+0.13.2
+0.13.1
+0.13.0}
+"
+ 6f83fdfac13fe3f7928cacc2916afb33
+2.12.2
+2.12.1
+2.12.0
+2.11.1
+2.11.0
+2.10.2
+2.10.1
+2.10.0
+2.9.0-
+"
+ d5edf535484f53fce2e412e1ae05ba22
 1.4.2"#
 static/style.css?v=1.1.1
-1.1.1"(
-static/img/logo.png?v=2.10.2
-2.10.2"(
-static/img/logo.png?v=2.10.0
-2.10.0"(
-static/img/logo.png?v=2.10.1
-2.10.1"%
+1.1.1"$
+assets/index-fcdc76c8.js
+2.23.1"(
+static/img/logo.png?v=2.18.4
+2.18.4"%
 static/style.css?v=0.12.1
 0.12.1"%
 static/style.css?v=0.12.2
-0.12.2"#
+0.12.2"(
+static/img/logo.png?v=2.18.2
+2.18.2"(
+static/img/logo.png?v=2.18.3
+2.18.3"(
+static/img/logo.png?v=2.18.1
+2.18.1"#
 static/locust.js?v=2.4.1
 2.4.1"#
 static/locust.js?v=2.4.0
@@ -1829,8 +2243,6 @@ $static/css/application.css?v=2.0.0b2"
 static/locust.js?v=1.6.0
 1.6.0"-
 "static/css/application.css?v=1.6.0
-1.6.0"&
-static/img/logo.png?v=1.6.0
 1.6.0"/
 #static/css/application.css?v=2.10.2
 2.10.2"/
@@ -1841,55 +2253,41 @@ $static/css/application.css?v=2.0.0b2"
 static/locust.js?v=0.1.dev1
 2.2.1	
 2.2.0b0
-2.2.0""
-static/chart.js?v=1.3.0
-1.3.0"%
+2.2.0"$
+static/chart.js?v=2.18.2
+2.18.2"$
+static/chart.js?v=2.18.1
+2.18.1"$
+static/chart.js?v=2.18.4
+2.18.4"$
+static/chart.js?v=2.18.3
+2.18.3"%
 static/locust.js?v=2.10.1
-2.10.1"$
-static/chart.js?v=2.10.0
-2.10.0"&
-static/img/logo.png?v=2.4.2
-2.4.2"-
+2.10.1"-
 "static/css/application.css?v=2.4.1
-2.4.1""
-static/chart.js?v=1.3.1
-1.3.1"%
+2.4.1"%
 static/locust.js?v=2.10.2
-2.10.2"&
-static/img/logo.png?v=2.4.1
-2.4.1"-
-"static/css/application.css?v=2.4.0
-2.4.0""
-static/chart.js?v=1.3.2
-1.3.2"$
-static/chart.js?v=2.10.2
 2.10.2"-
+"static/css/application.css?v=2.4.0
+2.4.0"-
 "static/css/application.css?v=2.4.3
-2.4.3"$
-static/chart.js?v=2.10.1
-2.10.1"&
-static/img/logo.png?v=2.4.3
 2.4.3"-
 "static/css/application.css?v=2.4.2
 2.4.2"%
 static/locust.js?v=2.10.0
-2.10.0"&
-static/img/logo.png?v=2.4.0
-2.4.0"#
+2.10.0"#
 static/style.css?v=1.0.1
 1.0.1"%
 static/style.css?v=0.13.5
-0.13.5""
-static/chart.js?v=2.1.0
-2.1.0"#
+0.13.5"/
+#static/css/application.css?v=2.21.0
+2.21.0"(
+static/img/logo.png?v=2.17.0
+2.17.0"#
 static/style.css?v=1.0.3
-1.0.3"%
-static/locust.js?v=0.12.1
-0.12.1"#
+1.0.3"#
 static/style.css?v=1.0.2
 1.0.2"%
-static/locust.js?v=0.12.2
-0.12.2"%
 static/style.css?v=0.13.0
 0.13.0"%
 static/style.css?v=0.13.1
@@ -1903,11 +2301,7 @@ $static/css/application.css?v=2.0.0b2"
 static/locust.js?v=2.5.0
 2.5.0"#
 static/locust.js?v=2.5.1
-2.5.1""
-static/tasks.js?v=2.2.3
-2.2.3""
-static/tasks.js?v=2.2.2
-2.2.2"±
+2.5.1"Ω
 static/jquery.tools.min.js
 1.4.1
 1.4.0
@@ -1992,71 +2386,55 @@ $static/css/application.css?v=2.0.0b2"
 1.5.0
 1.4.4
 1.4.3
-1.4.2""
+1.4.2
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.0""
 static/chart.js?v=2.9.0
-2.9.0"$
-static/tasks.js?v=2.14.0
-2.14.0"-
+2.9.0"-
 "static/css/application.css?v=1.5.3
-1.5.3"&
-static/img/logo.png?v=1.5.3
 1.5.3"-
 "static/css/application.css?v=1.5.2
-1.5.2"$
-static/tasks.js?v=2.14.2
-2.14.2"&
-static/img/logo.png?v=1.5.2
 1.5.2"-
 "static/css/application.css?v=1.5.1
-1.5.1"$
-static/tasks.js?v=2.14.1
-2.14.1"&
-static/img/logo.png?v=1.5.1
 1.5.1"-
 "static/css/application.css?v=1.5.0
 1.5.0"#
 static/locust.js?v=1.0b2
-1.0b2"#
+1.0b2"$
+static/chart.js?v=2.19.1
+2.19.1"#
 static/locust.js?v=1.0b1
-1.0b1"&
-static/img/logo.png?v=1.5.0
-1.5.0""
-static/chart.js?v=1.2.1
-1.2.1"%
+1.0b1"$
+static/chart.js?v=2.19.0
+2.19.0"%
 static/locust.js?v=2.11.0
-2.11.0""
-static/chart.js?v=1.2.2
-1.2.2"%
-static/locust.js?v=2.11.1
-2.11.1""
-static/chart.js?v=1.2.3
-1.2.3"$
-static/chart.js?v=2.11.1
-2.11.1"$
-static/chart.js?v=2.11.0
 2.11.0"%
+static/locust.js?v=2.11.1
+2.11.1"%
 static/style.css?v=0.14.4
-0.14.4"%
-static/locust.js?v=0.13.2
-0.13.2"%
+0.14.4"(
+static/img/logo.png?v=2.16.0
+2.16.0"%
 static/style.css?v=0.14.5
-0.14.5"%
-static/locust.js?v=0.13.3
-0.13.3"%
+0.14.5"(
+static/img/logo.png?v=2.16.1
+2.16.1"%
 static/style.css?v=0.14.6
-0.14.6"%
-static/locust.js?v=0.13.0
-0.13.0"%
-static/locust.js?v=0.13.1
-0.13.1""
-static/chart.js?v=2.2.2
-2.2.2""
-static/chart.js?v=2.2.3
-2.2.3"%
-static/locust.js?v=0.13.4
-0.13.4"%
-static/locust.js?v=0.13.5
-0.13.5"%
+0.14.6"$
+static/tasks.js?v=2.21.0
+2.21.0"%
 static/style.css?v=0.14.0
 0.14.0"%
 static/style.css?v=0.14.1
@@ -2068,27 +2446,29 @@ $static/css/application.css?v=2.0.0b2"
 static/locust.js?v=2.2.3
 2.2.3"#
 static/locust.js?v=2.2.2
-2.2.2"-
+2.2.2"%
+static/locust.js?v=2.20.0
+2.20.0"%
+static/locust.js?v=2.20.1
+2.20.1"8
+assets/index-941b6e82.js
+2.27.0
+2.26.0
+2.25.0"-
 "static/css/application.css?v=1.4.4
 1.4.4"#
 static/locust.js?v=1.4.4
-1.4.4"&
-static/img/logo.png?v=1.4.4
 1.4.4"-
 "static/css/application.css?v=1.4.3
 1.4.3"#
 static/locust.js?v=1.4.3
-1.4.3"&
-static/img/logo.png?v=1.4.3
 1.4.3"#
 static/locust.js?v=1.4.2
 1.4.2"-
 "static/css/application.css?v=1.4.2
 1.4.2"#
 static/locust.js?v=1.4.1
-1.4.1"&
-static/img/logo.png?v=1.4.2
-1.4.2"≠
+1.4.1"π
 static/img/favicon.ico
 1.4.1
 1.4.0
@@ -2173,7 +2553,21 @@ $static/css/application.css?v=2.0.0b2"
 1.5.0
 1.4.4
 1.4.3
-1.4.2"#
+1.4.2
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.0"#
 static/locust.js?v=1.4.0
 1.4.0"/
 #static/css/application.css?v=2.12.2
@@ -2181,123 +2575,82 @@ $static/css/application.css?v=2.0.0b2"
 #static/css/application.css?v=2.12.1
 2.12.1"/
 #static/css/application.css?v=2.12.0
-2.12.0"&
-static/img/logo.png?v=1.4.1
-1.4.1""
-static/chart.js?v=1.5.2
-1.5.2"&
-static/img/logo.png?v=1.4.0
-1.4.0""
-static/chart.js?v=1.5.3
-1.5.3"-
+2.12.0"8
+assets/index-CwF7Fst2.js
+2.32.6
+2.32.5
+2.32.4"$
+static/chart.js?v=2.16.1
+2.16.1"-
 "static/css/application.css?v=2.2.3
-2.2.3"&
-static/img/logo.png?v=2.2.3
 2.2.3"-
 "static/css/application.css?v=2.2.2
-2.2.2""
-static/chart.js?v=1.5.0
-1.5.0""
-static/chart.js?v=1.5.1
-1.5.1"#
-static/style.css?v=1.0b1
-1.0b1"(
+2.2.2"(
 static/img/logo.png?v=0.13.4
 0.13.4"(
 static/img/logo.png?v=0.13.3
-0.13.3"#
-static/style.css?v=1.0b2
-1.0b2"(
+0.13.3"$
+static/chart.js?v=2.16.0
+2.16.0"(
 static/img/logo.png?v=0.13.5
-0.13.5"9
-static/chart.js?v=0.1.dev1
-2.2.1	
-2.2.0b0
-2.2.0"(
+0.13.5"(
 static/img/logo.png?v=0.13.0
 0.13.0"(
 static/img/logo.png?v=0.13.2
 0.13.2"(
 static/img/logo.png?v=0.13.1
-0.13.1"&
-static/img/logo.png?v=2.2.2
-2.2.2"2
+0.13.1"2
 'static/css/application.css?v=2.8.2.dev0
-2.8.1"%
-static/locust.js?v=0.14.1
-0.14.1"&
-static/chart.js?v=2.0.0b0	
-2.0.0b0"%
-static/locust.js?v=0.14.2
-0.14.2"&
-static/chart.js?v=2.0.0b1	
-2.0.0b1"&
-static/chart.js?v=2.0.0b2	
-2.0.0b2"%
-static/locust.js?v=0.14.0
-0.14.0"&
-static/chart.js?v=2.0.0b3	
-2.0.0b3"%
-static/locust.js?v=0.14.5
-0.14.5"%
-static/locust.js?v=0.14.6
-0.14.6"%
-static/locust.js?v=0.14.3
-0.14.3"%
-static/locust.js?v=0.14.4
-0.14.4""
-static/img/logo.png?v=1.2
-1.2""
-static/img/logo.png?v=1.0
-1.0""
-static/img/logo.png?v=1.1
-1.1""
-static/tasks.js?v=2.4.1
-2.4.1""
-static/tasks.js?v=2.4.0
-2.4.0"#
+2.8.1"(
+static/img/logo.png?v=2.15.1
+2.15.1"(
+static/img/logo.png?v=2.15.0
+2.15.0"$
+static/tasks.js?v=2.20.0
+2.20.0"$
+static/tasks.js?v=2.20.1
+2.20.1"$
+assets/index-093e1f62.js
+2.31.0"$
+assets/index-DzzqypJO.js
+2.32.2"%
+static/locust.js?v=2.21.0
+2.21.0".
+assets/index-DQd3Odi5.js
+2.31.6
+2.31.5"#
 static/locust.js?v=1.5.3
 1.5.3"#
 static/locust.js?v=1.5.2
-1.5.2"1
-$static/css/application.css?v=2.0.0b1	
-2.0.0b1"#
+1.5.2"#
 static/locust.js?v=1.5.1
-1.5.1"1
-$static/css/application.css?v=2.0.0b0	
-2.0.0b0"#
+1.5.1"#
 static/locust.js?v=1.5.0
 1.5.0"/
 #static/css/application.css?v=2.11.1
 2.11.1"/
 #static/css/application.css?v=2.11.0
-2.11.0""
-static/tasks.js?v=2.4.3
-2.4.3""
-static/tasks.js?v=2.4.2
-2.4.2"&
-static/img/logo.png?v=1.3.2
-1.3.2"-
-"static/css/application.css?v=2.9.0
-2.9.0"1
-$static/css/application.css?v=2.0.0b3	
-2.0.0b3""
-static/chart.js?v=1.4.3
-1.4.3"&
-static/img/logo.png?v=1.3.1
-1.3.1"1
-$static/css/application.css?v=2.0.0b2	
-2.0.0b2""
-static/chart.js?v=1.4.4
-1.4.4"&
-static/img/logo.png?v=1.3.0
-1.3.0""
-static/chart.js?v=1.4.0
-1.4.0""
-static/chart.js?v=1.4.1
-1.4.1""
-static/chart.js?v=1.4.2
-1.4.2"-
+2.11.0"$
+static/chart.js?v=2.17.0
+2.17.0"ƒ
+assets/favicon-dark.png
+2.33.0	
+2.32.10
+2.32.9
+2.32.8
+2.32.7
+2.32.6
+2.32.5
+2.32.4
+2.32.3
+2.32.2
+2.32.1
+2.32.0
+2.31.8
+2.31.7
+2.31.6
+2.31.5
+2.31.4"-
 "static/css/application.css?v=2.1.0
 2.1.0"&
 static/img/logo.png?v=2.9.0
@@ -2305,9 +2658,7 @@ $static/css/application.css?v=2.0.0b2
 static/img/logo.png?v=0.12.1
 0.12.1"(
 static/img/logo.png?v=0.12.2
-0.12.2"&
-static/img/logo.png?v=2.1.0
-2.1.0"$
+0.12.2"$
 static/chart.js?v=0.14.0
 0.14.0"(
 static/img/logo.png?v=2.14.2
@@ -2317,7 +2668,7 @@ $static/css/application.css?v=2.0.0b2
 static/img/logo.png?v=2.14.1
 2.14.1""
 static/chart.js?v=2.4.0
-2.4.0"®
+2.4.0"¥
 static/vintage.js
 1.4.1
 1.4.0
@@ -2402,7 +2753,21 @@ $static/css/application.css?v=2.0.0b2
 1.5.0
 1.4.4
 1.4.3
-1.4.2""
+1.4.2
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.0""
 static/chart.js?v=2.4.1
 2.4.1"'
 static/tasks.js?v=2.8.2.dev0
@@ -2438,7 +2803,618 @@ $static/css/application.css?v=2.0.0b2
 static/chart.js?v=0.14.1
 0.14.1"#
 static/locust.js?v=2.8.2
-2.8.2"#
+2.8.2"-
+"static/css/application.css?v=2.8.5
+2.8.5"-
+"static/css/application.css?v=2.8.4
+2.8.4""
+static/chart.js?v=1.0b1
+1.0b1""
+static/chart.js?v=1.0b2
+1.0b2"-
+"static/css/application.css?v=2.8.6
+2.8.6""
+static/tasks.js?v=2.5.1
+2.5.1"&
+static/img/logo.png?v=1.2.3
+1.2.3"&
+static/img/logo.png?v=1.2.2
+1.2.2"-
+"static/css/application.css?v=2.8.0
+2.8.0"&
+static/img/logo.png?v=1.2.1
+1.2.1"-
+"static/css/application.css?v=2.8.3
+2.8.3"$
+assets/index-K5xg1SLs.js
+2.31.4"-
+"static/css/application.css?v=2.8.2
+2.8.2"%
+static/locust.js?v=2.14.0
+2.14.0"$
+static/chart.js?v=2.14.0
+2.14.0"$
+static/chart.js?v=2.14.2
+2.14.2"$
+static/chart.js?v=2.14.1
+2.14.1"%
+static/locust.js?v=2.14.1
+2.14.1"%
+static/locust.js?v=2.14.2
+2.14.2"$
+static/chart.js?v=0.13.1
+0.13.1"$
+static/chart.js?v=0.13.0
+0.13.0"(
+static/img/logo.png?v=2.13.1
+2.13.1"(
+static/img/logo.png?v=2.13.2
+2.13.2"D
+%static/css/application.css?v=0.1.dev1
+2.2.1	
+2.2.0b0
+2.2.0"(
+static/img/logo.png?v=2.13.0
+2.13.0""
+static/chart.js?v=2.5.0
+2.5.0""
+static/chart.js?v=2.5.1
+2.5.1"'
+static/locust.js?v=2.0.0b0	
+2.0.0b0"'
+static/locust.js?v=2.0.0b1	
+2.0.0b1"$
+static/chart.js?v=0.13.5
+0.13.5"#
+static/locust.js?v=2.9.0
+2.9.0"$
+static/chart.js?v=0.13.4
+0.13.4"$
+static/chart.js?v=0.13.3
+0.13.3"$
+static/tasks.js?v=2.19.1
+2.19.1"$
+static/chart.js?v=0.13.2
+0.13.2"$
+static/tasks.js?v=2.19.0
+2.19.0""
+static/tasks.js?v=2.6.1
+2.6.1""
+static/tasks.js?v=2.6.0
+2.6.0"-
+"static/css/application.css?v=2.7.2
+2.7.2"-
+"static/css/application.css?v=2.7.1
+2.7.1"&
+static/img/logo.png?v=1.1.1
+1.1.1"-
+"static/css/application.css?v=2.7.3
+2.7.3"-
+"static/css/application.css?v=2.7.0
+2.7.0""
+static/chart.js?v=1.6.0
+1.6.0"$
+static/chart.js?v=2.15.1
+2.15.1"$
+static/chart.js?v=2.15.0
+2.15.0"%
+static/locust.js?v=2.15.0
+2.15.0"%
+static/locust.js?v=2.15.1
+2.15.1"$
+static/chart.js?v=0.12.2
+0.12.2"/
+#static/css/application.css?v=2.20.1
+2.20.1"$
+static/chart.js?v=0.12.1
+0.12.1"/
+#static/css/application.css?v=2.20.0
+2.20.0"(
+static/img/logo.png?v=2.12.2
+2.12.2"(
+static/img/logo.png?v=2.12.0
+2.12.0"(
+static/img/logo.png?v=2.12.1
+2.12.1"$
+assets/index-sZjNzlO0.js
+2.31.7"#
+static/locust.js?v=2.6.1
+2.6.1"9
+static/tasks.js?v=0.1.dev1
+2.2.1	
+2.2.0b0
+2.2.0"#
+static/locust.js?v=2.6.0
+2.6.0""
+static/chart.js?v=2.6.0
+2.6.0""
+static/chart.js?v=2.6.1
+2.6.1"'
+static/locust.js?v=2.0.0b2	
+2.0.0b2"'
+static/locust.js?v=2.0.0b3	
+2.0.0b3"
+static/style.css?v=1.1
+1.1"&
+static/img/logo.png?v=1.0.1
+1.0.1""
+static/tasks.js?v=2.7.2
+2.7.2"
+static/style.css?v=1.0
+1.0""
+static/tasks.js?v=2.7.1
+2.7.1""
+static/tasks.js?v=2.7.0
+2.7.0"&
+static/img/logo.png?v=1.0.3
+1.0.3"
+static/style.css?v=1.2
+1.2"&
+static/img/logo.png?v=1.0.2
+1.0.2""
+static/tasks.js?v=2.7.3
+2.7.3"%
+static/locust.js?v=2.12.0
+2.12.0"%
+static/locust.js?v=2.12.1
+2.12.1"$
+static/chart.js?v=2.12.0
+2.12.0"-
+"static/css/application.css?v=2.6.1
+2.6.1"%
+static/locust.js?v=2.12.2
+2.12.2"-
+"static/css/application.css?v=2.6.0
+2.6.0"$
+static/chart.js?v=2.12.2
+2.12.2"$
+static/chart.js?v=2.12.1
+2.12.1"$
+assets/index-LlbhTJVf.js
+2.32.1"(
+static/img/logo.png?v=2.11.1
+2.11.1"(
+static/img/logo.png?v=2.11.0
+2.11.0"$
+assets/index-BDkpo_Sn.js
+2.31.3"#
+static/locust.js?v=2.7.0
+2.7.0""
+static/chart.js?v=2.7.1
+2.7.1""
+static/chart.js?v=2.7.2
+2.7.2""
+static/chart.js?v=2.7.0
+2.7.0"#
+static/locust.js?v=2.7.2
+2.7.2"#
+static/locust.js?v=2.7.1
+2.7.1""
+static/chart.js?v=2.7.3
+2.7.3"#
+static/locust.js?v=2.7.3
+2.7.3"≈
+assets/favicon-light.png
+2.33.0	
+2.32.10
+2.32.9
+2.32.8
+2.32.7
+2.32.6
+2.32.5
+2.32.4
+2.32.3
+2.32.2
+2.32.1
+2.32.0
+2.31.8
+2.31.7
+2.31.6
+2.31.5
+2.31.4""
+static/tasks.js?v=2.8.6
+2.8.6""
+static/tasks.js?v=2.8.0
+2.8.0"$
+assets/index-Bcn8JR9P.js
+2.33.0""
+static/tasks.js?v=2.8.5
+2.8.5""
+static/tasks.js?v=2.8.4
+2.8.4""
+static/tasks.js?v=2.8.3
+2.8.3""
+static/tasks.js?v=2.8.2
+2.8.2"-
+"static/css/application.css?v=2.5.0
+2.5.0"%
+static/locust.js?v=2.13.0
+2.13.0"%
+static/locust.js?v=2.13.1
+2.13.1"-
+"static/css/application.css?v=2.5.1
+2.5.1"$
+static/chart.js?v=2.13.1
+2.13.1"$
+static/chart.js?v=2.13.0
+2.13.0"$
+static/chart.js?v=2.13.2
+2.13.2"%
+static/locust.js?v=2.13.2
+2.13.2"ø
+static/echarts.common.min.js
+1.4.1
+1.4.0
+1.3.2
+1.3.1
+1.3.0
+1.2.3
+1.2.2
+1.2.1
+1.2
+1.1.1
+1.1
+1.0b2
+1.0b1
+1.0.3
+1.0.2
+1.0.1
+1.0
+0.14.6
+0.14.5
+0.14.4
+0.14.3
+0.14.2
+0.14.1
+0.14.0
+0.13.5
+0.13.4
+0.13.3
+0.13.2
+0.13.1
+0.13.0
+0.12.2
+0.12.1
+2.14.2
+2.14.1
+2.14.0
+2.13.2
+2.13.1
+2.13.0
+2.12.2
+2.12.1
+2.12.0
+2.11.1
+2.11.0
+2.10.2
+2.10.1
+2.10.0
+2.9.0
+2.8.6
+2.8.5
+2.8.4
+2.8.3
+2.8.2
+2.8.1
+2.8.0
+2.7.3
+2.7.2
+2.7.1
+2.7.0
+2.6.1
+2.6.0
+2.5.1
+2.5.0
+2.4.3
+2.4.2
+2.4.1
+2.4.0
+2.2.3
+2.2.2
+2.2.1	
+2.2.0b0
+2.2.0
+2.1.0	
+2.0.0b3	
+2.0.0b2	
+2.0.0b1	
+2.0.0b0
+1.6.0
+1.5.3
+1.5.2
+1.5.1
+1.5.0
+1.4.4
+1.4.3
+1.4.2
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.0"(
+static/img/logo.png?v=2.10.2
+2.10.2"(
+static/img/logo.png?v=2.10.0
+2.10.0"(
+static/img/logo.png?v=2.10.1
+2.10.1"$
+static/chart.js?v=2.21.0
+2.21.0"$
+static/tasks.js?v=2.16.1
+2.16.1"$
+static/tasks.js?v=2.15.1
+2.15.1"&
+static/img/logo.png?v=1.6.0
+1.6.0"$
+static/tasks.js?v=2.15.0
+2.15.0"(
+static/img/logo.png?v=2.21.0
+2.21.0"$
+assets/index-C1Bs-IUT.js
+2.31.8""
+static/chart.js?v=1.3.0
+1.3.0"$
+static/chart.js?v=2.10.0
+2.10.0"&
+static/img/logo.png?v=2.4.2
+2.4.2""
+static/chart.js?v=1.3.1
+1.3.1"&
+static/img/logo.png?v=2.4.1
+2.4.1""
+static/chart.js?v=1.3.2
+1.3.2"$
+static/chart.js?v=2.10.2
+2.10.2"$
+static/chart.js?v=2.10.1
+2.10.1"&
+static/img/logo.png?v=2.4.3
+2.4.3"%
+static/locust.js?v=2.18.1
+2.18.1"˙
+assets/favicon.ico
+2.31.2
+2.31.1
+2.31.0
+2.29.1
+2.29.0
+2.28.0
+2.27.0
+2.26.0
+2.25.0
+2.24.1
+2.24.0
+2.23.1
+2.23.0
+2.22.0
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1"%
+static/locust.js?v=2.18.2
+2.18.2"%
+static/locust.js?v=2.18.3
+2.18.3"%
+static/locust.js?v=2.18.4
+2.18.4"/
+#static/css/application.css?v=2.18.4
+2.18.4"/
+#static/css/application.css?v=2.18.3
+2.18.3"&
+static/img/logo.png?v=2.4.0
+2.4.0"/
+#static/css/application.css?v=2.18.2
+2.18.2"/
+#static/css/application.css?v=2.18.1
+2.18.1""
+static/chart.js?v=2.1.0
+2.1.0"%
+static/locust.js?v=0.12.1
+0.12.1"%
+static/locust.js?v=0.12.2
+0.12.2""
+static/tasks.js?v=2.2.3
+2.2.3""
+static/tasks.js?v=2.2.2
+2.2.2"$
+static/tasks.js?v=2.14.0
+2.14.0"&
+static/img/logo.png?v=1.5.3
+1.5.3"$
+static/tasks.js?v=2.14.2
+2.14.2"&
+static/img/logo.png?v=1.5.2
+1.5.2"$
+static/tasks.js?v=2.14.1
+2.14.1"&
+static/img/logo.png?v=1.5.1
+1.5.1"(
+static/img/logo.png?v=2.20.1
+2.20.1"&
+static/img/logo.png?v=1.5.0
+1.5.0""
+static/chart.js?v=1.2.1
+1.2.1""
+static/chart.js?v=1.2.2
+1.2.2""
+static/chart.js?v=1.2.3
+1.2.3"$
+static/chart.js?v=2.11.1
+2.11.1"$
+static/chart.js?v=2.11.0
+2.11.0"(
+static/img/logo.png?v=2.20.0
+2.20.0"%
+static/locust.js?v=2.19.0
+2.19.0"%
+static/locust.js?v=2.19.1
+2.19.1"/
+#static/css/application.css?v=2.17.0
+2.17.0"%
+static/locust.js?v=0.13.2
+0.13.2"%
+static/locust.js?v=0.13.3
+0.13.3"%
+static/locust.js?v=0.13.0
+0.13.0"%
+static/locust.js?v=0.13.1
+0.13.1""
+static/chart.js?v=2.2.2
+2.2.2""
+static/chart.js?v=2.2.3
+2.2.3"%
+static/locust.js?v=0.13.4
+0.13.4"%
+static/locust.js?v=0.13.5
+0.13.5"$
+static/tasks.js?v=2.18.4
+2.18.4"$
+static/tasks.js?v=2.18.3
+2.18.3"$
+static/tasks.js?v=2.18.2
+2.18.2"$
+static/tasks.js?v=2.18.1
+2.18.1"&
+static/img/logo.png?v=1.4.4
+1.4.4"&
+static/img/logo.png?v=1.4.3
+1.4.3"&
+static/img/logo.png?v=1.4.2
+1.4.2"&
+static/img/logo.png?v=1.4.1
+1.4.1""
+static/chart.js?v=1.5.2
+1.5.2"&
+static/img/logo.png?v=1.4.0
+1.4.0""
+static/chart.js?v=1.5.3
+1.5.3"&
+static/img/logo.png?v=2.2.3
+2.2.3""
+static/chart.js?v=1.5.0
+1.5.0""
+static/chart.js?v=1.5.1
+1.5.1"#
+static/style.css?v=1.0b1
+1.0b1"$
+assets/index-fd3e763b.js
+2.24.1"9
+assets/index-DnScW665.js	
+2.32.10
+2.32.9
+2.32.8"#
+static/style.css?v=1.0b2
+1.0b2"9
+static/chart.js?v=0.1.dev1
+2.2.1	
+2.2.0b0
+2.2.0"%
+static/locust.js?v=2.16.0
+2.16.0"&
+static/img/logo.png?v=2.2.2
+2.2.2"%
+static/locust.js?v=2.16.1
+2.16.1"%
+static/locust.js?v=0.14.1
+0.14.1"&
+static/chart.js?v=2.0.0b0	
+2.0.0b0"%
+static/locust.js?v=0.14.2
+0.14.2"&
+static/chart.js?v=2.0.0b1	
+2.0.0b1"&
+static/chart.js?v=2.0.0b2	
+2.0.0b2"%
+static/locust.js?v=0.14.0
+0.14.0"&
+static/chart.js?v=2.0.0b3	
+2.0.0b3"%
+static/locust.js?v=0.14.5
+0.14.5"%
+static/locust.js?v=0.14.6
+0.14.6"%
+static/locust.js?v=0.14.3
+0.14.3"%
+static/locust.js?v=0.14.4
+0.14.4""
+static/img/logo.png?v=1.2
+1.2""
+static/img/logo.png?v=1.0
+1.0""
+static/img/logo.png?v=1.1
+1.1"$
+static/chart.js?v=2.20.1
+2.20.1"$
+static/chart.js?v=2.20.0
+2.20.0""
+static/tasks.js?v=2.4.1
+2.4.1""
+static/tasks.js?v=2.4.0
+2.4.0"$
+static/tasks.js?v=2.17.0
+2.17.0"1
+$static/css/application.css?v=2.0.0b1	
+2.0.0b1"$
+static/tasks.js?v=2.16.0
+2.16.0"1
+$static/css/application.css?v=2.0.0b0	
+2.0.0b0""
+static/tasks.js?v=2.4.3
+2.4.3""
+static/tasks.js?v=2.4.2
+2.4.2"&
+static/img/logo.png?v=1.3.2
+1.3.2"-
+"static/css/application.css?v=2.9.0
+2.9.0"1
+$static/css/application.css?v=2.0.0b3	
+2.0.0b3""
+static/chart.js?v=1.4.3
+1.4.3"$
+assets/index-5730ea01.js
+2.23.0"&
+static/img/logo.png?v=1.3.1
+1.3.1"1
+$static/css/application.css?v=2.0.0b2	
+2.0.0b2""
+static/chart.js?v=1.4.4
+1.4.4"&
+static/img/logo.png?v=1.3.0
+1.3.0""
+static/chart.js?v=1.4.0
+1.4.0"$
+assets/index-C35vpr6y.js
+2.32.0""
+static/chart.js?v=1.4.1
+1.4.1""
+static/chart.js?v=1.4.2
+1.4.2"&
+static/img/logo.png?v=2.1.0
+2.1.0"/
+#static/css/application.css?v=2.19.1
+2.19.1"%
+static/locust.js?v=2.17.0
+2.17.0"/
+#static/css/application.css?v=2.19.0
+2.19.0"$
+assets/index-BfmYk8ph.js
+2.31.1"$
+assets/index-BdLZCA0W.js
+2.31.2"#
 static/locust.js?v=1.2.3
 1.2.3"#
 static/locust.js?v=1.2.2
@@ -2452,23 +3428,9 @@ $static/css/application.css?v=2.0.0b2
 static/tasks.js?v=2.11.0
 2.11.0"&
 static/img/logo.png?v=2.8.6
-2.8.6"-
-"static/css/application.css?v=2.8.5
-2.8.5"&
+2.8.6"&
 static/img/logo.png?v=2.8.5
-2.8.5"-
-"static/css/application.css?v=2.8.4
-2.8.4""
-static/chart.js?v=1.0b1
-1.0b1""
-static/chart.js?v=1.0b2
-1.0b2"-
-"static/css/application.css?v=2.8.6
-2.8.6""
-static/tasks.js?v=2.5.1
-2.5.1"&
-static/img/logo.png?v=1.2.3
-1.2.3"≤
+2.8.5"æ
 static/jquery.jqote2.min.js
 1.4.1
 1.4.0
@@ -2553,79 +3515,43 @@ $static/css/application.css?v=2.0.0b2
 1.5.0
 1.4.4
 1.4.3
-1.4.2"&
-static/img/logo.png?v=1.2.2
-1.2.2"-
-"static/css/application.css?v=2.8.0
-2.8.0"&
-static/img/logo.png?v=1.2.1
-1.2.1"-
-"static/css/application.css?v=2.8.3
-2.8.3"-
-"static/css/application.css?v=2.8.2
-2.8.2"&
+1.4.2
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.0"&
 static/img/logo.png?v=2.8.0
-2.8.0"%
-static/locust.js?v=2.14.0
-2.14.0"$
-static/chart.js?v=2.14.0
-2.14.0"&
+2.8.0"&
 static/img/logo.png?v=2.8.2
-2.8.2"$
-static/chart.js?v=2.14.2
-2.14.2"&
+2.8.2"&
 static/img/logo.png?v=2.8.4
-2.8.4"$
-static/chart.js?v=2.14.1
-2.14.1"&
+2.8.4"&
 static/img/logo.png?v=2.8.3
 2.8.3"/
 #static/css/application.css?v=2.14.2
 2.14.2"/
 #static/css/application.css?v=2.14.1
-2.14.1"%
-static/locust.js?v=2.14.1
-2.14.1"%
-static/locust.js?v=2.14.2
-2.14.2"$
-static/chart.js?v=0.13.1
-0.13.1"$
-static/chart.js?v=0.13.0
-0.13.0"(
-static/img/logo.png?v=2.13.1
-2.13.1"(
-static/img/logo.png?v=2.13.2
-2.13.2"D
-%static/css/application.css?v=0.1.dev1
-2.2.1	
-2.2.0b0
-2.2.0"(
-static/img/logo.png?v=2.13.0
-2.13.0""
-static/chart.js?v=2.5.0
-2.5.0"#
+2.14.1"#
 static/style.css?v=1.4.1
 1.4.1"#
 static/style.css?v=1.4.0
 1.4.0"#
 static/locust.js?v=2.1.0
-2.1.0""
-static/chart.js?v=2.5.1
-2.5.1"'
-static/locust.js?v=2.0.0b0	
-2.0.0b0"'
-static/locust.js?v=2.0.0b1	
-2.0.0b1"$
-static/chart.js?v=0.13.5
-0.13.5"#
-static/locust.js?v=2.9.0
-2.9.0"$
-static/chart.js?v=0.13.4
-0.13.4"$
-static/chart.js?v=0.13.3
-0.13.3"$
-static/chart.js?v=0.13.2
-0.13.2"#
+2.1.0"$
+assets/index-CmqwOkja.js
+2.32.7"$
+assets/index-8515c9b5.js
+2.28.0"#
 static/locust.js?v=1.3.2
 1.3.2"=
 static/img/logo.png?v=0.1.dev1
@@ -2645,29 +3571,16 @@ $static/css/application.css?v=2.0.0b2
 static/tasks.js?v=2.10.2
 2.10.2"$
 static/tasks.js?v=2.10.1
-2.10.1""
-static/tasks.js?v=2.6.1
-2.6.1""
-static/tasks.js?v=2.6.0
-2.6.0"-
-"static/css/application.css?v=2.7.2
-2.7.2"-
-"static/css/application.css?v=2.7.1
-2.7.1"&
-static/img/logo.png?v=1.1.1
-1.1.1"-
-"static/css/application.css?v=2.7.3
-2.7.3"(
+2.10.1"(
 static/img/logo.png?v=0.14.6
 0.14.6"&
 static/img/logo.png?v=2.7.1
-2.7.1"-
-"static/css/application.css?v=2.7.0
-2.7.0"&
+2.7.1".
+assets/index-84c63e70.js
+2.29.1
+2.29.0"&
 static/img/logo.png?v=2.7.0
-2.7.0""
-static/chart.js?v=1.6.0
-1.6.0"(
+2.7.0"(
 static/img/logo.png?v=0.14.3
 0.14.3"&
 static/img/logo.png?v=2.7.3
@@ -2685,19 +3598,11 @@ $static/css/application.css?v=2.0.0b2
 static/img/logo.png?v=0.14.0
 0.14.0"/
 #static/css/application.css?v=2.13.2
-2.13.2"$
-static/chart.js?v=0.12.2
-0.12.2"$
-static/chart.js?v=0.12.1
-0.12.1"#
+2.13.2"#
 static/style.css?v=1.3.0
-1.3.0"(
-static/img/logo.png?v=2.12.2
-2.12.2"(
-static/img/logo.png?v=2.12.0
-2.12.0"(
-static/img/logo.png?v=2.12.1
-2.12.1"≤
+1.3.0"$
+assets/index-0d6d578a.js
+2.24.0"æ
 static/jquery-1.11.3.min.js
 1.4.1
 1.4.0
@@ -2782,7 +3687,21 @@ $static/css/application.css?v=2.0.0b2
 1.5.0
 1.4.4
 1.4.3
-1.4.2"#
+1.4.2
+2.21.0
+2.20.1
+2.20.0
+2.19.1
+2.19.0
+2.18.4
+2.18.3
+2.18.2
+2.18.1
+2.17.0
+2.16.1
+2.16.0
+2.15.1
+2.15.0"#
 static/style.css?v=1.3.2
 1.3.2"
 static/locust.js?v=1.2
@@ -2792,79 +3711,33 @@ $static/css/application.css?v=2.0.0b2
 static/locust.js?v=1.1
 1.1"
 static/locust.js?v=1.0
-1.0"#
-static/locust.js?v=2.6.1
-2.6.1"9
-static/tasks.js?v=0.1.dev1
-2.2.1	
-2.2.0b0
-2.2.0"#
-static/locust.js?v=2.6.0
-2.6.0""
-static/chart.js?v=2.6.0
-2.6.0""
-static/chart.js?v=2.6.1
-2.6.1"$
+1.0"$
+assets/index-f31faefc.js
+2.22.0"$
 static/tasks.js?v=2.13.1
 2.13.1"$
 static/tasks.js?v=2.13.0
 2.13.0"$
 static/tasks.js?v=2.13.2
-2.13.2"'
-static/locust.js?v=2.0.0b2	
-2.0.0b2"#
+2.13.2"#
 static/locust.js?v=1.0.3
-1.0.3"'
-static/locust.js?v=2.0.0b3	
-2.0.0b3"#
+1.0.3"#
 static/locust.js?v=1.0.2
 1.0.2"#
 static/locust.js?v=1.0.1
-1.0.1"
-static/style.css?v=1.1
-1.1"&
-static/img/logo.png?v=1.0.1
-1.0.1""
-static/tasks.js?v=2.7.2
-2.7.2"
-static/style.css?v=1.0
-1.0""
-static/tasks.js?v=2.7.1
-2.7.1"'
+1.0.1"'
 static/chart.js?v=2.8.2.dev0
-2.8.1""
-static/tasks.js?v=2.7.0
-2.7.0"&
-static/img/logo.png?v=1.0.3
-1.0.3"
-static/style.css?v=1.2
-1.2"&
-static/img/logo.png?v=1.0.2
-1.0.2""
-static/tasks.js?v=2.7.3
-2.7.3"&
+2.8.1"&
 static/img/logo.png?v=2.6.0
-2.6.0"%
-static/locust.js?v=2.12.0
-2.12.0"%
-static/locust.js?v=2.12.1
-2.12.1"$
-static/chart.js?v=2.12.0
-2.12.0"-
-"static/css/application.css?v=2.6.1
-2.6.1"%
-static/locust.js?v=2.12.2
-2.12.2"&
+2.6.0"&
 static/img/logo.png?v=2.6.1
-2.6.1"-
-"static/css/application.css?v=2.6.0
-2.6.0"$
-static/chart.js?v=2.12.2
-2.12.2"$
-static/chart.js?v=2.12.1
-2.12.1""
+2.6.1""
 static/chart.js?v=1.1.1
-1.1.1"*
+1.1.1"/
+#static/css/application.css?v=2.16.1
+2.16.1"/
+#static/css/application.css?v=2.16.0
+2.16.0"*
 static/img/logo.png?v=2.0.0b1	
 2.0.0b1"*
 static/img/logo.png?v=2.0.0b2	
@@ -2872,88 +3745,52 @@ $static/css/application.css?v=2.0.0b2
 static/style.css?v=1.2.1
 1.2.1"*
 static/img/logo.png?v=2.0.0b0	
-2.0.0b0"(
-static/img/logo.png?v=2.11.1
-2.11.1"*
+2.0.0b0"*
 static/img/logo.png?v=2.0.0b3	
-2.0.0b3"(
-static/img/logo.png?v=2.11.0
-2.11.0"#
+2.0.0b3"#
 static/style.css?v=1.2.3
-1.2.3"#
+1.2.3"(
+static/img/logo.png?v=2.19.1
+2.19.1"#
 static/style.css?v=1.2.2
-1.2.2"#
-static/locust.js?v=2.7.0
-2.7.0"
+1.2.2"(
+static/img/logo.png?v=2.19.0
+2.19.0"
 static/chart.js?v=1.0
 1.0"+
  static/img/logo.png?v=2.8.2.dev0
-2.8.1""
-static/chart.js?v=2.7.1
-2.7.1""
-static/chart.js?v=2.7.2
-2.7.2"
+2.8.1"
+assets/favicon.png
+2.31.3"
 static/chart.js?v=1.1
 1.1"
 static/chart.js?v=1.2
-1.2""
-static/chart.js?v=2.7.0
-2.7.0"#
-static/locust.js?v=2.7.2
-2.7.2"#
-static/locust.js?v=2.7.1
-2.7.1""
-static/chart.js?v=2.7.3
-2.7.3"#
-static/locust.js?v=2.7.3
-2.7.3"$
+1.2"$
 static/tasks.js?v=2.12.2
 2.12.2"$
 static/tasks.js?v=2.12.1
-2.12.1""
-static/tasks.js?v=2.8.6
-2.8.6"&
+2.12.1"&
 static/img/logo.png?v=1.0b1
 1.0b1"#
 static/locust.js?v=1.1.1
 1.1.1"$
 static/tasks.js?v=2.12.0
 2.12.0""
-static/tasks.js?v=2.8.0
-2.8.0""
-static/tasks.js?v=2.8.5
-2.8.5""
-static/tasks.js?v=2.8.4
-2.8.4""
-static/tasks.js?v=2.8.3
-2.8.3""
-static/tasks.js?v=2.8.2
-2.8.2""
 static/chart.js?v=1.0.2
 1.0.2"&
 static/img/logo.png?v=2.5.1
-2.5.1"-
-"static/css/application.css?v=2.5.0
-2.5.0""
+2.5.1""
 static/chart.js?v=1.0.1
 1.0.1"&
 static/img/logo.png?v=2.5.0
-2.5.0"%
-static/locust.js?v=2.13.0
-2.13.0"%
-static/locust.js?v=2.13.1
-2.13.1"-
-"static/css/application.css?v=2.5.1
-2.5.1"$
-static/chart.js?v=2.13.1
-2.13.1"$
-static/chart.js?v=2.13.0
-2.13.0""
+2.5.0""
 static/chart.js?v=1.0.3
-1.0.3"$
-static/chart.js?v=2.13.2
-2.13.2"&
+1.0.3"/
+#static/css/application.css?v=2.15.1
+2.15.1"&
 static/img/logo.png?v=1.0b2
-1.0b2"%
-static/locust.js?v=2.13.2
-2.13.2
+1.0b2"/
+#static/css/application.css?v=2.15.0
+2.15.0"$
+assets/index-BXPhYgcX.js
+2.32.3

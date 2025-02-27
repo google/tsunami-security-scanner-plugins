@@ -3,6 +3,8 @@ services:
     image: "locustio/locust:${LC_VERSION}"
     ports:
       - "8089:8089"
+    # entrypoint is needed only for versions <=1.14.5
+    entrypoint: [ "locust" ]
     volumes:
       - ./locustfile.py:/mnt/locust/locustfile.py
     command: -f /mnt/locust/locustfile.py --master -H http://master:8089
@@ -10,3 +12,7 @@ services:
       test: [ "CMD", "python3", "-c", "import socket; socket.create_connection(('localhost', 8089), timeout=1)" ]
       interval: 3s
       retries: 10
+    # environments are needed for versions <=1.14.5
+    environment:
+      TARGET_URL: http://locust-master:8089
+      LOCUSTFILE_PATH: /mnt/locust/locustfile.py

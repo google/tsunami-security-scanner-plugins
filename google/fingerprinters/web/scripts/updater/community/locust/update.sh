@@ -74,7 +74,7 @@ for LC_VERSION in "${ALL_VERSIONS[@]}"; do
   checkOutRepo "${GIT_REPO}" "${LC_VERSION}"
 
   updateFingerprint \
-    "locust" \
+    "Locust" \
     "${LC_VERSION}" \
     "${FINGERPRINTS_PATH}" \
     "${GIT_REPO}" \
