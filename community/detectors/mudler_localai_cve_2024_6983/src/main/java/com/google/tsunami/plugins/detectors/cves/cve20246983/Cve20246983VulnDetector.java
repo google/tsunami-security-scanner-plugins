@@ -119,7 +119,6 @@ public final class Cve20246983VulnDetector implements VulnDetector {
   }
 
   private boolean checkLocalAIFingerprint(NetworkService networkService) {
-
     String targetWebAddress = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     var request = HttpRequest.get(targetWebAddress).withEmptyHeaders().build();
 
