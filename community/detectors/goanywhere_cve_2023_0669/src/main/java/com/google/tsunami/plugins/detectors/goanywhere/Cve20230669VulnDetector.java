@@ -2,10 +2,12 @@ package com.google.tsunami.plugins.detectors.goanywhere;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
@@ -21,6 +23,7 @@ import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.*;
 import java.io.IOException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import javax.inject.Inject;
 
