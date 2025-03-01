@@ -31,9 +31,8 @@ import javax.inject.Inject;
     name = "Cve20230669VulnDetector",
     version = "0.1",
     description =
-        "GoAnywhere MFT suffers from a pre-authentication command injection vulnerability in the License "
+        "GoAnywhere MFT up to version 7.11 suffers from a pre-authentication command injection vulnerability in the License "
             + "Response Servlet due to deserializing an arbitrary attacker-controlled object."
-            + "version 7.1.1 and its earlier versions",
     bootstrapModule = Cve20230669DetectorBootstrapModule.class)
 public class Cve20230669VulnDetector implements VulnDetector {
 
