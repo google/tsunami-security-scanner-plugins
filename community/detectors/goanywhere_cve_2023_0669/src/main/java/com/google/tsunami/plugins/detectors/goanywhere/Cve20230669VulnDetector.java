@@ -132,9 +132,9 @@ public class Cve20230669VulnDetector implements VulnDetector {
                 .setDescription(
                     "GoAnywhere MFT suffers from a pre-authentication command injection "
                         + "vulnerability in the License Response Servlet due to deserializing"
-                        + " an arbitrary attacker-controlled object.All versions prior to 7.1.1 are affected")
+                        + " an arbitrary attacker-controlled object. All versions prior to 7.1.1 are affected.")
                 .setRecommendation(
-                    "Update GoAnywhere MFT to a version that provides a fix 7.1.2 or later"))
+                    "Update GoAnywhere MFT to version 7.1.2 or later."))
         .build();
   }
 }
