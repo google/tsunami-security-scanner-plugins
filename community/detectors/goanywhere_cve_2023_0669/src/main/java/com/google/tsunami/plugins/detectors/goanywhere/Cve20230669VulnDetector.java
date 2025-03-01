@@ -86,7 +86,7 @@ public class Cve20230669VulnDetector implements VulnDetector {
             .build();
 
     if (!payloadGenerator.isCallbackServerEnabled()) {
-      logger.atInfo().log("Callback server disabled but required for this detector.");
+      logger.atWarning().log("Callback server disabled but required for this detector.");
       return false;
     }
 
