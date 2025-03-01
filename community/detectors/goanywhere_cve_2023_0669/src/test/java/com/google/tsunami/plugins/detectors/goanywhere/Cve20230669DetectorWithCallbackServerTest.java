@@ -68,6 +68,7 @@ public class Cve20230669DetectorWithCallbackServerTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
+    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("<title>GoAnywhere 6.8.6</title>"));
     mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
