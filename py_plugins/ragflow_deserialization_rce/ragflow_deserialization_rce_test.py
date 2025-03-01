@@ -47,7 +47,7 @@ _CALLBACK_URL = 'http://%s:%s/%s' % (_IP_ADDRESS, _PORT, _CBID)
 
 # Vulnerable target
 _TARGET_IP = '127.0.0.1'
-_TARGET_PORT = 7860
+_TARGET_PORT = 7861
 
 
 class RPCHandler:

@@ -16,19 +16,19 @@
 
 import pickle
 import time
-
 from absl import logging
-
 from google.protobuf import timestamp_pb2
-import tsunami_plugin
-from common.data import network_service_utils
-from common.net.http.http_client import HttpClient
-from plugin.payload.payload_generator import PayloadGenerator
+from multiprocessing.connection import Client
+
 import detection_pb2
 import payload_generator_pb2 as pg
 import plugin_representation_pb2
+import tsunami_plugin
 import vulnerability_pb2
-from multiprocessing.connection import Client
+from common.data.network_service_utils import TransportProtocol
+
+from common.net.http.http_client import HttpClient
+from plugin.payload.payload_generator import PayloadGenerator
 
 _VULN_DESCRIPTION = (
     'The RAGFlow framework is vulnerable to an insecure deserialization issue'
@@ -99,16 +99,18 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
             self, network_service: tsunami_plugin.NetworkService
     ) -> bool:
         """Check if network service is an unknown service."""
-        return network_service_utils.get_service_name(network_service) == 'tcp'
+        return network_service.transport_protocol == TransportProtocol.TCP
 
     def _IsRagFlowRpcService(self, network_service: tsunami_plugin.NetworkService) -> bool:
         # RAGFlow RPC Server reflect the name of data we send
-        c = Client(("127.0.0.1", 7860), authkey=b'infiniflow-token4kevinhu')
-        data = {'args', 'func_name', 'kwargs'}
+        c = Client((network_service.network_endpoint.ip_address.address,
+                    network_service.network_endpoint.port.port_number),
+                   authkey=b'infiniflow-token4kevinhu')
+        data = {'func_name': 'chat', 'args': ('messages', 'gen_conf'), 'kwargs': None}
         c.send(pickle.dumps(data))
         response = pickle.loads(c.recv())
         c.close()
-        return type(response) is KeyError and str(response) == "'args'"
+        return type(response) is KeyError and str(response) == "'func_name'"
 
     def _IsServiceVulnerable(
             self, network_service: tsunami_plugin.NetworkService
