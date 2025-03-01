@@ -109,6 +109,7 @@ public class Cve20230669VulnDetector implements VulnDetector {
                   .setRequestBody(ByteString.copyFromUtf8(deserialized))
                   .build(),
               networkService);
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
     }
