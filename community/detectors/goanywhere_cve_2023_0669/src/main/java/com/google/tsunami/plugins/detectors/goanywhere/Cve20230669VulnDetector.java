@@ -35,7 +35,7 @@ import javax.inject.Inject;
     version = "0.1",
     description =
         "GoAnywhere MFT up to version 7.11 suffers from a pre-authentication command injection vulnerability in the License "
-            + "Response Servlet due to deserializing an arbitrary attacker-controlled object."
+            + "Response Servlet due to deserializing an arbitrary attacker-controlled object.",
     bootstrapModule = Cve20230669DetectorBootstrapModule.class)
 public class Cve20230669VulnDetector implements VulnDetector {
 
@@ -106,7 +106,7 @@ public class Cve20230669VulnDetector implements VulnDetector {
                               "application/x-www-form-urlencoded; " + "charset=UTF-8")
                           .addHeader(COMMAND_HEADER, commandToInject)
                           .build())
-                  .setRequestBody(ByteString.copyFromUtf8(deserialized))
+                  .setRequestBody(ByteString.copyFromUtf8(PAYLOAD))
                   .build(),
               networkService);
       Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
