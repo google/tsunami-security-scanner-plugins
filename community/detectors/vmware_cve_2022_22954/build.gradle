@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'VMware Workspace ONE Access Freemarker SSTI (CVE-2022-22954) VulnDetector plugin.
+description = 'VMware Workspace ONE Access Freemarker SSTI (CVE-2022-22954) VulnDetector plugin.'
 group 'com.google.tsunami'
 version '0.0.1-SNAPSHOT'
 

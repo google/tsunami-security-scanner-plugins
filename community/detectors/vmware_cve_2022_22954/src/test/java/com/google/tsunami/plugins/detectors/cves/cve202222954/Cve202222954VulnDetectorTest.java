@@ -25,16 +25,10 @@ import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
-import com.google.tsunami.proto.DetectionReport;
-import com.google.tsunami.proto.DetectionReportList;
-import com.google.tsunami.proto.DetectionStatus;
-import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
-import com.google.tsunami.proto.Software;
-import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
+import com.google.tsunami.plugin.payload.Payload;
+import com.google.tsunami.plugin.payload.PayloadGenerator;
+import com.google.tsunami.proto.*;
+
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -74,7 +68,7 @@ public final class Cve202222954VulnDetectorTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-    mockWebResponse("root:x:0:0:root",400);
+    mockWebResponse("root:x:0:0:root", 400);
     NetworkService service =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
@@ -115,7 +109,7 @@ public final class Cve202222954VulnDetectorTest {
 
   @Test
   public void detect_whenNotVulnerable_returnsNoVulnerability() throws IOException {
-    mockWebResponse("Hello World",200);
+    mockWebResponse("Hello World", 200);
     ImmutableList<NetworkService> httpServices =
         ImmutableList.of(
             NetworkService.newBuilder()
@@ -134,7 +128,7 @@ public final class Cve202222954VulnDetectorTest {
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
 
-  private void mockWebResponse(String body,int statusCode) throws IOException {
+  private void mockWebResponse(String body, int statusCode) throws IOException {
     mockWebServer.enqueue(new MockResponse().setResponseCode(statusCode).setBody(body));
     mockWebServer.start();
   }
