@@ -58,6 +58,8 @@ public final class Cve20248438DetectorTest {
   @Inject private Cve20248438Detector detector;
 
   private MockWebServer mockWebServer;
+  private NetworkService service;
+  private TargetInfo targetInfo;
 
   @Before
   public void setUp() {
@@ -67,6 +69,20 @@ public final class Cve20248438DetectorTest {
             new Cve20248438DetectorBootstrapModule(),
             new HttpClientModule.Builder().build())
         .injectMembers(this);
+    
+    service =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setSoftware(Software.newBuilder().setName("AgentScope Studio"))
+            .setServiceName("http")
+            .build();
+
+    targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
+            .build();
   }
 
   @After
@@ -76,46 +92,46 @@ public final class Cve20248438DetectorTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-    mockWebResponse("root:x:0:0:root:/root:/bin/bash");
-    NetworkService service =
-        NetworkService.newBuilder()
-            .setNetworkEndpoint(
-                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
-            .setTransportProtocol(TransportProtocol.TCP)
-            .setSoftware(Software.newBuilder().setName("AgentScope Studio"))
-            .setServiceName("http")
-            .build();
-    TargetInfo targetInfo =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
+    mockWebServer.enqueue(new MockResponse()
+        .setBody("<title>AgentScope Studio</title>")
+        .setResponseCode(200));
 
-    DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
+    mockWebServer.enqueue(new MockResponse()
+        .setBody("root:x:0:0:root:/root:/bin/bash")
+        .setResponseCode(200));
 
-    assertThat(detectionReports.getDetectionReportsList())
-        .containsExactly(
-            DetectionReport.newBuilder()
-                .setTargetInfo(targetInfo)
-                .setNetworkService(service)
-                .setDetectionTimestamp(
-                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
-                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2024_8438"))
-                        .setSeverity(Severity.HIGH)
-                        .setTitle("CVE-2024-8438 Agentscope Studio API Arbitrary File Download")
-                        .setDescription(VULN_DESCRIPTION)
-                        .setRecommendation("Ensure this service is not exposed to the public internet. Restrict access using firewall rules, VPN, or an allowlist to limit exposure to only trusted users and networks."))
-                .build());
+    DetectionReport actual = 
+        detector.detect(targetInfo, ImmutableList.of(service)).getDetectionReports(0);
+
+    DetectionReport expected = 
+        DetectionReport.newBuilder()
+            .setTargetInfo(targetInfo)
+            .setNetworkService(service)
+            .setDetectionTimestamp(
+                Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+            .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+            .setVulnerability(
+                Vulnerability.newBuilder()
+                    .setMainId(
+                        VulnerabilityId.newBuilder()
+                            .setPublisher("TSUNAMI_COMMUNITY")
+                            .setValue("CVE_2024_8438"))
+                    .setSeverity(Severity.HIGH)
+                    .setTitle("CVE-2024-8438 Agentscope Studio API Arbitrary File Download")
+                    .setDescription(VULN_DESCRIPTION)
+                    .setRecommendation("Ensure this service is not exposed to the public internet. Restrict access using firewall rules, VPN, or an allowlist to limit exposure to only trusted users and networks."))
+            .build();
+    assertThat(actual).isEqualTo(expected);
   }
 
   @Test
   public void detect_whenNotVulnerable_returnsNoVulnerability() throws IOException {
-    mockWebResponse("Hello World");
+    MockResponse response = 
+        new MockResponse()
+            .setBody("Hello World")
+            .setResponseCode(200);
+    mockWebServer.enqueue(response);
+
     ImmutableList<NetworkService> httpServices =
         ImmutableList.of(
             NetworkService.newBuilder()
@@ -134,8 +150,4 @@ public final class Cve20248438DetectorTest {
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
 
-  private void mockWebResponse(String body) throws IOException {
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(body));
-    mockWebServer.start();
-  }
 }
