@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Google LLC
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -145,12 +145,12 @@ public final class KubeflowRceDetector implements VulnDetector {
   }
 
   private boolean isKubeflowWebService(NetworkService networkService) {
-    String jupyterUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "jupyter/";
+    String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     try {
       Optional<String> response =
-          httpClient.send(get(jupyterUrl).withEmptyHeaders().build(), networkService).bodyString();
+          httpClient.send(get(rootUrl).withEmptyHeaders().build(), networkService).bodyString();
       return response.isPresent()
-          && response.get().contains("<title>Jupyter Management UI</title>");
+          && response.get().contains("<title>Kubeflow Central Dashboard</title>");
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Google LLC
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class KubeflowRceDetectorTest {
   private final FakeUtcClock fakeUtcClock =
-      FakeUtcClock.create().setNow(Instant.parse("2024-05-23T00:00:00.00Z"));
+      FakeUtcClock.create().setNow(Instant.parse("2025-05-23T00:00:00.00Z"));
   private final MockWebServer mockTargetService = new MockWebServer();
   private final MockWebServer mockCallbackServer = new MockWebServer();
   @Inject private KubeflowRceDetector detector;
@@ -148,11 +148,11 @@ public final class KubeflowRceDetectorTest {
         new Dispatcher() {
           @Override
           public MockResponse dispatch(RecordedRequest request) {
-            if (Objects.equals(request.getPath(), "/jupyter/")
+            if (Objects.equals(request.getPath(), "/")
                 && request.getMethod().equals("GET")
                 && request.getBody().readString(StandardCharsets.UTF_8).isEmpty()) {
               return new MockResponse()
-                  .setBody("<title>Jupyter Management UI</title>")
+                  .setBody("<title>Kubeflow Central Dashboard</title>")
                   .setResponseCode(HttpStatus.FORBIDDEN.code());
             }
             if (Objects.equals(request.getPath(), "/api/workgroup/env-info")
