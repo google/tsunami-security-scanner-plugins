@@ -39,14 +39,14 @@ from multiprocessing.connection import Listener
 from py_plugins.ragflow_deserialization_rce import RagFlowRceDetector
 
 # Callback server
-_CBID = '04041e8898e739ca33a250923e24f59ca41a8373f8cf6a45a1275f3b'
-_IP_ADDRESS = '127.0.0.1'
+_CBID = "04041e8898e739ca33a250923e24f59ca41a8373f8cf6a45a1275f3b"
+_IP_ADDRESS = "127.0.0.1"
 _PORT = 8000
-_SECRET = 'a3d9ed89deadbeef'
-_CALLBACK_URL = 'http://%s:%s/%s' % (_IP_ADDRESS, _PORT, _CBID)
+_SECRET = "a3d9ed89deadbeef"
+_CALLBACK_URL = "http://%s:%s/%s" % (_IP_ADDRESS, _PORT, _CBID)
 
 # Vulnerable target
-_TARGET_IP = '127.0.0.1'
+_TARGET_IP = "127.0.0.1"
 _TARGET_PORT = 7861
 
 
@@ -58,7 +58,7 @@ class RPCHandler:
         self._functions[func.__name__] = func
 
     def handle_connection(self, address):
-        sock = Listener(address, authkey=b'infiniflow-token4kevinhu')
+        sock = Listener(address, authkey=b"infiniflow-token4kevinhu")
         connection = sock.accept()
         try:
             while True:
@@ -94,9 +94,7 @@ class RagFlowRceDetectorTest(absltest.TestCase):
         request_client = RequestsHttpClientBuilder().build()
         self.psg = PayloadSecretGenerator()
         self.psg.generate = umock.MagicMock(return_value=_SECRET)
-        callback_client = TcsClient(
-            _IP_ADDRESS, _PORT, _CALLBACK_URL, request_client
-        )
+        callback_client = TcsClient(_IP_ADDRESS, _PORT, _CALLBACK_URL, request_client)
         self.payloads = get_parsed_payload()
         self.payload_generator = PayloadGenerator(
             self.psg, self.payloads, callback_client
@@ -110,16 +108,16 @@ class RagFlowRceDetectorTest(absltest.TestCase):
         # response for callback server
         body = '{ "has_dns_interaction":false, "has_http_interaction":true}'
         mock.register_uri(
-            'GET',
-            '%s/?secret=%s' % (_CALLBACK_URL, _SECRET),
-            content=body.encode('utf-8'),
+            "GET",
+            "%s/?secret=%s" % (_CALLBACK_URL, _SECRET),
+            content=body.encode("utf-8"),
         )
         network_service = network_service_pb2.NetworkService(
             network_endpoint=network_endpoint_utils.for_ip_and_port(
                 _TARGET_IP, _TARGET_PORT
             ),
             transport_protocol=network_pb2.TransportProtocol.TCP,
-            software=software_pb2.Software(name='tcp'),
+            software=software_pb2.Software(name="tcp"),
         )
         target_info = reconnaissance_pb2.TargetInfo(
             network_endpoints=[network_service.network_endpoint]
@@ -137,10 +135,10 @@ class RagFlowRceDetectorTest(absltest.TestCase):
                 detection_status=detection_pb2.VULNERABILITY_VERIFIED,
                 vulnerability=vulnerability_pb2.Vulnerability(
                     main_id=vulnerability_pb2.VulnerabilityId(
-                        publisher='TSUNAMI_COMMUNITY', value='RagFlowRceDetector'
+                        publisher="TSUNAMI_COMMUNITY", value="RagFlowRceDetector"
                     ),
                     severity=vulnerability_pb2.Severity.CRITICAL,
-                    title='RAGFlow RPC Server Insecure Deserialization RCE',
+                    title="RAGFlow RPC Server Insecure Deserialization RCE",
                     recommendation=(
                         'Users should not expose "rag/llm/rpc_server.py" to the internet.'
                     ),
@@ -154,20 +152,20 @@ class RagFlowRceDetectorTest(absltest.TestCase):
     @requests_mock.mock()
     def test_detect_vuln_target_with_callback_server_returns_empty(self, mock):
         # detector without callback
-        disabled_client = TcsClient('', 0, '', RequestsHttpClientBuilder().build())
+        disabled_client = TcsClient("", 0, "", RequestsHttpClientBuilder().build())
         self.detector.payload_generator = PayloadGenerator(
             self.psg, self.payloads, disabled_client
         )
         mock.register_uri(
-            'GET', '%s/?secret=%s' % (_CALLBACK_URL, _SECRET), status_code=404
+            "GET", "%s/?secret=%s" % (_CALLBACK_URL, _SECRET), status_code=404
         )
         network_service = network_service_pb2.NetworkService(
             network_endpoint=network_endpoint_utils.for_ip_and_port(
                 _TARGET_IP, _TARGET_PORT
             ),
             transport_protocol=network_pb2.TransportProtocol.TCP,
-            software=software_pb2.Software(name='http'),
-            service_name='http',
+            software=software_pb2.Software(name="http"),
+            service_name="http",
         )
         target_info = reconnaissance_pb2.TargetInfo(
             network_endpoints=[network_service.network_endpoint]
@@ -181,15 +179,15 @@ class RagFlowRceDetectorTest(absltest.TestCase):
             tsunami_plugin.PluginDefinition(
                 info=plugin_representation_pb2.PluginInfo(
                     type=plugin_representation_pb2.PluginInfo.VULN_DETECTION,
-                    name='RagFlowRceDetector',
-                    version='1.0',
+                    name="RagFlowRceDetector",
+                    version="1.0",
                     description=ragflow_rce._VULN_DESCRIPTION,
-                    author='am0o0',
+                    author="am0o0",
                 )
             ),
             self.detector.GetPluginDefinition(),
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     absltest.main()

