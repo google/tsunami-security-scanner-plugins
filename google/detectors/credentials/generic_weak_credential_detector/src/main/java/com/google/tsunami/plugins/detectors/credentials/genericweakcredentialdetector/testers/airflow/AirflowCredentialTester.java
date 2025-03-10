@@ -71,7 +71,7 @@ public final class AirflowCredentialTester extends CredentialTester {
 
   @Override
   public boolean batched() {
-    return true;
+    return false;
   }
 
   @Override
