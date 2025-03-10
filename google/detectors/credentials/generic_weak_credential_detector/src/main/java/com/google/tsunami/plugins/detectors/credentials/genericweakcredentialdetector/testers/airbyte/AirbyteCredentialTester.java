@@ -31,16 +31,15 @@ import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.TestCredential;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
 import com.google.tsunami.proto.NetworkService;
+import java.io.IOException;
+import java.util.Base64;
+import java.util.List;
+import javax.inject.Inject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Base64;
-import java.util.List;
-import javax.inject.Inject;
 
 /** Credential tester specifically for airbyte. */
 public final class AirbyteCredentialTester extends CredentialTester {
@@ -134,8 +133,8 @@ public final class AirbyteCredentialTester extends CredentialTester {
               .tagName("meta")
               .getElementsByAttributeValue(
                   "content",
-                  "Airbyte is the turnkey open-source data integration "
-                      + "platform that syncs data from applications, APIs and databases to warehouses.");
+                  "Airbyte is the turnkey open-source data integration platform that syncs data"
+                      + " from applications, APIs and databases to warehouses.");
       return !elements.isEmpty();
     }
     return false;

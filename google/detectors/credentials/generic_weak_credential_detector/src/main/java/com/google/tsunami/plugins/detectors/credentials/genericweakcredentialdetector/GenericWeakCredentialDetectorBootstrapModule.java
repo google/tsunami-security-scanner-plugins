@@ -45,10 +45,9 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack.NcrackCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.postgres.PostgresCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.rabbitmq.RabbitMQCredentialTester;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.wordpress.WordpressCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.rstudio.RStudioCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.wordpress.WordpressCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.zenml.ZenMlCredentialTester;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;

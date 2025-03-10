@@ -79,8 +79,7 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final Severity DEFAULT_SEVERITY = Severity.CRITICAL;
 
-  @VisibleForTesting
-  final ImmutableSet<CredentialProvider> providers;
+  @VisibleForTesting final ImmutableSet<CredentialProvider> providers;
   private final ImmutableSet<CredentialTester> testers;
   private final Clock utcClock;
 
@@ -250,5 +249,4 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
         .setCredentials(Credentials.newBuilder().addAllCredential(credentials))
         .build();
   }
-
 }
