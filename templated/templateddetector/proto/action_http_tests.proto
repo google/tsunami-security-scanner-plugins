@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package tsunami_templated_detector_tests;
+
+option java_multiple_files = true;
+option java_package = "com.google.tsunami.templatedplugin.proto.tests";
+
+// HttpTestAction is used to write unit tests for HTTP requests.
+message HttpTestAction {
+  message HttpHeader {
+    string name = 1;
+    string value = 2;
+  }
+
+  message HttpCondition {
+    // A list of headers and their expected values that must be present in the
+    // request.
+    repeated HttpHeader headers = 1;
+
+    // A list strings that must be present in the request's body.
+    repeated string body_content = 2;
+  }
+
+  message MockResponse {
+    // The HTTP status code to be returned by the mock server.
+    int32 status = 1;
+
+    // The URI on which this mock response will be returned.
+    // Note that this represents the path part without any GET parameters. For
+    // example for `index.php?foo=bar` the URI is `index.php`.
+    string uri = 2;
+
+    // The HTTP headers that the mock response will contain.
+    repeated HttpHeader headers = 3;
+
+    // The body content of the mock response.
+    string body_content = 4;
+
+    // A set of additional conditions on the received request that must be met
+    // for this mock response to be sent.
+    HttpCondition condition = 5;
+  }
+
+  // A set of mock responses to be returned by the mock server. A mock response
+  // is a pre-defined HTTP response that is returned by the mock server. It
+  // contains a set of conditions based on the received request that can be used
+  // to control when the response is returned.
+  repeated MockResponse mock_responses = 1;
+}

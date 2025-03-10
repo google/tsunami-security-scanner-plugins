@@ -59,7 +59,7 @@ import javax.inject.Inject;
 /** A {@link VulnDetector} that detects the CVE-2022-22947 vulnerability. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "CVE202122205VulnDetector",
+    name = "CVE_2022_22947",
     version = "0.1",
     description = Cve202222947VulnDetector.VULN_DESCRIPTION,
     author = "hh-hunter",

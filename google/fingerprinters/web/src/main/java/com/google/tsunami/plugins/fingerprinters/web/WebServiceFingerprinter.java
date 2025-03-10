@@ -20,11 +20,13 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
+import static com.google.tsunami.common.net.http.HttpStatus.TEMPORARY_REDIRECT;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
+import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.protobuf.ByteString;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -280,6 +282,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
 
     checkForMlflow(detectedSoftware, networkService, startingUrl);
     checkForZenMl(detectedSoftware, networkService, startingUrl);
+    checkForArgoCd(detectedSoftware, networkService, startingUrl);
     checkForAirbyte(detectedSoftware, networkService, startingUrl);
     return ImmutableSet.copyOf(detectedSoftware);
   }
@@ -373,7 +376,47 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", loginUrl);
     }
   }
+  
+  private void checkForArgoCd(
+      Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
+    logger.atInfo().log("probing Argo CD - custom fingerprint phase");
 
+    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
+    var applicationsApiUrl = String.format("http://%s/%s", uriAuthority, "api/v1/applications");
+    try {
+      HttpHeaders apiApplicationsReqHeaders =
+          HttpHeaders.builder().addHeader("Content-Type", "application/json").build();
+      HttpResponse apiApplicationsResponse =
+          httpClient.send(post(applicationsApiUrl).setHeaders(apiApplicationsReqHeaders).build());
+      if (apiApplicationsResponse.status() == TEMPORARY_REDIRECT) {
+        applicationsApiUrl = String.format("https://%s/%s", uriAuthority, "api/v1/applications");
+        apiApplicationsResponse =
+            httpClient.send(post(applicationsApiUrl).setHeaders(apiApplicationsReqHeaders).build());
+      }
+      if (apiApplicationsResponse.status() != HttpStatus.INTERNAL_SERVER_ERROR
+          || apiApplicationsResponse.bodyString().isEmpty()) {
+        return;
+      }
+
+      if (apiApplicationsResponse
+          .bodyString()
+          .get()
+          .contains(
+              "{\"error\":\"grpc: error while marshaling: proto: required field \\\"application\\\""
+                  + " not set\",\"code\":13,\"message\":\"grpc: error while marshaling: "
+                  + "proto: required field \\\"application\\\" not set\"}")) {
+        software.add(
+            DetectedSoftware.builder()
+                .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("argocd").build())
+                .setRootPath(startingUrl)
+                .setContentHashes(ImmutableMap.of())
+                .build());
+      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", applicationsApiUrl);
+    }
+  }
+  
   private void checkForAirbyte(
       Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
     logger.atInfo().log("probing Airbyte root page - custom fingerprint phase");
