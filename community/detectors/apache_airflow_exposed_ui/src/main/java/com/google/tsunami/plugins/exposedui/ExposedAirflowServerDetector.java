@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -28,7 +29,6 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
-import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
@@ -81,6 +81,14 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
 
+  @VisibleForTesting
+  static final String RECOMMENDATION =
+      "Please disable public access to your Apache Airflow instance. You can enable authentication"
+          + " for your instance by following the instructions here:"
+          + " https://airflow.apache.org/docs/apache-airflow-providers-fab/stable/auth-manager/api-authentication.html"
+          + " and here:"
+          + " https://airflow.apache.org/docs/apache-airflow-providers-fab/stable/auth-manager/webserver-authentication.html.";
+
   @Inject
   ExposedAirflowServerDetector(
       @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
@@ -107,7 +115,7 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
                         "Apache Airflow Server is misconfigured and can be accessed publicly,"
                             + " Tsunami security scanner confirmed this by sending an HTTP request"
                             + " with test connection API and receiving the corresponding callback"
-                            + " on tsunami callback server",
+                            + " on tsunami callback server.",
                         Severity.CRITICAL));
               } else if (isServiceVulnerableCheckResponse(networkService)) {
                 detectionReport.addDetectionReports(
@@ -116,7 +124,7 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
                         networkService,
                         "Apache Airflow Server is misconfigured and can be accessed "
                             + "publicly, We confirmed this by checking API endpoint and matching "
-                            + "the responses with our pattern",
+                            + "the responses with our pattern.",
                         Severity.HIGH));
               }
             });
@@ -126,8 +134,7 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
   public boolean isApacheAirflow(NetworkService networkService) {
     logger.atInfo().log("probing apache airflow login page - custom fingerprint phase");
 
-    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
-    var loginPageUrl = String.format("http://%s/%s", uriAuthority, "login");
+    var loginPageUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "login";
     try {
       HttpResponse loginResponse =
           this.httpClient.send(get(loginPageUrl).withEmptyHeaders().build());
@@ -240,7 +247,7 @@ public final class ExposedAirflowServerDetector implements VulnDetector {
                 .setSeverity(severity)
                 .setTitle("Exposed Apache Airflow Server")
                 .setDescription(description)
-                .setRecommendation("Please disable public access to your apache airflow instance."))
+                .setRecommendation(RECOMMENDATION))
         .build();
   }
 }

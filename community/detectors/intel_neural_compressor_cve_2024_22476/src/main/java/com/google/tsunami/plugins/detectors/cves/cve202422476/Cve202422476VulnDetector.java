@@ -19,7 +19,6 @@ package com.google.tsunami.plugins.detectors.cves.cve202422476;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -107,7 +106,7 @@ public final class Cve202422476VulnDetector implements VulnDetector {
   }
 
   private boolean checkNeuralSolutionFingerprint(NetworkService networkService) {
-    String targetWebAddress = buildTarget(networkService).toString();
+    String targetWebAddress = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     var request = HttpRequest.get(targetWebAddress).withEmptyHeaders().build();
 
     try {
@@ -128,19 +127,6 @@ public final class Cve202422476VulnDetector implements VulnDetector {
         && checkNeuralSolutionFingerprint(networkService);
   }
 
-  private static StringBuilder buildTarget(NetworkService networkService) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    if (NetworkServiceUtils.isWebService(networkService)) {
-      targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    } else {
-      targetUrlBuilder
-          .append("https://")
-          .append(toUriAuthority(networkService.getNetworkEndpoint()))
-          .append("/");
-    }
-    return targetUrlBuilder;
-  }
-
   private boolean isServiceVulnerable(NetworkService networkService) {
     Payload payload = generateCallbackServerPayload();
     if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
@@ -156,7 +142,8 @@ public final class Cve202422476VulnDetector implements VulnDetector {
         taskRequestBody.replace(
             "{{CALLBACK_PAYLOAD}}",
             BaseEncoding.base64().encode(payload.getPayload().getBytes(UTF_8)));
-    String targetVulnerabilityUrl = buildTarget(networkService).append(VUL_PATH).toString();
+    String targetVulnerabilityUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + VUL_PATH;
     logger.atInfo().log("Payload: %s", payload.getPayload().getBytes(UTF_8));
     try {
       HttpResponse httpResponse =

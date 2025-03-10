@@ -23,7 +23,6 @@ import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.gson.JsonParseException;
@@ -121,18 +120,11 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
         checkNotNull(httpClient)
             .modify()
             .setFollowRedirects(true)
-            .setTrustAllCertificates(true)
             .build();
     this.utcClock = checkNotNull(utcClock);
     this.payloadGenerator = checkNotNull(payloadGenerator);
     this.oobSleepDuration = oobSleepDuration;
   }
-
-  private static final ImmutableSet<String> HTTP_EQUIVALENT_SERVICE_NAMES =
-      ImmutableSet.of(
-          "",
-          "unknown", // nmap could not determine the service name, we try to exploit anyway.
-          "ssl/cpudpencap");
 
   @Override
   public DetectionReportList detect(
@@ -142,8 +134,6 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
     Builder detectionReport = DetectionReportList.newBuilder();
     matchedServices.stream()
         .filter(NetworkServiceUtils::isWebService)
-        // filter services which are in scope
-        .filter(this::isInScopeService)
         // check if the services are vulnerable
         // Build a DetectionReport when the Argo CD UI is exposed publicly by admin access otherwise
         // check if it is vulnerable to CVE-2022-29165
@@ -215,11 +205,6 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
               }
             });
     return detectionReport.build();
-  }
-
-  private boolean isInScopeService(NetworkService networkService) {
-    return NetworkServiceUtils.isWebService(networkService)
-        || HTTP_EQUIVALENT_SERVICE_NAMES.contains(networkService.getServiceName());
   }
 
   /** Checks if a {@link NetworkService} has a misconfigured ArgoCD API server exposed. */

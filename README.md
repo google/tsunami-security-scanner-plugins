@@ -3,10 +3,14 @@
 This project aims to provide a central repository for many useful Tsunami
 Security Scanner plugins.
 
+## Tsunami's documentation
+
+To learn more about Tsunami, visit our
+[documentation](https://google.github.io/tsunami-security-scanner/).
+
 ## Contributing
 
 Read how to [contribute to Tsunami](docs/contributing.md).
-
 
 ## Currently released Tsunami plugins
 

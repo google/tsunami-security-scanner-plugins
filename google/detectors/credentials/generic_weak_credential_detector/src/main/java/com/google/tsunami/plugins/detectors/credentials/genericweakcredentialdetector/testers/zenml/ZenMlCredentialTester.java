@@ -25,7 +25,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.ByteString;
-import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
@@ -83,8 +82,8 @@ public final class ZenMlCredentialTester extends CredentialTester {
   }
 
   private boolean isZenMlAccessible(NetworkService networkService, TestCredential credential) {
-    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
-    var loginApiUrl = String.format("http://%s/%s", uriAuthority, "api/v1/login");
+    var loginApiUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "api/v1/login";
     try {
       HttpResponse apiLoginResponse =
           httpClient.send(

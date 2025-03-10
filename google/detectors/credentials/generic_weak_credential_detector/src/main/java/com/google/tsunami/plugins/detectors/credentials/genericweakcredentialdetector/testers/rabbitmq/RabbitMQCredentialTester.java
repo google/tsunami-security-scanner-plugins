@@ -69,13 +69,6 @@ public final class RabbitMQCredentialTester extends CredentialTester {
     return false;
   }
 
-  private static String buildTargetUrl(NetworkService networkService, String path) {
-    StringBuilder targetUrlBuilder = new StringBuilder();
-    targetUrlBuilder.append(NetworkServiceUtils.buildWebApplicationRootUrl(networkService));
-    targetUrlBuilder.append(path);
-    return targetUrlBuilder.toString();
-  }
-
   // Checks if the response body contains the title element of rabbitmq management page.
   // Custom fingerprint phase.
   private static boolean bodyContainsRabbitMqElements(String responseBody) {
@@ -107,7 +100,7 @@ public final class RabbitMQCredentialTester extends CredentialTester {
     }
     boolean canAcceptByCustomFingerprint = false;
 
-    String url = buildTargetUrl(networkService, "");
+    String url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     try {
       logger.atInfo().log("Probing RabbitMQ Management Portal - custom fingerprint phase");
       HttpResponse response = httpClient.send(get(url).withEmptyHeaders().build());
@@ -119,7 +112,7 @@ public final class RabbitMQCredentialTester extends CredentialTester {
                   .bodyString()
                   .map(RabbitMQCredentialTester::bodyContainsRabbitMqElements)
                   .orElse(false);
-      url = buildTargetUrl(networkService, "api/overview");
+      url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "api/overview";
       response = httpClient.send(get(url).withEmptyHeaders().build());
       canAcceptByCustomFingerprint =
           canAcceptByCustomFingerprint
@@ -142,7 +135,7 @@ public final class RabbitMQCredentialTester extends CredentialTester {
   }
 
   private boolean isCredentialValid(NetworkService networkService, TestCredential credential) {
-    var url = buildTargetUrl(networkService, "api/whoami");
+    var url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "api/whoami";
     try {
       logger.atInfo().log(
           "url: %s, username: %s, password: %s",

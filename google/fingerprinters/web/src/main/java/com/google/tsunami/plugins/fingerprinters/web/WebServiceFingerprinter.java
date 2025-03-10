@@ -20,13 +20,14 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
+import static com.google.tsunami.common.net.http.HttpStatus.TEMPORARY_REDIRECT;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
-import com.google.protobuf.ByteString;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
+import com.google.protobuf.ByteString;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
@@ -281,6 +282,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
 
     checkForMlflow(detectedSoftware, networkService, startingUrl);
     checkForZenMl(detectedSoftware, networkService, startingUrl);
+    checkForArgoCd(detectedSoftware, networkService, startingUrl);
     return ImmutableSet.copyOf(detectedSoftware);
   }
 
@@ -291,8 +293,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
     // We want to test weak credentials against mlflow versions above 2.5 which has basic
     // authentication module.these versions return a 401 status code and a link to documentation
     // about how to authenticate.
-    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
-    var pingApiUrl = String.format("http://%s/%s", uriAuthority, "ping");
+    var pingApiUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "ping";
     try {
       HttpResponse apiPingResponse = httpClient.send(get(pingApiUrl).withEmptyHeaders().build());
 
@@ -324,10 +325,10 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
   private void checkForZenMl(
       Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
     logger.atInfo().log("probing ZenMl login page and login api - custom fingerprint phase");
-    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
 
     // we double-check both the api and login page
-    var loginApiUrl = String.format("http://%s/%s", uriAuthority, "api/v1/login");
+    var loginApiUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "api/v1/login";
     try {
       // test login api with a random username and password and for sure not exist
       HttpResponse apiLoginResponse =
@@ -357,7 +358,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
       return;
     }
 
-    var loginUrl = String.format("http://%s/%s", uriAuthority, "login");
+    var loginUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "login";
     try {
       HttpResponse loginPageResponse = httpClient.send(get(loginUrl).withEmptyHeaders().build());
       if (!(loginPageResponse.bodyString().isPresent()
@@ -372,6 +373,46 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
               .build());
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", loginUrl);
+    }
+  }
+
+  private void checkForArgoCd(
+      Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
+    logger.atInfo().log("probing Argo CD - custom fingerprint phase");
+
+    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
+    var applicationsApiUrl = String.format("http://%s/%s", uriAuthority, "api/v1/applications");
+    try {
+      HttpHeaders apiApplicationsReqHeaders =
+          HttpHeaders.builder().addHeader("Content-Type", "application/json").build();
+      HttpResponse apiApplicationsResponse =
+          httpClient.send(post(applicationsApiUrl).setHeaders(apiApplicationsReqHeaders).build());
+      if (apiApplicationsResponse.status() == TEMPORARY_REDIRECT) {
+        applicationsApiUrl = String.format("https://%s/%s", uriAuthority, "api/v1/applications");
+        apiApplicationsResponse =
+            httpClient.send(post(applicationsApiUrl).setHeaders(apiApplicationsReqHeaders).build());
+      }
+      if (apiApplicationsResponse.status() != HttpStatus.INTERNAL_SERVER_ERROR
+          || apiApplicationsResponse.bodyString().isEmpty()) {
+        return;
+      }
+
+      if (apiApplicationsResponse
+          .bodyString()
+          .get()
+          .contains(
+              "{\"error\":\"grpc: error while marshaling: proto: required field \\\"application\\\""
+                  + " not set\",\"code\":13,\"message\":\"grpc: error while marshaling: "
+                  + "proto: required field \\\"application\\\" not set\"}")) {
+        software.add(
+            DetectedSoftware.builder()
+                .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("argocd").build())
+                .setRootPath(startingUrl)
+                .setContentHashes(ImmutableMap.of())
+                .build());
+      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", applicationsApiUrl);
     }
   }
 }

@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.rce.consul;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -27,6 +26,7 @@ import com.google.common.flogger.GoogleLogger;
 import com.google.common.io.Resources;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpRequest;
@@ -103,7 +103,7 @@ public final class ConsulEnableScriptChecksCommandExecutionDetector implements V
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String RCE_TEST_SERVICE_NAME = "TSUNAMI_RCE_TEST";
-  private static final String RCE_VULNERABILITY_PATH = "/v1/agent/service/register";
+  private static final String RCE_VULNERABILITY_PATH = "v1/agent/service/register";
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -142,10 +142,8 @@ public final class ConsulEnableScriptChecksCommandExecutionDetector implements V
   private boolean isServiceVulnerable(NetworkService networkService) {
     boolean hasRegiseredService = false;
 
-    String rootUri = toUriAuthority(networkService.getNetworkEndpoint());
-
-    String targetUri =
-        String.format("http://%s%s?replace-existing-checks=true", rootUri, RCE_VULNERABILITY_PATH);
+    String rootUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    String targetUri = rootUri + RCE_VULNERABILITY_PATH + "?replace-existing-checks=true";
 
     PayloadGeneratorConfig config =
         PayloadGeneratorConfig.newBuilder()
@@ -196,9 +194,7 @@ public final class ConsulEnableScriptChecksCommandExecutionDetector implements V
       } else {
         logger.atInfo().log("TCS not enabled, so trying alternative method.");
 
-        String verificationUri =
-            String.format("http://%s/v1/health/service/%s", rootUri, RCE_TEST_SERVICE_NAME);
-
+        String verificationUri = rootUri + "v1/health/service/" + RCE_TEST_SERVICE_NAME;
         HttpRequest req = HttpRequest.get(verificationUri).withEmptyHeaders().build();
 
         try {
@@ -224,9 +220,7 @@ public final class ConsulEnableScriptChecksCommandExecutionDetector implements V
   private void cleanUp(String rootUri, NetworkService networkService) {
     logger.atInfo().log("Cleaning up registered service");
 
-    String unregisterUri =
-        String.format("http://%s/v1/agent/service/deregister/%s", rootUri, RCE_TEST_SERVICE_NAME);
-
+    String unregisterUri = rootUri + "v1/agent/service/deregister/" + RCE_TEST_SERVICE_NAME;
     HttpRequest req = HttpRequest.put(unregisterUri).withEmptyHeaders().build();
 
     try {

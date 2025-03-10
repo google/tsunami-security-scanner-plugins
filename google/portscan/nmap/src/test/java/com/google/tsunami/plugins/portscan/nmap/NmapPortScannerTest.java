@@ -244,9 +244,7 @@ public class NmapPortScannerTest {
 
   @Test
   public void run_whenNmapRunHasScriptsButOptionsUnsupported_returnsHttpMethods() throws Exception {
-    doReturn(loadNmapRun("testdata/localhostHttpWithoutMethods.xml"))
-        .when(nmapClient)
-        .run(any());
+    doReturn(loadNmapRun("testdata/localhostHttpWithoutMethods.xml")).when(nmapClient).run(any());
     NetworkEndpoint networkEndpoint = NetworkEndpointUtils.forIp("127.0.0.1");
     assertThat(
             portScanner.scan(ScanTarget.newBuilder().setNetworkEndpoint(networkEndpoint).build()))
