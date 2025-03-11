@@ -1,5 +1,7 @@
 """A Tsunami plugin for detecting CVE-2024-12433."""
 
+import io
+
 # Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,6 +38,24 @@ _VULN_DESCRIPTION = (
     " RPC server. This can lead to remote code execution."
 )
 _SLEEP_TIME_SEC = 20
+
+
+class RestrictedUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        # Only allow safe classes from specific modules
+        allowed = {
+            "builtins": {"KeyError"},
+            "collections": {"OrderedDict"},
+            # Add other safe modules and classes as needed
+        }
+
+        if module in allowed and name in allowed[module]:
+            if module == "builtins":
+                return getattr(__import__(module), name)
+            return getattr(__import__(module), name)
+
+        # Forbid everything else
+        raise pickle.UnpicklingError(f"Global '{module}.{name}' is forbidden")
 
 
 class RagFlowRceDetector(tsunami_plugin.VulnDetector):
@@ -78,19 +98,23 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
           scanning target.
         """
         logging.info("RAGFlowRceDetector starts detecting.")
-        vulnerable_services = [
-            service
-            for service in matched_services
-            if self._IsSupportedService(service) and self._IsRagFlowRpcService(service)
-        ]
-
-        return detection_pb2.DetectionReportList(
-            detection_reports=[
-                self._BuildDetectionReport(target, service)
-                for service in vulnerable_services
-                if self._IsServiceVulnerable(service)
+        try:
+            vulnerable_services = [
+                service
+                for service in matched_services
+                if self._IsSupportedService(service)
+                   and self._IsRagFlowRpcService(service)
             ]
-        )
+
+            return detection_pb2.DetectionReportList(
+                detection_reports=[
+                    self._BuildDetectionReport(target, service)
+                    for service in vulnerable_services
+                    if self._IsServiceVulnerable(service)
+                ]
+            )
+        except ConnectionRefusedError:
+            return detection_pb2.DetectionReportList(detection_reports=[])
 
     def _IsSupportedService(
             self, network_service: tsunami_plugin.NetworkService
@@ -111,7 +135,8 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
         )
         data = {"func_name": "chat", "args": ("messages", "gen_conf"), "kwargs": None}
         c.send(pickle.dumps(data))
-        response = pickle.loads(c.recv())
+        # response = pickle.loads(c.recv())
+        response = RestrictedUnpickler(io.BytesIO(c.recv())).load()
         c.close()
         return type(response) is KeyError and str(response) == "'func_name'"
 
@@ -148,12 +173,11 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
                 authkey=b"infiniflow-token4kevinhu",
             )
             c.send(pickle.dumps(Payload()))
-
+            c.close()
         except Exception:  # pylint: disable=broad-exception-caught
             logging.exception(
                 "Unable to query %s", network_service.network_endpoint.hostname
             )
-
         time.sleep(_SLEEP_TIME_SEC)
         return payload.check_if_executed()
 

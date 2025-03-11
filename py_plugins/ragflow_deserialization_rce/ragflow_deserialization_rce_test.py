@@ -71,8 +71,10 @@ class RPCHandler:
                 except Exception as e:
                     connection.send(pickle.dumps(e))
         except EOFError:
+            connection.close()
             pass
         except ValueError:
+            connection.close()
             # Ignore unpickling errors
             pass
 
