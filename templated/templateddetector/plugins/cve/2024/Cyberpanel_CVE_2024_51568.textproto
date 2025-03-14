@@ -56,7 +56,7 @@ actions: {
   name: "trigger_code_execution"
   http_request: {
     method: PUT
-    uri: "dataBases/upgrademysqlstatus"
+    uri: "/dataBases/upgrademysqlstatus"
     headers: [
       { name: "Content-Type" value: "application/json" },
       { name: "Cookie" value: "csrftoken={{ csrfcookie }}" },

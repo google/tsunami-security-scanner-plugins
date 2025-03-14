@@ -36,7 +36,7 @@ actions: {
   name: "trigger_code_execution"
   http_request: {
     method: POST
-    uri: "3/ModelBuilders/generic"
+    uri: "/3/ModelBuilders/generic"
     headers: [
       { name: "Content-Type" value: "application/x-www-form-urlencoded" }
     ]
