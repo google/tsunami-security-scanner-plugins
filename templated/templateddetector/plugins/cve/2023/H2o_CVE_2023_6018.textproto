@@ -17,6 +17,7 @@ finding: {
     publisher: "GOOGLE"
     value: "CVE-2023-6018"
   }
+  severity: CRITICAL
   title: "CVE-2023-6018"
   description: "An attacker can use the model upload functionality to load remote Java code and gains code execution on the server hosting the h2o application."
   recommendation: "There is no patch available as this is considered intended functionality. Restrict access to h2o to be local only, and do not expose it to the network."

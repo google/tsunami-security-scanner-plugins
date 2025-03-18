@@ -17,6 +17,7 @@ finding: {
     publisher: "GOOGLE"
     value: "CYBERPANEL_PREAUTH_RCE"
   }
+  severity: CRITICAL
   title: "Cyberpanel is vulnerable to pre-authentication remote code execution"
   description: "The instance of Cyberpanel is vulnerable to pre-authentication remote code execution (CVE-2024-51568)."
   recommendation: "Update to version 2.3.7 or higher."

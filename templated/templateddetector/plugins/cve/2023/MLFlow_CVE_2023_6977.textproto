@@ -17,6 +17,7 @@ finding: {
     publisher: "GOOGLE"
     value: "MLFLOW_LFI_RFI"
   }
+  severity: HIGH
   title: "CVE-2023-6977 MLflow LFI/RFI"
   description:
     "mlflow is a platform to streamline machine learning development, including tracking"
