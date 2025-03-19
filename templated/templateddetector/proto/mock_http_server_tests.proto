@@ -5,8 +5,8 @@ package tsunami_templated_detector_tests;
 option java_multiple_files = true;
 option java_package = "com.google.tsunami.templatedplugin.proto.tests";
 
-// HttpTestAction is used to write unit tests for HTTP requests.
-message HttpTestAction {
+// MockHttpServer mocks an HTTP server.
+message MockHttpServer {
   message HttpHeader {
     string name = 1;
     string value = 2;
@@ -26,8 +26,10 @@ message HttpTestAction {
     int32 status = 1;
 
     // The URI on which this mock response will be returned.
-    // Note that this represents the path part without any GET parameters. For
-    // example for `index.php?foo=bar` the URI is `index.php`.
+    // Note that in the context of the mock, it **must** contain all GET
+    // parameters. For example, `index.php?foo=bar`.
+    // Although the leading slash is optional, it is recommended to include it
+    // for clarity.
     string uri = 2;
 
     // The HTTP headers that the mock response will contain.
