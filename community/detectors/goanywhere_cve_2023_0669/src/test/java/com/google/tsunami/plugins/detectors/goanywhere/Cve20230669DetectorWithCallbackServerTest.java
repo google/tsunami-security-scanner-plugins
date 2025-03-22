@@ -68,7 +68,10 @@ public class Cve20230669DetectorWithCallbackServerTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("<title>GoAnywhere 6.8.6</title>"));
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody("<title>GoAnywhere 6.8" + ".6</title>"));
     mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
@@ -100,12 +103,14 @@ public class Cve20230669DetectorWithCallbackServerTest {
                                 .setValue("CVE-2023" + "-0669"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("CVE-2023-0669: GoAnywhere MFT RCE vulnerability")
-                            .setDescription(
-                                    "GoAnywhere MFT suffers from a pre-authentication command injection "
-                                            + "vulnerability in the License Response Servlet due to deserializing"
-                                            + " an arbitrary attacker-controlled object. All versions prior to 7.1.1 are affected.")
-                            .setRecommendation(
-                                    "Update GoAnywhere MFT to version 7.1.2 or later."))
+                        .setDescription(
+                            "GoAnywhere MFT suffers from a pre-authentication command "
+                                + "injection "
+                                + "vulnerability in the License Response Servlet due "
+                                + "to deserializing"
+                                + " an arbitrary attacker-controlled object. All "
+                                + "versions prior to 7.1.1 are affected.")
+                        .setRecommendation("Update GoAnywhere MFT to version 7.1.2 or later."))
                 .build());
   }
 

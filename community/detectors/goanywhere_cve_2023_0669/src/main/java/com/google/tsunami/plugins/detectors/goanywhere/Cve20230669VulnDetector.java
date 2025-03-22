@@ -2,7 +2,6 @@ package com.google.tsunami.plugins.detectors.goanywhere;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
@@ -34,7 +33,8 @@ import javax.inject.Inject;
     name = "Cve20230669VulnDetector",
     version = "0.1",
     description =
-        "GoAnywhere MFT up to version 7.11 suffers from a pre-authentication command injection vulnerability in the License "
+        "GoAnywhere MFT up to version 7.11 suffers from a pre-authentication command injection vulnerability "
+            + "in the License "
             + "Response Servlet due to deserializing an arbitrary attacker-controlled object.",
     bootstrapModule = Cve20230669DetectorBootstrapModule.class)
 public class Cve20230669VulnDetector implements VulnDetector {
@@ -136,9 +136,9 @@ public class Cve20230669VulnDetector implements VulnDetector {
                 .setDescription(
                     "GoAnywhere MFT suffers from a pre-authentication command injection "
                         + "vulnerability in the License Response Servlet due to deserializing"
-                        + " an arbitrary attacker-controlled object. All versions prior to 7.1.1 are affected.")
-                .setRecommendation(
-                    "Update GoAnywhere MFT to version 7.1.2 or later."))
+                        + " an arbitrary attacker-controlled object. All versions prior to 7"
+                        + ".1.1 are affected.")
+                .setRecommendation("Update GoAnywhere MFT to version 7.1.2 or later."))
         .build();
   }
 }
