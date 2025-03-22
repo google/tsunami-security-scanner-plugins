@@ -70,8 +70,11 @@ public class Cve20230669DetectorWithCallbackServerTest {
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
     mockWebServer.enqueue(
         new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setBody("<title>GoAnywhere 6.8" + ".6</title>"));
+            .setResponseCode(HttpStatus.FOUND.code())
+            .setBody(
+                "<title>GoAnywhere 6.8"
+                    + ".6</title>"
+                    + "<body class=\"loginBackground\"><div class=\"loginPanelOuter\"><div class=\"loginPanelInner\"><form id=\"stayAliveForm\" name=\"stayAliveForm\" method=\"post\" action=\"/goanywhere/auth/Login.xhtml\" enctype=\"application/x-www-form-urlencoded\""));
     mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
