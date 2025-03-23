@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package tsunami_templated_detector_tests;
+
+option java_multiple_files = true;
+option java_package = "com.google.tsunami.templatedplugin.proto.tests";
+
+message MockCallbackServer {
+  // Whether the callback server is present in the test.
+  bool enabled = 1;
+
+  // Whether the callback server reports an interaction. This usually means
+  // that true should return a vulnerability.
+  bool has_interaction = 2;
+}

@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.exposedui;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static com.google.tsunami.plugins.exposedui.ExposedAirflowServerDetector.RECOMMENDATION;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.Truth;
@@ -122,9 +123,8 @@ public final class ExposedAirflowServerDetectorTest {
                             "Apache Airflow Server is misconfigured and can be accessed publicly,"
                                 + " Tsunami security scanner confirmed this by sending an HTTP"
                                 + " request with test connection API and receiving the"
-                                + " corresponding callback on tsunami callback server")
-                        .setRecommendation(
-                            "Please disable public access to your apache airflow instance."))
+                                + " corresponding callback on tsunami callback server.")
+                        .setRecommendation(RECOMMENDATION))
                 .build());
   }
 
@@ -218,9 +218,8 @@ public final class ExposedAirflowServerDetectorTest {
                         .setDescription(
                             "Apache Airflow Server is misconfigured and can be accessed publicly,"
                                 + " We confirmed this by checking API endpoint and matching the"
-                                + " responses with our pattern")
-                        .setRecommendation(
-                            "Please disable public access to your apache airflow instance."))
+                                + " responses with our pattern.")
+                        .setRecommendation(RECOMMENDATION))
                 .build());
   }
 
