@@ -2,7 +2,6 @@ package com.google.tsunami.plugins.detectors.goanywhere;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
@@ -15,7 +14,6 @@ import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
-import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -45,6 +43,7 @@ public class Cve20230669VulnDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String LICENSE_URL = "goanywhere/lic/accept";
   private static final String COMMAND_HEADER = "x-protect";
+  private static final String FINGERPRINT_STRING = "<title>GoAnywhere";
   private static final String PAYLOAD =
       "bundle=Jh88_jqGQWSbZmiCc1DErQhwOhCTLkYmA1yXgf86Ha5HF9IfVuQMLOfBS_fjlP7wTTEg2"
           + "-Jx9nBDyFUKVTroXpFBt7zN1XDX58VKZCxCXlUD45d4laUUnNuzdyvNLT2b_gYKBi2"
@@ -71,35 +70,24 @@ public class Cve20230669VulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(this::isWebService)
+                .filter(NetworkServiceUtils::isWebService)
+                .filter(this::isGoanywhere)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
   }
 
-  private boolean isWebService(NetworkService networkService) {
-
-      try {
-        String agentScopeUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-        HttpResponse httpResponse = httpClient.send(
-                get(agentScopeUrl)
-                        .setHeaders(
-                                HttpHeaders.builder().addHeader(USER_AGENT, "TSUNAMI_SCANNER").build())
-                        .build(),
-                networkService
-        );
-        return httpResponse.status() == HttpStatus.FOUND
-                && httpResponse.bodyString().isPresent()
-                && httpResponse.bodyString().get().contains("/goanywhere/auth/Login.xhtml");
-
-      } catch (RuntimeException | IOException e) {
-        logger.atWarning().withCause(e).log(
-                "Request to target %s failed",
-                NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
-        );
-        return false;
-      }
+  private boolean isGoanywhere(NetworkService networkService) {
+    try {
+      String url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+      HttpClient client = httpClient.modify().setFollowRedirects(true).build();
+      HttpResponse httpResponse = client.send(get(url).withEmptyHeaders().build(), networkService);
+      return httpResponse.status().isSuccess()
+          && httpResponse.bodyString().orElse("").contains(FINGERPRINT_STRING);
+    } catch (IOException e) {
+      return false;
+    }
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
