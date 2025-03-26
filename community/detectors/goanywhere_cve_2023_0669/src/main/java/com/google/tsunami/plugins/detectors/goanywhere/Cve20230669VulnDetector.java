@@ -21,6 +21,7 @@ import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.*;
+import java.io.EOFException;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
@@ -124,10 +125,12 @@ public class Cve20230669VulnDetector implements VulnDetector {
                   .setRequestBody(ByteString.copyFromUtf8(PAYLOAD))
                   .build(),
               networkService);
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
+    } catch (EOFException e) {
+      // This is expected, don't print an error
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
     }
+    Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(3));
     return payload.checkIfExecuted();
   }
 

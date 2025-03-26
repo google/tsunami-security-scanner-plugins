@@ -68,13 +68,6 @@ public class Cve20230669DetectorWithCallbackServerTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-    /*mockWebServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.FOUND.code())
-            .setBody(
-                "")
-                .setHeader("Location", "/goanywhere"));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));*/
     mockWebServer.enqueue(
         new MockResponse()
             .setResponseCode(HttpStatus.OK.code())
