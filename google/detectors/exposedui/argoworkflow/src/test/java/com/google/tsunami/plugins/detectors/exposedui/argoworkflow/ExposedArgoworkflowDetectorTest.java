@@ -104,7 +104,10 @@ public final class ExposedArgoworkflowDetectorTest {
                             "Argo Workflow instance is misconfigured.The instance is not"
                                 + " authenticated.All workflows can be accessed by public and"
                                 + " therefore can be modified.Results in instance being"
-                                + " compromised."))
+                                + " compromised.")
+                        .setRecommendation(
+                            "Authentication should be enabled on the instance or network access to"
+                                + " the instance restricted."))
                 .build());
   }
 
