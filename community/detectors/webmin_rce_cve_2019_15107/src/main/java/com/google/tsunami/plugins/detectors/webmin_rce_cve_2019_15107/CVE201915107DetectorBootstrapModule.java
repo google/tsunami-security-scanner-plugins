@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.cves.cve201915017;
+package com.google.tsunami.plugins.detectors.webmin_rce_cve_2019_15107;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 

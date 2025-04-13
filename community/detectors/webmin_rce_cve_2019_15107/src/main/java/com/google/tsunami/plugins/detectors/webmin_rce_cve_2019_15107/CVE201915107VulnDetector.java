@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.cves.cve201915017;
+package com.google.tsunami.plugins.detectors.webmin_rce_cve_2019_15107;
 
 import static com.google.api.client.http.UrlEncodedParser.CONTENT_TYPE;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 import static org.apache.http.HttpHeaders.ACCEPT;
 import static org.apache.http.HttpHeaders.REFERER;
@@ -98,10 +99,36 @@ public final class CVE201915107VulnDetector implements VulnDetector {
         .addAllDetectionReports(
             matchedServices.stream()
                 .filter(NetworkServiceUtils::isWebService)
+                .filter(this::isWebmin)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
+  }
+
+  private boolean isWebmin(NetworkService networkService) {
+    // verifying HTML patterns for Webmin
+    try {
+      HttpResponse httpResponse =
+          httpClient.send(
+              get(NetworkServiceUtils.buildWebApplicationRootUrl(networkService))
+                  .setHeaders(
+                      HttpHeaders.builder()
+                          .addHeader(ACCEPT, MediaType.HTML_UTF_8.toString())
+                          .build())
+                  .build(),
+              networkService);
+      if (!httpResponse.status().isSuccess()) {
+        return false;
+      }
+      // Verify if the response body contains the string "Webmin"
+      if (httpResponse.bodyString().get().contains("Webmin")) {
+        return true;
+      }
+    } catch (Exception e) {
+      return false;
+    }
+    return false;
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
@@ -131,7 +158,7 @@ public final class CVE201915107VulnDetector implements VulnDetector {
                   .setRequestBody(
                       ByteString.copyFrom(
                           VULNERABLE_DATA
-                              .replace("{{COMMAND}}", payload.getPayload())
+                              .replace("{{COMMAND}}", payload.getPayload().replace("curl", "wget"))
                               .getBytes("utf-8")))
                   .build(),
               networkService);
