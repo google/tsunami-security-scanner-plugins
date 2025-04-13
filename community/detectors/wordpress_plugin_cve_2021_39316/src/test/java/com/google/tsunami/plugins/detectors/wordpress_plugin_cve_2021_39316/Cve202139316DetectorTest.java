@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.cves.cve202139316;
+package com.google.tsunami.plugins.detectors.wordpress_plugin_cve_2021_39316;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -69,7 +69,7 @@ public final class Cve202139316DetectorTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-    mockWebResponse(200, mockPasswdContent);
+    mockWebResponse(200, passwdContent);
     NetworkService service =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
