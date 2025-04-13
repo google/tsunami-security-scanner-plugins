@@ -14,8 +14,8 @@ repositories {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 
     jar.manifest {
         attributes('Implementation-Title': name,
@@ -30,7 +30,6 @@ java {
         encoding = 'UTF-8'
         use = true
         links 'https://docs.oracle.com/javase/8/docs/api/'
-        source = '8'
     }
 
     // Log stacktrace to console when test fails.
@@ -48,7 +47,7 @@ java {
 ext {
     okhttpVersion = '3.12.0'
     autoValueVersion = '1.7'
-    tsunamiVersion = '0.0.5'
+    tsunamiVersion = 'latest.release'
     junitVersion = '4.13'
     mockitoVersion = '2.28.2'
     truthVersion = '1.0.1'

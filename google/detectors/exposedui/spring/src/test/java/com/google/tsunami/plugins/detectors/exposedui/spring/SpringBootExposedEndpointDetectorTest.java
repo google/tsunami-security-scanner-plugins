@@ -206,6 +206,7 @@ public final class SpringBootExposedEndpointDetectorTest {
                                 + " entire memory of the server into a file. Exposing these"
                                 + " endpoints could potentially leak sensitive information to any"
                                 + " unauthenticated users.")
+                        .setRecommendation("Disable public access to Actuator endpoints.")
                         .addAdditionalDetails(
                             AdditionalDetail.newBuilder()
                                 .setTextData(

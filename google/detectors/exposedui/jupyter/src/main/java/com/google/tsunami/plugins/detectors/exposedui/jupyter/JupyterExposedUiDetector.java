@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
@@ -28,7 +29,7 @@ import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
-import com.google.tsunami.plugin.annotations.ForServiceName;
+import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
@@ -55,9 +56,16 @@ import javax.inject.Inject;
     author = "Tsunami Team (tsunami-dev@google.com)",
     bootstrapModule = JupyterExposedUiDetectorBootstrapModule.class)
 
-@ForServiceName({"http", "https"})
+@ForWebService
 public final class JupyterExposedUiDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+
+  @VisibleForTesting
+  static final String FINDING_RECOMMENDATION_TEXT = "If it is necessary to keep running this "
+      + "instance of Jupyter, DO NOT expose it externally, in favor of using SSH tunnels to "
+      + "access it. In addition, the service should only listen on localhost (127.0.0.1), and "
+      + "consider restrict the access to the Jupyter Notebook using an authentication method. "
+      + "See https://jupyter-notebook.readthedocs.io/en/stable/security.html";
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -92,11 +100,15 @@ public final class JupyterExposedUiDetector implements VulnDetector {
       return response.status().isSuccess()
           // TODO(b/147455413): checking Jupyter Notebook string is not needed once we have plugin
           // matching logic.
+          // Newer version of Jupyter no longer has websocket in the body.
           && response
               .bodyString()
               .map(
                   body ->
-                      body.contains("Jupyter Notebook") && body.contains("terminals/websocket/1"))
+                      body.contains("Jupyter Notebook")
+                          && (body.contains("terminals/websocket/1")
+                              || body.contains("jupyter-config-data"))
+                          && !body.contains("authentication is enabled"))
               .orElse(false);
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
@@ -120,7 +132,8 @@ public final class JupyterExposedUiDetector implements VulnDetector {
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Jupyter Notebook Exposed Ui")
                 // TODO(b/147455413): determine CVSS score.
-                .setDescription("Jupyter Notebook is not password or token protected"))
+                .setDescription("Jupyter Notebook is not password or token protected")
+                .setRecommendation(FINDING_RECOMMENDATION_TEXT))
         .build();
   }
 }

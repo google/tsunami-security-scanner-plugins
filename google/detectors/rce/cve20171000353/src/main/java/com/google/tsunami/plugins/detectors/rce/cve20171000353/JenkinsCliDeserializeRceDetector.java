@@ -246,7 +246,8 @@ public final class JenkinsCliDeserializeRceDetector implements VulnDetector {
                         + " fixing this issue by adding `SignedObject` to the blacklist. We're"
                         + " also backporting the new HTTP CLI protocol from Jenkins 2.54 to LTS"
                         + " 2.46.2, and deprecating the remoting-based (i.e. Java serialization)"
-                        + " CLI protocol, disabling it by default."))
+                        + " CLI protocol, disabling it by default.")
+                .setRecommendation("Upgrade Jenkins to the latest version."))
         .build();
   }
 }

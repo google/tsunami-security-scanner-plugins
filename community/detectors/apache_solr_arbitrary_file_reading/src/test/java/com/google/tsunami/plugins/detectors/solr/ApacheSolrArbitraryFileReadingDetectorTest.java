@@ -18,13 +18,18 @@ package com.google.tsunami.plugins.detectors.solr;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static com.google.tsunami.plugins.detectors.solr.ApacheSolrArbitraryFileReadingDetector.DESCRIPTION;
+import static com.google.tsunami.plugins.detectors.solr.ApacheSolrArbitraryFileReadingDetector.RECOMMENDATION;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
+import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -33,9 +38,11 @@ import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
+import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
 import okhttp3.mockwebserver.MockResponse;
@@ -80,34 +87,12 @@ public final class ApacheSolrArbitraryFileReadingDetectorTest {
   }
 
   @Test
-  public void detect_whenSolrIsVulnerable_reportsVuln() {
+  public void detect_whenSolrIsVulnerable_reportsVuln() throws IOException {
     mockWebServer.enqueue(
         new MockResponse().setResponseCode(200).setBody("{\"status\": {\"test\": {}}}"));
     mockWebServer.enqueue(new MockResponse().setResponseCode(200));
     mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody("{\n"
-            + "  \"responseHeader\":{\n"
-            + "    \"status\":0,\n"
-            + "    \"QTime\":6,\n"
-            + "    \"handler\":\"org.apache.solr.handler.DumpRequestHandler\",\n"
-            + "    \"params\":{\n"
-            + "      \"param\":\"ContentStreams\",\n"
-            + "      \"stream.url\":\"file:///etc/passwd\"}},\n"
-            + "  \"params\":{\n"
-            + "    \"stream.url\":\"file:///etc/passwd\",\n"
-            + "    \"echoHandler\":\"true\",\n"
-            + "    \"param\":\"ContentStreams\",\n"
-            + "    \"echoParams\":\"explicit\"},\n"
-            + "  \"streams\":[{\n"
-            + "      \"name\":null,\n"
-            + "      \"sourceInfo\":\"url\",\n"
-            + "      \"size\":null,\n"
-            + "      \"contentType\":null,\n"
-            + "      \"stream\":\"root:x:0:0:root:/root:/bin/bash\"}],\n"
-            + "  \"context\":{\n"
-            + "    \"webapp\":\"/solr\",\n"
-            + "    \"path\":\"/debug/dump\",\n"
-            + "    \"httpMethod\":\"GET\"}}"));
+        new MockResponse().setResponseCode(200).setBody(loadResource("vulnerable_response.json")));
     mockWebServer.enqueue(new MockResponse().setResponseCode(200));
     mockWebServer.url("/");
 
@@ -124,41 +109,27 @@ public final class ApacheSolrArbitraryFileReadingDetectorTest {
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
                     Vulnerability.newBuilder()
-                        .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("APACHE_SOLR_REMOTE_STREAMING_FILE_READING"))
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("TSUNAMI_COMMUNITY")
+                                .setValue("APACHE_SOLR_REMOTE_STREAMING_FILE_READING"))
                         .setSeverity(Severity.HIGH)
                         .setTitle("Apache Solr RemoteStreaming Arbitrary File Reading")
-                        .setDescription("Apache Solr is an open source search server. When Apache "
-                            + "Solr does not enable authentication, an attacker can directly craft"
-                            + " a request to enable a specific configuration, and eventually cause"
-                            + " SSRF or arbitrary file reading.")
-                        .setRecommendation("enable authentication")
-                ).build());
+                        .setDescription(DESCRIPTION)
+                        .setRecommendation(RECOMMENDATION)
+                        .addAdditionalDetails(buildAdditionalDetail("vulnerable_check_trace.txt")))
+                .build());
   }
 
   @Test
-  public void detect_whenSolrIsVulnerableWithPermissionDenied_reportsVuln() {
+  public void detect_whenSolrIsVulnerableWithPermissionDenied_reportsVuln() throws IOException {
     mockWebServer.enqueue(
         new MockResponse().setResponseCode(200).setBody("{\"status\": {\"test\": {}}}"));
     mockWebServer.enqueue(new MockResponse().setResponseCode(200));
     mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody("{\n"
-            + "  \"responseHeader\":{\n"
-            + "    \"status\":500,\n"
-            + "    \"QTime\":37,\n"
-            + "    \"handler\":\"org.apache.solr.handler.DumpRequestHandler\",\n"
-            + "    \"params\":{\n"
-            + "      \"param\":\"ContentStreams\",\n"
-            + "      \"stream.url\":\"file:///etc/shadow\"}},\n"
-            + "  \"params\":{\n"
-            + "    \"stream.url\":\"file:///etc/shadow\",\n"
-            + "    \"echoHandler\":\"true\",\n"
-            + "    \"param\":\"ContentStreams\",\n"
-            + "    \"echoParams\":\"explicit\"},\n"
-            + "  \"error\":{\n"
-            + "    \"msg\":\"/etc/shadow (Permission denied)\",\n"
-            + "    \"trace\":\"...Exception: /etc/shadow (Permission denied)...\",\n"
-            + "    \"code\":500}}"));
+        new MockResponse()
+            .setResponseCode(200)
+            .setBody(loadResource("vulnerable_with_permission_denied_response.json")));
     mockWebServer.enqueue(new MockResponse().setResponseCode(200));
     mockWebServer.url("/");
 
@@ -175,41 +146,28 @@ public final class ApacheSolrArbitraryFileReadingDetectorTest {
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
                     Vulnerability.newBuilder()
-                        .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("APACHE_SOLR_REMOTE_STREAMING_FILE_READING"))
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("TSUNAMI_COMMUNITY")
+                                .setValue("APACHE_SOLR_REMOTE_STREAMING_FILE_READING"))
                         .setSeverity(Severity.HIGH)
                         .setTitle("Apache Solr RemoteStreaming Arbitrary File Reading")
-                        .setDescription("Apache Solr is an open source search server. When Apache "
-                            + "Solr does not enable authentication, an attacker can directly craft"
-                            + " a request to enable a specific configuration, and eventually cause"
-                            + " SSRF or arbitrary file reading.")
-                        .setRecommendation("enable authentication")
-                ).build());
+                        .setDescription(DESCRIPTION)
+                        .setRecommendation(RECOMMENDATION)
+                        .addAdditionalDetails(
+                            buildAdditionalDetail("vulnerable_with_permission_denied_trace.txt")))
+                .build());
   }
 
   @Test
-  public void detect_whenSolrIsVulnerableWithFileNotFound_reportsVuln() {
+  public void detect_whenSolrIsVulnerableWithFileNotFound_reportsVuln() throws IOException {
     mockWebServer.enqueue(
         new MockResponse().setResponseCode(200).setBody("{\"status\": {\"test\": {}}}"));
     mockWebServer.enqueue(new MockResponse().setResponseCode(200));
     mockWebServer.enqueue(
-        new MockResponse().setResponseCode(200).setBody("{\n"
-            + "  \"responseHeader\":{\n"
-            + "    \"status\":500,\n"
-            + "    \"QTime\":6,\n"
-            + "    \"handler\":\"org.apache.solr.handler.DumpRequestHandler\",\n"
-            + "    \"params\":{\n"
-            + "      \"param\":\"ContentStreams\",\n"
-            + "      \"stream.url\":\"file:///etc/shadow1\"}},\n"
-            + "  \"params\":{\n"
-            + "    \"stream.url\":\"file:///etc/shadow1\",\n"
-            + "    \"echoHandler\":\"true\",\n"
-            + "    \"param\":\"ContentStreams\",\n"
-            + "    \"echoParams\":\"explicit\"},\n"
-            + "  \"error\":{\n"
-            + "    \"msg\":\"/etc/shadow1 (No such file or directory)\",\n"
-            + "    \"trace\":\"...Exception: /etc/shadow1 (No such file or directory)...\",\n"
-            + "    \"code\":500}}"));
+        new MockResponse()
+            .setResponseCode(200)
+            .setBody(loadResource("vulnerable_with_file_not_found_response.json")));
     mockWebServer.enqueue(new MockResponse().setResponseCode(200));
     mockWebServer.url("/");
 
@@ -226,16 +184,17 @@ public final class ApacheSolrArbitraryFileReadingDetectorTest {
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
                     Vulnerability.newBuilder()
-                        .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("APACHE_SOLR_REMOTE_STREAMING_FILE_READING"))
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("TSUNAMI_COMMUNITY")
+                                .setValue("APACHE_SOLR_REMOTE_STREAMING_FILE_READING"))
                         .setSeverity(Severity.HIGH)
                         .setTitle("Apache Solr RemoteStreaming Arbitrary File Reading")
-                        .setDescription("Apache Solr is an open source search server. When Apache "
-                            + "Solr does not enable authentication, an attacker can directly craft"
-                            + " a request to enable a specific configuration, and eventually cause"
-                            + " SSRF or arbitrary file reading.")
-                        .setRecommendation("enable authentication")
-                ).build());
+                        .setDescription(DESCRIPTION)
+                        .setRecommendation(RECOMMENDATION)
+                        .addAdditionalDetails(
+                            buildAdditionalDetail("vulnerable_with_file_not_found_trace.txt")))
+                .build());
   }
 
   @Test
@@ -265,15 +224,27 @@ public final class ApacheSolrArbitraryFileReadingDetectorTest {
     mockWebServer.url("/");
 
     assertThat(
-        detector
-            .detect(
-                buildTargetInfo(forHostname(mockWebServer.getHostName())),
-                ImmutableList.of(solrService))
-            .getDetectionReportsList())
+            detector
+                .detect(
+                    buildTargetInfo(forHostname(mockWebServer.getHostName())),
+                    ImmutableList.of(solrService))
+                .getDetectionReportsList())
         .isEmpty();
   }
 
   private static TargetInfo buildTargetInfo(NetworkEndpoint networkEndpoint) {
     return TargetInfo.newBuilder().addNetworkEndpoints(networkEndpoint).build();
+  }
+
+  private static AdditionalDetail buildAdditionalDetail(String traceFile) throws IOException {
+    return AdditionalDetail.newBuilder()
+        .setTextData(TextData.newBuilder().setText(loadResource(traceFile)))
+        .build();
+  }
+
+  private static String loadResource(String file) throws IOException {
+    return Resources.toString(
+            Resources.getResource(ApacheSolrArbitraryFileReadingDetectorTest.class, file), UTF_8)
+        .strip();
   }
 }

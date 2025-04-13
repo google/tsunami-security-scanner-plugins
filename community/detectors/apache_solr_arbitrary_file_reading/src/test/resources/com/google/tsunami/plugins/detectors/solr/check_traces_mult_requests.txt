@@ -1,0 +1,26 @@
+- Request 1:
+
+GET /test?query=1#frag=2 HTTP/1.1
+Host: localhost:8080
+
+- Response 1:
+
+HTTP/1.1 404 Not Found
+Content-Length: 9
+
+not_found
+
+- Request 2:
+
+POST /test HTTP/1.1
+Host: localhost:8080
+Content-Type: text/plain; charset=utf-8
+
+request_body
+
+- Response 2:
+
+HTTP/1.1 200 Ok
+Content-Length: 13
+
+response_body

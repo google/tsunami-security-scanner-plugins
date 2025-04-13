@@ -87,20 +87,17 @@ public final class KubernetesApiExposedDetector implements VulnDetector {
       // This is a blocking call.
       HttpResponse response =
           httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
-      return response.status().isSuccess()
-          && response
-              .bodyJson()
-              .get()
-              .getAsJsonObject()
-              .getAsJsonPrimitive("kind")
-              .getAsString()
-              .equals("PodList");
+      return response.status().isSuccess() && response.jsonFieldEqualsToValue("kind", "PodList");
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
       return false;
     } catch (JsonSyntaxException e) {
       logger.atWarning().withCause(e).log(
           "JSON syntax error occurred parsing response for target URI: '%s'.", targetUri);
+      return false;
+    } catch (IllegalStateException e) {
+      logger.atWarning().withCause(e).log(
+          "JSON object parsing error for target URI: '%s'.", targetUri);
       return false;
     }
   }

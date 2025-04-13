@@ -210,7 +210,8 @@ public final class JoomlaRustyRCEDetector implements VulnDetector {
                 .setDescription(
                     "The Joomla application is vulnerable to Rusty RCE, which"
                         + " allows remote unprivileged attackers to execute arbitrary"
-                        + " PHP code."))
+                        + " PHP code.")
+                .setRecommendation("Upgrade to Joomla 3.4.7 or greater."))
         .build();
   }
 }

@@ -15,6 +15,8 @@
  */
 package com.google.tsunami.plugins.fingerprinters.web.common;
 
+import static com.google.common.net.HttpHeaders.CACHE_CONTROL;
+import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.HTML_UTF_8;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
@@ -26,6 +28,8 @@ import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
+import com.google.tsunami.proto.HttpHeader;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -52,6 +56,8 @@ public final class CrawlUtilsTest {
                 .setResponseCode(HttpStatus.OK.code())
                 .setContentType(HTML_UTF_8.toString())
                 .setContent(ByteString.copyFromUtf8("body"))
+                .addResponseHeaders(
+                    HttpHeader.newBuilder().setKey(CONTENT_TYPE).setValue(HTML_UTF_8.toString()))
                 .build());
   }
 
@@ -90,6 +96,58 @@ public final class CrawlUtilsTest {
                 .setCrawlDepth(1)
                 .setResponseCode(HttpStatus.OK.code())
                 .setContentType(HTML_UTF_8.toString())
+                .addResponseHeaders(
+                    HttpHeader.newBuilder().setKey(CONTENT_TYPE).setValue(HTML_UTF_8.toString()))
                 .build());
+  }
+
+  @Test
+  public void buildCrawlResult_whenMultipleHttpHeaders_returnsAllHttpHeaders() {
+    HttpResponse httpResponse =
+        HttpResponse.builder()
+            .setStatus(HttpStatus.OK)
+            .setHeaders(
+                HttpHeaders.builder()
+                    .addHeader(CONTENT_TYPE, HTML_UTF_8.toString())
+                    .addHeader(CONTENT_LENGTH, "100")
+                    .addHeader(CACHE_CONTROL, "no-cache")
+                    .build())
+            .setBodyBytes(ByteString.copyFromUtf8("body"))
+            .build();
+
+    List<HttpHeader> headers =
+        buildCrawlResult(CrawlTarget.getDefaultInstance(), 1, httpResponse)
+            .getResponseHeadersList();
+
+    assertThat(headers)
+        .ignoringRepeatedFieldOrder()
+        .containsExactly(
+            HttpHeader.newBuilder().setKey(CONTENT_TYPE).setValue(HTML_UTF_8.toString()).build(),
+            HttpHeader.newBuilder().setKey(CONTENT_LENGTH).setValue("100").build(),
+            HttpHeader.newBuilder().setKey(CACHE_CONTROL).setValue("no-cache").build());
+  }
+
+  @Test
+  public void buildCrawlResult_whenDuplicateHttpHeaders_returnsBothHttpHeaders() {
+    HttpResponse httpResponse =
+        HttpResponse.builder()
+            .setStatus(HttpStatus.OK)
+            .setHeaders(
+                HttpHeaders.builder()
+                    .addHeader(CACHE_CONTROL, "max-age=3600")
+                    .addHeader(CACHE_CONTROL, "no-cache")
+                    .build())
+            .setBodyBytes(ByteString.copyFromUtf8("body"))
+            .build();
+
+    List<HttpHeader> headers =
+        buildCrawlResult(CrawlTarget.getDefaultInstance(), 1, httpResponse)
+            .getResponseHeadersList();
+
+    assertThat(headers)
+        .ignoringRepeatedFieldOrder()
+        .containsExactly(
+            HttpHeader.newBuilder().setKey(CACHE_CONTROL).setValue("max-age=3600").build(),
+            HttpHeader.newBuilder().setKey(CACHE_CONTROL).setValue("no-cache").build());
   }
 }

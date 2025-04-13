@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static com.google.tsunami.plugins.detectors.exposedui.jenkins.JenkinsExposedUiDetector.FINDING_RECOMMENDATION_TEXT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
@@ -208,7 +209,8 @@ public final class JenkinsExposedUiDetectorTest {
                     .setDescription(
                         "Unauthenticated Jenkins instance allows anonymous users to create"
                             + " arbitrary projects, which usually leads to code downloading from"
-                            + " the internet and remote code executions."))
+                            + " the internet and remote code executions.")
+                    .setRecommendation(FINDING_RECOMMENDATION_TEXT))
             .build();
 
     DetectionReportList report =

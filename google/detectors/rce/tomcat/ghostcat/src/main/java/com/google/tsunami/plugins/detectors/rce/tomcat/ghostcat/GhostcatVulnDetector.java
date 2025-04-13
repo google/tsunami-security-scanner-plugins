@@ -132,6 +132,7 @@ public final class GhostcatVulnDetector implements VulnDetector {
                         + " (CVE-2020-1938) that allows an attacker to read any webapps files. If"
                         + " the Tomcat instance supports file uploads, the vulnerability could"
                         + " also be leveraged to achieve remote code execution.")
+                .setRecommendation("Install the latest security patches for Apache Tomcat.")
                 .addAdditionalDetails(buildAdditionalDetail(endpointProbingResult)))
         .build();
   }

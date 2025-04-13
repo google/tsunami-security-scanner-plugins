@@ -113,6 +113,10 @@ public final class ElasticsearchApiExposedDetectorTest {
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Elasticsearch API Exposed")
                         .setDescription("Elasticsearch API endpoint is exposed.")
+                        .setRecommendation(
+                            "Do not expose Elasticsearch externally.\n"
+                                + "Bind it to localhost, or run it on a host that is not exposed to"
+                                + " the Internet.")
                         .addAdditionalDetails(
                             AdditionalDetail.newBuilder()
                                 .setTextData(
@@ -138,6 +142,46 @@ public final class ElasticsearchApiExposedDetectorTest {
                 .setSoftware(Software.newBuilder().setName("Elasticsearch API"))
                 .setServiceName("http")
                 .build());
+
+    assertThat(
+            detector
+                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), httpServices)
+                .getDetectionReportsList())
+        .isEmpty();
+  }
+
+  @Test
+  public void detect_whenApiEndpointReturnsEmptyBody_doesNotReportVuln() throws IOException {
+    startMockWebServer("/", HttpStatus.OK.code(), "");
+    NetworkService httpService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setSoftware(Software.newBuilder().setName("Elasticsearch API"))
+            .setServiceName("http")
+            .build();
+    ImmutableList<NetworkService> httpServices = ImmutableList.of(httpService);
+
+    assertThat(
+            detector
+                .detect(buildTargetInfo(forHostname(mockWebServer.getHostName())), httpServices)
+                .getDetectionReportsList())
+        .isEmpty();
+  }
+
+  @Test
+  public void detect_whenApiEndpointReturnsEmptyJson_doesNotReportVuln() throws IOException {
+    startMockWebServer("/", HttpStatus.OK.code(), "{}");
+    NetworkService httpService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setSoftware(Software.newBuilder().setName("Elasticsearch API"))
+            .setServiceName("http")
+            .build();
+    ImmutableList<NetworkService> httpServices = ImmutableList.of(httpService);
 
     assertThat(
             detector

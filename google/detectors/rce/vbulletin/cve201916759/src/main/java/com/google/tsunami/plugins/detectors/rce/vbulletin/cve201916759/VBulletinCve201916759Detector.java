@@ -121,7 +121,9 @@ public final class VBulletinCve201916759Detector implements VulnDetector {
                 .setDescription(
                     "Unauthenticated attacked can gain privileged access and control over any"
                         + " vBulletin server running versions 5.0.0 up to 5.5.4, and potentially"
-                        + " lock organizations out from their own sites."))
+                        + " lock organizations out from their own sites.")
+                .setRecommendation(
+                    "Upgrade vBulletin to the latest version with security patches."))
         .build();
   }
 }

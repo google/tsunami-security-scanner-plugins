@@ -31,6 +31,8 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
+import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
+import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
@@ -44,7 +46,9 @@ import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Arrays;
 import javax.inject.Inject;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
@@ -72,6 +76,9 @@ public final class YarnExposedManagerApiDetectorTest {
                   + " resources of a Hadoop cluster. Unauthenticated ResourceManager"
                   + " API allows any remote users to create and execute arbitrary"
                   + " applications on the host.")
+          .setRecommendation(
+              "Set up authentication by following the instructions at"
+                  + " https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/HttpAuthentication.html.")
           .build();
 
   private final FakeUtcClock fakeUtcClock =
@@ -79,15 +86,31 @@ public final class YarnExposedManagerApiDetectorTest {
 
   private MockWebServer mockWebServer;
 
+  private final MockWebServer mockCallbackServer = new MockWebServer();
+
   @Inject private YarnExposedManagerApiDetector detector;
 
+  // A version of secure random that gives predictable output for our unit tests
+  private final SecureRandom testSecureRandom =
+      new SecureRandom() {
+        @Override
+        public void nextBytes(byte[] bytes) {
+          Arrays.fill(bytes, (byte) 0xFF);
+        }
+      };
+
   @Before
-  public void setUp() {
+  public void setUp() throws IOException {
     mockWebServer = new MockWebServer();
+    mockCallbackServer.start();
 
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
+            FakePayloadGeneratorModule.builder()
+                .setCallbackServer(mockCallbackServer)
+                .setSecureRng(testSecureRandom)
+                .build(),
             new YarnExposedManagerApiDetectorBootstrapModule())
         .injectMembers(this);
   }
@@ -95,6 +118,7 @@ public final class YarnExposedManagerApiDetectorTest {
   @After
   public void tearDown() throws IOException {
     mockWebServer.shutdown();
+    mockCallbackServer.shutdown();
   }
 
   @Test
@@ -111,6 +135,10 @@ public final class YarnExposedManagerApiDetectorTest {
     mockWebServer.setDispatcher(
         new FakeYarnDispatcher("", unauthenticatedClusterPage, validNewApplicationResponse));
     mockWebServer.start();
+
+    // Simulate that the callbackserver received a response i.e. detector exploited the
+    // vulnerability
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
     ImmutableList<NetworkService> httpServices =
         ImmutableList.of(
@@ -150,6 +178,8 @@ public final class YarnExposedManagerApiDetectorTest {
         new FakeYarnDispatcher(
             "/yarn-root", unauthenticatedClusterPage, validNewApplicationResponse));
     mockWebServer.start();
+
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
     ImmutableList<NetworkService> httpServices =
         ImmutableList.of(
@@ -396,6 +426,15 @@ public final class YarnExposedManagerApiDetectorTest {
             .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8)
             .setBody(newApplicationResponse);
       }
+
+      if (recordedRequest.getMethod().equals("POST")
+          && recordedRequest.getPath().equals(applicationRoot + "/ws/v1/cluster/apps")) {
+        return new MockResponse()
+            .setResponseCode(HttpStatus.ACCEPTED.code())
+            .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8)
+            .setHeader("Location", "http://10.132.0.2:8088/ws/v1/cluster/apps/foo");
+      }
+
       return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
     }
   }

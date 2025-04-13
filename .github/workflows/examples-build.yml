@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, macos-latest ]
-        java: [ 8, 11 ]
+        java: [ 11 ]
     runs-on: ${{ matrix.os }}
     name: 'Build example plugins on ${{ matrix.os }} using Java ${{ matrix.java }}'
     steps:
@@ -24,7 +24,7 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
       - name: 'Cache Gradle resources'
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}

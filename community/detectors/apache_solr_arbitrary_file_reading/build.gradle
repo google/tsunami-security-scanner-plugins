@@ -15,8 +15,8 @@ repositories {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 
     jar.manifest {
         attributes('Implementation-Title': name,
@@ -31,7 +31,6 @@ java {
         encoding = 'UTF-8'
         use = true
         links 'https://docs.oracle.com/javase/8/docs/api/'
-        source = '8'
     }
 
     // Log stacktrace to console when test fails.
@@ -47,16 +46,19 @@ java {
 }
 
 ext {
-    tsunamiVersion = '0.0.5'
+    autoValueVersion = '1.7'
+    tsunamiVersion = 'latest.release'
     junitVersion = '4.13'
     truthVersion = '1.0.1'
     okhttpVersion = '3.12.0'
 }
 
 dependencies {
+    implementation "com.google.auto.value:auto-value-annotations:${autoValueVersion}"
     implementation "com.google.tsunami:tsunami-common:${tsunamiVersion}"
     implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
     implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
+    annotationProcessor "com.google.auto.value:auto-value:${autoValueVersion}"
 
     testImplementation "junit:junit:${junitVersion}"
     testImplementation "com.google.truth:truth:${truthVersion}"

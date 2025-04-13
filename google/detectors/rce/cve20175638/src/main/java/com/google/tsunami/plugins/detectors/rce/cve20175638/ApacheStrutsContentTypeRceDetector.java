@@ -134,13 +134,14 @@ public final class ApacheStrutsContentTypeRceDetector implements VulnDetector {
         .setVulnerability(
             Vulnerability.newBuilder()
                 .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("CVE_2017_5638"))
+                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2017_5638"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Apache Struts Command Injection via Content-Type header (CVE-2017-5638)")
-                .setDescription("Apache Struts server is vulnerable to CVE-2017-5638.")
-        )
+                .setDescription(
+                    "The Jakarta Multipart parser in Apache Struts 2 2.3.x before 2.3.32 and 2.5.x"
+                        + " before 2.5.10.1 has incorrect exception handling and error-message"
+                        + " generation during file-upload attempts, which allows for remote RCE.")
+                .setRecommendation("Upgrade to Struts 2.3.32 or Struts 2.5.10.1."))
         .build();
   }
 }

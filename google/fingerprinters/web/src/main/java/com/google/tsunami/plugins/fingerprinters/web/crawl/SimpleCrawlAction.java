@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.fingerprinters.web.crawl;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.tsunami.plugins.fingerprinters.web.common.CrawlUtils.buildCrawlResult;
+import static com.google.tsunami.plugins.fingerprinters.web.crawl.CrawlTargetUtils.normalizeHost;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
@@ -27,9 +28,11 @@ import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpMethod;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.plugins.fingerprinters.web.WebServiceFingerprinterConfigs;
 import com.google.tsunami.proto.CrawlConfig;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
+import com.google.tsunami.proto.NetworkService;
 import java.util.Optional;
 import java.util.concurrent.RecursiveAction;
 import java.util.stream.Stream;
@@ -60,18 +63,21 @@ final class SimpleCrawlAction extends RecursiveAction {
   private final CrawlConfig crawlConfig;
   private final CrawlTarget crawlTarget;
   private final SimpleCrawlerResults crawlerResults;
+  private final WebServiceFingerprinterConfigs configs;
 
   SimpleCrawlAction(
       int currentDepth,
       HttpClient httpClient,
       CrawlConfig crawlConfig,
       CrawlTarget crawlTarget,
-      SimpleCrawlerResults crawlerResults) {
+      SimpleCrawlerResults crawlerResults,
+      WebServiceFingerprinterConfigs configs) {
     this.currentDepth = currentDepth;
     this.httpClient = checkNotNull(httpClient);
     this.crawlConfig = checkNotNull(crawlConfig);
     this.crawlTarget = checkNotNull(crawlTarget);
     this.crawlerResults = checkNotNull(crawlerResults);
+    this.configs = checkNotNull(configs);
   }
 
   String getTargetUrl() {
@@ -88,7 +94,11 @@ final class SimpleCrawlAction extends RecursiveAction {
                 // This is a new CrawlTarget, performs the crawl and spawn new actions for the links
                 // extracted from the crawl response.
                 HttpResponse httpResponse =
-                    httpClient.send(buildHttpRequest(crawlTarget), crawlConfig.getNetworkService());
+                    httpClient.send(
+                        buildHttpRequest(crawlTarget),
+                        NetworkService.newBuilder()
+                            .setNetworkEndpoint(crawlConfig.getNetworkEndpoint())
+                            .build());
                 logger.atInfo().log(
                     "SimpleCrawlAction visited target '%s' with method '%s' at depth '%d',"
                         + " response code: %d.",
@@ -143,8 +153,14 @@ final class SimpleCrawlAction extends RecursiveAction {
                     .orElse(Stream.empty()))
             // Ignore invalid CrawlTarget urls.
             .filter(SimpleCrawlAction::isValidCrawlTarget)
+            // Map CrawlTarget with `localhost` host to the one matching the crawl scope.
+            .map(crawlTarget -> normalizeHost(crawlConfig, crawlTarget))
             // Ignore out-of-scope URLs.
             .filter(crawlTarget -> CrawlConfigUtils.isCrawlTargetInScope(crawlConfig, crawlTarget))
+            .filter(
+                crawlTarget ->
+                    !CrawlConfigUtils.isCrawlTargetInBlockList(
+                        crawlTarget, configs.getPathExclusions()))
             .map(this::newCrawlAction)
             .collect(toImmutableSet());
     invokeAll(newCrawlActions);
@@ -158,6 +174,6 @@ final class SimpleCrawlAction extends RecursiveAction {
 
   private SimpleCrawlAction newCrawlAction(CrawlTarget newCrawlTarget) {
     return new SimpleCrawlAction(
-        currentDepth + 1, httpClient, crawlConfig, newCrawlTarget, crawlerResults);
+        currentDepth + 1, httpClient, crawlConfig, newCrawlTarget, crawlerResults, configs);
   }
 }

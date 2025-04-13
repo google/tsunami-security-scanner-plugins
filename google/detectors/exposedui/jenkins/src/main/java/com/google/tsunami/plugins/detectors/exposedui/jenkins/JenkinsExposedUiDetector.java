@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
@@ -28,7 +29,7 @@ import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
-import com.google.tsunami.plugin.annotations.ForServiceName;
+import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
@@ -66,9 +67,15 @@ import org.jsoup.select.Elements;
     author = "Tsunami Team (tsunami-dev@google.com)",
     bootstrapModule = JenkinsExposedUiDetectorBootstrapModule.class)
 
-@ForServiceName({"http", "https"})
+@ForWebService
 public final class JenkinsExposedUiDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+
+  @VisibleForTesting
+  static final String FINDING_RECOMMENDATION_TEXT = "If it is necessary to keep running this "
+      + "instance of Jenkins, DO NOT expose it externally, in favor of using SSH tunnels "
+      + "to access it. In addition, set up authentication on this Jenkins instance. "
+      + "See https://jenkins.io/doc/book/system-administration/security/.";
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -133,7 +140,8 @@ public final class JenkinsExposedUiDetector implements VulnDetector {
                 .setDescription(
                     "Unauthenticated Jenkins instance allows anonymous users to create arbitrary"
                         + " projects, which usually leads to code downloading from the internet"
-                        + " and remote code executions."))
+                        + " and remote code executions.")
+                .setRecommendation(FINDING_RECOMMENDATION_TEXT))
         .build();
   }
 
