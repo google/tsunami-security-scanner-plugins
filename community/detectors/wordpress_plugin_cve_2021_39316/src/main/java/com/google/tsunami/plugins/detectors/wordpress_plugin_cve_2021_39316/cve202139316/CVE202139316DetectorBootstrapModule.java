@@ -17,17 +17,15 @@ package com.google.tsunami.plugins.detectors.cves.cve202139316;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-/**
- * An example Guice module that bootstraps the {@link CVE202139316VulnDetector}.
- */
+/** An example Guice module that bootstraps the {@link CVE202139316VulnDetector}. */
 public final class CVE202139316DetectorBootstrapModule extends PluginBootstrapModule {
 
-	@Override
-	protected void configurePlugin() {
-		// Tsunami relies heavily on Guice (https://github.com/google/guice). All Guice bindings for
-		// your plugin should be implemented here.
+  @Override
+  protected void configurePlugin() {
+    // Tsunami relies heavily on Guice (https://github.com/google/guice). All Guice bindings for
+    // your plugin should be implemented here.
 
-		// registerPlugin method is required in order for the Tsunami scanner to identify your plugin.
-		registerPlugin(CVE202139316VulnDetector.class);
-	}
+    // registerPlugin method is required in order for the Tsunami scanner to identify your plugin.
+    registerPlugin(CVE202139316VulnDetector.class);
+  }
 }
