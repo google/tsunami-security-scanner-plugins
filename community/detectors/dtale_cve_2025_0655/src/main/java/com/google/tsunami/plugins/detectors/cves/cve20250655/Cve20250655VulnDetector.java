@@ -127,7 +127,7 @@ public final class Cve20250655VulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(this::isWebServiceOrUnknownService)
+                .filter(this::isDtaleWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
@@ -154,7 +154,7 @@ public final class Cve20250655VulnDetector implements VulnDetector {
     }
   }
 
-  private boolean isWebServiceOrUnknownService(NetworkService networkService) {
+  private boolean isDtaleWebService(NetworkService networkService) {
     return NetworkServiceUtils.isWebService(networkService)
         && checkDtaleFingerprint(networkService);
   }
