@@ -50,7 +50,7 @@ import javax.inject.Inject;
     type = PluginType.VULN_DETECTION,
     name = "FlowiseExposedUiDetector",
     version = "0.1",
-    description = "This detector checks whether a Flowise UI installation is exposed.",
+    description = "This detector checks whether a Flowise UI installation is exposed without proper authentication.",
     author = "yuradoc (yuradoc.research@gmail.com)",
     bootstrapModule = FlowiseExposedUiDetectorBootstrapModule.class)
 public final class FlowiseExposedUiDetector implements VulnDetector {
