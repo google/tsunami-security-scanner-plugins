@@ -156,7 +156,9 @@ public final class ComfyUiFileReadViaSavePathTest {
         .setVulnerability(
             Vulnerability.newBuilder()
                 .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher(VULNERABILITY_REPORT_PUBLISHER))
+                    VulnerabilityId.newBuilder()
+                        .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
+                        .setValue("COMFYUI_2025_FILE_READ_SAVEPATH"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle(VULNERABILITY_REPORT_TITLE)
                 .setDescription(VULNERABILITY_REPORT_DESCRIPTION)

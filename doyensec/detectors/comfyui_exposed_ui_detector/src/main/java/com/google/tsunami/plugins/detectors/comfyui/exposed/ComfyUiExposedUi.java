@@ -190,7 +190,9 @@ public final class ComfyUiExposedUi implements VulnDetector {
         .setVulnerability(
             Vulnerability.newBuilder()
                 .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher(VULNERABILITY_REPORT_PUBLISHER))
+                    VulnerabilityId.newBuilder()
+                        .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
+                        .setValue("COMFYUI_EXPOSED_UI"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle(VULNERABILITY_REPORT_TITLE)
                 .setDescription(VULNERABILITY_REPORT_DESCRIPTION)
