@@ -18,7 +18,7 @@ package com.google.tsunami.plugins.detectors.cve.cve20241483;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-/** An example Guice module that bootstraps the {@link Cve20241483Detector}. */
+/** A {@link PluginBootstrapModule} for {@link Cve20241483Detector}. */
 public final class Cve20241483DetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
