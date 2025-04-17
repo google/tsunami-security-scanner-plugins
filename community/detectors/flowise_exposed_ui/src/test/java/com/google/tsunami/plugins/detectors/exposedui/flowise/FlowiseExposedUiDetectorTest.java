@@ -11,11 +11,6 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
-
-import java.io.IOException;
-import java.time.Instant;
-import javax.inject.Inject;
-
 import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
@@ -27,6 +22,9 @@ import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
+import java.io.IOException;
+import java.time.Instant;
+import javax.inject.Inject;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.After;
@@ -59,9 +57,9 @@ public final class FlowiseExposedUiDetectorTest {
         .injectMembers(this);
 
     targetInfo =
-            TargetInfo.newBuilder()
-                    .addNetworkEndpoints(NetworkEndpointUtils.forHostname(mockWebServer.getHostName()))
-                    .build();
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(NetworkEndpointUtils.forHostname(mockWebServer.getHostName()))
+            .build();
     service =
         NetworkService.newBuilder()
             .setNetworkEndpoint(

@@ -50,7 +50,9 @@ import javax.inject.Inject;
     type = PluginType.VULN_DETECTION,
     name = "FlowiseExposedUiDetector",
     version = "0.1",
-    description = "This detector checks whether a Flowise UI installation is exposed without proper authentication.",
+    description =
+        "This detector checks whether a Flowise UI installation is exposed without proper"
+            + " authentication.",
     author = "yuradoc (yuradoc.research@gmail.com)",
     bootstrapModule = FlowiseExposedUiDetectorBootstrapModule.class)
 public final class FlowiseExposedUiDetector implements VulnDetector {
@@ -87,7 +89,8 @@ public final class FlowiseExposedUiDetector implements VulnDetector {
     HttpResponse response;
     try {
       // plain GET request to check Flowise UI availability.
-      response = httpClient.send(HttpRequest.get(targetUri).withEmptyHeaders().build(), networkService);
+      response =
+          httpClient.send(HttpRequest.get(targetUri).withEmptyHeaders().build(), networkService);
       if (!(response.bodyString().isPresent() && response.bodyString().get().contains("Flowise"))) {
         return false;
       }
