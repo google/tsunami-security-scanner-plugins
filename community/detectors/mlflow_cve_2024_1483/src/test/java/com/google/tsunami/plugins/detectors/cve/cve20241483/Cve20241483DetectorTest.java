@@ -51,7 +51,6 @@ import org.junit.runners.JUnit4;
 /** Unit tests for {@link Cve20241483Detector}. */
 @RunWith(JUnit4.class)
 public final class Cve20241483DetectorTest {
-  // Tsunami provides several testing utilities to make your lives easier with unit test.
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
