@@ -211,7 +211,7 @@ public final class Cve20241483Detector implements VulnDetector {
                             post(registerModelUrl)
                                     .setHeaders(HttpHeaders.builder()
                                             .addHeader(USER_AGENT, "TSUNAMI_SCANNER")
-                                            .addHeader("Content-Type","application/json")
+                                            .addHeader(CONTENT_TYPE,  MediaType.JSON_UTF_8.toString())
                                             .build())
                                     .setRequestBody(ByteString.copyFromUtf8(payload))
                                     .build());
