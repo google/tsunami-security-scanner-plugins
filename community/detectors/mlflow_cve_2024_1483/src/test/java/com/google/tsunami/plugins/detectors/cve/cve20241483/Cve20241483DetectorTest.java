@@ -68,7 +68,7 @@ public final class Cve20241483DetectorTest {
             new Cve20241483DetectorBootstrapModule(),
             new HttpClientModule.Builder().build())
         .injectMembers(this);
-    
+
     service =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
@@ -91,34 +91,52 @@ public final class Cve20241483DetectorTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-    mockWebServer.enqueue(new MockResponse()
-        .setBody("<title>MLflow</title>")
-        .setResponseCode(200));
-    mockWebServer.enqueue(new MockResponse()
-        .setBody("{\"experiment_id\": \"827049542911897353\"}")
-        .setResponseCode(200));
-    mockWebServer.enqueue(new MockResponse()
-        .setBody("{\"run\": {\"info\": {\"run_uuid\": \"cd867f09c62b4bf69dc6c76193355709\", \"experiment_id\": \"827049542911897353\", \"run_name\": \"hilarious-moth-534\", \"user_id\": \"\", \"status\": \"RUNNING\", \"start_time\": 0, \"artifact_uri\": \"http:///cd867f09c62b4bf69dc6c76193355709/artifacts#/../../../../../../../../../../../../../../etc/\", \"lifecycle_stage\": \"active\", \"run_id\": \"cd867f09c62b4bf69dc6c76193355709\"}, \"data\": {\"tags\": [{\"key\": \"mlflow.runName\", \"value\": \"hilarious-moth-534\"}]}, \"inputs\": {}}}\n")
-        .setResponseCode(200));
-    mockWebServer.enqueue(new MockResponse()
-        .setBody("{\"registered_model\": {\"name\": \"tsunami_scanner_TJGa\", \"creation_timestamp\": 1742128371105, \"last_updated_timestamp\": 1742128371105}}\n")
-        .setResponseCode(200));
-    mockWebServer.enqueue(new MockResponse()
-        .setBody("{\"model_version\": {\"name\": \"tsunami_scanner_TJGa\", \"version\": \"1\", \"creation_timestamp\": 1742128371109, \"last_updated_timestamp\": 1742128371109, \"current_stage\": \"None\", \"description\": \"\", \"source\": \"file:///etc/\", \"run_id\": \"cd867f09c62b4bf69dc6c76193355709\", \"status\": \"READY\", \"run_link\": \"\"}}")
-        .setResponseCode(200));
-    mockWebServer.enqueue(new MockResponse()
-        .setBody("root:x:0:0:root:/root:/bin/bash")
-        .setResponseCode(200));
+    mockWebServer.enqueue(new MockResponse().setBody("<title>MLflow</title>").setResponseCode(200));
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setBody("{\"experiment_id\": \"827049542911897353\"}")
+            .setResponseCode(200));
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setBody(
+                "{\"run\": {\"info\": {\"run_uuid\": \"cd867f09c62b4bf69dc6c76193355709\","
+                    + " \"experiment_id\": \"827049542911897353\", \"run_name\":"
+                    + " \"hilarious-moth-534\", \"user_id\": \"\", \"status\": \"RUNNING\","
+                    + " \"start_time\": 0, \"artifact_uri\":"
+                    + " \"http:///cd867f09c62b4bf69dc6c76193355709/artifacts#/../../../../../../../../../../../../../../etc/\","
+                    + " \"lifecycle_stage\": \"active\", \"run_id\":"
+                    + " \"cd867f09c62b4bf69dc6c76193355709\"}, \"data\": {\"tags\": [{\"key\":"
+                    + " \"mlflow.runName\", \"value\": \"hilarious-moth-534\"}]}, \"inputs\":"
+                    + " {}}}\n")
+            .setResponseCode(200));
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setBody(
+                "{\"registered_model\": {\"name\": \"tsunami_scanner_TJGa\","
+                    + " \"creation_timestamp\": 1742128371105, \"last_updated_timestamp\":"
+                    + " 1742128371105}}\n")
+            .setResponseCode(200));
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setBody(
+                "{\"model_version\": {\"name\": \"tsunami_scanner_TJGa\", \"version\": \"1\","
+                    + " \"creation_timestamp\": 1742128371109, \"last_updated_timestamp\":"
+                    + " 1742128371109, \"current_stage\": \"None\", \"description\": \"\","
+                    + " \"source\": \"file:///etc/\", \"run_id\":"
+                    + " \"cd867f09c62b4bf69dc6c76193355709\", \"status\": \"READY\", \"run_link\":"
+                    + " \"\"}}")
+            .setResponseCode(200));
+    mockWebServer.enqueue(
+        new MockResponse().setBody("root:x:0:0:root:/root:/bin/bash").setResponseCode(200));
 
-    DetectionReport actual = 
+    DetectionReport actual =
         detector.detect(targetInfo, ImmutableList.of(service)).getDetectionReports(0);
 
-    DetectionReport expected = 
+    DetectionReport expected =
         DetectionReport.newBuilder()
             .setTargetInfo(targetInfo)
             .setNetworkService(service)
-            .setDetectionTimestamp(
-                Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+            .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
             .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
             .setVulnerability(
                 Vulnerability.newBuilder()
@@ -129,17 +147,14 @@ public final class Cve20241483DetectorTest {
                     .setSeverity(Severity.HIGH)
                     .setTitle("CVE-2024-1483 MLFlow Path Traversal")
                     .setDescription(VULN_DESCRIPTION)
-                    .setRecommendation("Upgrade MLflow version to 2.9.2 or later"))
+                    .setRecommendation("Upgrade MLflow version to 2.12.1 and above"))
             .build();
     assertThat(actual).isEqualTo(expected);
   }
 
   @Test
   public void detect_whenNotVulnerable_returnsNoVulnerability() throws IOException {
-    MockResponse response = 
-        new MockResponse()
-            .setBody("Hello World")
-            .setResponseCode(200);
+    MockResponse response = new MockResponse().setBody("Hello World").setResponseCode(200);
     mockWebServer.enqueue(response);
 
     ImmutableList<NetworkService> httpServices =
@@ -159,5 +174,4 @@ public final class Cve20241483DetectorTest {
 
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
-
 }
