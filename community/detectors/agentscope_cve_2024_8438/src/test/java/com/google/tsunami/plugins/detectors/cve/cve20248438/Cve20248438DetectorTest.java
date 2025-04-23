@@ -76,13 +76,13 @@ public final class Cve20248438DetectorTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-    mockWebResponse("root:x:0:0:root:/root:/bin/bash");
+    mockWebResponse("root:");
     NetworkService service =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
             .setTransportProtocol(TransportProtocol.TCP)
-            .setSoftware(Software.newBuilder().setName("AgentScope Studio"))
+            .setSoftware(Software.newBuilder().setName("http"))
             .setServiceName("http")
             .build();
     TargetInfo targetInfo =
