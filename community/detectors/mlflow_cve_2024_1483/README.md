@@ -22,6 +22,6 @@ Using `gradlew`:
 Tsunami identifiable jar file is located at `build/libs` directory.
 
 
-Limitation: 
+## Limitations
 - This method relies on reaching /etc/passwd to confirm traversal; if unreachable, it may cause false negatives. 
 - Accessing /etc/passwd can expose sensitive system data, so use with caution and only in controlled environments.
