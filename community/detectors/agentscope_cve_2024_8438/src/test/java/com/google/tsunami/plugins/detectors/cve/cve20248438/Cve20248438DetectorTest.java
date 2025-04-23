@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Google LLC
+ * Copyright 2020 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.google.tsunami.plugins.detectors.cve.cve20248438;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static com.google.tsunami.plugins.detectors.cve.cve20248438.Cve20248438Detector.DETECTION_STRING;
 import static com.google.tsunami.plugins.detectors.cve.cve20248438.Cve20248438Detector.VULN_DESCRIPTION;
 
 import com.google.common.collect.ImmutableList;
@@ -76,7 +77,7 @@ public final class Cve20248438DetectorTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability() throws IOException {
-    mockWebResponse("root:");
+    mockWebResponse(DETECTION_STRING);
     NetworkService service =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
