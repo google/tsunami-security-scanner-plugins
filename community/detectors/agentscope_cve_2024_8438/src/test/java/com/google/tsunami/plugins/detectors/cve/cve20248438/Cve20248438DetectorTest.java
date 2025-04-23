@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.google.tsunami.plugins.detectors.cve.cve20248438;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
@@ -38,11 +37,14 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
+
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

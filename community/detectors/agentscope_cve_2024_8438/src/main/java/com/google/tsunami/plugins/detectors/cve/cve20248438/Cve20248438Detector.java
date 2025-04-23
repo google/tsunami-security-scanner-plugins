@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.google.tsunami.plugins.detectors.cve.cve20248438;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -42,10 +41,10 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
+
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.regex.Pattern;
 import javax.inject.Inject;
 
 /** A {@link VulnDetector} that detects the CVE-2024-8438 . */
@@ -60,7 +59,7 @@ import javax.inject.Inject;
 public final class Cve20248438Detector implements VulnDetector {
 
   @VisibleForTesting
-  static final String DETECTION_STRING = Pattern.compile("(root:[x*]:0:0:)");
+  static final String DETECTION_STRING = "root:";
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION =
@@ -79,8 +78,8 @@ public final class Cve20248438Detector implements VulnDetector {
   
   @Inject
   Cve20248438Detector(@UtcClock Clock utcClock, HttpClient httpClient) {
-    this.utcClock = checkNotNull(utcClock);
-    this.httpClient = checkNotNull(httpClient);
+      this.utcClock = checkNotNull(utcClock);
+      this.httpClient = checkNotNull(httpClient);
   }
 
 
