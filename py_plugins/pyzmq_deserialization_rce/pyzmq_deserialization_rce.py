@@ -83,7 +83,7 @@ class PyZmqRceDetector(tsunami_plugin.VulnDetector):
             for service in matched_services
             if self._IsPyZmqTcpService(service)
         ]
-        logging.info('Found %d \n', vulnerable_services)
+        logging.info('Found vulnerable service:\n%s\n', vulnerable_services)
         return detection_pb2.DetectionReportList(
             detection_reports=[
                 self._BuildDetectionReport(target, service)
