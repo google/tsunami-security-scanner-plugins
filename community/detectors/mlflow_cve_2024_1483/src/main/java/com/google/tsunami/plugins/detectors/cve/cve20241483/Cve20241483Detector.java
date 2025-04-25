@@ -68,8 +68,8 @@ public final class Cve20241483Detector implements VulnDetector {
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION =
-      "A path traversal vulnerability exists in mlflow/mlflow version < 2.12.1, allowing attackers to"
-          + " access arbitrary files on the server";
+      "A path traversal vulnerability exists in mlflow/mlflow version < 2.12.1, allowing attackers"
+          + " to access arbitrary files on the server";
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private final Clock utcClock;
