@@ -18,14 +18,10 @@ package com.google.tsunami.plugins.exposedui;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
-import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -36,7 +32,6 @@ import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
-import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionReportList.Builder;
@@ -46,21 +41,19 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
 
-/**
- * A VulnDetector plugin for Exposed Ollama API Server.
- */
+/** A VulnDetector plugin for Exposed Ollama API Server. */
 @PluginInfo(
         type = PluginType.VULN_DETECTION,
         name = "Exposed Ollama API Server Detector",
         version = "0.1",
         description =
-                "This detector checks for a publicly exposed Ollama REST API which can be abused by an attacker for management tasks.",
+                "This detector checks for a publicly exposed Ollama REST API which can be abused by an"
+                        + " attacker for management tasks.",
         author = "timoles",
         bootstrapModule = ExposedOllamaApiServerDetectorModule.class)
 @ForWebService
@@ -70,17 +63,16 @@ public final class ExposedOllamaApiServerDetector implements VulnDetector {
     private final Clock utcClock;
     private final HttpClient httpClient;
 
-
     @VisibleForTesting
     static final String RECOMMENDATION =
-            "Don't expose the Ollama Rest API to unauthorized users. According to the official documentation access to the API server must be restricted through a reverse proxy which implements necessary authentication checks.";
+            "Don't expose the Ollama Rest API to unauthorized users. According to the official"
+                    + " documentation access to the API server must be restricted through a reverse proxy"
+                    + " which implements necessary authentication checks.";
 
     @Inject
-    ExposedOllamaApiServerDetector(
-            @UtcClock Clock utcClock, HttpClient httpClient) {
+    ExposedOllamaApiServerDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
         this.utcClock = checkNotNull(utcClock);
         this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(true).build();
-
     }
 
     @Override
@@ -98,7 +90,11 @@ public final class ExposedOllamaApiServerDetector implements VulnDetector {
                                         buildDetectionReport(
                                                 targetInfo,
                                                 networkService,
-                                                "An Ollama API server is exposed to the network. This was confirmed by investigating the API response for typical response artifacts.  An attacker can abuse an exposed API server to, for example, download or modify existing LLM models, or misuse resources by using the LLM chat functionality.",
+                                                "An Ollama API server is exposed to the network. This was confirmed by"
+                                                        + " investigating the API response for typical response artifacts.  An"
+                                                        + " attacker can abuse an exposed API server to, for example, download"
+                                                        + " or modify existing LLM models, or misuse resources by using the LLM"
+                                                        + " chat functionality.",
                                                 Severity.HIGH));
                             }
                         });
@@ -112,10 +108,10 @@ public final class ExposedOllamaApiServerDetector implements VulnDetector {
         try {
             HttpResponse landingPageResponse =
                     this.httpClient.send(get(ollamaApiLandingPageUrl).withEmptyHeaders().build());
-            if (!(landingPageResponse.status() == HttpStatus.OK && landingPageResponse.bodyString().isPresent())) {
+            if (!(landingPageResponse.status() == HttpStatus.OK
+                    && landingPageResponse.bodyString().isPresent())) {
                 return false;
             }
-
 
             if (landingPageResponse.bodyString().get().contains("Ollama is running")) {
                 return true;
@@ -127,10 +123,7 @@ public final class ExposedOllamaApiServerDetector implements VulnDetector {
         }
 
         return false;
-
-
     }
-
 
     private boolean isServiceVulnerableCheckResponse(NetworkService networkService) {
 
