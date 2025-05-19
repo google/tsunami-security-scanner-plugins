@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, macos-latest ]
-        java: [ 11 ]
+        java: [ 21 ]
     runs-on: ${{ matrix.os }}
     name: 'Build example plugins on ${{ matrix.os }} using Java ${{ matrix.java }}'
     steps:
