@@ -121,7 +121,7 @@ public final class Cve202017519Detector implements VulnDetector {
 
       return httpResponse.bodyString().orElseGet(() -> "").contains(DETECTION_STRING);
     } catch (IOException e) {
-      logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
+      logger.atWarning().withCause(e).log("Request to target %s failed", targetUri);
       // Avoid false positives.
       return false;
     }
@@ -178,12 +178,11 @@ public final class Cve202017519Detector implements VulnDetector {
       return (logResponse.logs != null);
     } catch (JsonSyntaxException e) {
       logger.atInfo().withCause(e).log(
-          "Endpoint %s does not return the expected JSON. Possibly not Flink Service.",
-          networkService);
+          "Endpoint %s does not return the expected JSON. Possibly not Flink Service.", targetUri);
       // Avoid false positives.
       return false;
     } catch (IOException e) {
-      logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
+      logger.atWarning().withCause(e).log("Request to target %s failed", targetUri);
       // Avoid false positives.
       return false;
     }

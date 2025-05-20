@@ -14,15 +14,31 @@ repositories {
 
 ext {
     tsunamiVersion = 'latest.release'
-    protobufVersion = '4.29.1'
+    protobufVersion = '3.25.5'
     protocVersion = protobufVersion
-    grpcVersion = '1.68.1'
+    grpcVersion = '1.72.0'
     jspecifyVersion = 'latest.release'
 
-    okhttpVersion = 'latest.release'
-    junitVersion = 'latest.release'
-    truthVersion = 'latest.release'
+    okhttpVersion = '3.12.0'
+    junitVersion = '4.13'
+    truthVersion = '1.4.0'
     testParamInjectorVersion = 'latest.release'
+}
+
+dependencies {
+    implementation "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+    implementation "com.google.tsunami:tsunami-common:${tsunamiVersion}"
+    implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
+    implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
+    implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
+    implementation "org.jspecify:jspecify:${jspecifyVersion}"
+
+    testImplementation "com.google.truth:truth:${truthVersion}"
+    testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
+    testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"
+    testImplementation "com.squareup.okhttp3:mockwebserver:${okhttpVersion}"
+    testImplementation "com.google.testparameterinjector:test-parameter-injector:${testParamInjectorVersion}"
+    testImplementation "junit:junit:${junitVersion}"
 }
 
 abstract class CompileTextproto extends DefaultTask {
@@ -168,20 +184,4 @@ java {
         }
         maxHeapSize = '1500m'
     }
-}
-
-dependencies {
-    implementation "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
-    implementation "com.google.tsunami:tsunami-common:${tsunamiVersion}"
-    implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
-    implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
-    implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
-    implementation "org.jspecify:jspecify:${jspecifyVersion}"
-
-    testImplementation "com.google.truth:truth:${truthVersion}"
-    testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
-    testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"
-    testImplementation "com.squareup.okhttp3:mockwebserver:${okhttpVersion}"
-    testImplementation "com.google.testparameterinjector:test-parameter-injector:${testParamInjectorVersion}"
-    testImplementation "junit:junit:${junitVersion}"
 }
