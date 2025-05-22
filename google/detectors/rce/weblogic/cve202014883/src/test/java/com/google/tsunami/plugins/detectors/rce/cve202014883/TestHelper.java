@@ -64,6 +64,8 @@ final class TestHelper {
                         .setPublisher(
                             WebLogicAdminConsoleRceDetector.VULNERABILITY_REPORT_PUBLISHER)
                         .setValue(WebLogicAdminConsoleRceDetector.VULNERABILITY_REPORT_ID))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-14883"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle(VULNERABILITY_REPORT_TITLE)
                 .setDescription(VULN_DESCRIPTION)

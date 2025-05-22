@@ -147,6 +147,8 @@ public final class Cve202141773DetectorWithPayload implements VulnDetector {
                         .setPublisher("GOOGLE")
                         .setValue("CVE_2021_41773"))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-41773"))
                 .setTitle("Apache RCE Vulnerability CVE-2021-41773")
                 .setDescription("This version of Apache is vulnerable to a Remote Code Execution "
                   + "vulnerability described in CVE-2021-41773. The attacker has the user "

@@ -214,6 +214,8 @@ public final class SolrVelocityTemplateRceDetector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2019_17558"))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2019-17558"))
                 .setTitle("Apache Solr Velocity Template RCE (CVE-2019-17558)")
                 .setDescription(
                     "Apache Solr 5.0.0 to Apache Solr 8.3.1 are vulnerable to a Remote Code"

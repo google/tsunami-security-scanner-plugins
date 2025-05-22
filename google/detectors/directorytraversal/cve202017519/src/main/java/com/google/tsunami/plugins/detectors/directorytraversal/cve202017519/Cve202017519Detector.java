@@ -140,6 +140,8 @@ public final class Cve202017519Detector implements VulnDetector {
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2020_17519"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Apache Flink Unauthorized Directory Traversal (CVE-2020-17519)")
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-17519"))
                 .setDescription(
                     "A change introduced in Apache Flink 1.11.0 (and released in 1.11.1 and "
                         + "1.11.2 as well) allows attackers to read any file on the local "

@@ -124,6 +124,10 @@ public final class MantisBTAuthenticationBypassDetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("GOOGLE")
                                 .setValue("CVE_2017_7615"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2017-7615"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("MantisBT Authentication Bypass (CVE-2017-7615)")
                         .setDescription(

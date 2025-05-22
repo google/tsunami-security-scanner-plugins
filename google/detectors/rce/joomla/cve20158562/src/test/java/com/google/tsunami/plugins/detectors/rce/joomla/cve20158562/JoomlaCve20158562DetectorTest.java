@@ -102,12 +102,13 @@ public final class JoomlaCve20158562DetectorTest {
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
                     Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2015_8562"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("GOOGLE")
+                        .setValue("CVE_2015_8562"))
+                .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2015-8562"))
+                .setSeverity(Severity.CRITICAL)
+                .setTitle(
                             "Joomla RCE via PHP object injection in HTTP headers"
                                 + " (CVE-2015-8562)")
                         .setDescription(

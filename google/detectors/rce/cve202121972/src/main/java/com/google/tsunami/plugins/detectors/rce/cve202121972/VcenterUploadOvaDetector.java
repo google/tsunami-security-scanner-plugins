@@ -130,6 +130,8 @@ public final class VcenterUploadOvaDetector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2021_21972"))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-21972"))
                 .setTitle("vCenter OVA Upload RCE")
                 .setDescription(
                     "The vSphere Client (HTML5) contains a remote code execution vulnerability in a"

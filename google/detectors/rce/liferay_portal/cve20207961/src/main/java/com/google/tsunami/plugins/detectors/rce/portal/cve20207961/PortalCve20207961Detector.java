@@ -199,6 +199,8 @@ public final class PortalCve20207961Detector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2020_7961"))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-7961"))
                 .setTitle("Liferay Portal Pre-Auth RCE Vulnerability (CVE-2020-7961)")
                 .setDescription(
                     "Deserialization of Untrusted Data in Liferay Portal prior to 7.2.1 CE GA2"

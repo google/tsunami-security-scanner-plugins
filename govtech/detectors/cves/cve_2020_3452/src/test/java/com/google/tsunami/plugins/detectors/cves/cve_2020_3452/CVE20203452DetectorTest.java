@@ -108,6 +108,10 @@ public final class CVE20203452DetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("GOVTECH")
                                 .setValue("CVE_2020_3452"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2020-3452"))
                         .setSeverity(Severity.HIGH)
                         .setTitle("CVE-2020-3452")
                         .setCvssV2("5.0")

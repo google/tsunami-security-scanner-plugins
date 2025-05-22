@@ -163,6 +163,7 @@ public final class TeamCityAuthBypassDetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("GOOGLE")
                                 .setValue("CVE_2023_42793"))
+                        .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-42793"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle(VULNERABILITY_REPORT_TITLE)
                         .setDescription(VULN_DESCRIPTION)

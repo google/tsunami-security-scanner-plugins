@@ -162,6 +162,8 @@ public final class ApacheStrutsNamespaceRceDetector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2018_11776"))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2018-11776"))
                 .setTitle("Apache Struts Command Injection via Namespace (CVE-2018-11776)")
                 .setDescription(
                     "Apache Struts versions 2.3 to 2.3.34 and 2.5 to 2.5.16 suffer from possible"

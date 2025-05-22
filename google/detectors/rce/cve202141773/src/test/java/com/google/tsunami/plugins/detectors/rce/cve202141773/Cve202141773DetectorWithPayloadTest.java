@@ -127,6 +127,10 @@ public final class Cve202141773DetectorWithPayloadTest {
                         VulnerabilityId.newBuilder()
                             .setPublisher("GOOGLE")
                             .setValue("CVE_2021_41773"))
+                    .addRelatedId(
+                        VulnerabilityId.newBuilder()
+                            .setPublisher("CVE")
+                            .setValue("CVE-2021-41773"))
                     .setSeverity(Severity.CRITICAL)
                     .setTitle("Apache RCE Vulnerability CVE-2021-41773")
                     .setDescription("This version of Apache is vulnerable to a Remote Code "
@@ -209,6 +213,10 @@ public final class Cve202141773DetectorWithPayloadTest {
                         VulnerabilityId.newBuilder()
                             .setPublisher("GOOGLE")
                             .setValue("CVE_2021_41773"))
+                    .addRelatedId(
+                        VulnerabilityId.newBuilder()
+                            .setPublisher("CVE")
+                            .setValue("CVE-2021-41773"))
                     .setSeverity(Severity.CRITICAL)
                     .setTitle("Apache RCE Vulnerability CVE-2021-41773")
                     .setDescription("This version of Apache is vulnerable to a Remote Code "

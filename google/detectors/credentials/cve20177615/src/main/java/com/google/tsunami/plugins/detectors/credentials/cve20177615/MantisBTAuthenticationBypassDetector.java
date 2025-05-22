@@ -131,6 +131,8 @@ public final class MantisBTAuthenticationBypassDetector implements VulnDetector 
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2017_7615"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("MantisBT Authentication Bypass (CVE-2017-7615)")
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2017-7615"))
                 .setDescription(
                     "MantisBT through 2.3.0 allows arbitrary password reset and unauthenticated"
                         + " admin access via an empty confirm_hash value to verify.php."))

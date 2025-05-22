@@ -117,6 +117,8 @@ public final class VBulletinCve201916759Detector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2019_16759"))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2019-16759"))
                 .setTitle("vBulletin Pre-Auth RCE Vulnerability (CVE-2019-16759)")
                 .setDescription(
                     "Unauthenticated attacked can gain privileged access and control over any"

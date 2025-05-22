@@ -112,6 +112,10 @@ public final class Cve202017519DetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("GOOGLE")
                                 .setValue("CVE_2020_17519"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2020-17519"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Apache Flink Unauthorized Directory Traversal (CVE-2020-17519)")
                         .setDescription(

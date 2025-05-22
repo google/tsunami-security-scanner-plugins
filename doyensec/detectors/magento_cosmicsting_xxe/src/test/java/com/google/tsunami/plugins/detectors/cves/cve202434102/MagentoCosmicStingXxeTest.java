@@ -209,6 +209,10 @@ public final class MagentoCosmicStingXxeTest {
                 .setTitle(VULNERABILITY_REPORT_TITLE)
                 .setDescription(VULNERABILITY_REPORT_DESCRIPTION_CALLBACK)
                 .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2024-34102"))
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
                         .setTextData(TextData.newBuilder().setText(additionalDetails))))
@@ -234,6 +238,10 @@ public final class MagentoCosmicStingXxeTest {
                 .setTitle(VULNERABILITY_REPORT_TITLE)
                 .setDescription(VULNERABILITY_REPORT_DESCRIPTION_RESPONSE_MATCHING)
                 .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2024-34102"))
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
                         .setTextData(TextData.newBuilder().setText(additionalDetails))))

@@ -112,12 +112,13 @@ public final class ApacheStrutsInsecureDeserializeDetectorTest {
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
                     Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2017_9805"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("GOOGLE")
+                        .setValue("CVE_2017_9805"))
+                .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2017-9805"))
+                .setSeverity(Severity.CRITICAL)
+                .setTitle(
                             "Apache Struts Command Injection via Unsafe Deserialization"
                                 + " (CVE-2017-9805)")
                         .setDescription(

@@ -116,6 +116,8 @@ public final class Cve20121823Detector implements VulnDetector {
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2012_1823"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2012-1823")
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2012-1823"))
                 .setDescription(
                     "sapi/cgi/cgi_main.c in PHP before 5.3.12 and 5.4.x before 5.4.2, when"
                         + " configured as a CGI script (aka php-cgi), does not properly handle"

@@ -188,6 +188,7 @@ public final class GhostcatVulnDetectorTest {
         .setVulnerability(
             Vulnerability.newBuilder()
                 .setMainId(VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("GHOSTCAT"))
+                .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-1938"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Apache Tomcat AJP File Read/Inclusion Vulnerability")
                 .setDescription(

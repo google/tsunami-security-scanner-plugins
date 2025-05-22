@@ -65,6 +65,8 @@ final class TestHelper {
                     VulnerabilityId.newBuilder()
                         .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
                         .setValue(VULNERABILITY_REPORT_ID))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-26134"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle(VULNERABILITY_REPORT_TITLE)
                 .setDescription(VULN_DESCRIPTION)

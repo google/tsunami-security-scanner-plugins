@@ -221,6 +221,8 @@ public final class TeamCityAuthBypassDetector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2023_42793"))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-42793"))
                 .setTitle(VULNERABILITY_REPORT_TITLE)
                 .setDescription(VULN_DESCRIPTION)
                 .setRecommendation(RECOMMENDATION))

@@ -134,6 +134,8 @@ public final class NodeRedDashboardDirectoryTraversalDetector implements VulnDet
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2021_3223"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Node-RED-Dashboard directory traversal vulnerability")
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-3223"))
                 .setDescription("Directory Traversal vulnerability in exposed Node-RED-Dashboard")
                 .setRecommendation("Upgrade node-red-dashboard to version 2.26.2 or greater.")
                 .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))

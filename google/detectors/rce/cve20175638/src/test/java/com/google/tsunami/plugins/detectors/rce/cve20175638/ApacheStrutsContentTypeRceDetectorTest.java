@@ -110,12 +110,13 @@ public final class ApacheStrutsContentTypeRceDetectorTest {
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
                     Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2017_5638"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("GOOGLE")
+                        .setValue("CVE_2017_5638"))
+                .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2017-5638"))
+                .setSeverity(Severity.CRITICAL)
+                .setTitle(
                             "Apache Struts Command Injection via Content-Type header "
                                 + "(CVE-2017-5638)")
                         .setDescription(

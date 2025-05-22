@@ -127,6 +127,10 @@ public final class RsyncRceDetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("GOOGLE")
                                 .setValue("RSYNC_SERVER_RCE"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2024-12084"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("CVE-2024-12084 Heap Buffer Overflow leading to Remote Code Execution in Rsync Server")
                         .setDescription(RsyncRceDetector.VULN_DESCRIPTION)

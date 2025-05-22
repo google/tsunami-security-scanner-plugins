@@ -153,6 +153,8 @@ public final class Cve20196340Detector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2019_6340"))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2019-6340"))
                 .setTitle("Drupal RCE CVE-2019-6340 Detected")
                 .setDescription(
                     "Some field types do not properly sanitize data from non-form sources in "

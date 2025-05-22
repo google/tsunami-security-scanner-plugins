@@ -178,6 +178,8 @@ public final class ApacheStrutsInsecureDeserializeDetector implements VulnDetect
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2017_9805"))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2017-9805"))
                 .setTitle(
                     "Apache Struts Command Injection via Unsafe Deserialization (CVE-2017-9805)")
                 .setDescription(

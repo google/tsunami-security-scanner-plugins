@@ -106,6 +106,10 @@ public final class VBulletinCve201916759DetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("GOOGLE")
                                 .setValue("CVE_2019_16759"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2019-16759"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("vBulletin Pre-Auth RCE Vulnerability (CVE-2019-16759)")
                         .setDescription(

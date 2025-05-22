@@ -195,6 +195,8 @@ public final class WebLogicAdminConsoleRceDetector implements VulnDetector {
                         .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
                         .setValue(VULNERABILITY_REPORT_ID))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-14883"))
                 .setTitle(VULNERABILITY_REPORT_TITLE)
                 .setDescription(VULN_DESCRIPTION)
                 .setRecommendation(RECOMMENDATION))

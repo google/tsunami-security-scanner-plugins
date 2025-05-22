@@ -136,6 +136,8 @@ public final class ApacheStrutsContentTypeRceDetector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2017_5638"))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2017-5638"))
                 .setTitle("Apache Struts Command Injection via Content-Type header (CVE-2017-5638)")
                 .setDescription(
                     "The Jakarta Multipart parser in Apache Struts 2 2.3.x before 2.3.32 and 2.5.x"

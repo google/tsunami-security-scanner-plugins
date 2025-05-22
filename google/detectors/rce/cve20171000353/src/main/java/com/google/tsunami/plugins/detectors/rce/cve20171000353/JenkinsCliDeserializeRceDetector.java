@@ -235,6 +235,8 @@ public final class JenkinsCliDeserializeRceDetector implements VulnDetector {
                         .setPublisher("GOOGLE")
                         .setValue("CVE_2017_1000353"))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2017-1000353"))
                 .setTitle("Jenkins CLI Deserialization RCE")
                 .setDescription(
                     "Jenkins versions 2.56 and earlier as well as 2.46.1 LTS and earlier are"

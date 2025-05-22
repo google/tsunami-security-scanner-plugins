@@ -102,12 +102,13 @@ public final class JenkinsCliDeserializeRceDetectorTest {
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
                     Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2017_1000353"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Jenkins CLI Deserialization RCE")
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("GOOGLE")
+                        .setValue("CVE_2017_1000353"))
+                .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2017-1000353"))
+                .setSeverity(Severity.CRITICAL)
+                .setTitle("Jenkins CLI Deserialization RCE")
                         .setDescription(
                             "Jenkins versions 2.56 and earlier as well as 2.46.1 LTS and earlier"
                                 + " are vulnerable to an unauthenticated remote code execution. An"

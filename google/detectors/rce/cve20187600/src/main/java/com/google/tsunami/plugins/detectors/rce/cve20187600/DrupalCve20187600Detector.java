@@ -133,6 +133,8 @@ public final class DrupalCve20187600Detector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2018_7600"))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2018-7600"))
                 .setTitle("Drupalgeddon 2 Detected")
                 .setDescription(
                     "This version of Drupal is vulnerable to CVE-2018-7600. Drupal versions before"

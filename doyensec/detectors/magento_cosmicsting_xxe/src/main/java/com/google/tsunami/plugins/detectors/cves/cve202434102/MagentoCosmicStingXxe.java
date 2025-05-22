@@ -450,7 +450,11 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
                 .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION)
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
-                        .setTextData(TextData.newBuilder().setText(additionalDetails))))
+                        .setTextData(TextData.newBuilder().setText(additionalDetails)))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2024-34102")))
         .build();
   }
 }

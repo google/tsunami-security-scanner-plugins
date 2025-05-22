@@ -145,6 +145,8 @@ public final class PHPUnitExposedEvalStdinDetector implements VulnDetector {
                         .setPublisher("GOOGLE")
                         .setValue("EXPOSED_PHPUNIT_EVAL_STDIN"))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2017-9841"))
                 .setTitle("CVE-2017-9841: Exposed Vulnerable eval-stdin.php in PHPUnit")
                 .setDescription(
                     "CVE-2017-9841: For vulnerable versions of PHPUnit, its eval-stdin.php script"

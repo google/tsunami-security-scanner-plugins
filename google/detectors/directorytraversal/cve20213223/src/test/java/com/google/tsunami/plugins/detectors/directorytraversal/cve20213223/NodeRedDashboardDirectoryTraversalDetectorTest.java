@@ -107,12 +107,13 @@ public final class NodeRedDashboardDirectoryTraversalDetectorTest {
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
                     Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2021_3223"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Node-RED-Dashboard directory traversal vulnerability")
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("GOOGLE")
+                        .setValue("CVE_2021_3223"))
+                .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-3223"))
+                .setSeverity(Severity.CRITICAL)
+                .setTitle("Node-RED-Dashboard directory traversal vulnerability")
                         .setDescription(
                             "Directory Traversal vulnerability in exposed Node-RED-Dashboard")
                         .setRecommendation(

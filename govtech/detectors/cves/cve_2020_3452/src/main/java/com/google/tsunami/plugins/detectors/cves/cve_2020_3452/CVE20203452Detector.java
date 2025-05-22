@@ -117,7 +117,11 @@ public final class CVE20203452Detector implements VulnDetector {
                 .setTitle("CVE-2020-3452")
                 .setCvssV2("5.0")
                 .setCvssV3("7.5")
-                .setDescription("Cisco ASA/FTD Server is vulnerable to CVE-2020-3452."))
+                .setDescription("Cisco ASA/FTD Server is vulnerable to CVE-2020-3452.")
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2020-3452")))
         .build();
   }
 }

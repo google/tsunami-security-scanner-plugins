@@ -206,6 +206,8 @@ public final class PortalCve20207961DetectorTest {
                         VulnerabilityId.newBuilder()
                             .setPublisher("GOOGLE")
                             .setValue("CVE_2020_7961"))
+                    .addRelatedId(
+                        VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-7961"))
                     .setSeverity(Severity.CRITICAL)
                     .setTitle("Liferay Portal Pre-Auth RCE Vulnerability (CVE-2020-7961)")
                     .setDescription(

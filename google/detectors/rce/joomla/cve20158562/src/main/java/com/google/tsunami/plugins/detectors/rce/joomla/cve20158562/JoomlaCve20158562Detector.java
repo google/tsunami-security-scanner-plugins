@@ -245,6 +245,8 @@ public final class JoomlaCve20158562Detector implements VulnDetector {
                 .setMainId(
                     VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2015_8562"))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2015-8562"))
                 .setTitle("Joomla RCE via PHP object injection in HTTP headers (CVE-2015-8562)")
                 .setDescription(
                     "The Joomla application is vulnerable to CVE-2015-8562, which allow remote"

@@ -193,6 +193,8 @@ public final class ConfluenceOgnlInjectionRceDetector implements VulnDetector {
                         .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
                         .setValue(VULNERABILITY_REPORT_ID))
                 .setSeverity(Severity.CRITICAL)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-26134"))
                 .setTitle(VULNERABILITY_REPORT_TITLE)
                 .setDescription(VULN_DESCRIPTION)
                 .setRecommendation(RECOMMENDATION))

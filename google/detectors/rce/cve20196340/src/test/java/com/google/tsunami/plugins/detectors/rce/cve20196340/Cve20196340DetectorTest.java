@@ -123,12 +123,13 @@ public final class Cve20196340DetectorTest {
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
                     Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2019_6340"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Drupal RCE CVE-2019-6340 Detected")
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("GOOGLE")
+                        .setValue("CVE_2019_6340"))
+                .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2019-6340"))
+                .setSeverity(Severity.CRITICAL)
+                .setTitle("Drupal RCE CVE-2019-6340 Detected")
                         .setDescription(
                             "Some field types do not properly sanitize data from non-form sources "
                                 + "in Drupal 8.5.x before 8.5.11 and Drupal 8.6.x before 8.6.10. "
