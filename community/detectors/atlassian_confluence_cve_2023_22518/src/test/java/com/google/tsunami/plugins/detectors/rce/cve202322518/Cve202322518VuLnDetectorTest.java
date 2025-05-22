@@ -119,6 +119,10 @@ public final class Cve202322518VuLnDetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE-2023-22518"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2023-22518"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle(
                             "Atlassian Confluence Data Center Improper Authorization"

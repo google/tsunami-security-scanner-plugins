@@ -226,6 +226,10 @@ public final class Cve202122205VulnDetector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2021_22205"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2021-22205"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2021-22205 GitLab CE/EE Unauthenticated RCE using ExifTool")
                 .setRecommendation(

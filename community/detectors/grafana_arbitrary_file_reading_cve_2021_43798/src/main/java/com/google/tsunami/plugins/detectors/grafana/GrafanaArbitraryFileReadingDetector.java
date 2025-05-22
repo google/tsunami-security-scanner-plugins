@@ -177,6 +177,10 @@ public class GrafanaArbitraryFileReadingDetector implements VulnDetector {
                     VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2021_43798"))
                 .setSeverity(Severity.HIGH)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2021-43798"))
                 .setTitle("Grafana Pre-Auth Arbitrary File Reading vulnerability (CVE_2021_43798)")
                 .setDescription(
                     "In Grafana 8.0.0 to 8.3.0, there is an endpoint that can be accessed "

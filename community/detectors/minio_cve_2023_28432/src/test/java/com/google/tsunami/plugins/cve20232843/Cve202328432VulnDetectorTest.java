@@ -269,6 +269,10 @@ public final class Cve202328432VulnDetectorTest {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("MINIO_INFORMATION_DISCLOSURE_CLUSTER_ENVIRONMENT"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2023-28432"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("MinIO Information Disclosure in Cluster Environment")
                 .setDescription(DESCRIPTION)

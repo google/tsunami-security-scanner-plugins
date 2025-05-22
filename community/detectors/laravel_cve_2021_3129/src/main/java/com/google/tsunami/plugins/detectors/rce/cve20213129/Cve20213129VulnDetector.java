@@ -130,6 +130,10 @@ public final class Cve20213129VulnDetector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2021_3129"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2021-3129"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2021-3129: Unauthenticated RCE in Laravel using Debug Mode")
                 .setDescription(

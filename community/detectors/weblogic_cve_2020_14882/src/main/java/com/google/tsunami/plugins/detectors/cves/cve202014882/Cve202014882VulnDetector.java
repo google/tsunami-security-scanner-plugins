@@ -137,6 +137,10 @@ public class Cve202014882VulnDetector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2020_14882"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2020-14882"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2020-14882: Weblogic management console permission bypass")
                 .setDescription(

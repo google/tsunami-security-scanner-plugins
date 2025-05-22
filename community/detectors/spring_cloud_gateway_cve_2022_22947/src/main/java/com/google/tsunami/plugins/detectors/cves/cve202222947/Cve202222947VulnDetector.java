@@ -201,6 +201,10 @@ public final class Cve202222947VulnDetector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2022_22947"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2022-22947"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2022-22947 Spring Cloud Gateway Actuator API SpEL Code Injection")
                 .setRecommendation(

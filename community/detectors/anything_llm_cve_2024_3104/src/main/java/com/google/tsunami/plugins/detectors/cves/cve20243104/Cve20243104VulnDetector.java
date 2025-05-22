@@ -237,6 +237,10 @@ public final class Cve20243104VulnDetector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2024_3104"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2024-3104"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2024-3104 anything-llm RCE")
                 .setDescription(

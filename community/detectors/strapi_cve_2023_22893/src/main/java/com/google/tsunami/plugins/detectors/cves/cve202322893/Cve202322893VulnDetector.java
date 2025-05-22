@@ -132,6 +132,10 @@ public final class Cve202322893VulnDetector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2023_22893"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2023-22893"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Authentication Bypass For Strapi AWS Cognito Login Provider")
                 .setDescription(

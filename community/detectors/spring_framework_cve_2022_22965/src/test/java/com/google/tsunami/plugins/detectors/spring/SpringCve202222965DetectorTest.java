@@ -108,6 +108,10 @@ public final class SpringCve202222965DetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE_2022_22965"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2022-22965"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("Spring Framework RCE CVE-2022-22965")
                         .setDescription(

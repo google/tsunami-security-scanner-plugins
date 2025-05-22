@@ -99,6 +99,10 @@ public class Cve20242928VulnDetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE_2024_2928"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2024-2928"))
                         .setSeverity(Severity.HIGH)
                         .setTitle("CVE-2024-2928 MLflow Local File Inclusion")
                         .setDescription(

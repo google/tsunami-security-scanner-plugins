@@ -261,6 +261,10 @@ public final class Cve202346604Detector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2023_46604"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2023-46604"))
                 .setSeverity(useOobVerifyVulnerable ? Severity.CRITICAL : Severity.HIGH)
                 .setTitle("CVE-2023-46604 Apache ActiveMQ RCE")
                 .setRecommendation("Upgrade to version 5.15.16, 5.16.7, 5.17.6, or 5.18.3")

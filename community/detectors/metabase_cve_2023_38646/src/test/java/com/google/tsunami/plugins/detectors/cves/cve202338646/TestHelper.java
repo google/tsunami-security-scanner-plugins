@@ -61,6 +61,8 @@ final class TestHelper {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE-2023-38646"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-38646"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Metabase Pre-Authentication RCE (CVE-2023-38646)")
                 .setDescription(

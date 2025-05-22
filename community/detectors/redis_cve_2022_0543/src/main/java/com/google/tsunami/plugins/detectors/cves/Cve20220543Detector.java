@@ -196,6 +196,10 @@ public final class Cve20220543Detector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2022_0543"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2022-0543"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle(TITLE)
                 .setDescription(DESCRIPTION)

@@ -135,6 +135,10 @@ public final class Cve20220540VulnDetector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2022_0540"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2022-0540"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle(
                     "CVE-2022-0540: Authentication Bypass in Atlassian Jira Service Management"

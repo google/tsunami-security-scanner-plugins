@@ -127,6 +127,10 @@ public final class Cve201712617DetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
                                 .setValue(VULNERABILITY_REPORT_ID))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2017-12617"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle(VULNERABILITY_REPORT_TITLE)
                         .setDescription(VULN_DESCRIPTION)

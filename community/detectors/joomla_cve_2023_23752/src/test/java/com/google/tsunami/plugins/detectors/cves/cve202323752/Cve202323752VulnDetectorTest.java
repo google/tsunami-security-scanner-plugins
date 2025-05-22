@@ -158,6 +158,10 @@ public final class Cve202323752VulnDetectorTest {
                         VulnerabilityId.newBuilder()
                             .setPublisher("TSUNAMI_COMMUNITY")
                             .setValue("CVE_2023_23752"))
+                    .addRelatedId(
+                        VulnerabilityId.newBuilder()
+                            .setPublisher("CVE")
+                            .setValue("CVE-2023-23752"))
                     .setSeverity(Severity.HIGH)
                     .setTitle("Joomla unauthorized access to webservice endpoints")
                     .setDescription(

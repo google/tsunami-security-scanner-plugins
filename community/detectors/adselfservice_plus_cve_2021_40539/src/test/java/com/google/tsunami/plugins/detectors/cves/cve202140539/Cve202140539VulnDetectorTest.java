@@ -105,6 +105,10 @@ public final class Cve202140539VulnDetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE_2021_40539"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2021-40539"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle(
                             "CVE-2021-40539 ADSelfService Plus REST API Authentication Bypass "

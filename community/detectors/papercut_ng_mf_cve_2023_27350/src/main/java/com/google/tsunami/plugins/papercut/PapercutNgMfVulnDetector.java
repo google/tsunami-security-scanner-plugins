@@ -207,6 +207,10 @@ public final class PapercutNgMfVulnDetector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2023_27350"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2023-27350"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Papercut NG/MF Authentication Bypass and RCE")
                 .setDescription(

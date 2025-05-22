@@ -136,6 +136,10 @@ public final class Cve202017526DetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE-2020-17526"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2020-17526"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle(
                             "CVE-2020-17526 Authentication bypass lead to Arbitrary Code Execution"

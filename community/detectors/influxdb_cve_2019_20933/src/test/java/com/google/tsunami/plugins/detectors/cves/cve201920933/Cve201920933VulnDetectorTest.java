@@ -126,6 +126,10 @@ public final class Cve201920933VulnDetectorTest {
                         VulnerabilityId.newBuilder()
                             .setPublisher("TSUNAMI_COMMUNITY")
                             .setValue("CVE_2019_20933"))
+                    .addRelatedId(
+                        VulnerabilityId.newBuilder()
+                            .setPublisher("CVE")
+                            .setValue("CVE-2019-20933"))
                     .setSeverity(Severity.CRITICAL)
                     .setTitle("InfluxDB Empty JWT Secret Key Authentication Bypass")
                     .setDescription(

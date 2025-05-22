@@ -136,6 +136,10 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
                     VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2021_25646"))
                 .setSeverity(Severity.HIGH)
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2021-25646"))
                 .setTitle("Apache Druid Pre-Auth RCE vulnerability (CVE-2021-25646)")
                 .setDescription(
                     "Apache Druid includes the ability to execute user-provided JavaScript code "

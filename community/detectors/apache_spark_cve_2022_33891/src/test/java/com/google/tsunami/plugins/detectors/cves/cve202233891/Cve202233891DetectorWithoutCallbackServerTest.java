@@ -118,6 +118,10 @@ public class Cve202233891DetectorWithoutCallbackServerTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE_2022_33891"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2022-33891"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("CVE-2022-33891 Apache Spark UI RCE")
                         .setRecommendation(

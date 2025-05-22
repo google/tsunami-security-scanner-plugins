@@ -109,6 +109,10 @@ public final class MetabaseCve202141277Detector implements VulnDetector {
             Vulnerability.newBuilder()
                 .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
                     .setValue("CVE_2021_41277"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2021-41277"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Metabase CVE-2021-41277 Local File Inclusion Vulnerability")
                 .setDescription("Metabase is an open source data analytics platform. In affected "

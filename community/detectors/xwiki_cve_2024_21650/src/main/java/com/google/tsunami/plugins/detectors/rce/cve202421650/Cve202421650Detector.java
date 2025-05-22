@@ -246,6 +246,10 @@ public final class Cve202421650Detector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE-2024-21650"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2024-21650"))
                 .setSeverity(vulnSeverity)
                 .setTitle("XWiki RCE (CVE-2024-21650)")
                 .setDescription(

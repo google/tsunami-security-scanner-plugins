@@ -170,6 +170,10 @@ public final class Cve202231137Detector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE-2022-31137"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2022-31137"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Roxy-wi RCE (CVE-2022-31137)")
                 .setDescription(

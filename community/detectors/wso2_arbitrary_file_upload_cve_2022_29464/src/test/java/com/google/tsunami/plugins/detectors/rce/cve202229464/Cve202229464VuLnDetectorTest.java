@@ -115,6 +115,10 @@ public final class Cve202229464VuLnDetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE-2022-29464"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2022-29464"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("WSO2 Unrestricted Arbitrary File Upload CVE-2022-29464")
                         .setDescription(

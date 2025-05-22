@@ -152,6 +152,10 @@ public final class Cve20221388VulnDetector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2022_1388"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2022-1388"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2022-1388 F5 BIG-IP iControl REST Auth Bypass RCE")
                 .setRecommendation(

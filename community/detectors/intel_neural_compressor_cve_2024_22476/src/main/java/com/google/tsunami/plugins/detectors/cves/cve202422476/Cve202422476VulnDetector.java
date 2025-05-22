@@ -190,6 +190,10 @@ public final class Cve202422476VulnDetector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2024_22476"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2024-22476"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("CVE-2024-22476 Intel Neural Compressor RCE")
                 .setDescription(

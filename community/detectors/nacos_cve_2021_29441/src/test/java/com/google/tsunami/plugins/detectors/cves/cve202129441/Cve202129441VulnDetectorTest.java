@@ -104,6 +104,10 @@ public final class Cve202129441VulnDetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE_2021_29441"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2021-29441"))
                         .setSeverity(Severity.CRITICAL)
                         .setTitle("CVE-2021-29441 Nacos Authentication Bypass Via Backdoor")
                         .setRecommendation(

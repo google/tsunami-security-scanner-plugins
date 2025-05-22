@@ -138,6 +138,10 @@ public final class Cve202222963VulnDetector implements VulnDetector {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2022_22963"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2022-22963"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Spring Cloud Function SpEL Code Injection RCE (CVE-2022-22963)")
                 .setRecommendation("Users of affected versions should upgrade to 3.1.7, 3.2.3.")

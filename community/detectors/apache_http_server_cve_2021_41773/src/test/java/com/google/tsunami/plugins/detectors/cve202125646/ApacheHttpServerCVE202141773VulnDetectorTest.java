@@ -99,6 +99,10 @@ public final class ApacheHttpServerCVE202141773VulnDetectorTest {
                             VulnerabilityId.newBuilder()
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE_2021_41773"))
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2021-41773"))
                         .setSeverity(Severity.HIGH)
                         .setTitle(
                             "Apache HTTP Server 2.4.49 Path traversal and disclosure vulnerability")

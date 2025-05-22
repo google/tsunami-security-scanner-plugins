@@ -122,6 +122,10 @@ public final class AtlassianConfluencePreAuthOgnlInjectionDetector implements Vu
             Vulnerability.newBuilder()
                 .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
                     .setValue("CVE-2021-26084"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2021-26084"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Atlassian Confluence Pre-Auth OGNL Injection")
                 .setDescription("An OGNL injection vulnerability exists that allows an "

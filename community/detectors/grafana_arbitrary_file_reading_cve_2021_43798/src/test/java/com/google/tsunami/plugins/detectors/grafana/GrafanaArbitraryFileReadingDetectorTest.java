@@ -107,6 +107,10 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
                                 .setPublisher("TSUNAMI_COMMUNITY")
                                 .setValue("CVE_2021_43798"))
                         .setSeverity(Severity.HIGH)
+                        .addRelatedId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("CVE")
+                                .setValue("CVE-2021-43798"))
                         .setTitle(
                             "Grafana Pre-Auth Arbitrary File Reading vulnerability"
                                 + " (CVE_2021_43798)")
