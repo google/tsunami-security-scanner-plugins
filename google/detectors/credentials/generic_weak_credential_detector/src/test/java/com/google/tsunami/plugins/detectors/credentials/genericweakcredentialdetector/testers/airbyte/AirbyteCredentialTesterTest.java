@@ -55,7 +55,7 @@ public class AirbyteCredentialTesterTest {
   @Inject private AirbyteCredentialTester tester;
   private MockWebServer mockWebServer;
   private static final TestCredential WEAK_CRED_1 =
-      TestCredential.create("airbyte", Optional.of("password"));
+      TestCredential.create("user@company.example", Optional.of("new_password"));
   private static final TestCredential WRONG_CRED_1 =
       TestCredential.create("wrong", Optional.of("wrong"));
 
@@ -156,43 +156,20 @@ public class AirbyteCredentialTesterTest {
   private void startMockWebServer() throws IOException {
     final Dispatcher dispatcher =
         new Dispatcher() {
-          final MockResponse unauthorizedResponse =
-              new MockResponse()
-                  .setResponseCode(401)
-                  .setBody(
-                      "content=\"Airbyte is the turnkey open-source data integration platform that "
-                          + "syncs data from applications, APIs and databases to warehouses.\"");
-
           @Override
           public MockResponse dispatch(RecordedRequest request) {
-            String authorizationHeader = request.getHeaders().get("Authorization");
-            if (authorizationHeader == null) {
-              return unauthorizedResponse;
+            if (request.getPath().equals("/api/login")
+                && Objects.equals(request.getMethod(), "POST")
+                && Objects.equals(request.getHeader("content-type"), "application/json")
+                && request
+                    .getBody()
+                    .readUtf8()
+                    .equals(
+                        "{\"username\":\"user@company.example\",\"password\":\"new_password\"}")) {
+              return new MockResponse().setResponseCode(200).setHeader("set-cookie", "jwt=12345");
+            } else {
+              return new MockResponse().setResponseCode(401);
             }
-            if (request.getPath().equals("/") && Objects.equals(request.getMethod(), "GET")) {
-              boolean isDefaultCredentials = authorizationHeader.equals(WEAK_CRED_AUTH_1);
-              if (isDefaultCredentials) {
-                return new MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                        "<html lang=\"en\">\n"
-                            + "  <head>\n"
-                            + "    <meta\n"
-                            + "name=\"description\"\n"
-                            + "content=\"Airbyte is the turnkey open-source data integration"
-                            + " platform that syncs data from applications, APIs and databases to"
-                            + " warehouses.\"\n"
-                            + "        >\n"
-                            + "    <title>Airbyte</title>\n"
-                            + "  </head>\n"
-                            + "  <body>\n"
-                            + "  </body>\n"
-                            + "</html>");
-              } else {
-                return unauthorizedResponse;
-              }
-            }
-            return new MockResponse().setResponseCode(404);
           }
         };
     mockWebServer.setDispatcher(dispatcher);

@@ -26,17 +26,17 @@ import static java.util.stream.Collectors.joining;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
-import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.protobuf.ByteString;
+import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
-import com.google.tsunami.plugin.annotations.ForWebService;
-import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.ServiceFingerprinter;
+import com.google.tsunami.plugin.annotations.ForWebService;
+import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.Crawler;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.ScopeUtils;
 import com.google.tsunami.plugins.fingerprinters.web.data.FingerprintData;
@@ -376,7 +376,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", loginUrl);
     }
   }
-  
+
   private void checkForArgoCd(
       Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
     logger.atInfo().log("probing Argo CD - custom fingerprint phase");
@@ -416,7 +416,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", applicationsApiUrl);
     }
   }
-  
+
   private void checkForAirbyte(
       Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
     logger.atInfo().log("probing Airbyte root page - custom fingerprint phase");
@@ -426,17 +426,18 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
       HttpResponse rootResponse = httpClient.send(get(rootUrl).withEmptyHeaders().build());
       // if the airbyte has basic authentication, the first condition will be pass
       // if the airbyte doesn't have any authentication second condition will be pass
-      if (!(rootResponse.status() == HttpStatus.UNAUTHORIZED
+      if (!((rootResponse.status() == HttpStatus.UNAUTHORIZED
               && rootResponse.bodyString().isPresent()
               && rootResponse.bodyString().get().contains("<title>Airbyte - Access Denied</title>"))
-              || (rootResponse.status() == HttpStatus.OK
+          || (rootResponse.status() == HttpStatus.OK
               && rootResponse.bodyString().isPresent()
               && rootResponse
-              .bodyString()
-              .get()
-              .contains(
-                      "content=\"Airbyte is the turnkey open-source data integration platform that "
-                              + "syncs data from applications, APIs and databases to warehouses.\""))) {
+                  .bodyString()
+                  .get()
+                  .contains(
+                      "content=\"Airbyte is the turnkey open-source data integration platform that"
+                          + " syncs data from applications, APIs and databases to"
+                          + " warehouses.\"")))) {
         return;
       }
       software.add(

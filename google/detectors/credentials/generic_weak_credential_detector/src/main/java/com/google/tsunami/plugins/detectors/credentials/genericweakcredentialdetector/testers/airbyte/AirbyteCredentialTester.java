@@ -17,11 +17,11 @@
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.airbyte;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.tsunami.common.net.http.HttpRequest.get;
-import static java.nio.charset.StandardCharsets.UTF_8;
+import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.protobuf.ByteString;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -32,12 +32,8 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
 import com.google.tsunami.proto.NetworkService;
 import java.io.IOException;
-import java.util.Base64;
 import java.util.List;
 import javax.inject.Inject;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +67,7 @@ public final class AirbyteCredentialTester extends CredentialTester {
 
   @Override
   public boolean batched() {
-    return true;
+    return false;
   }
 
   @Override
@@ -87,55 +83,32 @@ public final class AirbyteCredentialTester extends CredentialTester {
   }
 
   private boolean isAirbyteAccessible(NetworkService networkService, TestCredential credential) {
-    var rootUrl =
+    String rootUrl =
         "http://" + NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint()) + "/";
+
     try {
       HttpResponse rootResponse =
           httpClient.send(
-              get(rootUrl)
+              post(rootUrl + "api/login")
                   .setHeaders(
-                      HttpHeaders.builder()
-                          .addHeader(
-                              "Authorization",
-                              "basic "
-                                  + Base64.getEncoder()
-                                      .encodeToString(
-                                          (credential.username()
-                                                  + ":"
-                                                  + credential.password().orElse(""))
-                                              .getBytes(UTF_8)))
-                          .build())
+                      HttpHeaders.builder().addHeader("content-type", "application/json").build())
+                  .setRequestBody(
+                      ByteString.copyFromUtf8(
+                          String.format(
+                              "{\"username\":\"%s\",\"password\":\"%s\"}",
+                              credential.username(), credential.password().orElse(""))))
                   .build());
 
-      if (!(rootResponse.status() == HttpStatus.OK)) {
-        return false;
-      }
-
       if (rootResponse.status() == HttpStatus.OK
-          && rootResponse.bodyString().isPresent()
-          && bodyContainsSuccessLogin(rootResponse.bodyString().get())) {
+          && rootResponse.headers().get("set-cookie").isPresent()) {
+        logger.atInfo().log(
+            "Using default Airbyte credentials: %s:%s",
+            credential.username(), credential.password().orElse(""));
         return true;
       }
-
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", rootUrl);
       return false;
-    }
-    return false;
-  }
-
-  private static boolean bodyContainsSuccessLogin(String responseBody) {
-    Document doc = Jsoup.parse(responseBody);
-    String title = doc.title();
-    if (title.contains("Airbyte")) {
-      Elements elements =
-          doc.head()
-              .tagName("meta")
-              .getElementsByAttributeValue(
-                  "content",
-                  "Airbyte is the turnkey open-source data integration platform that syncs data"
-                      + " from applications, APIs and databases to warehouses.");
-      return !elements.isEmpty();
     }
     return false;
   }
