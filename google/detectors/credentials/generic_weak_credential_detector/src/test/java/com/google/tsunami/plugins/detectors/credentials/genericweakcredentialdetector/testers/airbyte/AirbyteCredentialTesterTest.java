@@ -59,10 +59,6 @@ public class AirbyteCredentialTesterTest {
   private static final TestCredential WRONG_CRED_1 =
       TestCredential.create("wrong", Optional.of("wrong"));
 
-  // The base64 encoding of default authentication username:password pairs which the tester will
-  // send these this to our mock webserver
-  private static final String WEAK_CRED_AUTH_1 = "basic YWlyYnl0ZTpwYXNzd29yZA==";
-
   @Before
   public void setup() {
     mockWebServer = new MockWebServer();

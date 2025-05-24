@@ -34,14 +34,11 @@ import com.google.tsunami.proto.NetworkService;
 import java.io.IOException;
 import java.util.List;
 import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Credential tester specifically for airbyte. */
 public final class AirbyteCredentialTester extends CredentialTester {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String AIRBYTE_SERVICE = "airbyte";
-  private static final Logger log = LoggerFactory.getLogger(AirbyteCredentialTester.class);
 
   private final HttpClient httpClient;
 
