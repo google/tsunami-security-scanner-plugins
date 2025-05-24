@@ -36,6 +36,7 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.DefaultCredentials;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.Top100Passwords;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.airflow.AirflowCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.grafana.GrafanaCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.hydra.HydraCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.jenkins.JenkinsCredentialTester;
@@ -68,7 +69,8 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
   protected void configurePlugin() {
 
     Multibinder<CredentialTester> credentialTesterBinder =
-        Multibinder.newSetBinder(binder(), CredentialTester.class);
+        Multibinder.newSetBinder(binder(), CredentialTester.class);   
+    credentialTesterBinder.addBinding().to(AirflowCredentialTester.class);
     credentialTesterBinder.addBinding().to(ArgoCdCredentialTester.class);
     credentialTesterBinder.addBinding().to(JenkinsCredentialTester.class);
     credentialTesterBinder.addBinding().to(MlFlowCredentialTester.class);
