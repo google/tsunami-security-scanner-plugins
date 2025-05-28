@@ -35,4 +35,5 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: 'Build plugins'
-        run: ./templated/templateddetector/gradlew build
+        run: ./gradlew build
+        working-directory: templated/templateddetector/
