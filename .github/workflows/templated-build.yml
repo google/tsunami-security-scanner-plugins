@@ -1,0 +1,37 @@
+name: templated-plugins-build
+
+on:
+  push:
+    paths:
+      - 'templated/**'
+  pull_request:
+    paths:
+      - 'templated/**'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+        java: [ 21 ]
+    runs-on: ${{ matrix.os }}
+    name: 'Build plugins on ${{ matrix.os }} using Java ${{ matrix.java }}'
+    steps:
+      - name: 'Check out repository'
+        uses: actions/checkout@v2
+      - name: 'Set up JDK ${{ matrix.java }}'
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.java }}
+      - name: 'Ensure protoc is installed'
+        uses: arduino/setup-protoc@v3
+        with:
+          version: "25.5"
+      - name: 'Cache Gradle resources'
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+      - name: 'Build plugins'
+        run: ./templated/templateddetector/gradlew build
