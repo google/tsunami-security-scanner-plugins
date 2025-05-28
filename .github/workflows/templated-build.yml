@@ -28,6 +28,7 @@ jobs:
         uses: arduino/setup-protoc@v3
         with:
           version: "25.5"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: 'Cache Gradle resources'
         uses: actions/cache@v4
         with:
