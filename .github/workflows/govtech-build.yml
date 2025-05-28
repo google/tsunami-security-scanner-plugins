@@ -7,6 +7,7 @@ on:
   pull_request:
     paths:
       - 'govtech/**'
+  workflow_dispatch:
 
 jobs:
   build:

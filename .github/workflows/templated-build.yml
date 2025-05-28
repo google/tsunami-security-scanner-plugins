@@ -7,6 +7,7 @@ on:
   pull_request:
     paths:
       - 'templated/**'
+  workflow_dispatch:
 
 jobs:
   build:
