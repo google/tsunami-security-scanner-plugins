@@ -1,0 +1,111 @@
+<!doctype html>
+<html
+	lang="en"
+	style="
+		margin: 0;
+		padding: 0;
+		min-height: 100%;
+		display: flex;
+		flex-direction: column;
+	"
+>
+	<head>
+		<meta charset="utf-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, shrink-to-fit=no"
+		/>
+
+		<style>
+			:root {
+				--bg: white;
+				--col:   #1f2937;
+				--bg-dark: #0b0f19;
+				--col-dark: #f3f4f6;
+			}
+
+
+			body {
+				background: var(--bg);
+				color: var(--col);
+				font-family: Arial, Helvetica, sans-serif;
+			}
+
+			@media (prefers-color-scheme: dark) {
+				body {
+					background: var(--bg-dark);
+					color: var(--col-dark);
+				}
+			}
+		</style>
+
+		
+		<meta property="og:url" content="https://gradio.app/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:image" content="" />
+		<meta property="og:title" content="Gradio" />
+		<meta
+			property="og:description"
+			content=""
+		/>
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:creator" content="@teamGradio" />
+		<meta name="twitter:title" content="Gradio" />
+		<meta
+			name="twitter:description"
+			content=""
+		/>
+		<meta name="twitter:image" content="" />
+
+		<script data-gradio-mode>
+			window.__gradio_mode__ = "app";
+			window.iFrameResizer = {
+				heightCalculationMethod: "taggedElement"
+			};
+		</script>
+
+		<script>window.gradio_config = {"version":"4.19.2","mode":"blocks","app_id":992311973234477715,"dev_mode":false,"analytics_enabled":true,"components":[{"id":1,"type":"file","props":{"file_count":"single","type":"filepath","show_label":true,"container":true,"min_width":160,"visible":true,"elem_classes":[],"name":"file","_selectable":false},"skip_api":false,"component_class_id":"f893239921c3e247b7e6ab8933224603","api_info":{"properties":{"path":{"title":"Path","type":"string"},"url":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Url"},"size":{"anyOf":[{"type":"integer"},{"type":"null"}],"default":null,"title":"Size"},"orig_name":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Orig Name"},"mime_type":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Mime Type"},"is_stream":{"default":false,"title":"Is Stream","type":"boolean"}},"required":["path"],"title":"FileData","type":"object"},"example_inputs":"https://github.com/gradio-app/gradio/raw/main/test/test_files/sample_file.pdf"},{"id":2,"type":"uploadbutton","props":{"label":"Click to Upload a File","variant":"secondary","visible":true,"interactive":true,"elem_classes":[],"type":"filepath","file_count":"multiple","file_types":["image","video"],"name":"uploadbutton","_selectable":false},"skip_api":false,"component_class_id":"efbe64d40d751e7c19bec70d13abc50d","api_info":{"$defs":{"FileData":{"properties":{"path":{"title":"Path","type":"string"},"url":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Url"},"size":{"anyOf":[{"type":"integer"},{"type":"null"}],"default":null,"title":"Size"},"orig_name":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Orig Name"},"mime_type":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Mime Type"},"is_stream":{"default":false,"title":"Is Stream","type":"boolean"}},"required":["path"],"title":"FileData","type":"object"}},"items":{"$ref":"#/$defs/FileData"},"title":"ListFiles","type":"array"},"example_inputs":["https://github.com/gradio-app/gradio/raw/main/test/test_files/sample_file.pdf"]}],"css":null,"js":null,"head":null,"title":"Gradio","space_id":null,"enable_queue":true,"show_error":false,"show_api":true,"is_colab":false,"stylesheets":["https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600\u0026display=swap","https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600\u0026display=swap"],"theme":"default","protocol":"sse_v2","body_css":{"body_background_fill":"white","body_text_color":"#1f2937","body_background_fill_dark":"#0b0f19","body_text_color_dark":"#f3f4f6"},"fill_height":false,"layout":{"id":0,"children":[{"id":1},{"id":2}]},"dependencies":[{"targets":[[2,"upload"]],"inputs":[2],"outputs":[1],"backend_fn":true,"js":null,"queue":null,"api_name":"upload_file","scroll_to_output":false,"show_progress":"full","every":null,"batch":false,"max_batch_size":4,"cancels":[],"types":{"continuous":false,"generator":false},"collects_event_data":false,"trigger_after":null,"trigger_only_on_success":false,"trigger_mode":"once","show_api":true}],"root":"http://localhost:8000"};</script>
+
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link
+			rel="preconnect"
+			href="https://fonts.gstatic.com"
+			crossorigin="anonymous"
+		/>
+		<script
+			src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.9/iframeResizer.contentWindow.min.js"
+			async
+		></script>
+		<script type="module" crossorigin src="./assets/index-7905665e.js"></script>
+		<link rel="stylesheet" href="./assets/index-e657421a.css">
+	</head>
+
+	<body
+		style="
+			width: 100%;
+			margin: 0;
+			padding: 0;
+			display: flex;
+			flex-direction: column;
+			flex-grow: 1;
+		"
+	>
+		<gradio-app
+			control_page_title="true"
+			embed="false"
+			eager="true"
+			style="display: flex; flex-direction: column; flex-grow: 1"
+		>
+		</gradio-app>
+		<script>
+			const ce = document.getElementsByTagName("gradio-app");
+
+			if (ce[0]) {
+				ce[0].addEventListener("domchange", () => {
+					document.body.style.padding = "0";
+				});
+				document.body.style.padding = "0";
+			}
+		</script>
+	</body>
+</html>
