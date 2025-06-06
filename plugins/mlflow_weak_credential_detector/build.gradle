@@ -1,0 +1,94 @@
+plugins {
+    id 'java-library'
+    id 'com.google.protobuf' version '0.9.4' // Or a recent compatible version
+    id 'com.github.johnrengelman.shadow' version '7.1.2' // Or a recent compatible version
+}
+
+repositories {
+    mavenCentral()
+    google() // For Tsunami artifacts if they are published to Google's Maven repo
+}
+
+// Replace with the latest Tsunami version if known, otherwise use a placeholder
+// It's often good practice to manage versions in gradle.properties or a BOM
+def tsunamiVersion = '0.20.0' // Example version, adjust as needed
+
+dependencies {
+    api "com.google.tsunami:plugin-parent:${tsunamiVersion}"
+    api "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
+    api "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
+
+    implementation 'com.google.guava:guava:32.1.3-jre' // Use a recent version
+    implementation 'com.google.protobuf:protobuf-java:3.25.1' // Use a recent version
+    implementation 'com.google.flogger:google-flogger:0.8.1' // Use a recent version
+    implementation 'javax.inject:javax.inject:1'
+    implementation 'com.google.auto.value:auto-value-annotations:1.10.4' // Use a recent version
+    annotationProcessor 'com.google.auto.value:auto-value:1.10.4' // Use a recent version
+
+    // For HTTP client capabilities
+    implementation "com.google.tsunami:tsunami-common:${tsunamiVersion}"
+
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'com.google.truth:truth:1.1.5' // Use a recent version
+    testImplementation 'org.mockito:mockito-core:5.10.0' // Use a recent version
+    testImplementation "com.google.tsunami:tsunami-testing:${tsunamiVersion}"
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.1" // Match protobuf-java version
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:1.60.0" // If you use gRPC, adjust version
+        }
+    }
+    generateProtoTasks {
+        all().each { task ->
+            // task.builtins {
+            //     java { option "lite" } // If using protobuf-javalite
+            // }
+            // if (task.name.contains("grpc")) {
+            //     task.plugins {
+            //         grpc { // Options added to --grpc_out
+            //         }
+            //     }
+            // }
+        }
+    }
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+// Ensure the shadowJar task is configured to produce a fat JAR if needed for Tsunami plugins
+// This configuration might vary based on Tsunami's plugin loading mechanism
+shadowJar {
+    archiveClassifier.set('') // Produces a JAR without 'all' or 'shadow' in the name
+    // Configure as needed, e.g., to relocate dependencies to avoid conflicts
+    // relocate 'com.google.common', 'shadow.com.google.common'
+}
+
+// Make the shadowJar task the default build artifact
+artifacts {
+    archives shadowJar
+}
+
+// Often, Tsunami plugins might need a specific JAR manifest configuration
+jar {
+    manifest {
+        attributes(
+            // Example attributes, adjust as per Tsunami plugin requirements
+            // 'Main-Class': 'com.example.MainClass'
+        )
+    }
+}
+
+// Task to copy dependencies to a specific directory (optional, for reference)
+task copyDependencies(type: Copy) {
+    from configurations.runtimeClasspath
+    into 'build/libs/deps'
+}
