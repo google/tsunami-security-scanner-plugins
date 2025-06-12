@@ -52,17 +52,17 @@ import org.junit.runners.JUnit4;
 public final class ExposedOllamaApiServerDetectorTest {
   private final MockWebServer mockTargetService = new MockWebServer();
   private final FakeUtcClock fakeUtcClock =
-          FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
+      FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
   @Inject private ExposedOllamaApiServerDetector detector;
 
   private void createInjector() {
     Guice.createInjector(
-                    new FakeUtcClockModule(fakeUtcClock),
-                    new HttpClientModule.Builder().build(),
-                    FakePayloadGeneratorModule.builder().build(),
-                    new ExposedOllamaApiServerDetectorModule())
-            .injectMembers(this);
+            new FakeUtcClockModule(fakeUtcClock),
+            new HttpClientModule.Builder().build(),
+            FakePayloadGeneratorModule.builder().build(),
+            new ExposedOllamaApiServerDetectorModule())
+        .injectMembers(this);
   }
 
   @Test
@@ -72,19 +72,19 @@ public final class ExposedOllamaApiServerDetectorTest {
 
     createInjector();
     NetworkService targetNetworkService =
-            NetworkService.newBuilder()
-                    .setNetworkEndpoint(
-                            forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
-                    .addSupportedHttpMethods("GET")
-                    .build();
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
+            .addSupportedHttpMethods("GET")
+            .build();
 
     TargetInfo targetInfo =
-            TargetInfo.newBuilder()
-                    .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
-                    .build();
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
+            .build();
 
     DetectionReportList detectionReports =
-            detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
 
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
@@ -94,63 +94,63 @@ public final class ExposedOllamaApiServerDetectorTest {
     startMockWebServer();
     createInjector();
     NetworkService targetNetworkService =
-            NetworkService.newBuilder()
-                    .setNetworkEndpoint(
-                            forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
-                    .addSupportedHttpMethods("GET")
-                    .build();
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
+            .addSupportedHttpMethods("GET")
+            .build();
     TargetInfo targetInfo =
-            TargetInfo.newBuilder()
-                    .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
-                    .build();
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
+            .build();
 
     DetectionReportList detectionReports =
-            detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
 
     Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
     assertThat(detectionReports.getDetectionReportsList())
-            .comparingExpectedFieldsOnly()
-            .containsExactly(
-                    DetectionReport.newBuilder()
-                            .setTargetInfo(targetInfo)
-                            .setNetworkService(targetNetworkService)
-                            .setDetectionTimestamp(
-                                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
-                            .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                            .setVulnerability(
-                                    Vulnerability.newBuilder()
-                                            .setMainId(
-                                                    VulnerabilityId.newBuilder()
-                                                            .setPublisher("TSUNAMI_COMMUNITY")
-                                                            .setValue("OLLAMA_API_SERVER_EXPOSED"))
-                                            .setSeverity(Severity.HIGH)
-                                            .setTitle("Exposed Ollama API Server")
-                                            .setDescription(
-                                                    "An Ollama API server is exposed to the network. This was confirmed by"
-                                                            + " investigating the API response for typical response artifacts. "
-                                                            + " An attacker can abuse an exposed API server to, for example,"
-                                                            + " download or modify existing LLM models, or misuse resources by"
-                                                            + " using the LLM chat functionality.")
-                                            .setRecommendation(RECOMMENDATION))
-                            .build());
+        .comparingExpectedFieldsOnly()
+        .containsExactly(
+            DetectionReport.newBuilder()
+                .setTargetInfo(targetInfo)
+                .setNetworkService(targetNetworkService)
+                .setDetectionTimestamp(
+                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                .setVulnerability(
+                    Vulnerability.newBuilder()
+                        .setMainId(
+                            VulnerabilityId.newBuilder()
+                                .setPublisher("TSUNAMI_COMMUNITY")
+                                .setValue("OLLAMA_API_SERVER_EXPOSED"))
+                        .setSeverity(Severity.HIGH)
+                        .setTitle("Exposed Ollama API Server")
+                        .setDescription(
+                            "An Ollama API server is exposed to the network. This was confirmed by"
+                                + " investigating the API response for typical response artifacts. "
+                                + " An attacker can abuse an exposed API server to, for example,"
+                                + " download or modify existing LLM models, or misuse resources by"
+                                + " using the LLM chat functionality.")
+                        .setRecommendation(RECOMMENDATION))
+                .build());
   }
 
   private void startMockWebServer() throws IOException {
     final Dispatcher dispatcher =
-            new Dispatcher() {
+        new Dispatcher() {
 
-              @Override
-              public MockResponse dispatch(RecordedRequest request) {
-                switch (request.getPath()) {
-                  case "/":
-                    return new MockResponse().setResponseCode(200).setBody("Ollama is running");
-                  case "/api/ps":
-                    return new MockResponse().setResponseCode(200).setBody("{\"models\":[]}");
-                  default:
-                    return new MockResponse().setResponseCode(404).setBody("404 page not found");
-                }
-              }
-            };
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            switch (request.getPath()) {
+              case "/":
+                return new MockResponse().setResponseCode(200).setBody("Ollama is running");
+              case "/api/ps":
+                return new MockResponse().setResponseCode(200).setBody("{\"models\":[]}");
+              default:
+                return new MockResponse().setResponseCode(404).setBody("404 page not found");
+            }
+          }
+        };
     mockTargetService.setDispatcher(dispatcher);
     mockTargetService.start();
     mockTargetService.url("/");

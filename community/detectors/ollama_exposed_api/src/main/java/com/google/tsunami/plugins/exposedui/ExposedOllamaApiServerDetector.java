@@ -48,124 +48,124 @@ import javax.inject.Inject;
 
 /** A VulnDetector plugin for Exposed Ollama API Server. */
 @PluginInfo(
-        type = PluginType.VULN_DETECTION,
-        name = "Exposed Ollama API Server Detector",
-        version = "0.1",
-        description =
-                "This detector checks for a publicly exposed Ollama REST API which can be abused by an"
-                        + " attacker for management tasks.",
-        author = "timoles",
-        bootstrapModule = ExposedOllamaApiServerDetectorModule.class)
+    type = PluginType.VULN_DETECTION,
+    name = "Exposed Ollama API Server Detector",
+    version = "0.1",
+    description =
+        "This detector checks for a publicly exposed Ollama REST API which can be abused by an"
+            + " attacker for management tasks.",
+    author = "timoles",
+    bootstrapModule = ExposedOllamaApiServerDetectorModule.class)
 @ForWebService
 public final class ExposedOllamaApiServerDetector implements VulnDetector {
-    private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+  private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-    private final Clock utcClock;
-    private final HttpClient httpClient;
+  private final Clock utcClock;
+  private final HttpClient httpClient;
 
-    @VisibleForTesting
-    static final String RECOMMENDATION =
-            "Don't expose the Ollama Rest API to unauthorized users. According to the official"
-                    + " documentation access to the API server must be restricted through a reverse proxy"
-                    + " which implements necessary authentication checks.";
+  @VisibleForTesting
+  static final String RECOMMENDATION =
+      "Don't expose the Ollama Rest API to unauthorized users. According to the official"
+          + " documentation access to the API server must be restricted through a reverse proxy"
+          + " which implements necessary authentication checks.";
 
-    @Inject
-    ExposedOllamaApiServerDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
-        this.utcClock = checkNotNull(utcClock);
-        this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(true).build();
-    }
+  @Inject
+  ExposedOllamaApiServerDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
+    this.utcClock = checkNotNull(utcClock);
+    this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(true).build();
+  }
 
-    @Override
-    public DetectionReportList detect(
-            TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
+  @Override
+  public DetectionReportList detect(
+      TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
 
-        Builder detectionReport = DetectionReportList.newBuilder();
-        matchedServices.stream()
-                .filter(NetworkServiceUtils::isWebService)
-                .filter(this::isOllamaApi)
-                .forEach(
-                        networkService -> {
-                            if (isServiceVulnerableCheckResponse(networkService)) {
-                                detectionReport.addDetectionReports(
-                                        buildDetectionReport(
-                                                targetInfo,
-                                                networkService,
-                                                "An Ollama API server is exposed to the network. This was confirmed by"
-                                                        + " investigating the API response for typical response artifacts.  An"
-                                                        + " attacker can abuse an exposed API server to, for example, download"
-                                                        + " or modify existing LLM models, or misuse resources by using the LLM"
-                                                        + " chat functionality.",
-                                                Severity.HIGH));
-                            }
-                        });
-        return detectionReport.build();
-    }
+    Builder detectionReport = DetectionReportList.newBuilder();
+    matchedServices.stream()
+        .filter(NetworkServiceUtils::isWebService)
+        .filter(this::isOllamaApi)
+        .forEach(
+            networkService -> {
+              if (isServiceVulnerableCheckResponse(networkService)) {
+                detectionReport.addDetectionReports(
+                    buildDetectionReport(
+                        targetInfo,
+                        networkService,
+                        "An Ollama API server is exposed to the network. This was confirmed by"
+                            + " investigating the API response for typical response artifacts.  An"
+                            + " attacker can abuse an exposed API server to, for example, download"
+                            + " or modify existing LLM models, or misuse resources by using the LLM"
+                            + " chat functionality.",
+                        Severity.HIGH));
+              }
+            });
+    return detectionReport.build();
+  }
 
-    public boolean isOllamaApi(NetworkService networkService) {
-        logger.atInfo().log("Probing Ollama API landing page");
+  public boolean isOllamaApi(NetworkService networkService) {
+    logger.atInfo().log("Probing Ollama API landing page");
 
-        var ollamaApiLandingPageUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-        try {
-            HttpResponse landingPageResponse =
-                    this.httpClient.send(get(ollamaApiLandingPageUrl).withEmptyHeaders().build());
-            if (!(landingPageResponse.status() == HttpStatus.OK
-                    && landingPageResponse.bodyString().isPresent())) {
-                return false;
-            }
-
-            if (landingPageResponse.bodyString().get().contains("Ollama is running")) {
-                return true;
-            }
-
-        } catch (IOException e) {
-            logger.atWarning().withCause(e).log("Unable to query '%s'.", ollamaApiLandingPageUrl);
-            return false;
-        }
-
+    var ollamaApiLandingPageUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    try {
+      HttpResponse landingPageResponse =
+          this.httpClient.send(get(ollamaApiLandingPageUrl).withEmptyHeaders().build());
+      if (!(landingPageResponse.status() == HttpStatus.OK
+          && landingPageResponse.bodyString().isPresent())) {
         return false;
+      }
+
+      if (landingPageResponse.bodyString().get().contains("Ollama is running")) {
+        return true;
+      }
+
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", ollamaApiLandingPageUrl);
+      return false;
     }
 
-    private boolean isServiceVulnerableCheckResponse(NetworkService networkService) {
+    return false;
+  }
 
-        var psUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "api/ps";
-        try {
-            // Minimize false-positives by checking if we can access the models endpoint
-            HttpResponse psApiResponse =
-                    httpClient.send(get(psUri).withEmptyHeaders().build(), networkService);
-            if (psApiResponse.status() != HttpStatus.OK || psApiResponse.bodyString().isEmpty()) {
-                return false;
-            }
-            if (psApiResponse.bodyString().get().contains("{\"models\":")) {
-                return true;
-            }
+  private boolean isServiceVulnerableCheckResponse(NetworkService networkService) {
 
-        } catch (RuntimeException | IOException e) {
-            logger.atWarning().withCause(e).log("Request to target %s failed", psUri);
-            return false;
-        }
+    var psUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "api/ps";
+    try {
+      // Minimize false-positives by checking if we can access the models endpoint
+      HttpResponse psApiResponse =
+          httpClient.send(get(psUri).withEmptyHeaders().build(), networkService);
+      if (psApiResponse.status() != HttpStatus.OK || psApiResponse.bodyString().isEmpty()) {
         return false;
-    }
+      }
+      if (psApiResponse.bodyString().get().contains("{\"models\":")) {
+        return true;
+      }
 
-    private DetectionReport buildDetectionReport(
-            TargetInfo targetInfo,
-            NetworkService vulnerableNetworkService,
-            String description,
-            Severity severity) {
-        return DetectionReport.newBuilder()
-                .setTargetInfo(targetInfo)
-                .setNetworkService(vulnerableNetworkService)
-                .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
-                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                        Vulnerability.newBuilder()
-                                .setMainId(
-                                        VulnerabilityId.newBuilder()
-                                                .setPublisher("TSUNAMI_COMMUNITY")
-                                                .setValue("OLLAMA_API_SERVER_EXPOSED"))
-                                .setSeverity(severity)
-                                .setTitle("Exposed Ollama API Server")
-                                .setDescription(description)
-                                .setRecommendation(RECOMMENDATION))
-                .build();
+    } catch (RuntimeException | IOException e) {
+      logger.atWarning().withCause(e).log("Request to target %s failed", psUri);
+      return false;
     }
+    return false;
+  }
+
+  private DetectionReport buildDetectionReport(
+      TargetInfo targetInfo,
+      NetworkService vulnerableNetworkService,
+      String description,
+      Severity severity) {
+    return DetectionReport.newBuilder()
+        .setTargetInfo(targetInfo)
+        .setNetworkService(vulnerableNetworkService)
+        .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
+        .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+        .setVulnerability(
+            Vulnerability.newBuilder()
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("TSUNAMI_COMMUNITY")
+                        .setValue("OLLAMA_API_SERVER_EXPOSED"))
+                .setSeverity(severity)
+                .setTitle("Exposed Ollama API Server")
+                .setDescription(description)
+                .setRecommendation(RECOMMENDATION))
+        .build();
+  }
 }
