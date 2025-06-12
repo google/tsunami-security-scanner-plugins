@@ -63,10 +63,16 @@ public final class ComfyUiExposedUi implements VulnDetector {
   @VisibleForTesting static final String VULNERABILITY_REPORT_TITLE = "ComfyUI Exposed UI";
 
   static final String VULNERABILITY_REPORT_DESCRIPTION =
-      "The scanner detected an exposed ComfyUI instance.";
+      "The scanner detected a publicly accessible ComfyUI instance without authentication. This may"
+          + " allow unauthenticated attackers to interact with or exploit the instance. The"
+          + " detection was performed by identifying the default ComfyUI interface exposed over"
+          + " HTTP without any access control.";
 
   @VisibleForTesting
-  static final String VULNERABILITY_REPORT_RECOMMENDATION = "Segregate the ComfyUI instance.";
+  static final String VULNERABILITY_REPORT_RECOMMENDATION =
+      "Avoid exposing ComfyUI to the internet unless absolutely necessary. If exposure is"
+          + " required, restrict access using network-level controls such as firewall rules or IP"
+          + " whitelisting";
 
   @VisibleForTesting static final String MANAGER_VERSION_ENDPOINT = "api/manager/version";
 
