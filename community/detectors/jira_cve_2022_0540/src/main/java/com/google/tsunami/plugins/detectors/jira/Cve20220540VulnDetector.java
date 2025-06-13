@@ -92,6 +92,34 @@ public final class Cve20220540VulnDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2022_0540"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-0540"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle(
+                "CVE-2022-0540: Authentication Bypass in Atlassian Jira Service Management"
+                    + " Server and Data Center")
+            .setDescription(
+                "A vulnerability in Jira Seraph allows a remote, unauthenticated attacker to"
+                    + " bypass authentication by sending a specially crafted HTTP request. This"
+                    + " affects Atlassian Jira Server and Data Center versions before 8.13.18,"
+                    + " versions 8.14.0 and later before 8.20.6, and versions 8.21.0 and later"
+                    + " before 8.22.0. This also affects Atlassian Jira Service Management"
+                    + " Server and Data Center versions before 4.13.18, versions 4.14.0 and"
+                    + " later before 4.20.6, and versions 4.21.0 and later before 4.22.0, using"
+                    + " insights prior to 8.10.0 and WBSGantt plugin versions prior to 9.14.4.1"
+                    + " can cause a remote code execution hazard.")
+            .setRecommendation("Upgrade Jira to the latest version")
+            .build());
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
     String insightUrl =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + INSIGHT_CHECK_VUL_PATH;
@@ -129,31 +157,7 @@ public final class Cve20220540VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2022_0540"))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CVE")
-                        .setValue("CVE-2022-0540"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(
-                    "CVE-2022-0540: Authentication Bypass in Atlassian Jira Service Management"
-                        + " Server and Data Center")
-                .setDescription(
-                    "A vulnerability in Jira Seraph allows a remote, unauthenticated attacker to"
-                        + " bypass authentication by sending a specially crafted HTTP request. This"
-                        + " affects Atlassian Jira Server and Data Center versions before 8.13.18,"
-                        + " versions 8.14.0 and later before 8.20.6, and versions 8.21.0 and later"
-                        + " before 8.22.0. This also affects Atlassian Jira Service Management"
-                        + " Server and Data Center versions before 4.13.18, versions 4.14.0 and"
-                        + " later before 4.20.6, and versions 4.21.0 and later before 4.22.0, using"
-                        + " insights prior to 8.10.0 and WBSGantt plugin versions prior to 9.14.4.1"
-                        + " can cause a remote code execution hazard.")
-                .setRecommendation("Upgrade Jira to the latest version"))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

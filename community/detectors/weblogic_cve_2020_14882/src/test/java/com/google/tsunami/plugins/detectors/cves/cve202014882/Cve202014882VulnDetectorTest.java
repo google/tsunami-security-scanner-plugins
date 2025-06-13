@@ -31,12 +31,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -104,29 +101,7 @@ public class Cve202014882VulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2020_14882"))
-                        .addRelatedId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CVE")
-                                .setValue("CVE-2020-14882"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2020-14882: Weblogic management console permission bypass")
-                        .setDescription(
-                            "Vulnerability in the Oracle WebLogic Server product of Oracle Fusion"
-                                + " Middleware (component: Console). Supported versions that are"
-                                + " affected are 10.3.6.0.0, 12.1.3.0.0, 12.2.1.3.0, 12.2.1.4.0 and"
-                                + " 14.1.1.0.0. Easily exploitable vulnerability allows"
-                                + " unauthenticated attacker with network access via HTTP to"
-                                + " compromise Oracle WebLogic Server. Successful attacks of this"
-                                + " vulnerability can result in takeover of Oracle WebLogic Server")
-                        .setRecommendation(
-                            "Go to the oracle official website to download the latest weblogic"
-                                + " patch."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

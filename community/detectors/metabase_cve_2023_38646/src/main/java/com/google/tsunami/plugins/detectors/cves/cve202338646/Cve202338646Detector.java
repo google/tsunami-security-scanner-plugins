@@ -101,6 +101,29 @@ public final class Cve202338646Detector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE-2023-38646"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-38646"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Metabase Pre-Authentication RCE (CVE-2023-38646)")
+            .setDescription(
+                "Metabase open source before 0.46.6.1 and Metabase Enterprise before 1.46.6.1"
+                    + " has a vulnerability that allows attackers to execute arbitrary commands"
+                    + " on the server, at the server's privilege level. Authentication is not"
+                    + " required for exploitation")
+            .setRecommendation(
+                "Please upgrade Metabase to patched versions: v0.46.6.4, v1.46.6.4, v0.45.4.3,"
+                    + " v1.45.4.3, v0.44.7.3, v1.44.7.3, v0.43.7.3 or v1.43.7.3.")
+            .build());
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
     return payloadGenerator.isCallbackServerEnabled() && isVulnerableWithCallback(networkService);
   }
@@ -171,26 +194,7 @@ public final class Cve202338646Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE-2023-38646"))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CVE")
-                        .setValue("CVE-2023-38646"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Metabase Pre-Authentication RCE (CVE-2023-38646)")
-                .setDescription(
-                    "Metabase open source before 0.46.6.1 and Metabase Enterprise before 1.46.6.1"
-                        + " has a vulnerability that allows attackers to execute arbitrary commands"
-                        + " on the server, at the server's privilege level. Authentication is not"
-                        + " required for exploitation")
-                .setRecommendation(
-                    "Please upgrade Metabase to patched versions: v0.46.6.4, v1.46.6.4, v0.45.4.3,"
-                        + " v1.45.4.3, v0.44.7.3, v1.44.7.3, v0.43.7.3 or v1.43.7.3."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

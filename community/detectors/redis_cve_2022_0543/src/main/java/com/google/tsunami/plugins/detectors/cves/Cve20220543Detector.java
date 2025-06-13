@@ -113,6 +113,23 @@ public final class Cve20220543Detector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2022_0543"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-0543"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle(TITLE)
+            .setDescription(DESCRIPTION)
+            .setRecommendation(RECOMMENDATION)
+            .build());
+  }
+
   private boolean isRedisService(NetworkService networkService) {
     return networkService.getServiceName().equals("redis");
   }
@@ -190,20 +207,7 @@ public final class Cve20220543Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2022_0543"))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CVE")
-                        .setValue("CVE-2022-0543"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(TITLE)
-                .setDescription(DESCRIPTION)
-                .setRecommendation(RECOMMENDATION))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

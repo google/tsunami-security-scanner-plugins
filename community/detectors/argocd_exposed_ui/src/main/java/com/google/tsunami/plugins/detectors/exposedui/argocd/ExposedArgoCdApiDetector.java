@@ -35,12 +35,12 @@ import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
+import com.google.tsunami.plugin.PluginType;
+import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.NotImplementedException;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.plugin.PluginType;
-import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugins.detectors.exposedui.argocd.Annotations.OobSleepDuration;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
@@ -116,14 +116,47 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
       @UtcClock Clock utcClock,
       PayloadGenerator payloadGenerator,
       @OobSleepDuration int oobSleepDuration) {
-    this.httpClient =
-        checkNotNull(httpClient)
-            .modify()
-            .setFollowRedirects(true)
-            .build();
+    this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(true).build();
     this.utcClock = checkNotNull(utcClock);
     this.payloadGenerator = checkNotNull(payloadGenerator);
     this.oobSleepDuration = oobSleepDuration;
+  }
+
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        // The instance is publicly exposed.
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("EXPOSED_ARGOCD_API_SERVER"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Argo CD API server Exposed")
+            .setDescription(
+                "Argo CD API server is publicly exposed without any authentication. It allows"
+                    + " attackers to access kubernetes clusters. Attackers can change parameters of"
+                    + " clusters and possibly compromise it.")
+            .setRecommendation("Please disable public access to your Argo CD API server.")
+            .build(),
+        // The instance is vulnerable to CVE-2022-29165.
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("VULNERABLE_ARGOCD_API_SERVER"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-29165"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Argo CD API server Exposed")
+            .setDescription(
+                "Argo CD API server is vulnerable to CVE-2022-29165. It allows attackers to access"
+                    + " kubernetes clusters. Attackers can change parameters of clusters and"
+                    + " possibly compromise it.")
+            .setRecommendation(
+                "Patched versions are 2.1.15, and 2.3.4, and 2.2.9, and 2.1.15. Please update Argo"
+                    + " CD to these versions and higher.")
+            .build());
   }
 
   @Override
@@ -143,65 +176,22 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
                 // Argo CD API server is exposed publicly without any authentication, and it is
                 // confirmed by receiving an out-of-band callback
                 detectionReport.addDetectionReports(
-                    buildDetectionReport(
-                        targetInfo,
-                        networkService,
-                        "Argo CD API server is misconfigured. "
-                            + "The API server is not authenticated. "
-                            + "All applications can be accessed by the public and therefore can be "
-                            + "modified resulting in all application instances being compromised. "
-                            + "The Argo CD UI does not support executing OS commands "
-                            + "in the hosting machine at this time. "
-                            + "We detected this vulnerable Argo CD API server by creating "
-                            + "a test application and receiving out-of-band callback",
-                        "Please disable public access to your Argo CD API server.",
-                        Severity.CRITICAL));
+                    buildDetectionReport(targetInfo, networkService, this.getAdvisories().get(0)));
               } else if (isServiceVulnerableToAuthBypass(networkService, true)) {
                 // Argo CD API server is vulnerable to CVE-2022-29165, and it is confirmed by
                 // receiving an out-of-band callback
                 detectionReport.addDetectionReports(
-                    buildDetectionReport(
-                        targetInfo,
-                        networkService,
-                        "Argo CD API server is vulnerable to CVE-2022-29165. The authentication of"
-                            + " Argo CD API server can be bypassed and All applications can be"
-                            + " accessed by public and therefore can be modified resulting in all"
-                            + " application instances being compromised. The Argo CD UI does not"
-                            + " support executing OS commands in the hosting machine at this time."
-                            + " We detected this vulnerable Argo CD API server by receiving a HTTP"
-                            + " response from an endpoint that needs authentication",
-                        "Patched versions are 2.1.15, and 2.3.4, and 2.2.9, and"
-                            + " 2.1.15. Please update Argo CD to these versions and higher.",
-                        Severity.CRITICAL));
+                    buildDetectionReport(targetInfo, networkService, this.getAdvisories().get(1)));
               } else if (isServicePubliclyExposed(networkService, false)) {
                 // Argo CD API server is exposed publicly without any authentication, and it is
                 // confirmed by receiving matching a http response body
                 detectionReport.addDetectionReports(
-                    buildDetectionReport(
-                        targetInfo,
-                        networkService,
-                        "Argo CD API server is misconfigured. The API server is not"
-                            + " authenticated.We can't confirm that this API server has an admin"
-                            + " role because we can't create a new application and receive an"
-                            + " out-of-band callback from it, but we are able to receive some"
-                            + " endpoint data without authentication",
-                        "Please disable public access to your Argo CD API server.",
-                        Severity.HIGH));
+                    buildDetectionReport(targetInfo, networkService, this.getAdvisories().get(0)));
               } else if (isServiceVulnerableToAuthBypass(networkService, false)) {
                 // Argo CD API server is vulnerable to CVE-2022-29165, and it is
                 // confirmed by receiving matching a http response body
                 detectionReport.addDetectionReports(
-                    buildDetectionReport(
-                        targetInfo,
-                        networkService,
-                        "Argo CD API server is vulnerable to CVE-2022-29165. The authentication can"
-                            + " be bypassed. We can't confirm that this API server has an admin"
-                            + " role because we can't create a new application and receive an"
-                            + " out-of-band callback from it, but we are able to receive some"
-                            + " endpoint data without authentication",
-                        "Patched versions are 2.1.15, and 2.3.4, and 2.2.9, and"
-                            + " 2.1.15. Please update Argo CD to these versions and higher.",
-                        Severity.HIGH));
+                    buildDetectionReport(targetInfo, networkService, this.getAdvisories().get(1)));
               }
             });
     return detectionReport.build();
@@ -407,26 +397,13 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
   }
 
   private DetectionReport buildDetectionReport(
-      TargetInfo targetInfo,
-      NetworkService vulnerableNetworkService,
-      String description,
-      String recommendation,
-      Severity severity) {
+      TargetInfo targetInfo, NetworkService vulnerableNetworkService, Vulnerability vulnerability) {
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("ARGOCD_API_SERVER_EXPOSED"))
-                .setSeverity(severity)
-                .setTitle("Argo CD API server Exposed")
-                .setDescription(description)
-                .setRecommendation(recommendation))
+        .setVulnerability(vulnerability)
         .build();
   }
 }

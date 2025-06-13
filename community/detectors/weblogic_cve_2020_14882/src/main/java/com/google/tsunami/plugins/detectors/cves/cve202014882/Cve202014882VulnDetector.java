@@ -93,6 +93,31 @@ public class Cve202014882VulnDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2020_14882"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-14882"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("CVE-2020-14882: Weblogic management console permission bypass")
+            .setDescription(
+                "Vulnerability in the Oracle WebLogic Server product of Oracle Fusion"
+                    + " Middleware (component: Console). Supported versions that are affected"
+                    + " are 10.3.6.0.0, 12.1.3.0.0, 12.2.1.3.0, 12.2.1.4.0 and 14.1.1.0.0."
+                    + " Easily exploitable vulnerability allows unauthenticated attacker with"
+                    + " network access via HTTP to compromise Oracle WebLogic Server."
+                    + " Successful attacks of this vulnerability can result in takeover of"
+                    + " Oracle WebLogic Server")
+            .setRecommendation(
+                "Go to the oracle official website to download the latest weblogic patch.")
+            .build());
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
     String targetUri =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + CHECK_VUL_PATH;
@@ -131,28 +156,7 @@ public class Cve202014882VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2020_14882"))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CVE")
-                        .setValue("CVE-2020-14882"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2020-14882: Weblogic management console permission bypass")
-                .setDescription(
-                    "Vulnerability in the Oracle WebLogic Server product of Oracle Fusion"
-                        + " Middleware (component: Console). Supported versions that are affected"
-                        + " are 10.3.6.0.0, 12.1.3.0.0, 12.2.1.3.0, 12.2.1.4.0 and 14.1.1.0.0."
-                        + " Easily exploitable vulnerability allows unauthenticated attacker with"
-                        + " network access via HTTP to compromise Oracle WebLogic Server."
-                        + " Successful attacks of this vulnerability can result in takeover of"
-                        + " Oracle WebLogic Server")
-                .setRecommendation(
-                    "Go to the oracle official website to download the latest weblogic patch."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

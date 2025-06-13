@@ -33,12 +33,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -112,27 +109,7 @@ public class Cve202233891DetectorWithoutCallbackServerTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2022_33891"))
-                        .addRelatedId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CVE")
-                                .setValue("CVE-2022-33891"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2022-33891 Apache Spark UI RCE")
-                        .setRecommendation(
-                            "You can upgrade your Spark instances to 3.2.2, or 3.3.0 or later")
-                        .setDescription(
-                            "The Apache Spark UI has spark.acls.enable configuration option which"
-                                + " provides capability to modify the application according to"
-                                + " user's permissions. When the config is true, the vulnerable"
-                                + " versions of Spark checks the group membership of the user"
-                                + " without proper controls, that results in blind command"
-                                + " injection in username parameter."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
     assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
   }

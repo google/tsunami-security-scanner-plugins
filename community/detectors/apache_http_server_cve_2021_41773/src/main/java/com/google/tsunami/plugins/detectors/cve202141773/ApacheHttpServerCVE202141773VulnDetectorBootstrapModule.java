@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.rce.cve202125646;
+package com.google.tsunami.plugins.detectors.cve202141773;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 

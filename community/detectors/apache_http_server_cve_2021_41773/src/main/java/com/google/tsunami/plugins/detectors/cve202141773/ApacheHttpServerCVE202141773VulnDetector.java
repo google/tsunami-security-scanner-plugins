@@ -1,4 +1,4 @@
-package com.google.tsunami.plugins.detectors.rce.cve202125646;
+package com.google.tsunami.plugins.detectors.cve202141773;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -106,6 +106,37 @@ public class ApacheHttpServerCVE202141773VulnDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(getAdvisory(null));
+  }
+
+  Vulnerability getAdvisory(AdditionalDetail details) {
+    return Vulnerability.newBuilder()
+        .setMainId(
+            VulnerabilityId.newBuilder()
+                .setPublisher("TSUNAMI_COMMUNITY")
+                .setValue("CVE_2021_41773"))
+        .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-41773"))
+        .setSeverity(Severity.HIGH)
+        .setTitle("Apache HTTP Server 2.4.49 Path traversal and disclosure vulnerability")
+        .setDescription(
+            "A flaw was found in a change made to path normalization in Apache HTTP Server "
+                + "2.4.49. An attacker could use a path traversal attack to map URLs to "
+                + "files outside the expected document root. "
+                + "If files outside of the document root "
+                + "are not protected by \"require all denied\" these requests can succeed. "
+                + "Additionally this flaw could leak the source of interpreted files "
+                + "like CGI scripts. "
+                + "This issue is known to be exploited in the wild. "
+                + "This issue affects Apache 2.4.49 and 2.4.50 but not earlier versions. "
+                + "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-41773 "
+                + "https://httpd.apache.org/security/vulnerabilities_24.html")
+        .setRecommendation("Update to 2.4.51 release.")
+        .addAdditionalDetails(details)
+        .build();
+  }
+
   private CheckResult checkService(NetworkService networkService) {
     for (String dir : COMMON_DIRECTORIES) {
       for (String payload : COMMON_PAYLOADS) {
@@ -146,32 +177,7 @@ public class ApacheHttpServerCVE202141773VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2021_41773"))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CVE")
-                        .setValue("CVE-2021-41773"))
-                .setSeverity(Severity.HIGH)
-                .setTitle("Apache HTTP Server 2.4.49 Path traversal and disclosure vulnerability")
-                .setDescription(
-                    "A flaw was found in a change made to path normalization in Apache HTTP Server "
-                        + "2.4.49. An attacker could use a path traversal attack to map URLs to "
-                        + "files outside the expected document root. "
-                        + "If files outside of the document root "
-                        + "are not protected by \"require all denied\" these requests can succeed. "
-                        + "Additionally this flaw could leak the source of interpreted files "
-                        + "like CGI scripts. "
-                        + "This issue is known to be exploited in the wild. "
-                        + "This issue affects Apache 2.4.49 and 2.4.50 but not earlier versions. "
-                        + "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-41773 "
-                        + "https://httpd.apache.org/security/vulnerabilities_24.html")
-                .setRecommendation("Update to 2.4.51 release.")
-                .addAdditionalDetails(buildAdditionalDetail(checkResult)))
+        .setVulnerability(getAdvisory(buildAdditionalDetail(checkResult)))
         .build();
   }
 
@@ -213,8 +219,11 @@ public class ApacheHttpServerCVE202141773VulnDetector implements VulnDetector {
   @AutoValue
   abstract static class CheckResult {
     abstract boolean isVulnerable();
+
     abstract NetworkService networkService();
+
     abstract Optional<String> vulnerableUrl();
+
     abstract Optional<HttpResponse> response();
 
     static CheckResult buildForVulnerableDetection(

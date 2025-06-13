@@ -17,9 +17,6 @@ package com.google.tsunami.plugins.detectors.cves;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forIpAndPort;
-import static com.google.tsunami.plugins.detectors.cves.Cve20220543Detector.DESCRIPTION;
-import static com.google.tsunami.plugins.detectors.cves.Cve20220543Detector.RECOMMENDATION;
-import static com.google.tsunami.plugins.detectors.cves.Cve20220543Detector.TITLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -37,10 +34,7 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -123,20 +117,7 @@ public final class Cve20220543DetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2022_0543"))
-                        .addRelatedId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CVE")
-                                .setValue("CVE-2022-0543"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(TITLE)
-                        .setDescription(DESCRIPTION)
-                        .setRecommendation(RECOMMENDATION))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

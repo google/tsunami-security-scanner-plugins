@@ -18,11 +18,6 @@ package com.google.tsunami.plugins.detectors.rce.cve201712617;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.rce.cve201712617.Cve201712617Detector.RECOMMENDATION;
-import static com.google.tsunami.plugins.detectors.rce.cve201712617.Cve201712617Detector.VULNERABILITY_REPORT_ID;
-import static com.google.tsunami.plugins.detectors.rce.cve201712617.Cve201712617Detector.VULNERABILITY_REPORT_PUBLISHER;
-import static com.google.tsunami.plugins.detectors.rce.cve201712617.Cve201712617Detector.VULNERABILITY_REPORT_TITLE;
-import static com.google.tsunami.plugins.detectors.rce.cve201712617.Cve201712617Detector.VULN_DESCRIPTION;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -36,11 +31,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -121,20 +113,7 @@ public final class Cve201712617DetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
-                                .setValue(VULNERABILITY_REPORT_ID))
-                        .addRelatedId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CVE")
-                                .setValue("CVE-2017-12617"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(VULNERABILITY_REPORT_TITLE)
-                        .setDescription(VULN_DESCRIPTION)
-                        .setRecommendation(RECOMMENDATION))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

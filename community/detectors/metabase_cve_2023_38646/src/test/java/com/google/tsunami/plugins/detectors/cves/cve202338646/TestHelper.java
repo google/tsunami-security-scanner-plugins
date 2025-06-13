@@ -24,11 +24,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.time.Instant;
 import okhttp3.mockwebserver.MockWebServer;
 
@@ -49,30 +46,16 @@ final class TestHelper {
   }
 
   static DetectionReport buildValidDetectionReport(
-      TargetInfo targetInfo, NetworkService service, FakeUtcClock fakeUtcClock) {
+      Cve202338646Detector detector,
+      TargetInfo targetInfo,
+      NetworkService service,
+      FakeUtcClock fakeUtcClock) {
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(service)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE-2023-38646"))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-38646"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Metabase Pre-Authentication RCE (CVE-2023-38646)")
-                .setDescription(
-                    "Metabase open source before 0.46.6.1 and Metabase Enterprise before 1.46.6.1"
-                        + " has a vulnerability that allows attackers to execute arbitrary commands"
-                        + " on the server, at the server's privilege level. Authentication is not"
-                        + " required for exploitation")
-                .setRecommendation(
-                    "Please upgrade Metabase to patched versions: v0.46.6.4, v1.46.6.4, v0.45.4.3,"
-                        + " v1.45.4.3, v0.44.7.3, v1.44.7.3, v0.43.7.3 or v1.43.7.3."))
+        .setVulnerability(detector.getAdvisories().get(0))
         .build();
   }
 }

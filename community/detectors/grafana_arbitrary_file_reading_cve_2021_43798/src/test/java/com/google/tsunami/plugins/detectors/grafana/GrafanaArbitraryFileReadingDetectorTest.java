@@ -30,13 +30,10 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -101,25 +98,7 @@ public final class GrafanaArbitraryFileReadingDetectorTest {
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2021_43798"))
-                        .setSeverity(Severity.HIGH)
-                        .addRelatedId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CVE")
-                                .setValue("CVE-2021-43798"))
-                        .setTitle(
-                            "Grafana Pre-Auth Arbitrary File Reading vulnerability"
-                                + " (CVE_2021_43798)")
-                        .setDescription(
-                            "In Grafana 8.0.0 to 8.3.0, there is an endpoint that can be "
-                                + "accessed without authentication. This endpoint has a directory "
-                                + "traversal vulnerability, and any user can read any file on the "
-                                + "server without authentication, causing information leakage.")
-                        .setRecommendation("Update to 8.3.1 version or later.")
+                    detector.getAdvisories().get(0).toBuilder()
                         .addAdditionalDetails(
                             AdditionalDetail.newBuilder()
                                 .setTextData(

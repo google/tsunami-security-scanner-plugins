@@ -32,10 +32,7 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -93,31 +90,7 @@ public class Cve20242928VulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2024_2928"))
-                        .addRelatedId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CVE")
-                                .setValue("CVE-2024-2928"))
-                        .setSeverity(Severity.HIGH)
-                        .setTitle("CVE-2024-2928 MLflow Local File Inclusion")
-                        .setDescription(
-                            "A Local File Inclusion (LFI) vulnerability was identified in"
-                                + " mlflow, which was fixed in version 2.11.2. This"
-                                + " vulnerability arises from the application's failure to properly"
-                                + " validate URI fragments for directory traversal sequences such"
-                                + " as '../'. An attacker can exploit this flaw by manipulating the"
-                                + " fragment part of the URI to read arbitrary files on the local"
-                                + " file system, including sensitive files like '/etc/passwd'. The"
-                                + " vulnerability is a bypass to a previous patched vulnerability"
-                                + " (namely for CVE-2023-6909) that only addressed similar"
-                                + " manipulation within the URI's query string.")
-                        .setRecommendation(
-                            "You can upgrade your MLflow instances to 2.11.2 or later."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
     assertThat(mockWebServer.getRequestCount()).isEqualTo(8);
   }

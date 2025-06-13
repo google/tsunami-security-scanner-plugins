@@ -18,8 +18,6 @@ package com.google.tsunami.plugins.cve20232843;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.cves.cve202328432.Cve202328432VulnDetector.DESCRIPTION;
-import static com.google.tsunami.plugins.cves.cve202328432.Cve202328432VulnDetector.RECOMMENDATION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 
@@ -40,13 +38,10 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Optional;
@@ -264,19 +259,7 @@ public final class Cve202328432VulnDetectorTest {
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("MINIO_INFORMATION_DISCLOSURE_CLUSTER_ENVIRONMENT"))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CVE")
-                        .setValue("CVE-2023-28432"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("MinIO Information Disclosure in Cluster Environment")
-                .setDescription(DESCRIPTION)
-                .setRecommendation(RECOMMENDATION)
+            detector.getAdvisories().get(0).toBuilder()
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
                         .setTextData(TextData.newBuilder().setText(vulnerabilityDetail))))
