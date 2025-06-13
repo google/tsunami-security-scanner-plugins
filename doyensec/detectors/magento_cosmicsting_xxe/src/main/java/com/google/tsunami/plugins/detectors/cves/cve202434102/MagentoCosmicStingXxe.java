@@ -91,17 +91,6 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
           + " information.\n";
 
   @VisibleForTesting
-  static final String VULNERABILITY_REPORT_DESCRIPTION_CALLBACK =
-      VULNERABILITY_REPORT_DESCRIPTION_BASIC
-          + "The vulnerability was confirmed via an out of band callback.";
-
-  @VisibleForTesting
-  static final String VULNERABILITY_REPORT_DESCRIPTION_RESPONSE_MATCHING =
-      VULNERABILITY_REPORT_DESCRIPTION_BASIC
-          + "The vulnerability was confirmed via response matching only, as the Tsunami Callback"
-          + " Server was not available.";
-
-  @VisibleForTesting
   static final String VULNERABILITY_REPORT_RECOMMENDATION =
       "Install the latest security patches and rotate your encryption keys. More detailed"
           + " instructions can be found in the official Adobe security bulletin:"
@@ -149,6 +138,11 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
     this.oobSleepDuration = oobSleepDuration;
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(getAdvisory(Severity.CRITICAL, ""));
+  }
+
   // This is the main entry point of VulnDetector.
   @Override
   public DetectionReportList detect(
@@ -163,6 +157,23 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
+        .build();
+  }
+
+  Vulnerability getAdvisory(Severity severity, String additionalDetails) {
+    return Vulnerability.newBuilder()
+        .setMainId(
+            VulnerabilityId.newBuilder()
+                .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
+                .setValue(VULNERABILITY_REPORT_ID))
+        .setSeverity(severity)
+        .setTitle(VULNERABILITY_REPORT_TITLE)
+        .setDescription(VULNERABILITY_REPORT_DESCRIPTION_BASIC)
+        .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION)
+        .addAdditionalDetails(
+            AdditionalDetail.newBuilder()
+                .setTextData(TextData.newBuilder().setText(additionalDetails)))
+        .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2024-34102"))
         .build();
   }
 
@@ -423,13 +434,10 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
 
     // Set description and severity depending on whether the vulnerability was verified via an OOB
     // callback or with response matching only
-    String description;
     Severity severity;
     if (this.responseMatchingOnly) {
-      description = VULNERABILITY_REPORT_DESCRIPTION_RESPONSE_MATCHING;
       severity = Severity.HIGH;
     } else {
-      description = VULNERABILITY_REPORT_DESCRIPTION_CALLBACK;
       severity = Severity.CRITICAL;
     }
 
@@ -438,23 +446,7 @@ public final class MagentoCosmicStingXxe implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
-                        .setValue(VULNERABILITY_REPORT_ID))
-                .setSeverity(severity)
-                .setTitle(VULNERABILITY_REPORT_TITLE)
-                .setDescription(description)
-                .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION)
-                .addAdditionalDetails(
-                    AdditionalDetail.newBuilder()
-                        .setTextData(TextData.newBuilder().setText(additionalDetails)))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CVE")
-                        .setValue("CVE-2024-34102")))
+        .setVulnerability(getAdvisory(severity, additionalDetails))
         .build();
   }
 }

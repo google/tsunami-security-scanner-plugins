@@ -24,10 +24,6 @@ import static com.google.tsunami.plugins.detectors.comfyui.savepathread.ComfyUiF
 import static com.google.tsunami.plugins.detectors.comfyui.savepathread.ComfyUiFileReadViaSavePath.OS_ENDPOINT;
 import static com.google.tsunami.plugins.detectors.comfyui.savepathread.ComfyUiFileReadViaSavePath.QUEUE_START_ENDPOINT;
 import static com.google.tsunami.plugins.detectors.comfyui.savepathread.ComfyUiFileReadViaSavePath.VERSION_ENDPOINT;
-import static com.google.tsunami.plugins.detectors.comfyui.savepathread.ComfyUiFileReadViaSavePath.VULNERABILITY_REPORT_DESCRIPTION;
-import static com.google.tsunami.plugins.detectors.comfyui.savepathread.ComfyUiFileReadViaSavePath.VULNERABILITY_REPORT_PUBLISHER;
-import static com.google.tsunami.plugins.detectors.comfyui.savepathread.ComfyUiFileReadViaSavePath.VULNERABILITY_REPORT_RECOMMENDATION;
-import static com.google.tsunami.plugins.detectors.comfyui.savepathread.ComfyUiFileReadViaSavePath.VULNERABILITY_REPORT_TITLE;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -43,11 +39,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -124,7 +117,13 @@ public final class ComfyUiFileReadViaSavePathTest {
 
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
 
-    DetectionReport expectedDetection = generateDetectionReport(targetInfo, httpServices.get(0));
+    DetectionReport expectedDetection = DetectionReport.newBuilder()
+        .setTargetInfo(targetInfo)
+        .setNetworkService(httpServices.get(0))
+        .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+        .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+        .setVulnerability(detector.getAdvisories().get(0))
+        .build();
     assertThat(detectionReports.getDetectionReportsList()).containsExactly(expectedDetection);
     assertThat(mockWebServer.getRequestCount()).isEqualTo(7);
   }
@@ -145,26 +144,6 @@ public final class ComfyUiFileReadViaSavePathTest {
     assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
   }
 
-  private DetectionReport generateDetectionReport(
-      TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
-
-    return DetectionReport.newBuilder()
-        .setTargetInfo(targetInfo)
-        .setNetworkService(vulnerableNetworkService)
-        .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
-        .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
-                        .setValue("COMFYUI_2025_FILE_READ_SAVEPATH"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(VULNERABILITY_REPORT_TITLE)
-                .setDescription(VULNERABILITY_REPORT_DESCRIPTION)
-                .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION))
-        .build();
-  }
 
   private ImmutableList<NetworkService> mockWebServerSetup(boolean isVulnerable)
       throws IOException {

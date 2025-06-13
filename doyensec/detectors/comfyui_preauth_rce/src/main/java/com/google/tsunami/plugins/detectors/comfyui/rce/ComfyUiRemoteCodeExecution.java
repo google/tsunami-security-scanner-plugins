@@ -117,6 +117,21 @@ public final class ComfyUiRemoteCodeExecution implements VulnDetector {
     this.httpClient = checkNotNull(httpClient);
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
+                    .setValue("COMFYUI_2025_PREAUTH_RCE"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle(VULNERABILITY_REPORT_TITLE)
+            .setDescription(VULNERABILITY_REPORT_DESCRIPTION)
+            .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION)
+            .build());
+  }
+
   // This is the main entry point of VulnDetector.
   @Override
   public DetectionReportList detect(
@@ -273,16 +288,7 @@ public final class ComfyUiRemoteCodeExecution implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
-                        .setValue("COMFYUI_2025_PREAUTH_RCE"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(VULNERABILITY_REPORT_TITLE)
-                .setDescription(VULNERABILITY_REPORT_DESCRIPTION)
-                .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }
