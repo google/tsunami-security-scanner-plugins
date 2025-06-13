@@ -85,6 +85,30 @@ public final class Cve202326360Detector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2023_26360"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-26360"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Adobe ColdFusion Unauthenticated Arbitrary Read and Remote Code Execution")
+            .setDescription(
+                "Adobe ColdFusion versions 2018 Update 15 (and earlier) and 2021 Update 5 (and"
+                    + " earlier) are affected by an Improper Access Control vulnerability that"
+                    + " could result in unauthenticated file read and arbitrary code execution"
+                    + " in the context of the current user. Exploitation of this issue does not"
+                    + " require user interaction.")
+            .setRecommendation(
+                "For Adobe ColdFusion 2018, ugrade to version Update 16 or higher"
+                    + "For  Adobe ColdFusion 2021, upgrade to version Update 6 or higher")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("CVE-2023-26360 starts detecting.");
@@ -134,26 +158,7 @@ public final class Cve202326360Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2023_26360"))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-26360"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(
-                    "Adobe ColdFusion Unauthenticated Arbitrary Read and Remote Code Execution")
-                .setDescription(
-                    "Adobe ColdFusion versions 2018 Update 15 (and earlier) and 2021 Update 5 (and"
-                        + " earlier) are affected by an Improper Access Control vulnerability that"
-                        + " could result in unauthenticated file read and arbitrary code execution"
-                        + " in the context of the current user. Exploitation of this issue does not"
-                        + " require user interaction.")
-                .setRecommendation(
-                    "For Adobe ColdFusion 2018, ugrade to version Update 16 or higher"
-                        + "For  Adobe ColdFusion 2021, upgrade to version Update 6 or higher"))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

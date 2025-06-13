@@ -72,6 +72,25 @@ public final class AtlassianConfluencePreAuthOgnlInjectionDetector implements Vu
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE-2021-26084"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-26084"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Atlassian Confluence Pre-Auth OGNL Injection")
+            .setDescription(
+                "An OGNL injection vulnerability exists that allows an unauthenticated attacker to"
+                    + " execute arbitrary code on a Confluence Server or Data Center instance.")
+            .setRecommendation("enable authentication")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     return DetectionReportList.newBuilder()
@@ -118,20 +137,6 @@ public final class AtlassianConfluencePreAuthOgnlInjectionDetector implements Vu
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                    .setValue("CVE-2021-26084"))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CVE")
-                        .setValue("CVE-2021-26084"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Atlassian Confluence Pre-Auth OGNL Injection")
-                .setDescription("An OGNL injection vulnerability exists that allows an "
-                    + "unauthenticated attacker to execute arbitrary code on a Confluence "
-                    + "Server or Data Center instance.")
-                .setRecommendation("enable authentication")
-        ).build();
+        .setVulnerability(this.getAdvisories().get(0)).build();
   }
 }

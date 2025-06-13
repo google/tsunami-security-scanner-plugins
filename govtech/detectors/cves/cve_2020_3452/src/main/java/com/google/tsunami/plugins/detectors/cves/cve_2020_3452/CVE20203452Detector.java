@@ -65,6 +65,22 @@ public final class CVE20203452Detector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOVTECH").setValue("CVE_2020_3452"))
+            .setSeverity(Severity.HIGH)
+            .setTitle("CVE-2020-3452")
+            .setCvssV2("5.0")
+            .setCvssV3("7.5")
+            .setDescription("Cisco ASA/FTD Server is vulnerable to CVE-2020-3452.")
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-3452"))
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting CVE-2020-3452 detection.");
@@ -107,21 +123,7 @@ public final class CVE20203452Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOVTECH")
-                        .setValue("CVE_2020_3452"))
-                .setSeverity(Severity.HIGH)
-                .setTitle("CVE-2020-3452")
-                .setCvssV2("5.0")
-                .setCvssV3("7.5")
-                .setDescription("Cisco ASA/FTD Server is vulnerable to CVE-2020-3452.")
-                .addRelatedId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CVE")
-                        .setValue("CVE-2020-3452")))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

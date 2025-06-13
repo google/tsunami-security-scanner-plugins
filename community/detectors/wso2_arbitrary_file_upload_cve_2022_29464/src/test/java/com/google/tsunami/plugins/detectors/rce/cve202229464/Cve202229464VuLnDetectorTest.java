@@ -33,11 +33,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -109,34 +106,7 @@ public final class Cve202229464VuLnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE-2022-29464"))
-                        .addRelatedId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CVE")
-                                .setValue("CVE-2022-29464"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("WSO2 Unrestricted Arbitrary File Upload CVE-2022-29464")
-                        .setDescription(
-                            "WSO2 API Manager 2.2.0, up to 4.0.0,WSO2 Identity Server 5.2.0, up"
-                                + " to 5.11.0,WSO2 Identity Server Analytics 5.4.0, 5.4.1, 5.5.0,"
-                                + " 5.6.0,WSO2 Identity Server as Key Manager 5.3.0, up to"
-                                + " 5.11.0,WSO2 Enterprise Integrator 6.2.0, up to 6.6.0,WSO2 Open"
-                                + " Banking AM 1.4.0, up to 2.0.0,WSO2 Open Banking KM 1.4.0, up"
-                                + " to 2.0.0 contains a arbitrary file upload vulnerability. Due"
-                                + " to improper validation of user input, a malicious actor could"
-                                + " upload an arbitrary file to a user controlled location of the"
-                                + " server. By leveraging the arbitrary file upload vulnerability,"
-                                + " it is further possible to gain remote code execution on the"
-                                + " server.")
-                        .setRecommendation(
-                            "Update WSO2 API Manager to 4.2.0, Identity Server to"
-                                + " 6.1.0, Enterprise Integrator to 7.1.0, and"
-                                + " Open Banking AM and KM to 3.0.0."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
 
     Truth.assertThat(mockWebServer.getRequestCount()).isEqualTo(2);

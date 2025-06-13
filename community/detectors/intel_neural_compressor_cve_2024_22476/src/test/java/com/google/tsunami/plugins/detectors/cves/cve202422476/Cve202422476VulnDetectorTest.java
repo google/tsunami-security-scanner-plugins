@@ -32,10 +32,7 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -97,30 +94,7 @@ public class Cve202422476VulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2024_22476"))
-                        .addRelatedId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CVE")
-                                .setValue("CVE-2024-22476"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2024-22476 Intel Neural Compressor RCE")
-                        .setRecommendation(
-                            "You can upgrade your Intel Neural Compressor instances to 2.5.0 or"
-                                + " later.")
-                        .setDescription(
-                            "The Intel Neural Compressor has a component called Neural Solution"
-                                + " that brings the capabilities of Intel Neural Compressor as a"
-                                + " service. The task/submit API in the Neural Solution webserver"
-                                + " is vulnerable to an unauthenticated remote code execution (RCE)"
-                                + " attack. The script_urlparameter in the body of the POST request"
-                                + " for this API is not validated or filtered on the backend. As a"
-                                + " result, attackers can manipulate this parameter to remotely"
-                                + " execute arbitrary commands."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
     assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);

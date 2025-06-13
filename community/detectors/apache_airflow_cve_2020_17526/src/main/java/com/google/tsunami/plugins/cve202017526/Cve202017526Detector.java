@@ -31,13 +31,13 @@ import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpRequest;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
+import com.google.tsunami.plugin.PluginType;
+import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.NotImplementedException;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.plugin.PluginType;
-import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugins.cve202017526.Annotations.OobSleepDuration;
 import com.google.tsunami.plugins.cve202017526.flasksessionsigner.FlaskSessionSigner;
 import com.google.tsunami.proto.DetectionReport;
@@ -91,6 +91,31 @@ public final class Cve202017526Detector implements VulnDetector {
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(true).build();
     this.oobSleepDuration = oobSleepDuration;
     this.payloadGenerator = checkNotNull(payloadGenerator);
+  }
+
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE-2020-17526"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-17526"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle(
+                "CVE-2020-17526 Authentication bypass lead to Arbitrary Code Execution in"
+                    + " Apache Airflow prior to 1.10.14")
+            .setDescription(
+                "An attacker can bypass the authentication and then use a default DAG to"
+                    + " execute arbitrary code on the server hosting the apache airflow"
+                    + " application.")
+            .setRecommendation(
+                "update to version 1.10.14. Also, you can change the default value for the"
+                    + " '[webserver] secret_key' config to a securely generated random value to"
+                    + " sign the cookies with a non-default secret key.")
+            .build());
   }
 
   @Override
@@ -245,28 +270,7 @@ public final class Cve202017526Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE-2020-17526"))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CVE")
-                        .setValue("CVE-2020-17526"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(
-                    "CVE-2020-17526 Authentication bypass lead to Arbitrary Code Execution in"
-                        + " Apache Airflow prior to 1.10.14")
-                .setDescription(
-                    "An attacker can bypass the authentication and then use a default DAG to"
-                        + " execute arbitrary code on the server hosting the apache airflow"
-                        + " application.")
-                .setRecommendation(
-                    "update to version 1.10.14. Also, you can change the default value for the"
-                        + " '[webserver] secret_key' config to a securely generated random value to"
-                        + " sign the cookies with a non-default secret key."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

@@ -98,6 +98,31 @@ public final class SpringBootExposedEndpointDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(getAdvisory(null));
+  }
+
+  Vulnerability getAdvisory(AdditionalDetail details) {
+    return Vulnerability.newBuilder()
+        .setMainId(
+            VulnerabilityId.newBuilder()
+                .setPublisher("GOOGLE")
+                .setValue("EXPOSED_SPRING_BOOT_ACTUATOR_ENDPOINT"))
+        .setSeverity(Severity.CRITICAL)
+        .setTitle("Exposed Spring Boot Actuator Endpoint")
+        .setDescription(
+            "Spring Boot applications have several built-in Actuator endpoints enabled by"
+                + " default. For example, '/env' endpoint exposes all properties from"
+                + " Spring's ConfigurableEnvironment including system environment"
+                + " variables, and '/heapdump' will dump the entire memory of the server"
+                + " into a file. Exposing these endpoints could potentially leak sensitive"
+                + " information to any unauthenticated users.")
+        .setRecommendation("Disable public access to Actuator endpoints.")
+        .addAdditionalDetails(details)
+        .build();
+  }
+
   private EndpointProbingResult checkEndpointForNetworkService(NetworkService networkService) {
     String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     // Generate all potential heapdump URLs to check from the application root url.
@@ -178,23 +203,7 @@ public final class SpringBootExposedEndpointDetector implements VulnDetector {
         .setNetworkService(endpointProbingResult.networkService())
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("EXPOSED_SPRING_BOOT_ACTUATOR_ENDPOINT"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Exposed Spring Boot Actuator Endpoint")
-                .setDescription(
-                    "Spring Boot applications have several built-in Actuator endpoints enabled by"
-                        + " default. For example, '/env' endpoint exposes all properties from"
-                        + " Spring's ConfigurableEnvironment including system environment"
-                        + " variables, and '/heapdump' will dump the entire memory of the server"
-                        + " into a file. Exposing these endpoints could potentially leak sensitive"
-                        + " information to any unauthenticated users.")
-                .setRecommendation("Disable public access to Actuator endpoints.")
-                .addAdditionalDetails(buildAdditionalDetail(endpointProbingResult)))
+        .setVulnerability(getAdvisory(buildAdditionalDetail(endpointProbingResult)))
         .build();
   }
 
@@ -219,8 +228,11 @@ public final class SpringBootExposedEndpointDetector implements VulnDetector {
   @AutoValue
   abstract static class EndpointProbingResult {
     abstract boolean isVulnerable();
+
     abstract NetworkService networkService();
+
     abstract Optional<String> vulnerableEndpoint();
+
     abstract Optional<HttpResponse> vulnerableEndpointResponse();
 
     static Builder builder() {
@@ -234,8 +246,11 @@ public final class SpringBootExposedEndpointDetector implements VulnDetector {
     @AutoValue.Builder
     abstract static class Builder {
       abstract Builder setIsVulnerable(boolean value);
+
       abstract Builder setNetworkService(NetworkService value);
+
       abstract Builder setVulnerableEndpoint(String value);
+
       abstract Builder setVulnerableEndpointResponse(HttpResponse value);
 
       abstract EndpointProbingResult build();

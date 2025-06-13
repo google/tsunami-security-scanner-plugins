@@ -27,12 +27,9 @@ import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.time.Instant;
 import javax.inject.Inject;
 import org.junit.Before;
@@ -122,23 +119,11 @@ public final class RsyncRceDetectorTest {
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.instant().toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("RSYNC_SERVER_RCE"))
-                        .addRelatedId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CVE")
-                                .setValue("CVE-2024-12084"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2024-12084 Heap Buffer Overflow leading to Remote Code Execution in Rsync Server")
-                        .setDescription(RsyncRceDetector.VULN_DESCRIPTION)
-                        .setRecommendation(RsyncRceDetector.VULN_RECOMMENDATION)
-                        .addAdditionalDetails(
-                            AdditionalDetail.newBuilder()
-                                .setDescription("Rsync banner")
-                                .setTextData(TextData.newBuilder().setText(vulnerableBanner))))
+                    detector.getAdvisory(
+                        AdditionalDetail.newBuilder()
+                            .setDescription("Rsync banner")
+                            .setTextData(TextData.newBuilder().setText(vulnerableBanner))
+                            .build()))
                 .build());
   }
 

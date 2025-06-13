@@ -17,9 +17,6 @@
 package com.google.tsunami.plugins.detectors.rce.cve202014883;
 
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.rce.cve202014883.WebLogicAdminConsoleRceDetector.RECOMMENDATION;
-import static com.google.tsunami.plugins.detectors.rce.cve202014883.WebLogicAdminConsoleRceDetector.VULNERABILITY_REPORT_TITLE;
-import static com.google.tsunami.plugins.detectors.rce.cve202014883.WebLogicAdminConsoleRceDetector.VULN_DESCRIPTION;
 
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
@@ -27,11 +24,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.time.Instant;
 import okhttp3.mockwebserver.MockWebServer;
 
@@ -51,25 +45,13 @@ final class TestHelper {
   }
 
   static DetectionReport buildValidDetectionReport(
-      TargetInfo target, NetworkService service, FakeUtcClock fakeUtcClock) {
+      WebLogicAdminConsoleRceDetector detector, TargetInfo target, NetworkService service, FakeUtcClock fakeUtcClock) {
     return DetectionReport.newBuilder()
         .setTargetInfo(target)
         .setNetworkService(service)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher(
-                            WebLogicAdminConsoleRceDetector.VULNERABILITY_REPORT_PUBLISHER)
-                        .setValue(WebLogicAdminConsoleRceDetector.VULNERABILITY_REPORT_ID))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-14883"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(VULNERABILITY_REPORT_TITLE)
-                .setDescription(VULN_DESCRIPTION)
-                .setRecommendation(RECOMMENDATION))
+        .setVulnerability(detector.getAdvisories().get(0))
         .build();
   }
 }

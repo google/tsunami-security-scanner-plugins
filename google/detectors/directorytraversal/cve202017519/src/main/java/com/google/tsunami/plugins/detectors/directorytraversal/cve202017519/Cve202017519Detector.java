@@ -88,6 +88,29 @@ public final class Cve202017519Detector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2020_17519"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Apache Flink Unauthorized Directory Traversal (CVE-2020-17519)")
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-17519"))
+            .setDescription(
+                "A change introduced in Apache Flink 1.11.0 (and released in 1.11.1 and "
+                    + "1.11.2 as well) allows attackers to read any file on the local "
+                    + "filesystem of the JobManager through the REST interface of the "
+                    + "JobManager process. Access is restricted to files accessible by the "
+                    + "JobManager process.")
+            .setRecommendation(
+                "All users should upgrade to Flink 1.11.3 or 1.12.0 if their Flink instance(s)"
+                    + " are exposed. The issue was fixed in commit"
+                    + " b561010b0ee741543c3953306037f00d7a9f0801 from apache/flink:master.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Cve202017519Detector starts detecting.");
@@ -134,24 +157,7 @@ public final class Cve202017519Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2020_17519"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Apache Flink Unauthorized Directory Traversal (CVE-2020-17519)")
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-17519"))
-                .setDescription(
-                    "A change introduced in Apache Flink 1.11.0 (and released in 1.11.1 and "
-                        + "1.11.2 as well) allows attackers to read any file on the local "
-                        + "filesystem of the JobManager through the REST interface of the "
-                        + "JobManager process. Access is restricted to files accessible by the "
-                        + "JobManager process.")
-                .setRecommendation(
-                    "All users should upgrade to Flink 1.11.3 or 1.12.0 if their Flink instance(s)"
-                        + " are exposed. The issue was fixed in commit"
-                        + " b561010b0ee741543c3953306037f00d7a9f0801 from apache/flink:master."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 

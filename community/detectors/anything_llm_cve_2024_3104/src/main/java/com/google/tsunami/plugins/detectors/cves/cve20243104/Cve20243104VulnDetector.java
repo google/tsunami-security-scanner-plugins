@@ -94,6 +94,33 @@ public final class Cve20243104VulnDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2024_3104"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2024-3104"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("CVE-2024-3104 anything-llm RCE")
+            .setDescription(
+                "A remote code execution vulnerability exists in mintplex-labs/anything-llm due"
+                    + " to improper handling of environment variables. Attackers can exploit"
+                    + " this vulnerability by injecting arbitrary environment variables via the"
+                    + " POST /api/system/update-env endpoint, which allows for the execution of"
+                    + " arbitrary code on the host running anything-llm.Successful exploitation"
+                    + " could lead to code execution on the host, enabling attackers to read"
+                    + " and modify data accessible to the user running the service, potentially"
+                    + " leading to a denial of service.")
+            .setRecommendation(
+                "You can upgrade your anything-llm instances to a version whose commit ID is"
+                    + " bfedfebfab032e6f4d5a369c8a2f947c5d0c5286 or later.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
 
@@ -231,30 +258,7 @@ public final class Cve20243104VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2024_3104"))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CVE")
-                        .setValue("CVE-2024-3104"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2024-3104 anything-llm RCE")
-                .setDescription(
-                    "A remote code execution vulnerability exists in mintplex-labs/anything-llm due"
-                        + " to improper handling of environment variables. Attackers can exploit"
-                        + " this vulnerability by injecting arbitrary environment variables via the"
-                        + " POST /api/system/update-env endpoint, which allows for the execution of"
-                        + " arbitrary code on the host running anything-llm.Successful exploitation"
-                        + " could lead to code execution on the host, enabling attackers to read"
-                        + " and modify data accessible to the user running the service, potentially"
-                        + " leading to a denial of service.")
-                .setRecommendation(
-                    "You can upgrade your anything-llm instances to a version whose commit ID is"
-                        + " bfedfebfab032e6f4d5a369c8a2f947c5d0c5286 or later."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

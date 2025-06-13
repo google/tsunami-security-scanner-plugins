@@ -28,12 +28,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -109,26 +106,7 @@ public final class Cve202326360DetectorTest {
             .setNetworkService(service)
             .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
             .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-            .setVulnerability(
-                Vulnerability.newBuilder()
-                    .setMainId(
-                        VulnerabilityId.newBuilder()
-                            .setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("CVE_2023_26360"))
-                    .addRelatedId(
-                        VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-26360"))
-                    .setSeverity(Severity.CRITICAL)
-                    .setTitle(
-                        "Adobe ColdFusion Unauthenticated Arbitrary Read and Remote Code Execution")
-                    .setDescription(
-                        "Adobe ColdFusion versions 2018 Update 15 (and earlier) and 2021 Update 5"
-                            + " (and earlier) are affected by an Improper Access Control"
-                            + " vulnerability that could result in unauthenticated file read and"
-                            + " arbitrary code execution in the context of the current user."
-                            + " Exploitation of this issue does not require user interaction.")
-                    .setRecommendation(
-                        "For Adobe ColdFusion 2018, ugrade to version Update 16 or higher"
-                            + "For  Adobe ColdFusion 2021, upgrade to version Update 6 or higher"))
+            .setVulnerability(detector.getAdvisories().get(0))
             .build();
 
     assertThat(actual).isEqualTo(expected);

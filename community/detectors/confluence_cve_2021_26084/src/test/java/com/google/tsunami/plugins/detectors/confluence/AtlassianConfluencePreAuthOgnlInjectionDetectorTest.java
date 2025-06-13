@@ -30,12 +30,9 @@ import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.time.Instant;
 import javax.inject.Inject;
 import okhttp3.mockwebserver.MockResponse;
@@ -96,21 +93,7 @@ public final class AtlassianConfluencePreAuthOgnlInjectionDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("CVE-2021-26084"))
-                        .addRelatedId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CVE")
-                                .setValue("CVE-2021-26084"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Atlassian Confluence Pre-Auth OGNL Injection")
-                        .setDescription("An OGNL injection vulnerability exists that allows an "
-                            + "unauthenticated attacker to execute arbitrary code on a Confluence "
-                            + "Server or Data Center instance.")
-                        .setRecommendation("enable authentication")
-                ).build());
+                .setVulnerability(detector.getAdvisories().get(0)).build());
   }
 
   @Test

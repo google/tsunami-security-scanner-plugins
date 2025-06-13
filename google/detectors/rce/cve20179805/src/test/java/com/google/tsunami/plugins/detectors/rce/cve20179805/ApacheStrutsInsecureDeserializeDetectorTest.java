@@ -31,12 +31,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -110,24 +107,7 @@ public final class ApacheStrutsInsecureDeserializeDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("CVE_2017_9805"))
-                .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2017-9805"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(
-                            "Apache Struts Command Injection via Unsafe Deserialization"
-                                + " (CVE-2017-9805)")
-                        .setDescription(
-                            "The REST Plugin in Apache Struts 2.1.1 through 2.3.x before 2.3.34"
-                                + " and 2.5.x before 2.5.13 uses an XStreamHandler with an"
-                                + " instance of XStream for deserialization without any type"
-                                + " filtering, which can lead to Remote Code Execution when"
-                                + " deserializing XML payloads.")
-                        .setRecommendation("Upgrade to Struts 2.5.13 or Struts 2.3.34."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
 
     // Check that the detector creates and erases the file.

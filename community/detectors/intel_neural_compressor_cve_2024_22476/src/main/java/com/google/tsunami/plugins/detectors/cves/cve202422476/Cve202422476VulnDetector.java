@@ -105,6 +105,31 @@ public final class Cve202422476VulnDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2024_22476"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2024-22476"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("CVE-2024-22476 Intel Neural Compressor RCE")
+            .setDescription(
+                "The Intel Neural Compressor has a component called Neural Solution that brings"
+                    + " the capabilities of Intel Neural Compressor as a service. The"
+                    + " task/submit API in the Neural Solution webserver is vulnerable to an"
+                    + " unauthenticated remote code execution (RCE) attack. The"
+                    + " script_urlparameter in the body of the POST request for this API is not"
+                    + " validated or filtered on the backend. As a result, attackers can"
+                    + " manipulate this parameter to remotely execute arbitrary commands.")
+            .setRecommendation(
+                "You can upgrade your Intel Neural Compressor instances to 2.5.0 or later.")
+            .build());
+  }
+
   private boolean checkNeuralSolutionFingerprint(NetworkService networkService) {
     String targetWebAddress = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     var request = HttpRequest.get(targetWebAddress).withEmptyHeaders().build();
@@ -184,28 +209,7 @@ public final class Cve202422476VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2024_22476"))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CVE")
-                        .setValue("CVE-2024-22476"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2024-22476 Intel Neural Compressor RCE")
-                .setDescription(
-                    "The Intel Neural Compressor has a component called Neural Solution that brings"
-                        + " the capabilities of Intel Neural Compressor as a service. The"
-                        + " task/submit API in the Neural Solution webserver is vulnerable to an"
-                        + " unauthenticated remote code execution (RCE) attack. The"
-                        + " script_urlparameter in the body of the POST request for this API is not"
-                        + " validated or filtered on the backend. As a result, attackers can"
-                        + " manipulate this parameter to remotely execute arbitrary commands.")
-                .setRecommendation(
-                    "You can upgrade your Intel Neural Compressor instances to 2.5.0 or later."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

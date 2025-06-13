@@ -27,10 +27,7 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.lang.management.ManagementFactory;
 import java.rmi.registry.LocateRegistry;
 import java.time.Instant;
@@ -120,22 +117,7 @@ public final class JavaJmxRceDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("JAVA_UNPROTECTED_JMX_RMI_SERVER"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Unprotected Java JMX RMI Server")
-                        .setDescription(
-                            "Java Management Extension (JMX) allows remote monitoring and"
-                                + " diagnostics for Java applications. Running JMX with"
-                                + " unprotected RMI endpoint allows any remote users to create a"
-                                + " javax.management.loading.MLet MBean and use it to create new"
-                                + " MBeans from arbitrary URLs.")
-                        .setRecommendation(
-                            "Enable authentication and upgrade to the latest JDK environment."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

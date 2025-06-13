@@ -27,16 +27,11 @@ import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
-import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.TextData;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -113,7 +108,7 @@ public final class Cve202141773DetectorWithPayloadTest {
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
 
-     assertThat(detectionReports.getDetectionReportsList())
+    assertThat(detectionReports.getDetectionReportsList())
         .containsExactly(
             DetectionReport.newBuilder()
                 .setTargetInfo(targetInfo)
@@ -121,34 +116,7 @@ public final class Cve202141773DetectorWithPayloadTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                  Vulnerability.newBuilder()
-                    .setMainId(
-                        VulnerabilityId.newBuilder()
-                            .setPublisher("GOOGLE")
-                            .setValue("CVE_2021_41773"))
-                    .addRelatedId(
-                        VulnerabilityId.newBuilder()
-                            .setPublisher("CVE")
-                            .setValue("CVE-2021-41773"))
-                    .setSeverity(Severity.CRITICAL)
-                    .setTitle("Apache RCE Vulnerability CVE-2021-41773")
-                    .setDescription("This version of Apache is vulnerable to a Remote Code "
-                      + "Execution vulnerability described in CVE-2021-41773. The attacker has the "
-                      + "user permissions of the Apache process. For more information see "
-                      + "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-41773")
-                    .setRecommendation("Update to 2.4.51 release.")
-                    .addAdditionalDetails(
-                        AdditionalDetail.newBuilder()
-                            .setTextData(
-                                TextData.newBuilder().setText("This detector checks only for the "
-                                + "RCE vulnerability described in the CVE-2021-41773 and not for "
-                                + "the path traversal described in the same CVE. If CGI is enabled "
-                                + "on Apache in a vulnerable version the path traversal is not "
-                                + "detected anymore by common detectors. In this case this "
-                                + "detector finds the RCE. The detector can be tested with the "
-                                + "following docker containers "
-                                + "https://github.com/BlueTeamSteve/CVE-2021-41773"))))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 
@@ -207,34 +175,7 @@ public final class Cve202141773DetectorWithPayloadTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                  Vulnerability.newBuilder()
-                    .setMainId(
-                        VulnerabilityId.newBuilder()
-                            .setPublisher("GOOGLE")
-                            .setValue("CVE_2021_41773"))
-                    .addRelatedId(
-                        VulnerabilityId.newBuilder()
-                            .setPublisher("CVE")
-                            .setValue("CVE-2021-41773"))
-                    .setSeverity(Severity.CRITICAL)
-                    .setTitle("Apache RCE Vulnerability CVE-2021-41773")
-                    .setDescription("This version of Apache is vulnerable to a Remote Code "
-                      + "Execution vulnerability described in CVE-2021-41773. The attacker has the "
-                      + "user permissions of the Apache process. For more information see "
-                      + "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-41773")
-                    .setRecommendation("Update to 2.4.51 release.")
-                    .addAdditionalDetails(
-                        AdditionalDetail.newBuilder()
-                            .setTextData(
-                                TextData.newBuilder().setText("This detector checks only for the "
-                                + "RCE vulnerability described in the CVE-2021-41773 and not for "
-                                + "the path traversal described in the same CVE. If CGI is enabled "
-                                + "on Apache in a vulnerable version the path traversal is not "
-                                + "detected anymore by common detectors. In this case this "
-                                + "detector finds the RCE. The detector can be tested with the "
-                                + "following docker containers "
-                                + "https://github.com/BlueTeamSteve/CVE-2021-41773"))))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

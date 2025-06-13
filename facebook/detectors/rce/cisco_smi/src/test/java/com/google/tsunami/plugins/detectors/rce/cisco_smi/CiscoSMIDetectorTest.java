@@ -34,11 +34,8 @@ import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.net.Socket;
@@ -102,18 +99,7 @@ public final class CiscoSMIDetectorTest {
                 .setNetworkService(smartInstallService())
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CISCO")
-                                .setValue("CISCO_SA_20170214_SMI"))
-                        .setSeverity(Severity.HIGH)
-                        .setTitle("Cisco Smart Install Protocol Misuse")
-                        .setDescription(
-                            "Cisco Smart Install feature should not be exposed as it enables"
-                                + " attackers to perform administrative tasks on the device or"
-                                + " remotely execute code"))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
     assertArrayEquals(
         new byte[] {

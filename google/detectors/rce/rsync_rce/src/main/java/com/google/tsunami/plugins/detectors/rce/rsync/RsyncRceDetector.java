@@ -89,6 +89,24 @@ public final class RsyncRceDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(getAdvisory(null));
+  }
+
+  Vulnerability getAdvisory(AdditionalDetail details) {
+    return Vulnerability.newBuilder()
+        .setMainId(VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("RSYNC_SERVER_RCE"))
+        .setSeverity(Severity.CRITICAL)
+        .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2024-12084"))
+        .setTitle(
+            "CVE-2024-12084 Heap Buffer Overflow leading to Remote Code Execution in Rsync Server")
+        .setDescription(VULN_DESCRIPTION)
+        .setRecommendation(VULN_RECOMMENDATION)
+        .addAdditionalDetails(details)
+        .build();
+  }
+
   private boolean isRsyncService(NetworkService networkService) {
     return Ascii.equalsIgnoreCase(networkService.getServiceName(), "rsync");
   }
@@ -111,21 +129,11 @@ public final class RsyncRceDetector implements VulnDetector {
         .setDetectionTimestamp(Timestamps.fromMillis(utcClock.instant().toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("RSYNC_SERVER_RCE"))
-                .setSeverity(Severity.CRITICAL)
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2024-12084"))
-                .setTitle("CVE-2024-12084 Heap Buffer Overflow leading to Remote Code Execution in Rsync Server")
-                .setDescription(VULN_DESCRIPTION)
-                .setRecommendation(VULN_RECOMMENDATION)
-                .addAdditionalDetails(
-                    AdditionalDetail.newBuilder()
-                        .setDescription("Rsync banner")
-                        .setTextData(TextData.newBuilder().setText(rsyncBanner.banner))))
+            getAdvisory(
+                AdditionalDetail.newBuilder()
+                    .setDescription("Rsync banner")
+                    .setTextData(TextData.newBuilder().setText(rsyncBanner.banner))
+                    .build()))
         .build();
   }
 

@@ -89,6 +89,31 @@ public final class Cve20196340Detector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2019_6340"))
+            .setSeverity(Severity.CRITICAL)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2019-6340"))
+            .setTitle("Drupal RCE CVE-2019-6340 Detected")
+            .setDescription(
+                "Some field types do not properly sanitize data from non-form sources in "
+                    + "Drupal 8.5.x before 8.5.11 and Drupal 8.6.x before 8.6.10. This can lead"
+                    + " to arbitrary PHP code execution in some cases. A site is only affected"
+                    + " by this if one of the following conditions is met: The site has the"
+                    + " Drupal 8 core RESTful Web Services (rest) module enabled and allows"
+                    + " PATCH or POST requests, or the site has another web services module"
+                    + " enabled, like JSON:API in Drupal 8, or Services or RESTful Web Services"
+                    + " in Drupal 7. (Note: The Drupal 7 Services module itself does not require"
+                    + " an update at this time, but you should apply other contributed updates"
+                    + " associated with this advisory if Services is in use.)")
+            .setRecommendation("Upgrade to Drupal 8.6.10 or Drupal 8.5.11 with security patches.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Cve20196340Detector starts detecting.");
@@ -148,27 +173,7 @@ public final class Cve20196340Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2019_6340"))
-                .setSeverity(Severity.CRITICAL)
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2019-6340"))
-                .setTitle("Drupal RCE CVE-2019-6340 Detected")
-                .setDescription(
-                    "Some field types do not properly sanitize data from non-form sources in "
-                        + "Drupal 8.5.x before 8.5.11 and Drupal 8.6.x before 8.6.10. This can lead"
-                        + " to arbitrary PHP code execution in some cases. A site is only affected"
-                        + " by this if one of the following conditions is met: The site has the"
-                        + " Drupal 8 core RESTful Web Services (rest) module enabled and allows"
-                        + " PATCH or POST requests, or the site has another web services module"
-                        + " enabled, like JSON:API in Drupal 8, or Services or RESTful Web Services"
-                        + " in Drupal 7. (Note: The Drupal 7 Services module itself does not"
-                        + " require an update at this time, but you should apply other contributed"
-                        + " updates associated with this advisory if Services is in use.)")
-                .setRecommendation(
-                    "Upgrade to Drupal 8.6.10 or Drupal 8.5.11 with security patches."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

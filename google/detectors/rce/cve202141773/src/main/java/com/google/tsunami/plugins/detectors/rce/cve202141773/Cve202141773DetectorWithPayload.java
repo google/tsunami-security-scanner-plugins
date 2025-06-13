@@ -77,6 +77,38 @@ public final class Cve202141773DetectorWithPayload implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2021_41773"))
+            .setSeverity(Severity.CRITICAL)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-41773"))
+            .setTitle("Apache RCE Vulnerability CVE-2021-41773")
+            .setDescription(
+                "This version of Apache is vulnerable to a Remote Code Execution "
+                    + "vulnerability described in CVE-2021-41773. The attacker has the user "
+                    + "permissions of the Apache process. For more information see "
+                    + "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-41773")
+            .setRecommendation("Update to 2.4.51 release.")
+            .addAdditionalDetails(
+                AdditionalDetail.newBuilder()
+                    .setTextData(
+                        TextData.newBuilder()
+                            .setText(
+                                "This detector checks only for the RCE vulnerability described in"
+                                    + " the CVE-2021-41773 and not for the path traversal described"
+                                    + " in the same CVE. If CGI is enabled on Apache in a"
+                                    + " vulnerable version the path traversal is not detected"
+                                    + " anymore by common detectors. In this case this detector"
+                                    + " finds the RCE. The detector can be tested with the"
+                                    + " following docker containers "
+                                    + "https://github.com/BlueTeamSteve/CVE-2021-41773")))
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Cve202141773DetectorWithPayload starts detecting.");
@@ -140,31 +172,7 @@ public final class Cve202141773DetectorWithPayload implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("CVE_2021_41773"))
-                .setSeverity(Severity.CRITICAL)
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-41773"))
-                .setTitle("Apache RCE Vulnerability CVE-2021-41773")
-                .setDescription("This version of Apache is vulnerable to a Remote Code Execution "
-                  + "vulnerability described in CVE-2021-41773. The attacker has the user "
-                  + "permissions of the Apache process. For more information see "
-                  + "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-41773")
-                .setRecommendation("Update to 2.4.51 release.")
-                .addAdditionalDetails(
-                    AdditionalDetail.newBuilder()
-                        .setTextData(
-                            TextData.newBuilder().setText("This detector checks only for the RCE "
-                            + "vulnerability described in the CVE-2021-41773 and not for the path "
-                            + "traversal described in the same CVE. If CGI is enabled on Apache in "
-                            + "a vulnerable version the path traversal is not detected anymore by "
-                            + "common detectors. In this case this detector finds the RCE. The "
-                            + "detector can be tested with the following docker containers "
-                            + "https://github.com/BlueTeamSteve/CVE-2021-41773"))))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

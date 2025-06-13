@@ -33,13 +33,10 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -105,28 +102,16 @@ public final class ElasticsearchApiExposedDetectorTest {
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("ELASTICSEARCH_API_EXPOSED"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Elasticsearch API Exposed")
-                        .setDescription("Elasticsearch API endpoint is exposed.")
-                        .setRecommendation(
-                            "Do not expose Elasticsearch externally.\n"
-                                + "Bind it to localhost, or run it on a host that is not exposed to"
-                                + " the Internet.")
-                        .addAdditionalDetails(
-                            AdditionalDetail.newBuilder()
-                                .setTextData(
-                                    TextData.newBuilder()
-                                        .setText(
-                                            String.format(
-                                                "The Elasticsearch REST API endpoint at"
-                                                    + " http://%s:%d/ is exposed.",
-                                                mockWebServer.getHostName(),
-                                                mockWebServer.getPort())))))
+                    detector.getAdvisory(
+                        AdditionalDetail.newBuilder()
+                            .setTextData(
+                                TextData.newBuilder()
+                                    .setText(
+                                        String.format(
+                                            "The Elasticsearch REST API endpoint at"
+                                                + " http://%s:%d/ is exposed.",
+                                            mockWebServer.getHostName(), mockWebServer.getPort())))
+                            .build()))
                 .build());
   }
 

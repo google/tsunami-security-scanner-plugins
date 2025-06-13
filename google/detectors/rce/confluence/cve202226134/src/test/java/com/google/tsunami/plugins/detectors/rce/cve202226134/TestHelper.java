@@ -17,11 +17,6 @@
 package com.google.tsunami.plugins.detectors.rce.cve202226134;
 
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.rce.cve202226134.ConfluenceOgnlInjectionRceDetector.RECOMMENDATION;
-import static com.google.tsunami.plugins.detectors.rce.cve202226134.ConfluenceOgnlInjectionRceDetector.VULNERABILITY_REPORT_ID;
-import static com.google.tsunami.plugins.detectors.rce.cve202226134.ConfluenceOgnlInjectionRceDetector.VULNERABILITY_REPORT_PUBLISHER;
-import static com.google.tsunami.plugins.detectors.rce.cve202226134.ConfluenceOgnlInjectionRceDetector.VULNERABILITY_REPORT_TITLE;
-import static com.google.tsunami.plugins.detectors.rce.cve202226134.ConfluenceOgnlInjectionRceDetector.VULN_DESCRIPTION;
 
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
@@ -29,11 +24,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.time.Instant;
 import okhttp3.mockwebserver.MockWebServer;
 
@@ -53,24 +45,16 @@ final class TestHelper {
   }
 
   static DetectionReport buildValidDetectionReport(
-      TargetInfo target, NetworkService service, FakeUtcClock fakeUtcClock) {
+      ConfluenceOgnlInjectionRceDetector detector,
+      TargetInfo target,
+      NetworkService service,
+      FakeUtcClock fakeUtcClock) {
     return DetectionReport.newBuilder()
         .setTargetInfo(target)
         .setNetworkService(service)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
-                        .setValue(VULNERABILITY_REPORT_ID))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-26134"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(VULNERABILITY_REPORT_TITLE)
-                .setDescription(VULN_DESCRIPTION)
-                .setRecommendation(RECOMMENDATION))
+        .setVulnerability(detector.getAdvisories().get(0))
         .build();
   }
 }

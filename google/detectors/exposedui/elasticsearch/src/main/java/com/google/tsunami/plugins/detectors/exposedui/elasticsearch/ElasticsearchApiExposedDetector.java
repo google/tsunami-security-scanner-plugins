@@ -66,6 +66,11 @@ public final class ElasticsearchApiExposedDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(getAdvisory(null));
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting Elasticsearch API exposed detection.");
@@ -76,6 +81,23 @@ public final class ElasticsearchApiExposedDetector implements VulnDetector {
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
+        .build();
+  }
+
+  Vulnerability getAdvisory(AdditionalDetail details) {
+    return Vulnerability.newBuilder()
+        .setMainId(
+            VulnerabilityId.newBuilder()
+                .setPublisher("GOOGLE")
+                .setValue("ELASTICSEARCH_API_EXPOSED"))
+        .setSeverity(Severity.CRITICAL)
+        .setTitle("Elasticsearch API Exposed")
+        .setDescription("Elasticsearch API endpoint is exposed.")
+        .setRecommendation(
+            "Do not expose Elasticsearch externally.\n"
+                + "Bind it to localhost, or run it on a host that is not exposed to the"
+                + " Internet.")
+        .addAdditionalDetails(details)
         .build();
   }
 
@@ -117,20 +139,7 @@ public final class ElasticsearchApiExposedDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("ELASTICSEARCH_API_EXPOSED"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Elasticsearch API Exposed")
-                .setDescription("Elasticsearch API endpoint is exposed.")
-                .setRecommendation(
-                    "Do not expose Elasticsearch externally.\n"
-                        + "Bind it to localhost, or run it on a host that is not exposed to the"
-                        + " Internet.")
-                .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
+        .setVulnerability(getAdvisory(AdditionalDetail.newBuilder().setTextData(details).build()))
         .build();
   }
 }

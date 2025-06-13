@@ -136,6 +136,14 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
     return detectionReportsBuilder.build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    // Currently, we do not return any advisories for weak credentials. The notion of an advisory
+    // is very close to one having an identifier (e.g. CVE, GHSA, RSA, ...) and does not necessarily
+    // makes sense for weak credentials.
+    return ImmutableList.of();
+  }
+
   private void testServiceAndAddDetectionReport(
       TargetInfo targetInfo,
       NetworkService networkService,

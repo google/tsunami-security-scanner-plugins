@@ -28,18 +28,13 @@ import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
-import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
@@ -120,29 +115,7 @@ public final class Cve201920933VulnDetectorTest {
             .setNetworkService(influxDBservice)
             .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
             .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-            .setVulnerability(
-                Vulnerability.newBuilder()
-                    .setMainId(
-                        VulnerabilityId.newBuilder()
-                            .setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("CVE_2019_20933"))
-                    .addRelatedId(
-                        VulnerabilityId.newBuilder()
-                            .setPublisher("CVE")
-                            .setValue("CVE-2019-20933"))
-                    .setSeverity(Severity.CRITICAL)
-                    .setTitle("InfluxDB Empty JWT Secret Key Authentication Bypass")
-                    .setDescription(
-                        "InfluxDB before 1.7.6 has an authentication bypass vulnerability because a"
-                            + " JWT token may have an empty SharedSecret (aka shared secret).")
-                    .setRecommendation("Upgrade to higher versions")
-                    .addAdditionalDetails(
-                        AdditionalDetail.newBuilder()
-                            .setTextData(
-                                TextData.newBuilder()
-                                    .setText(
-                                        "Attacker can run arbitrary queries and access database"
-                                            + " data"))))
+            .setVulnerability(detector.getAdvisories().get(1))
             .build();
     mockWebServer
         .takeRequest(); // pass first request that is for checking the missing authentication
@@ -177,27 +150,7 @@ public final class Cve201920933VulnDetectorTest {
             .setNetworkService(influxDBservice)
             .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
             .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-            .setVulnerability(
-                Vulnerability.newBuilder()
-                    .setMainId(
-                        VulnerabilityId.newBuilder()
-                            .setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("MISSING_AUTHENTICATION_FOR_INFLUX_DB"))
-                    .setSeverity(Severity.CRITICAL)
-                    .setTitle("InfluxDB instance without any authentication")
-                    .setDescription(
-                        "Attacker can access any DB information for this InfluxDB instance because"
-                            + " there are no authentication.")
-                    .setRecommendation(
-                        "Set authentication value to true in InfluxDB setup config file before"
-                            + " running an instance of InfluxDB.")
-                    .addAdditionalDetails(
-                        AdditionalDetail.newBuilder()
-                            .setTextData(
-                                TextData.newBuilder()
-                                    .setText(
-                                        "Attacker can run arbitrary queries and access database"
-                                            + " data"))))
+            .setVulnerability(detector.getAdvisories().get(0))
             .build();
     assertThat(actual).isEqualTo(expected);
   }
