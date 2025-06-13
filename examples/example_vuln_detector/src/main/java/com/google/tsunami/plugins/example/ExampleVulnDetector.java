@@ -19,7 +19,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
@@ -59,8 +58,6 @@ import javax.inject.Inject;
 // following @ForSoftware annotation.
 // @ForSoftware(name = "Jenkins")
 public final class ExampleVulnDetector implements VulnDetector {
-  private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-
   private final Clock utcClock;
 
   // Tsunami scanner relies heavily on Guice framework. So all the utility dependencies of your
@@ -79,8 +76,6 @@ public final class ExampleVulnDetector implements VulnDetector {
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
-    logger.atInfo().log("ExampleVulnDetector starts detecting.");
-
     // An example implementation for a VulnDetector.
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
@@ -91,6 +86,25 @@ public final class ExampleVulnDetector implements VulnDetector {
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
+  }
+
+  // Your detector must provide information about the vulnerabilities it detects.
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("vulnerability_id_publisher")
+                    .setValue("VULNERABILITY_ID"))
+            // If your vulnerability is a CVE, you need to reference it in the related advisories.
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-1234-12345"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Vulnerability Title")
+            .setDescription("Verbose description of the issue")
+            .setRecommendation("Verbose recommended solution")
+            .build());
   }
 
   // Checks whether a given network service is vulnerable. Real detection logic implemented here.
@@ -107,15 +121,7 @@ public final class ExampleVulnDetector implements VulnDetector {
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("vulnerability_id_publisher")
-                        .setValue("VULNERABILITY_ID"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Vulnerability Title")
-                .setDescription("Verbose description of the issue")
-                .setRecommendation("Verbose recommended solution")
+            this.getAdvisories().get(0).toBuilder()
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
                         .setTextData(
