@@ -133,6 +133,21 @@ public final class KubeReadOnlyPortDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("GOOGLE")
+                    .setValue("KUBERNETES_READ_ONLY_PORT"))
+            .setSeverity(Severity.MEDIUM)
+            .setTitle("Information leak via the read-only-port feature of Kubernetes/kubelet")
+            .setDescription(FINDING_DESCRIPTION_TEXT)
+            .setRecommendation(FINDING_RECOMMENDATION_TEXT)
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("KubeReadOnlyPortDetector starts detecting.");
@@ -181,16 +196,7 @@ public final class KubeReadOnlyPortDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("KUBERNETES_READ_ONLY_PORT"))
-                .setSeverity(Severity.MEDIUM)
-                .setTitle("Information leak via the read-only-port feature of Kubernetes/kubelet")
-                .setDescription(FINDING_DESCRIPTION_TEXT)
-                .setRecommendation(FINDING_RECOMMENDATION_TEXT))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

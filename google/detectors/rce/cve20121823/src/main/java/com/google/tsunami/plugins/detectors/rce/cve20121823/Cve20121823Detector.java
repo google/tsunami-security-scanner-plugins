@@ -72,6 +72,26 @@ public final class Cve20121823Detector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2012_1823"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("CVE-2012-1823")
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2012-1823"))
+            .setDescription(
+                "sapi/cgi/cgi_main.c in PHP before 5.3.12 and 5.4.x before 5.4.2, when"
+                    + " configured as a CGI script (aka php-cgi), does not properly handle"
+                    + " query strings that lack an = (equals sign) character, which allows"
+                    + " remote attackers to execute arbitrary code by placing command-line"
+                    + " options in the query string, related to lack of skipping a certain"
+                    + " php_getopt for the 'd' case.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Cve20121823Detector starts detecting.");
@@ -110,21 +130,7 @@ public final class Cve20121823Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2012_1823"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2012-1823")
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2012-1823"))
-                .setDescription(
-                    "sapi/cgi/cgi_main.c in PHP before 5.3.12 and 5.4.x before 5.4.2, when"
-                        + " configured as a CGI script (aka php-cgi), does not properly handle"
-                        + " query strings that lack an = (equals sign) character, which allows"
-                        + " remote attackers to execute arbitrary code by placing command-line"
-                        + " options in the query string, related to lack of skipping a certain"
-                        + " php_getopt for the 'd' case."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

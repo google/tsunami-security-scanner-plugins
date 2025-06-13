@@ -98,6 +98,23 @@ public final class WebLogicAdminConsoleRceDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
+                    .setValue(VULNERABILITY_REPORT_ID))
+            .setSeverity(Severity.CRITICAL)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-14883"))
+            .setTitle(VULNERABILITY_REPORT_TITLE)
+            .setDescription(VULN_DESCRIPTION)
+            .setRecommendation(RECOMMENDATION)
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting rce detection for WebLogic admin console.");
@@ -120,8 +137,7 @@ public final class WebLogicAdminConsoleRceDetector implements VulnDetector {
         || isVulnerableWithoutCallback(rootUri, networkService);
   }
 
-  private boolean isVulnerableWithCallback(
-      String rootUri, NetworkService networkService) {
+  private boolean isVulnerableWithCallback(String rootUri, NetworkService networkService) {
     PayloadGeneratorConfig config =
         PayloadGeneratorConfig.newBuilder()
             .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
@@ -146,8 +162,7 @@ public final class WebLogicAdminConsoleRceDetector implements VulnDetector {
     return payload.checkIfExecuted();
   }
 
-  private boolean isVulnerableWithoutCallback(
-      String rootUri, NetworkService networkService) {
+  private boolean isVulnerableWithoutCallback(String rootUri, NetworkService networkService) {
     PayloadGeneratorConfig config =
         PayloadGeneratorConfig.newBuilder()
             .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
@@ -188,18 +203,7 @@ public final class WebLogicAdminConsoleRceDetector implements VulnDetector {
         .setNetworkService(networkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
-                        .setValue(VULNERABILITY_REPORT_ID))
-                .setSeverity(Severity.CRITICAL)
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-14883"))
-                .setTitle(VULNERABILITY_REPORT_TITLE)
-                .setDescription(VULN_DESCRIPTION)
-                .setRecommendation(RECOMMENDATION))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

@@ -31,12 +31,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -98,18 +95,7 @@ public final class ApacheNiFiApiExposedUiDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("APACHE_NIFI_API_EXPOSED_UI"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Apache NiFi API Exposed UI")
-                        .setDescription("Apache NiFi API is not password or token protected.")
-                        .setRecommendation(
-                            "Do not expose Apache NiFi API externally. Add authentication or bind"
-                                + " it to local network."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
     RecordedRequest recordedRequest = mockWebServer.takeRequest();
     assertThat(recordedRequest.getPath()).isEqualTo("/nifi-api/access/config");

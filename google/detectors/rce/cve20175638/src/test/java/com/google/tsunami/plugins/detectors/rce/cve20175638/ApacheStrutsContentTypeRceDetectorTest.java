@@ -30,12 +30,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -108,23 +105,7 @@ public final class ApacheStrutsContentTypeRceDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("CVE_2017_5638"))
-                .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2017-5638"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(
-                            "Apache Struts Command Injection via Content-Type header "
-                                + "(CVE-2017-5638)")
-                        .setDescription(
-                            "The Jakarta Multipart parser in Apache Struts 2 2.3.x before 2.3.32"
-                                + " and 2.5.x before 2.5.10.1 has incorrect exception handling and"
-                                + " error-message generation during file-upload attempts, which"
-                                + " allows for remote RCE.")
-                        .setRecommendation("Upgrade to Struts 2.3.32 or Struts 2.5.10.1."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

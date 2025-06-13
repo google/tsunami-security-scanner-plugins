@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.exposedui.wordpress;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.exposedui.wordpress.WordPressInstallPageDetector.FINDING_RECOMMENDATION_TEXT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
@@ -34,12 +33,9 @@ import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.ServiceContext;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
 import java.time.Instant;
@@ -106,19 +102,7 @@ public final class WordPressInstallPageDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("UNFINISHED_WORD_PRESS_INSTALLATION"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Unfinished WordPress Installation")
-                        .setDescription(
-                            "An unfinished WordPress installation exposes the"
-                                + " /wp-admin/install.php page, which allows attacker to set the"
-                                + " admin password and possibly compromise the system.")
-                        .setRecommendation(FINDING_RECOMMENDATION_TEXT))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 
@@ -149,19 +133,7 @@ public final class WordPressInstallPageDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("UNFINISHED_WORD_PRESS_INSTALLATION"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Unfinished WordPress Installation")
-                        .setDescription(
-                            "An unfinished WordPress installation exposes the"
-                                + " /wp-admin/install.php page, which allows attacker to set the"
-                                + " admin password and possibly compromise the system.")
-                        .setRecommendation(FINDING_RECOMMENDATION_TEXT))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 
@@ -196,19 +168,7 @@ public final class WordPressInstallPageDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("UNFINISHED_WORD_PRESS_INSTALLATION"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Unfinished WordPress Installation")
-                        .setDescription(
-                            "An unfinished WordPress installation exposes the"
-                                + " /wp-admin/install.php page, which allows attacker to set the"
-                                + " admin password and possibly compromise the system.")
-                        .setRecommendation(FINDING_RECOMMENDATION_TEXT))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 
