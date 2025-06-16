@@ -71,7 +71,7 @@ public final class NodeRedDashboardDirectoryTraversalDetector implements VulnDet
 
   @Override
   public ImmutableList<Vulnerability> getAdvisories() {
-    return ImmutableList.of(getAdvisory(null));
+    return ImmutableList.of(getAdvisory(AdditionalDetail.getDefaultInstance()));
   }
 
   // Main entry point of VulnDetector. Both parameters will be populated by the scanner.

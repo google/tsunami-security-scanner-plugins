@@ -108,7 +108,7 @@ public class ApacheHttpServerCVE202141773VulnDetector implements VulnDetector {
 
   @Override
   public ImmutableList<Vulnerability> getAdvisories() {
-    return ImmutableList.of(getAdvisory(null));
+    return ImmutableList.of(getAdvisory(AdditionalDetail.getDefaultInstance()));
   }
 
   Vulnerability getAdvisory(AdditionalDetail details) {

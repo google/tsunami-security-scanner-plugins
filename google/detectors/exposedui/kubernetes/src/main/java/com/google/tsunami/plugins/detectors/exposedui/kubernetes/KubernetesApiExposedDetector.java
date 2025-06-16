@@ -81,7 +81,7 @@ public final class KubernetesApiExposedDetector implements VulnDetector {
 
   @Override
   public ImmutableList<Vulnerability> getAdvisories() {
-    return ImmutableList.of(getAdvisory(null));
+    return ImmutableList.of(getAdvisory(TextData.getDefaultInstance()));
   }
 
   Vulnerability getAdvisory(TextData details) {

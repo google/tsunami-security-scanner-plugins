@@ -67,7 +67,7 @@ public final class ElasticsearchApiExposedDetector implements VulnDetector {
 
   @Override
   public ImmutableList<Vulnerability> getAdvisories() {
-    return ImmutableList.of(getAdvisory(null));
+    return ImmutableList.of(getAdvisory(AdditionalDetail.getDefaultInstance()));
   }
 
   @Override

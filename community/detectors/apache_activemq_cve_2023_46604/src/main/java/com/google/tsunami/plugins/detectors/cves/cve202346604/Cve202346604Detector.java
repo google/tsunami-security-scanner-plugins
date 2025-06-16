@@ -137,7 +137,7 @@ public final class Cve202346604Detector implements VulnDetector {
 
   @Override
   public ImmutableList<Vulnerability> getAdvisories() {
-    return ImmutableList.of(getAdvisory(null));
+    return ImmutableList.of(getAdvisory(AdditionalDetail.getDefaultInstance()));
   }
 
   Vulnerability getAdvisory(AdditionalDetail details) {
