@@ -114,6 +114,8 @@ public final class Cve202224112Detector implements VulnDetector {
                     + " bypass IP restrictions of Admin API through the batch-requests plugin."
                     + " A default configuration of Apache APISIX (with default API key) is"
                     + " vulnerable to remote code execution through the plugin.")
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-24112"))
             .build());
   }
 
@@ -297,4 +299,3 @@ public final class Cve202224112Detector implements VulnDetector {
         .build();
   }
 }
-
