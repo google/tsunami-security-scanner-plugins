@@ -13,7 +13,7 @@ repositories {
 }
 
 ext {
-    tsunamiVersion = 'latest.release'
+    tsunamiVersion = '0.0.29'
     protobufVersion = '3.25.5'
     protocVersion = protobufVersion
     grpcVersion = '1.72.0'

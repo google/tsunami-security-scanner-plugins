@@ -47,7 +47,7 @@ java {
 }
 
 ext {
-    tsunamiVersion = 'latest.release'
+    tsunamiVersion = '0.0.29'
     junitVersion = '4.13'
     mockitoVersion = '5.17.0'
     okhttpVersion = '3.12.0'
