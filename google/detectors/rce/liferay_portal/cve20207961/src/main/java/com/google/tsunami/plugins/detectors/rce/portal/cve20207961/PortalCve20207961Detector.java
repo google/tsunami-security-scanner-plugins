@@ -112,6 +112,7 @@ public final class PortalCve20207961Detector implements VulnDetector {
                 "Deserialization of Untrusted Data in Liferay Portal prior to 7.2.1 CE GA2"
                     + " allows remote attackers to execute arbitrary code via JSON web"
                     + " services (JSONWS).")
+            .setRecommendation("Update Liferay Portal to version 7.2.1 CE GA2 or later.")
             .build());
   }
 

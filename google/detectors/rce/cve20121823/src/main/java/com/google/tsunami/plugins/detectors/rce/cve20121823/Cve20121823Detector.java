@@ -88,6 +88,7 @@ public final class Cve20121823Detector implements VulnDetector {
                     + " remote attackers to execute arbitrary code by placing command-line"
                     + " options in the query string, related to lack of skipping a certain"
                     + " php_getopt for the 'd' case.")
+            .setRecommendation("Update PHP to version 5.3.12 or later.")
             .build());
   }
 
