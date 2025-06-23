@@ -2,12 +2,12 @@ plugins {
     id 'java'
 }
 
-group 'com.google.tsunami'
-version '1.0-SNAPSHOT'
+group = 'com.google.tsunami'
+version = '1.0-SNAPSHOT'
 
 repositories {
     maven { // The google mirror is less flaky than mavenCentral()
-        url 'https://maven-central.storage-download.googleapis.com/repos/central/data/'
+        url = 'https://maven-central.storage-download.googleapis.com/repos/central/data/'
     }
     mavenCentral()
     mavenLocal()
@@ -36,9 +36,9 @@ java {
     test {
         testLogging {
             exceptionFormat = 'full'
-            showExceptions true
-            showCauses true
-            showStackTraces true
+            showExceptions = true
+            showCauses = true
+            showStackTraces = true
         }
         maxHeapSize = '1500m'
     }
