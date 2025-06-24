@@ -2,9 +2,8 @@ name: templated-plugins-build
 
 on:
   push:
-    paths:
-      - 'templated/**'
-  pull_request:
+    branches:
+      - master
     paths:
       - 'templated/**'
   workflow_dispatch:

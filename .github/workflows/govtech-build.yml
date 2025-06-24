@@ -2,9 +2,8 @@ name: govtech-plugins-build
 
 on:
   push:
-    paths:
-      - 'govtech/**'
-  pull_request:
+    branches:
+      - master
     paths:
       - 'govtech/**'
   workflow_dispatch:

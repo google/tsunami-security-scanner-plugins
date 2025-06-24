@@ -2,9 +2,8 @@ name: community-plugins-build
 
 on:
   push:
-    paths:
-      - 'community/**'
-  pull_request:
+    branches:
+      - master
     paths:
       - 'community/**'
   workflow_dispatch:

@@ -2,9 +2,8 @@ name: google-plugins-build
 
 on:
   push:
-    paths:
-      - 'google/**'
-  pull_request:
+    branches:
+      - master
     paths:
       - 'google/**'
   workflow_dispatch:

@@ -2,9 +2,8 @@ name: doyensec-plugins-build
 
 on:
   push:
-    paths:
-      - 'doyensec/**'
-  pull_request:
+    branches:
+      - master
     paths:
       - 'doyensec/**'
   workflow_dispatch:
