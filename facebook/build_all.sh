@@ -16,7 +16,7 @@
 set -eu
 
 SCRIPT_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-GENERATED_PLUGINS_PATH="${SCRIPT_PATH}/build/plugins"
+GENERATED_PLUGINS_PATH="${SCRIPT_PATH}/build/libs"
 mkdir -p "${GENERATED_PLUGINS_PATH}"
 
 # For each Facebook plugin, build the jar file and copy it to build/plugins
