@@ -14,7 +14,7 @@ env:
   PLUGINS_BOOTSTRAP: ./gradlew build
 
 jobs:
-  build-and-push-image:
+  build-image:
     runs-on: ubuntu-latest
 
     steps:
