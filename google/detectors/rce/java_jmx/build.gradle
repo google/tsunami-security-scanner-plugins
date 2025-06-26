@@ -32,17 +32,6 @@ java {
         use = true
         links 'https://docs.oracle.com/javase/8/docs/api/'
     }
-
-    // Log stacktrace to console when test fails.
-    test {
-        testLogging {
-            exceptionFormat = 'full'
-            showExceptions true
-            showCauses true
-            showStackTraces true
-        }
-        maxHeapSize = '1500m'
-    }
 }
 
 ext {
