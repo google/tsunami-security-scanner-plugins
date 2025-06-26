@@ -11,7 +11,6 @@ env:
   IMAGE_NAME: google/tsunami-plugins-doyensec
   PLUGINS_CATEGORY: doyensec
   PLUGINS_FOLDER: doyensec
-  PLUGINS_BOOTSTRAP: ./build_all.sh
 
 jobs:
   build-image:
@@ -31,4 +30,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             "TSUNAMI_PLUGIN_FOLDER=${{ env.PLUGINS_FOLDER }}"
-            "TSUNAMI_PLUGIN_BOOTSTRAP=${{ env.PLUGINS_BOOTSTRAP }}"

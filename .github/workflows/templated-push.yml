@@ -13,7 +13,6 @@ env:
   IMAGE_NAME: google/tsunami-plugins-templated
   PLUGINS_CATEGORY: templated
   PLUGINS_FOLDER: templated/templateddetector/
-  PLUGINS_BOOTSTRAP: ./gradlew build
 
 jobs:
   build-and-push-image:
@@ -52,7 +51,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             "TSUNAMI_PLUGIN_FOLDER=${{ env.PLUGINS_FOLDER }}"
-            "TSUNAMI_PLUGIN_BOOTSTRAP=${{ env.PLUGINS_BOOTSTRAP }}"
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
