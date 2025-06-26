@@ -10,7 +10,7 @@ WORKDIR /usr/repos/tsunami-security-scanner-plugins
 COPY . /usr/repos/tsunami-security-scanner-plugins/
 
 WORKDIR /usr/repos/tsunami-security-scanner-plugins/${TSUNAMI_PLUGIN_FOLDER}
-RUN mkdir /usr/tsunami/plugins \
+RUN mkdir -p /usr/tsunami/plugins \
     && ${TSUNAMI_PLUGIN_BOOTSTRAP}
 
 ## Copy the built files
