@@ -30,8 +30,9 @@ import vulnerability_pb2
 import requests
 
 _VULN_DESCRIPTION = (
-    "The BentoML framework is vulnerable to an insecure deserialization issue that can "
-    "be exploited by sending a single POST request to any valid endpoint of the runner server."
+    "The BentoML framework is vulnerable to an insecure "
+    "deserialization issue that can be exploited by sending a single POST "
+    "request to any valid endpoint of the runner server."
     "The impact of this is remote code execution."
 )
 _SLEEP_TIME_SEC = 20
@@ -40,7 +41,9 @@ _SLEEP_TIME_SEC = 20
 class Cve202532375Detector(tsunami_plugin.VulnDetector):
     """A TsunamiPlugin that detects RCE on the BentoML target."""
 
-    def __init__(self, http_client: HttpClient, payload_generator: PayloadGenerator):
+    def __init__(
+        self, http_client: HttpClient, payload_generator: PayloadGenerator
+    ):
         self.http_client = http_client
         self.payload_generator = payload_generator
 
@@ -48,7 +51,8 @@ class Cve202532375Detector(tsunami_plugin.VulnDetector):
         """Defines the PluginDefinition for Cve202532375Detector.
 
         Returns:
-          The PluginDefinition used for the Tsunami engine to identify this plugin.
+          The PluginDefinition used for the Tsunami engine
+          to identify this plugin.
         """
         return tsunami_plugin.PluginDefinition(
             info=plugin_representation_pb2.PluginInfo(
@@ -69,18 +73,20 @@ class Cve202532375Detector(tsunami_plugin.VulnDetector):
 
         Args:
           target: TargetInfo about BentoML Insecure Deserialization.
-          matched_services: A list of network services whose vulnerabilities could
-            be detected by this plugin. "ppp" for example would be on this list.
+          matched_services: A list of network services whose vulnerabilities
+          could be detected by this plugin.
+          "ppp" for example would be on this list.
 
         Returns:
-          A tsunami_plugin.DetectionReportList for all the vulnerabilities of the
-          scanning target.
+          A tsunami_plugin.DetectionReportList for all the vulnerabilities
+          of the scanning target.
         """
         logging.info("Cve202532375Detector starts detecting.")
         vulnerable_services = [
             service
             for service in matched_services
-            if self._IsSupportedService(service) and self._IsBentoMlWebService(service)
+            if self._IsSupportedService(service)
+            and self._IsBentoMlWebService(service)
         ]
 
         return detection_pb2.DetectionReportList(
@@ -98,7 +104,8 @@ class Cve202532375Detector(tsunami_plugin.VulnDetector):
         return (
             not network_service.service_name
             or network_service_utils.is_web_service(network_service)
-            or network_service_utils.get_service_name(network_service) == "unknown"
+            or network_service_utils.get_service_name(network_service)
+            == "unknown"
             or network_service_utils.get_service_name(network_service) == "ppp"
         )
 
@@ -121,9 +128,20 @@ class Cve202532375Detector(tsunami_plugin.VulnDetector):
         """Check if network service may result in RCE."""
 
         config = pg.PayloadGeneratorConfig(
-            vulnerability_type=pg.PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE,
-            interpretation_environment=pg.PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL,
-            execution_environment=pg.PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT,
+            vulnerability_type=(
+                pg.PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE
+            ),
+            interpretation_environment=(
+                pg.PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL
+            ),
+            execution_environment=(
+                (
+                    pg
+                    .PayloadGeneratorConfig
+                    .ExecutionEnvironment
+                    .EXEC_INTERPRETATION_ENVIRONMENT
+                )
+            ),
         )
         payload = self.payload_generator.generate(config)
         if not payload.get_payload_attributes().uses_callback_server:
@@ -174,13 +192,14 @@ class Cve202532375Detector(tsunami_plugin.VulnDetector):
     ) -> str:
         """Build the vulnerable target path for RCE injection."""
         if network_service_utils.is_web_service(network_service):
-            url = network_service_utils.build_web_application_root_url(network_service)
-        else:
-            url = "http://{}/".format(
-                network_endpoint_utils.to_uri_authority(
-                    network_service.network_endpoint
-                ).strip("/")
+            url = network_service_utils.build_web_application_root_url(
+                network_service
             )
+        else:
+            authority = network_endpoint_utils.to_uri_authority(
+                network_service.network_endpoint
+            ).strip("/")
+            url = f"http://{authority}/"
         return url + vulnerable_path.strip("/")
 
     def _BuildDetectionReport(
@@ -193,17 +212,21 @@ class Cve202532375Detector(tsunami_plugin.VulnDetector):
             target_info=target,
             network_service=vulnerable_service,
             detection_timestamp=timestamp_pb2.Timestamp().GetCurrentTime(),
-            detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
+            detection_status=(
+                detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED
+            ),
             vulnerability=vulnerability_pb2.Vulnerability(
                 main_id=vulnerability_pb2.VulnerabilityId(
                     publisher="TSUNAMI_COMMUNITY", value="CVE_2025_32375"
                 ),
                 severity=vulnerability_pb2.Severity.CRITICAL,
                 title=(
-                    "BentoML Insecure Deserialization RCE (CVE-2025-32375) for Runner Server"
+                    "BentoML Insecure Deserialization RCE (CVE-2025-32375) "
+                    "for Runner Server"
                 ),
                 recommendation=(
-                    "Users should not expose the bentoml Runner Server endpoints to untrusted environments."
+                    "Users should not expose the bentoml Runner Server "
+                    "endpoints to untrusted environments."
                 ),
                 description=_VULN_DESCRIPTION,
             ),

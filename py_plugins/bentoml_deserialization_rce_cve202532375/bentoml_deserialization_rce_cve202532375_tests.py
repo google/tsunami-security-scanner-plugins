@@ -37,7 +37,7 @@ _CBID = "04041e8898e739ca33a250923e24f59ca41a8373f8cf6a45a1275f3b"
 _IP_ADDRESS = "127.0.0.1"
 _PORT = 8000
 _SECRET = "a3d9ed89deadbeef"
-_CALLBACK_URL = "http://%s:%s/%s" % (_IP_ADDRESS, _PORT, _CBID)
+_CALLBACK_URL = f"http://{_IP_ADDRESS}:{_PORT}/{_CBID}"
 
 # Vulnerable target
 _TARGET_URL = "vuln-target.com"
@@ -51,25 +51,30 @@ class Cve202532375DetectorTest(absltest.TestCase):
         request_client = RequestsHttpClientBuilder().build()
         self.psg = PayloadSecretGenerator()
         self.psg.generate = umock.MagicMock(return_value=_SECRET)
-        callback_client = TcsClient(_IP_ADDRESS, _PORT, _CALLBACK_URL, request_client)
+        callback_client = TcsClient(
+            _IP_ADDRESS, _PORT, _CALLBACK_URL, request_client
+            )
         self.payloads = get_parsed_payload()
         self.payload_generator = PayloadGenerator(
             self.psg, self.payloads, callback_client
         )
         # detector
-        self.detector = Cve202532375Detector(request_client, self.payload_generator)
+        self.detector = Cve202532375Detector(
+            request_client,
+            self.payload_generator
+            )
 
     @requests_mock.mock()
     def test_detect_service_with_callback_server_returns_vul(self, mock):
         mock.register_uri(
             "GET",
-            "http://%s:%s/" % (_TARGET_URL, _TARGET_PORT),
+            f"http://{_TARGET_URL}:{_TARGET_PORT}/",
             content="Method Not Allowed".encode("utf-8"),
             status_code=200,
         )
         mock.register_uri(
             "POST",
-            "http://%s:%s/" % (_TARGET_URL, _TARGET_PORT),
+            "http://{_TARGET_URL}:{_TARGET_PORT}/",
             content="".encode("utf-8"),
             status_code=200,
         )
@@ -77,7 +82,7 @@ class Cve202532375DetectorTest(absltest.TestCase):
         body = '{ "has_dns_interaction":false, "has_http_interaction":true}'
         mock.register_uri(
             "GET",
-            "%s/?secret=%s" % (_CALLBACK_URL, _SECRET),
+            f"{_CALLBACK_URL}/?secret={_SECRET}",
             content=body.encode("utf-8"),
         )
         network_service = network_service_pb2.NetworkService(
@@ -102,10 +107,12 @@ class Cve202532375DetectorTest(absltest.TestCase):
                     ),
                     severity=vulnerability_pb2.Severity.CRITICAL,
                     title=(
-                        "BentoML Insecure Deserialization RCE (CVE-2025-32375) for Runner Server"
+                        "BentoML Insecure Deserialization RCE (CVE-2025-32375) "
+                        "for Runner Server"
                     ),
                     recommendation=(
-                        "Users should not expose the bentoml Runner Server endpoints to untrusted environments."
+                        "Users should not expose the bentoml Runner Server "
+                        "endpoints to untrusted environments."
                     ),
                     description=_VULN_DESCRIPTION,
                 ),
@@ -118,13 +125,13 @@ class Cve202532375DetectorTest(absltest.TestCase):
     def test_detect_vuln_target_with_callback_server_returns_empty(self, mock):
         mock.register_uri(
             "GET",
-            "http://%s:%s/" % (_TARGET_URL, _TARGET_PORT),
+            f"http://{_TARGET_URL}:{_TARGET_PORT}/",
             content="Method Not Allowed".encode("utf-8"),
             status_code=200,
         )
         mock.register_uri(
             "POST",
-            "http://%s:%s/" % (_TARGET_URL, _TARGET_PORT),
+            f"http://{_TARGET_URL}:{_TARGET_PORT}/",
             content="".encode("utf-8"),
             status_code=200,
         )
@@ -132,7 +139,7 @@ class Cve202532375DetectorTest(absltest.TestCase):
         body = '{ "has_dns_interaction":false, "has_http_interaction":true}'
         mock.register_uri(
             "GET",
-            "%s/?secret=%s" % (_CALLBACK_URL, _SECRET),
+            f"{_CALLBACK_URL}/?secret={_SECRET}",
             content=body.encode("utf-8"),
             status_code=404,
         )
