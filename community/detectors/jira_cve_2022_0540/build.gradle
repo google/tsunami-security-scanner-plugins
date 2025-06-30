@@ -15,21 +15,15 @@ repositories {
 }
 
 
-ext {
-    tsunamiVersion = 'latest.release'
-    junitVersion = '4.13'
-    truthVersion = '1.0.1'
-    okhttpVersion = '3.12.0'
-}
 
 dependencies {
-    implementation "com.google.tsunami:tsunami-common:${tsunamiVersion}"
-    implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
-    implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
+    implementation "com.google.tsunami:tsunami-common:latest.release"
+    implementation "com.google.tsunami:tsunami-plugin:latest.release"
+    implementation "com.google.tsunami:tsunami-proto:latest.release"
 
-    testImplementation "junit:junit:${junitVersion}"
-    testImplementation "com.google.truth:truth:${truthVersion}"
-    testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
-    testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"
-    testImplementation "com.squareup.okhttp3:mockwebserver:${okhttpVersion}"
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "com.google.truth:truth:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-java8-extension:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-proto-extension:1.4.4"
+    testImplementation "com.squareup.okhttp3:mockwebserver:3.12.0"
 }

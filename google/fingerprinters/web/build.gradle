@@ -20,26 +20,10 @@ repositories {
 
 
 
-ext {
-    autoValueVersion = '1.7'
-    floggerVersion = '0.5.1'
-    guavaVersion = '33.0.0-jre'
-    guiceVersion = '4.2.3'
-    javaxInjectVersion = '1'
-    jcommanderVersion = '1.48'
-    jsoupVersion = '1.9.2'
-    okhttpVersion = '3.12.0'
-    protobufVersion = '3.25.2'
-    tsunamiVersion = 'latest.release'
-
-    junitVersion = '4.13'
-    mockitoVersion = '2.28.2'
-    truthVersion = '1.4.0'
-}
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:${protobufVersion}"
+        artifact = "com.google.protobuf:protoc:3.25.5"
     }
 }
 
@@ -52,31 +36,31 @@ sourceSets {
 }
 
 dependencies {
-    implementation "com.google.auto.value:auto-value-annotations:${autoValueVersion}"
-    implementation "com.google.flogger:flogger:${floggerVersion}"
-    implementation "com.google.flogger:google-extensions:${floggerVersion}"
-    implementation "com.google.flogger:flogger-system-backend:${floggerVersion}"
-    implementation "com.google.guava:guava:${guavaVersion}"
-    implementation "com.google.inject:guice:${guiceVersion}"
-    implementation "org.jsoup:jsoup:${jsoupVersion}"
-    implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
-    implementation "com.google.protobuf:protobuf-javalite:${protobufVersion}"
-    implementation "com.google.protobuf:protobuf-java-util:${protobufVersion}"
-    implementation "com.google.tsunami:tsunami-common:${tsunamiVersion}"
-    implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
-    implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
-    implementation "javax.inject:javax.inject:${javaxInjectVersion}"
-    implementation "com.beust:jcommander:${jcommanderVersion}"
-    implementation "org.mockito:mockito-core:${mockitoVersion}"
-    annotationProcessor "com.google.auto.value:auto-value:${autoValueVersion}"
+    implementation "com.google.auto.value:auto-value-annotations:1.11.0"
+    implementation "com.google.flogger:flogger:0.9"
+    implementation "com.google.flogger:google-extensions:0.9"
+    implementation "com.google.flogger:flogger-system-backend:0.9"
+    implementation "com.google.guava:guava:33.0.0-jre"
+    implementation "com.google.inject:guice:4.2.3"
+    implementation "org.jsoup:jsoup:1.9.2"
+    implementation "com.google.protobuf:protobuf-java:3.25.5"
+    implementation "com.google.protobuf:protobuf-javalite:3.25.5"
+    implementation "com.google.protobuf:protobuf-java-util:3.25.5"
+    implementation "com.google.tsunami:tsunami-common:latest.release"
+    implementation "com.google.tsunami:tsunami-plugin:latest.release"
+    implementation "com.google.tsunami:tsunami-proto:latest.release"
+    implementation "javax.inject:javax.inject:1"
+    implementation "com.beust:jcommander:1.48"
+    implementation "org.mockito:mockito-core:5.18.0"
+    annotationProcessor "com.google.auto.value:auto-value:1.11.0"
 
-    testImplementation "com.google.truth:truth:${truthVersion}"
-    testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
-    testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"
-    testImplementation "junit:junit:${junitVersion}"
-    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
-    testImplementation "com.squareup.okhttp3:mockwebserver:${okhttpVersion}"
-    testAnnotationProcessor "com.google.auto.value:auto-value:${autoValueVersion}"
+    testImplementation "com.google.truth:truth:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-java8-extension:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-proto-extension:1.4.4"
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "org.mockito:mockito-core:5.18.0"
+    testImplementation "com.squareup.okhttp3:mockwebserver:3.12.0"
+    testAnnotationProcessor "com.google.auto.value:auto-value:1.11.0"
 }
 
 task runFingerprintUpdater(type: JavaExec) {
