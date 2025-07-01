@@ -105,7 +105,8 @@ public final class ComfyUiExposedUiTest {
 
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
 
-    DetectionReport expectedDetection = generateDetectionReport(detector, targetInfo, httpServices.get(0));
+    DetectionReport expectedDetection =
+        generateDetectionReport(detector, targetInfo, httpServices.get(0));
     assertThat(detectionReports.getDetectionReportsList()).containsExactly(expectedDetection);
     assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
   }
@@ -122,7 +123,8 @@ public final class ComfyUiExposedUiTest {
 
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
 
-    DetectionReport expectedDetection = generateDetectionReport(detector, targetInfo, httpServices.get(0));
+    DetectionReport expectedDetection =
+        generateDetectionReport(detector, targetInfo, httpServices.get(0));
     assertThat(detectionReports.getDetectionReportsList()).containsExactly(expectedDetection);
     assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
   }
