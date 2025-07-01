@@ -18,9 +18,9 @@ finding: {
     value: "CVE-2025-0868"
   }
   severity: CRITICAL
-  title: "CVE-2025-0868 DocsGPT RCE"
+  title: "Remote code execution affecting DocsGPT (CVE-2025-0868)"
   description: "DocsGPT is an AI-powered, open-source tool that has the function of streamlining the way users interact with documentation. The vulnerability allows unauthorized attackers to execute arbitrary Python code remotely on affected systems. This could potentially lead to complete system compromise, data theft, or service disruption, as the attack requires no authentication and can be executed remotely."
-  recommendation: "Update the version 0.13.0 or later."
+  recommendation: "Update the version to 0.13.0 or later."
   related_id: {
     publisher: "CVE"
     value: "CVE-2025-0868"
@@ -28,6 +28,10 @@ finding: {
 }
 
 config: {}
+
+###########
+# ACTIONS #
+###########
 
 actions: {
   name: "trigger_code_execution"
