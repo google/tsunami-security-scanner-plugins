@@ -5,11 +5,11 @@ FROM ghcr.io/google/tsunami-scanner-devel:latest AS build
 ARG TSUNAMI_PLUGIN_FOLDER
 
 ## Compile the plugins
-WORKDIR /usr/repos/tsunami-security-scanner-plugins
-COPY . /usr/repos/tsunami-security-scanner-plugins/
+WORKDIR /usr/repos/plugins
+COPY ${TSUNAMI_PLUGIN_FOLDER} /usr/repos/plugins/${TSUNAMI_PLUGIN_FOLDER}
 RUN mkdir -p /usr/tsunami/plugins
 
-WORKDIR /usr/repos/tsunami-security-scanner-plugins/${TSUNAMI_PLUGIN_FOLDER}
+WORKDIR /usr/repos/plugins/
 RUN bash <<EOF
 set -eu
 for plugins in \$(find . -name 'build.gradle'); do
