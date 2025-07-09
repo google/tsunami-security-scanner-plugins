@@ -1,0 +1,14 @@
+services:
+  solr:
+    image: solr:${SOLR_VERSION}
+    ports:
+     - "8983:8983"
+    command:
+      - solr-precreate
+      - gettingstarted
+    healthcheck:
+      test: curl --fail http://localhost:8983/ || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

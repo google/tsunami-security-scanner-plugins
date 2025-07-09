@@ -65,6 +65,22 @@ public final class CiscoSMIDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("CISCO")
+                    .setValue("CISCO_SA_20170214_SMI"))
+            .setSeverity(Severity.HIGH)
+            .setTitle("Cisco Smart Install Protocol Misuse")
+            .setDescription(
+                "Cisco Smart Install feature should not be exposed as it enables attackers to"
+                    + " perform administrative tasks on the device or remotely execute code")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     return DetectionReportList.newBuilder()
@@ -117,17 +133,7 @@ public final class CiscoSMIDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CISCO")
-                        .setValue("CISCO_SA_20170214_SMI"))
-                .setSeverity(Severity.HIGH)
-                .setTitle("Cisco Smart Install Protocol Misuse")
-                .setDescription(
-                    "Cisco Smart Install feature should not be exposed as it enables attackers to"
-                        + " perform administrative tasks on the device or remotely execute code"))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

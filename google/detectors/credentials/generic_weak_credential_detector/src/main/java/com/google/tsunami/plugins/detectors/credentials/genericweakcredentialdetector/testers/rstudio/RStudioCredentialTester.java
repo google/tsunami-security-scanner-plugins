@@ -97,6 +97,11 @@ public final class RStudioCredentialTester extends CredentialTester {
     if (canAcceptByNmapReport) {
       return true;
     }
+
+    if (!NetworkServiceUtils.isWebService(networkService)) {
+      return false;
+    }
+
     boolean canAcceptByCustomFingerprint = false;
     String url =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "unsupported_browser.htm";
@@ -138,7 +143,6 @@ public final class RStudioCredentialTester extends CredentialTester {
       NetworkService networkService, List<TestCredential> credentials) {
 
     return credentials.stream()
-        .filter(unused -> NetworkServiceUtils.isWebService(networkService))
         .filter(cred -> isRStudioAccessible(networkService, cred))
         .findFirst()
         .map(ImmutableList::of)

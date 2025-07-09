@@ -30,11 +30,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -118,18 +115,7 @@ public final class MantisBTAuthenticationBypassDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2017_7615"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("MantisBT Authentication Bypass (CVE-2017-7615)")
-                        .setDescription(
-                            "MantisBT through 2.3.0 allows arbitrary password reset and"
-                                + " unauthenticated admin access via an empty confirm_hash value"
-                                + " to verify.php."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

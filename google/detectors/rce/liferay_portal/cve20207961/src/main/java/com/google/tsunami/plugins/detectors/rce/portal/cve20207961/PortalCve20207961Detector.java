@@ -99,6 +99,24 @@ public final class PortalCve20207961Detector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2020_7961"))
+            .setSeverity(Severity.CRITICAL)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-7961"))
+            .setTitle("Liferay Portal Pre-Auth RCE Vulnerability (CVE-2020-7961)")
+            .setDescription(
+                "Deserialization of Untrusted Data in Liferay Portal prior to 7.2.1 CE GA2"
+                    + " allows remote attackers to execute arbitrary code via JSON web"
+                    + " services (JSONWS).")
+            .setRecommendation("Update Liferay Portal to version 7.2.1 CE GA2 or later.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("LiferayPortalCve20207961Detector starts detecting.");
@@ -194,16 +212,7 @@ public final class PortalCve20207961Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2020_7961"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Liferay Portal Pre-Auth RCE Vulnerability (CVE-2020-7961)")
-                .setDescription(
-                    "Deserialization of Untrusted Data in Liferay Portal prior to 7.2.1 CE GA2"
-                        + " allows remote attackers to execute arbitrary code via JSON web"
-                        + " services (JSONWS)."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 

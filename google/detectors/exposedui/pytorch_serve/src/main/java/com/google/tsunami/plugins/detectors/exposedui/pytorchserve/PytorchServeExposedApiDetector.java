@@ -90,6 +90,21 @@ public final class PytorchServeExposedApiDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
+                    .setValue(VULNERABILITY_REPORT_ID))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle(VULNERABILITY_REPORT_TITLE)
+            .setDescription(VULN_DESCRIPTION)
+            .setRecommendation(RECOMMENDATION)
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("ExampleVulnDetectorWithPayload starts detecting.");
@@ -148,16 +163,7 @@ public final class PytorchServeExposedApiDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
-                        .setValue(VULNERABILITY_REPORT_ID))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(VULNERABILITY_REPORT_TITLE)
-                .setDescription(VULN_DESCRIPTION)
-                .setRecommendation(RECOMMENDATION))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

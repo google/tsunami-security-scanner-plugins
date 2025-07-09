@@ -137,12 +137,13 @@ public final class DrupalCve20187600DetectorTest {
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
                     Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2018_7600"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Drupalgeddon 2 Detected")
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("GOOGLE")
+                        .setValue("CVE_2018_7600"))
+                .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2018-7600"))
+                .setSeverity(Severity.CRITICAL)
+                .setTitle("Drupalgeddon 2 Detected")
                         .setDescription(
                             "This version of Drupal is vulnerable to CVE-2018-7600. Drupal versions"
                                 + " before 7.58, 8.x before 8.3.9, 8.4.x before 8.4.6, and 8.5.x"

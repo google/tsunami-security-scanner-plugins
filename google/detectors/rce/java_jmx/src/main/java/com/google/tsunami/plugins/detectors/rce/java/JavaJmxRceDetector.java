@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.net.HostAndPort;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
@@ -35,9 +36,16 @@ import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.UUID;
 import javax.inject.Inject;
 import javax.management.MBeanServerConnection;
@@ -65,6 +73,25 @@ public final class JavaJmxRceDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("GOOGLE")
+                    .setValue("JAVA_UNPROTECTED_JMX_RMI_SERVER"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Unprotected Java JMX RMI Server")
+            .setDescription(
+                "Java Management Extension (JMX) allows remote monitoring and diagnostics for Java"
+                    + " applications. Running JMX with unprotected RMI endpoint allows any remote"
+                    + " users to create a javax.management.loading.MLet MBean and use it to create"
+                    + " new MBeans from arbitrary URLs.")
+            .setRecommendation("Enable authentication and upgrade to the latest JDK environment.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("JavaJmxRceDetector starts detecting.");
@@ -72,7 +99,7 @@ public final class JavaJmxRceDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(JavaJmxRceDetector::isRmiOrUnknownService)
+                .filter(JavaJmxRceDetector::isRmi)
                 .filter(JavaJmxRceDetector::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
@@ -123,21 +150,7 @@ public final class JavaJmxRceDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("JAVA_UNPROTECTED_JMX_RMI_SERVER"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Unprotected Java JMX RMI Server")
-                .setDescription(
-                    "Java Management Extension (JMX) allows remote monitoring and diagnostics for"
-                        + " Java applications. Running JMX with unprotected RMI endpoint allows"
-                        + " any remote users to create a javax.management.loading.MLet MBean and"
-                        + " use it to create new MBeans from arbitrary URLs.")
-                .setRecommendation(
-                    "Enable authentication and upgrade to the latest JDK environment."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 
@@ -145,11 +158,78 @@ public final class JavaJmxRceDetector implements VulnDetector {
    * Checks whether the network service is a Java RMI service or unknown.
    *
    * <p>Tsunami currently runs the port scanner nmap with version detection intensity set to 5,
-   * which isn't high enough to detect Java RMI services. Therefore we run this detector for
-   * "java-rmi" services as well as network service whose service name is empty.
+   * which isn't high enough to detect Java RMI services. Therefore we try to identify the RMI
+   * service by sending some data and checking the response. This is based on nmap's service probe
+   * file: https://svn.nmap.org/nmap/nmap-service-probes
    */
-  private static boolean isRmiOrUnknownService(NetworkService networkService) {
-    return networkService.getServiceName().isEmpty()
-        || NetworkServiceUtils.getServiceName(networkService).equals("java-rmi");
+  private static boolean isRmi(NetworkService networkService) {
+    if (NetworkServiceUtils.getServiceName(networkService).equals("java-rmi")) {
+      return true;
+    }
+
+    // Probe the service
+    HostAndPort hostAndPort =
+        NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
+
+    try {
+      Socket socket = new Socket();
+      socket.connect(
+          new InetSocketAddress(hostAndPort.getHost(), hostAndPort.getPort()), 10 * 1000);
+      // ensure reads don't block for more than 2 seconds
+      socket.setSoTimeout(2 * 1000);
+
+      DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+      DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+
+      // Send probe
+      byte[] probe = {0x4a, 0x52, 0x4d, 0x49, 0x00, 0x02, 0x4b};
+      dataOutputStream.write(probe);
+      dataOutputStream.flush();
+
+      // Receive response
+      byte[] buffer = new byte[1024];
+      int bytesRead = dataInputStream.read(buffer);
+      bytesRead = bytesRead == -1 ? buffer.length : bytesRead;
+
+      // Close socket after reading
+      dataInputStream.close();
+      dataOutputStream.close();
+      socket.close();
+
+      // 0x4e = ProtocolAck
+      if (buffer[0] != 0x4e) {
+        return false;
+      }
+
+      // Hostname size, Big Endian
+      int hostnameOffset = 3;
+      int hostnameSize = ((buffer[1] & 0xFF) << 8 | (buffer[2] & 0xFF)) & 0xFFFF;
+
+      // +2 for 2 null byte
+      // +2 for 2 bytes for the port
+      if (hostnameOffset + hostnameSize + 2 + 2 > bytesRead) {
+        logger.atWarning().log("Data exceeds buffer size");
+        return false;
+      }
+
+      // Check for 2 null bytes after hostname
+      if (buffer[hostnameOffset + hostnameSize] != 0x00
+          || buffer[hostnameOffset + hostnameSize + 1] != 0x00) {
+        return false;
+      }
+
+      // Parse client host
+      byte[] hostBytes = Arrays.copyOfRange(buffer, hostnameOffset, hostnameOffset + hostnameSize);
+      String clientHost = new String(hostBytes, StandardCharsets.UTF_8);
+      if (!clientHost.matches("[\\w:._-]+")) {
+        logger.atWarning().log("Invalid client host string");
+        return false;
+      }
+
+      logger.atInfo().log("RMI server detected");
+      return true;
+    } catch (IOException e) {
+      return false;
+    }
   }
 }

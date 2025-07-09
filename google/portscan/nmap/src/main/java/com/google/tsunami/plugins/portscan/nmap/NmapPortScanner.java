@@ -120,6 +120,7 @@ public final class NmapPortScanner implements PortScanner {
           .withServiceAndVersionDetection()
           .withVersionDetectionIntensity(5)
           .withScript("banner")
+          .withScript("ssl-cert")
           .withScript("ssl-enum-ciphers")
           .withScript("http-methods", "http.useragent=" + httpClientCliOptions.userAgent)
           .withTimingTemplate(TimingTemplate.AGGRESSIVE)

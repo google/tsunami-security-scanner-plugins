@@ -1,0 +1,31 @@
+plugins {
+    id 'java-library'
+}
+
+description = 'Magento / Adobe Commerce CosmicSting XXE (CVE-2024-34102)'
+group = 'com.google.tsunami'
+version = '0.0.1-SNAPSHOT'
+
+repositories {
+    maven { // The google mirror is less flaky than mavenCentral()
+        url 'https://maven-central.storage-download.googleapis.com/repos/central/data/'
+    }
+    mavenCentral()
+    mavenLocal()
+}
+
+
+
+dependencies {
+    implementation "com.google.tsunami:tsunami-common:latest.release"
+    implementation "com.google.tsunami:tsunami-plugin:latest.release"
+    implementation "com.google.tsunami:tsunami-proto:latest.release"
+
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "org.mockito:mockito-core:5.18.0"
+    testImplementation "com.google.inject:guice:4.2.3"
+    testImplementation "com.google.truth:truth:1.4.4"
+    testImplementation "com.google.inject.extensions:guice-testlib:4.2.3"
+    testImplementation "com.google.truth.extensions:truth-java8-extension:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-proto-extension:1.4.4"
+}

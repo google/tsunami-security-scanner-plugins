@@ -14,67 +14,24 @@ repositories {
     mavenLocal()
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
 
-    jar.manifest {
-        attributes('Implementation-Title': name,
-                'Implementation-Version': version,
-                'Built-By': System.getProperty('user.name'),
-                'Built-JDK': System.getProperty('java.version'),
-                'Source-Compatibility': sourceCompatibility,
-                'Target-Compatibility': targetCompatibility)
-    }
-
-    javadoc.options {
-        encoding = 'UTF-8'
-        use = true
-        links 'https://docs.oracle.com/javase/8/docs/api/'
-    }
-
-    // Log stacktrace to console when test fails.
-    test {
-        testLogging {
-            exceptionFormat = 'full'
-            showExceptions true
-            showCauses true
-            showStackTraces true
-        }
-        maxHeapSize = '1500m'
-    }
-}
-
-ext {
-    floggerVersion = '0.5.1'
-    guavaVersion = '28.2-jre'
-    javaxInjectVersion = '1'
-    jsoupVersion = '1.9.2'
-    okhttpVersion = '3.12.0'
-    protobufVersion = '3.11.4'
-    tsunamiVersion = 'latest.release'
-
-    junitVersion = '4.13'
-    mockitoVersion = '2.28.2'
-    truthVersion = '1.0.1'
-}
 
 dependencies {
-    implementation "com.google.flogger:flogger:${floggerVersion}"
-    implementation "com.google.flogger:google-extensions:${floggerVersion}"
-    implementation "com.google.flogger:flogger-system-backend:${floggerVersion}"
-    implementation "com.google.guava:guava:${guavaVersion}"
-    implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
-    implementation "com.google.protobuf:protobuf-javalite:${protobufVersion}"
-    implementation "com.google.protobuf:protobuf-java-util:${protobufVersion}"
-    implementation "com.google.tsunami:tsunami-common:${tsunamiVersion}"
-    implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
-    implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
-    implementation "javax.inject:javax.inject:${javaxInjectVersion}"
+    implementation "com.google.flogger:flogger:0.9"
+    implementation "com.google.flogger:google-extensions:0.9"
+    implementation "com.google.flogger:flogger-system-backend:0.9"
+    implementation "com.google.guava:guava:33.0.0-jre"
+    implementation "com.google.protobuf:protobuf-java:3.25.5"
+    implementation "com.google.protobuf:protobuf-javalite:3.25.5"
+    implementation "com.google.protobuf:protobuf-java-util:3.25.5"
+    implementation "com.google.tsunami:tsunami-common:latest.release"
+    implementation "com.google.tsunami:tsunami-plugin:latest.release"
+    implementation "com.google.tsunami:tsunami-proto:latest.release"
+    implementation "javax.inject:javax.inject:1"
 
-    testImplementation "com.google.truth:truth:${truthVersion}"
-    testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
-    testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"
-    testImplementation "junit:junit:${junitVersion}"
-    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "com.google.truth:truth:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-java8-extension:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-proto-extension:1.4.4"
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "org.mockito:mockito-core:5.18.0"
 }

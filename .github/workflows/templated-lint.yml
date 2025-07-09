@@ -1,0 +1,25 @@
+# Ensures templated plugins are linted correctly.
+name: templated-plugins-linter
+
+on:
+  push:
+    paths:
+      - 'templated/**'
+  pull_request:
+    paths:
+      - 'templated/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: 'Verify templated plugins'
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
+      - run: go install github.com/google/tsunami-security-scanner-plugins/templated/utils/linter@latest
+      - run: |
+          find templated/templateddetector/ -type f \( -name '*.textproto' -a ! -name '*_test.textproto' -a ! -path '*/plugins/examples/*' \) \
+          | xargs -I{} linter {}

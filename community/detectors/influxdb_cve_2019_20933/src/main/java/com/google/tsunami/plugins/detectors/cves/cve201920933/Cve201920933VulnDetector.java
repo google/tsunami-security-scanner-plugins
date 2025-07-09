@@ -35,7 +35,6 @@ import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
-import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionReportList.Builder;
@@ -43,7 +42,6 @@ import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
@@ -94,13 +92,48 @@ public final class Cve201920933VulnDetector implements VulnDetector {
             networkService -> {
               if (isServiceVulnerableByMissingAuth(networkService)) {
                 detectionReport.addDetectionReports(
-                    buildMissingAuthDetectionReport(targetInfo, networkService));
+                    buildDetectionReport(targetInfo, networkService, this.getAdvisories().get(0)));
               } else if ((isServiceVulnerableByCve201920933(networkService))) {
                 detectionReport.addDetectionReports(
-                    buildCve201920933DetectionReport(targetInfo, networkService));
+                    buildDetectionReport(targetInfo, networkService, this.getAdvisories().get(1)));
               }
             });
     return detectionReport.build();
+  }
+
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        // Missing authentication for InfluxDB
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("MISSING_AUTHENTICATION_FOR_INFLUX_DB"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("InfluxDB instance without any authentication")
+            .setDescription(
+                "Attacker can access any DB information for this InfluxDB instance because"
+                    + " there are no authentication.")
+            .setRecommendation(
+                "Set authentication value to true in InfluxDB setup config file before running"
+                    + " an instance of InfluxDB.")
+            .build(),
+        // The instance is vulnerable to CVE-2019-20933.
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2019_20933"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2019-20933"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("InfluxDB Empty JWT Secret Key Authentication Bypass")
+            .setDescription(
+                "InfluxDB before 1.7.6 has an authentication bypass vulnerability because a JWT"
+                    + " token may have an empty SharedSecret (aka shared secret).")
+            .setRecommendation("Upgrade to higher versions")
+            .build());
   }
 
   private boolean isServiceVulnerableByCve201920933(NetworkService networkService) {
@@ -158,63 +191,14 @@ public final class Cve201920933VulnDetector implements VulnDetector {
     return false;
   }
 
-  private DetectionReport buildCve201920933DetectionReport(
-      TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
+  private DetectionReport buildDetectionReport(
+      TargetInfo targetInfo, NetworkService vulnerableNetworkService, Vulnerability vulnerability) {
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2019_20933"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("InfluxDB Empty JWT Secret Key Authentication Bypass")
-                .setDescription(
-                    "InfluxDB before 1.7.6 has an authentication bypass vulnerability because a JWT"
-                        + " token may have an empty SharedSecret (aka shared secret).")
-                .setRecommendation("Upgrade to higher versions")
-                .addAdditionalDetails(
-                    AdditionalDetail.newBuilder()
-                        .setTextData(
-                            TextData.newBuilder()
-                                .setText(
-                                    "Attacker can run arbitrary queries and access database"
-                                        + " data"))))
-        .build();
-  }
-
-  private DetectionReport buildMissingAuthDetectionReport(
-      TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
-    return DetectionReport.newBuilder()
-        .setTargetInfo(targetInfo)
-        .setNetworkService(vulnerableNetworkService)
-        .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
-        .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("MISSING_AUTHENTICATION_FOR_INFLUX_DB"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("InfluxDB instance without any authentication")
-                .setDescription(
-                    "Attacker can access any DB information for this InfluxDB instance because"
-                        + " there are no authentication.")
-                .setRecommendation(
-                    "Set authentication value to true in InfluxDB setup config file before running"
-                        + " an instance of InfluxDB.")
-                .addAdditionalDetails(
-                    AdditionalDetail.newBuilder()
-                        .setTextData(
-                            TextData.newBuilder()
-                                .setText(
-                                    "Attacker can run arbitrary queries and access database"
-                                        + " data"))))
+        .setVulnerability(vulnerability)
         .build();
   }
 }

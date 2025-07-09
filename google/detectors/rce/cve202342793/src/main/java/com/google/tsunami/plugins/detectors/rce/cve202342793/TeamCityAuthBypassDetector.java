@@ -104,6 +104,21 @@ public final class TeamCityAuthBypassDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2023_42793"))
+            .setSeverity(Severity.CRITICAL)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-42793"))
+            .setTitle(VULNERABILITY_REPORT_TITLE)
+            .setDescription(VULN_DESCRIPTION)
+            .setRecommendation(RECOMMENDATION)
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting TeamCity Auth Bypass RCE detection.");
@@ -216,14 +231,7 @@ public final class TeamCityAuthBypassDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2023_42793"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(VULNERABILITY_REPORT_TITLE)
-                .setDescription(VULN_DESCRIPTION)
-                .setRecommendation(RECOMMENDATION))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }
