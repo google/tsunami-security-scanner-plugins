@@ -53,40 +53,38 @@ import javax.inject.Inject;
 
 /** A VulnDetector plugin for Exposed Flyte Console Server. */
 @PluginInfo(
-	    type = PluginType.VULN_DETECTION,
-	    name = "Exposed Flyte Console Detector",
-	    version = "0.1",
-	    description = "This detector identifies instances of exposed Flyte Console, "
-	                + "which could potentially allow for remote code execution (RCE).",
-	    author = "hayageek",
-	    bootstrapModule = ExposedFlyteConsoleDetectorModule.class
-	)
+    type = PluginType.VULN_DETECTION,
+    name = "Exposed Flyte Console Detector",
+    version = "0.1",
+    description =
+        "This detector identifies instances of exposed Flyte Console, "
+            + "which could potentially allow for remote code execution (RCE).",
+    author = "hayageek",
+    bootstrapModule = ExposedFlyteConsoleDetectorModule.class)
 @ForWebService
 public final class ExposedFlyteConsoleDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
-  @VisibleForTesting
-  static final String VULNERABILITY_REPORT_PUBLISHER = "TSUNAMI_COMMUNITY";
-  @VisibleForTesting
-  static final String VULNERABILITY_REPORT_ID = "FLYTE_CONSOLE_EXPOSED";
+  @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "TSUNAMI_COMMUNITY";
+  @VisibleForTesting static final String VULNERABILITY_REPORT_ID = "FLYTE_CONSOLE_EXPOSED";
+
+  @VisibleForTesting static final String VULNERABILITY_REPORT_TITLE = "Exposed Flyte Console";
 
   @VisibleForTesting
-  static final String VULNERABILITY_REPORT_TITLE = "Exposed Flyte Console";
+  static final String VULN_DESCRIPTION =
+      "An exposed Flyte Console can lead to severe security risks, "
+          + "including unauthorized access and potential remote code execution (RCE). "
+          + "Ensure that access controls and security measures are properly configured "
+          + "to prevent exploitation. Please refer to the remediation guidance section "
+          + "below for mitigation strategies.";
 
   @VisibleForTesting
-  static final String VULN_DESCRIPTION = "An exposed Flyte Console can lead to severe security risks, "
-      + "including unauthorized access and potential remote code execution (RCE). "
-      + "Ensure that access controls and security measures are properly configured "
-      + "to prevent exploitation. Please refer to the remediation guidance section "
-      + "below for mitigation strategies.";
-
-  @VisibleForTesting
-  static final String RECOMMENDATION = "Please disable public access to your flyte console instance.";
+  static final String RECOMMENDATION =
+      "Please disable public access to your flyte console instance.";
 
   @VisibleForTesting
   private static final Pattern VULNERABILITY_RESPONSE_PATTERN = Pattern.compile("<title>Flyte");
 
-  @VisibleForTesting
-  FlyteProtoClient flyteClient = new FlyteProtoClient();
+  @VisibleForTesting FlyteProtoClient flyteClient = new FlyteProtoClient();
 
   private static final int MAX_TIMEOUT_FOR_RCE_IN_SECS = 180;
   private final Clock utcClock;
@@ -116,10 +114,11 @@ public final class ExposedFlyteConsoleDetector implements VulnDetector {
                     buildDetectionReport(
                         targetInfo,
                         networkService,
-                        "Flyte Console is misconfigured and can be accessed publicly, potentially leading to Remote Code Execution (RCE)."
-                            + " Tsunami security scanner confirmed this by sending an HTTP request"
-                            + " with a test connection API and receiving the corresponding callback"
-                            + " on the tsunami callback server.",
+                        "Flyte Console is misconfigured and can be accessed publicly, potentially"
+                            + " leading to Remote Code Execution (RCE). Tsunami security scanner"
+                            + " confirmed this by sending an HTTP request with a test connection"
+                            + " API and receiving the corresponding callback on the tsunami"
+                            + " callback server.",
                         Severity.CRITICAL));
               }
             });
@@ -131,12 +130,13 @@ public final class ExposedFlyteConsoleDetector implements VulnDetector {
     String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     var consolePageUrl = String.format("%s%s", rootUrl, "console");
     try {
-      HttpResponse loginResponse = this.httpClient.send(get(consolePageUrl).withEmptyHeaders().build());
+      HttpResponse loginResponse =
+          this.httpClient.send(get(consolePageUrl).withEmptyHeaders().build());
       if ((loginResponse.status() == HttpStatus.OK && loginResponse.bodyString().isPresent())) {
-          String responseBody = loginResponse.bodyString().get();
-          if (VULNERABILITY_RESPONSE_PATTERN.matcher(responseBody).find()) {
-            return true;
-          }
+        String responseBody = loginResponse.bodyString().get();
+        if (VULNERABILITY_RESPONSE_PATTERN.matcher(responseBody).find()) {
+          return true;
+        }
       }
 
     } catch (IOException e) {
@@ -145,6 +145,21 @@ public final class ExposedFlyteConsoleDetector implements VulnDetector {
     logger.atWarning().log("unable to find flight console ");
 
     return false;
+  }
+
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
+                    .setValue(VULNERABILITY_REPORT_ID))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle(VULNERABILITY_REPORT_TITLE)
+            .setDescription(VULN_DESCRIPTION)
+            .setRecommendation(RECOMMENDATION)
+            .build());
   }
 
   private boolean isVulnerable(NetworkService networkService) {
@@ -178,7 +193,8 @@ public final class ExposedFlyteConsoleDetector implements VulnDetector {
               .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
               .setInterpretationEnvironment(
                   PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
-              .setExecutionEnvironment(PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+              .setExecutionEnvironment(
+                  PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
               .build());
     } catch (NotImplementedException n) {
       n.printStackTrace();
