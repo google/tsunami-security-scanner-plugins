@@ -87,15 +87,7 @@ public final class ExposedOllamaApiServerDetector implements VulnDetector {
             networkService -> {
               if (isServiceVulnerableCheckResponse(networkService)) {
                 detectionReport.addDetectionReports(
-                    buildDetectionReport(
-                        targetInfo,
-                        networkService,
-                        "An Ollama API server is exposed to the network. This was confirmed by"
-                            + " investigating the API response for typical response artifacts.  An"
-                            + " attacker can abuse an exposed API server to, for example, download"
-                            + " or modify existing LLM models, or misuse resources by using the LLM"
-                            + " chat functionality.",
-                        Severity.HIGH));
+                    buildDetectionReport(targetInfo, networkService));
               }
             });
     return detectionReport.build();
@@ -125,6 +117,26 @@ public final class ExposedOllamaApiServerDetector implements VulnDetector {
     return false;
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("OLLAMA_API_SERVER_EXPOSED"))
+            .setSeverity(Severity.HIGH)
+            .setTitle("Exposed Ollama API Server")
+            .setDescription(
+                "An Ollama API server is exposed to the network. This was confirmed by"
+                    + " investigating the API response for typical response artifacts. "
+                    + " An attacker can abuse an exposed API server to, for example,"
+                    + " download or modify existing LLM models, or misuse resources by"
+                    + " using the LLM chat functionality.")
+            .setRecommendation(RECOMMENDATION)
+            .build());
+  }
+
   private boolean isServiceVulnerableCheckResponse(NetworkService networkService) {
 
     var psUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "api/ps";
@@ -147,25 +159,13 @@ public final class ExposedOllamaApiServerDetector implements VulnDetector {
   }
 
   private DetectionReport buildDetectionReport(
-      TargetInfo targetInfo,
-      NetworkService vulnerableNetworkService,
-      String description,
-      Severity severity) {
+      TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("OLLAMA_API_SERVER_EXPOSED"))
-                .setSeverity(severity)
-                .setTitle("Exposed Ollama API Server")
-                .setDescription(description)
-                .setRecommendation(RECOMMENDATION))
+        .setVulnerability(this.getAdvisories().get(0).toBuilder())
         .build();
   }
 }
