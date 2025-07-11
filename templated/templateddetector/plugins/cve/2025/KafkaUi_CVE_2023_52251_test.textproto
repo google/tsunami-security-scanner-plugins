@@ -1,0 +1,51 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "KafkaUi_CVE_2023_52251"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/clusters/local/topics"
+        status: 200
+      },
+      {
+        uri: "/api/clusters/local/topics/topic/messages"
+        status: 200
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotNodeRed_returnsNoVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/clusters/local/topics"
+        status: 200
+      },
+      {
+        uri: "/api/clusters/local/topics/topic/messages"
+        status: 200
+      }
+    ]
+  }
+}

