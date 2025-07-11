@@ -6,7 +6,7 @@ config: {
 }
 
 tests: {
-  name: "whenVulnerable_returnsTrue"
+  name: "whenVulnerableKafkaUi_returnsTrue"
   expect_vulnerability: true
 
   mock_callback_server: {
@@ -17,8 +17,14 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
+        uri: "/does-not-exist"
+        status: 404,
+        body_content: "org.springframework.web.server.ResponseStatusException: 404 NOT_FOUND , com.provectus.kafka.ui.config , com.provectus.kafka.ui.config.ReadOnlyModeFilter"
+      },
+      {
         uri: "/api/clusters/local/topics"
-        status: 200
+        status: 200,
+        body_content: "org.apache.kafka.common.errors.TopicExistsException: Topic 'topic' already exists."
       },
       {
         uri: "/api/clusters/local/topics/topic/messages"
@@ -33,7 +39,7 @@ tests: {
 }
 
 tests: {
-  name: "whenNotNodeRed_returnsNoVuln"
+  name: "whenNotKafkaUi_returnsNoVuln"
   expect_vulnerability: false
 
   mock_http_server: {

@@ -18,8 +18,8 @@ finding: {
     value: "CVE-2023-52251"
   }
   severity: CRITICAL
-  title: "Remote code execution affecting DocsGPT (CVE-2025-0868)"
-  description: "DocsGPT is an AI-powered, open-source tool that has the function of streamlining the way users interact with documentation. The vulnerability allows unauthorized attackers to execute arbitrary Python code remotely on affected systems. This could potentially lead to complete system compromise, data theft, or service disruption, as the attack requires no authentication and can be executed remotely."
+  title: "Critical Remote Code Execution Vulnerability in Kafka UI (CVE-2023-52251)"
+  description: "Kafka UI, a tool for managing and monitoring Apache Kafka clusters, contains a critical vulnerability that allows remote execution of arbitrary code. Exploitation of this flaw can lead to system compromise, data theft, or service disruption. Immediate patching is strongly advised."
   recommendation: "Update the version to 0.13.0 or later."
   related_id: {
     publisher: "CVE"
@@ -34,6 +34,23 @@ config: {}
 ###########
 
 actions: {
+  name: "fingerprint_kafka_ui"
+  http_request: {
+    method: GET
+    uri: "/does-not-exist"
+    response: {
+      http_status: 404
+      expect_all: {
+        conditions: [
+          { body: {} contains: "org.springframework.web.server.ResponseStatusException: 404 NOT_FOUND" },
+          { body: {} contains: "com.provectus.kafka.ui.config" },
+          { body: {} contains: "com.provectus.kafka.ui.config.ReadOnlyModeFilter" }
+        ]
+      }
+    }
+  }
+}
+actions: {
   name: "create_sample_topic"
   http_request: {
     method: POST
@@ -42,6 +59,14 @@ actions: {
       { name: "Content-Type" value: "application/json" }
     ]
     data: "{\"name\":\"topic\",\"partitions\":1,\"configs\":{\"cleanup.policy\":\"delete\",\"retention.bytes\":\"-1\"}}"
+    response: {
+      expect_any: {
+        conditions: [
+          { body: {} contains: "org.apache.kafka.common.errors.TopicExistsException: Topic 'topic' already exists." },
+          { body: {} contains: "{\"name\":\"topic\",\"internal\":false,\"partitionCount\":1,\"replicationFactor\":1," }
+        ]
+      }
+    }
   }
 }
 actions: {
@@ -53,6 +78,9 @@ actions: {
       { name: "Content-Type" value: "application/json" }
     ]
     data: "{\"partition\":0,\"key\":\"123\",\"content\":\"123\",\"keySerde\":\"String\",\"valueSerde\":\"String\"}"
+    response: {
+      http_status: 200
+    }
   }
 }
 actions: {
@@ -81,6 +109,7 @@ actions: {
 workflows: {
   condition: REQUIRES_CALLBACK_SERVER
   actions: [
+    "fingerprint_kafka_ui",
     "create_sample_topic",
     "create_sample_messages",
     "trigger_code_execution",
