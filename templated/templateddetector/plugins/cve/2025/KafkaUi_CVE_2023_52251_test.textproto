@@ -24,14 +24,18 @@ tests: {
       {
         uri: "/api/clusters/local/topics"
         status: 200,
-        body_content: "org.apache.kafka.common.errors.TopicExistsException: Topic 'topic' already exists."
+        body_content: "{\"name\":\"tsunami-security-scanner\",\"internal\":false,\"partitionCount\":1,\"replicationFactor\":1,"
       },
       {
-        uri: "/api/clusters/local/topics/topic/messages"
+        uri: "/api/clusters/local/topics/tsunami-security-scanner/messages"
         status: 200
       },
       {
         uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+      },
+      {
+        uri: "/api/clusters/local/topics/tsunami-security-scanner"
         status: 200
       }
     ]

