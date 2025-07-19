@@ -1,0 +1,67 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Langflow_CVE_2025_3248"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <base href=\"/\" />\n    <meta charset=\"UTF-8\" />\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <link rel=\"icon\" href=\"./assets/favicon-new-BaG6bPWd.ico\" />\n    <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" />\n    <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin />\n    <link\n      href=\"https://fonts.googleapis.com/css2?family=Chivo:ital,wght@0,100..900;1,100..900&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap\"\n      rel=\"stylesheet\"\n    />\n    <title>Langflow</title>\n    <script type=\"module\" crossorigin src=\"./assets/index-hNpyfBay.js\"></script>\n    <link rel=\"stylesheet\" crossorigin href=\"./assets/index-CwAwSIfd.css\">\n  </head>\n  <body id=\"body\" class=\"dark\" style=\"width: 100%; height: 100%\">\n    <noscript>You need to enable JavaScript to run this app.</noscript>\n    <div style=\"width: 100vw; height: 100vh\" id=\"root\"></div>\n  </body>\n</html>"
+      },
+      {
+        uri: "/api/v1/validate/code"
+        status: 200
+        body_content: "{\"imports\":{\"errors\":[]},\"function\":{\"errors\":[\"b'root:x:0:0:root:/root:/bin/bash\\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\\nbin:x:2:2:bin:/bin:/usr/sbin/nologin\\nsys:x:3:3:sys:/dev:/usr/sbin/nologin\\nsync:x:4:65534:sync:/bin:/bin/sync\\ngames:x:5:60:games:/usr/games:/usr/sbin/nologin\\nman:x:6:12:man:/var/cache/man:/usr/sbin/nologin\\nlp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin\\nmail:x:8:8:mail:/var/mail:/usr/sbin/nologin\\nnews:x:9:9:news:/var/spool/news:/usr/sbin/nologin\\nuucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin\\nproxy:x:13:13:proxy:/bin:/usr/sbin/nologin\\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\\nbackup:x:34:34:backup:/var/backups:/usr/sbin/nologin\\nlist:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin\\nirc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin\\n_apt:x:42:65534::/nonexistent:/usr/sbin/nologin\\nnobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin\\nuser:x:1000:0::/app/data:/bin/sh\\n'\"]}}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <base href=\"/\" />\n    <meta charset=\"UTF-8\" />\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <link rel=\"icon\" href=\"./assets/favicon-new-BaG6bPWd.ico\" />\n    <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" />\n    <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin />\n    <link\n      href=\"https://fonts.googleapis.com/css2?family=Chivo:ital,wght@0,100..900;1,100..900&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap\"\n      rel=\"stylesheet\"\n    />\n    <title>Langflow</title>\n    <script type=\"module\" crossorigin src=\"./assets/index-hNpyfBay.js\"></script>\n    <link rel=\"stylesheet\" crossorigin href=\"./assets/index-CwAwSIfd.css\">\n  </head>\n  <body id=\"body\" class=\"dark\" style=\"width: 100%; height: 100%\">\n    <noscript>You need to enable JavaScript to run this app.</noscript>\n    <div style=\"width: 100vw; height: 100vh\" id=\"root\"></div>\n  </body>\n</html>"
+      },
+      {
+        uri: "/api/v1/validate/code"
+        status: 403
+        body_content: "{\"detail\":\"An API key must be passed as query or header\"}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotLangflow_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
