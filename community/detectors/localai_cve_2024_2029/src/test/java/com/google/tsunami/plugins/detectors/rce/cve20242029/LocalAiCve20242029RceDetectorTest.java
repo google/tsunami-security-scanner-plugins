@@ -108,7 +108,7 @@ public final class LocalAiCve20242029RceDetectorTest {
 
   @Test
   public void detect_whenVulnerable_returnsVulnerability_Cve202229165_Oob() throws IOException {
-    startMockWebServerForTestingWithOob(true);
+    startMockWebServerForTestingWithOob();
     createInjector();
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
@@ -147,7 +147,7 @@ public final class LocalAiCve20242029RceDetectorTest {
 
   @Test
   public void detect_ifNotVulnerable_doesNotReportVuln_Exposed_Ui() throws IOException {
-    startMockWebServerForTestingWithOob(false);
+    startMockWebServerForTestingWithOob();
     createInjector();
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
@@ -157,7 +157,7 @@ public final class LocalAiCve20242029RceDetectorTest {
     Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(3);
   }
 
-  private void startMockWebServerForTestingWithOob(boolean mustHaveForgedCookie)
+  private void startMockWebServerForTestingWithOob()
       throws IOException {
     final Dispatcher dispatcher =
         new Dispatcher() {
