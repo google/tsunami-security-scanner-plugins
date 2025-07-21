@@ -36,11 +36,8 @@ import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -121,29 +118,7 @@ public final class Cve20196340DetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2019_6340"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Drupal RCE CVE-2019-6340 Detected")
-                        .setDescription(
-                            "Some field types do not properly sanitize data from non-form sources "
-                                + "in Drupal 8.5.x before 8.5.11 and Drupal 8.6.x before 8.6.10. "
-                                + "This can lead to arbitrary PHP code execution in some cases. "
-                                + "A site is only affected by this if one of the following "
-                                + "conditions is met: The site has the Drupal 8 core RESTful Web "
-                                + "Services (rest) module enabled and allows PATCH or POST "
-                                + "requests, or the site has another web services module enabled, "
-                                + "like JSON:API in Drupal 8, or Services or RESTful Web Services "
-                                + "in Drupal 7. (Note: The Drupal 7 Services module itself does "
-                                + "not require an update at this time, but you should apply other "
-                                + "contributed updates associated with this advisory if Services "
-                                + "is in use.)")
-                        .setRecommendation(
-                            "Upgrade to Drupal 8.6.10 or Drupal 8.5.11 with security patches."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

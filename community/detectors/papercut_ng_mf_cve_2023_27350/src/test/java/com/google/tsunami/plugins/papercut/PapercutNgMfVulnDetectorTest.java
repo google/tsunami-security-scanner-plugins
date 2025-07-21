@@ -32,12 +32,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -112,25 +109,7 @@ public final class PapercutNgMfVulnDetectorTest {
             .setNetworkService(papercutService)
             .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
             .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-            .setVulnerability(
-                Vulnerability.newBuilder()
-                    .setMainId(
-                        VulnerabilityId.newBuilder()
-                            .setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("CVE_2023_27350"))
-                    .setSeverity(Severity.CRITICAL)
-                    .setTitle("Papercut NG/MF Authentication Bypass and RCE")
-                    .setDescription(
-                        "This vulnerability allows remote attackers to bypass authentication on"
-                            + " affected installations of PaperCut NG/MF. Authentication is not"
-                            + " required to exploit this vulnerability. The specific flaw exists"
-                            + " within the SetupCompleted class and the issue results from improper"
-                            + " access control. An attacker can leverage this vulnerability to"
-                            + " bypass authentication and execute arbitrary code in the context of"
-                            + " SYSTEM (Windows) or Root/Papercut User (Linux).")
-                    .setRecommendation(
-                        "Update to versions that are at least 20.1.7, 21.2.11, 22.0.9, or any later"
-                            + " version."))
+            .setVulnerability(detector.getAdvisories().get(0))
             .build();
   }
 

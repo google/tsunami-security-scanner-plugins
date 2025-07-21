@@ -76,6 +76,25 @@ public final class WordPressInstallPageDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("GOOGLE")
+                    .setValue("UNFINISHED_WORD_PRESS_INSTALLATION"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Unfinished WordPress Installation")
+            // TODO(b/147455416): determine CVSS score.
+            .setDescription(
+                "An unfinished WordPress installation exposes the /wp-admin/install.php page, which"
+                    + " allows attacker to set the admin password and possibly compromise the"
+                    + " system.")
+            .setRecommendation(FINDING_RECOMMENDATION_TEXT)
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting unfinished install page detection for WordPress.");
@@ -136,20 +155,7 @@ public final class WordPressInstallPageDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("UNFINISHED_WORD_PRESS_INSTALLATION"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Unfinished WordPress Installation")
-                // TODO(b/147455416): determine CVSS score.
-                .setDescription(
-                    "An unfinished WordPress installation exposes the /wp-admin/install.php page,"
-                        + " which allows attacker to set the admin password and possibly"
-                        + " compromise the system.")
-                .setRecommendation(FINDING_RECOMMENDATION_TEXT))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

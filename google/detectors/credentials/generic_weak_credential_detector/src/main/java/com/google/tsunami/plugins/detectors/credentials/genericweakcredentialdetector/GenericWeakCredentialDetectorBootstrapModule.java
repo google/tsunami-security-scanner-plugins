@@ -36,6 +36,8 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.DefaultCredentials;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.Top100Passwords;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.airbyte.AirbyteCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.airflow.AirflowCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.argocd.ArgoCdCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.grafana.GrafanaCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.hive.HiveCredentialTester;
@@ -70,18 +72,20 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
     Multibinder<CredentialTester> credentialTesterBinder =
         Multibinder.newSetBinder(binder(), CredentialTester.class);
     credentialTesterBinder.addBinding().to(KubeflowCredentialTester.class);
+    credentialTesterBinder.addBinding().to(AirbyteCredentialTester.class);
+    credentialTesterBinder.addBinding().to(AirflowCredentialTester.class);
     credentialTesterBinder.addBinding().to(ArgoCdCredentialTester.class);
+    credentialTesterBinder.addBinding().to(GrafanaCredentialTester.class);
+    credentialTesterBinder.addBinding().to(HiveCredentialTester.class);
+    credentialTesterBinder.addBinding().to(HydraCredentialTester.class);
     credentialTesterBinder.addBinding().to(JenkinsCredentialTester.class);
     credentialTesterBinder.addBinding().to(MlFlowCredentialTester.class);
     credentialTesterBinder.addBinding().to(MysqlCredentialTester.class);
-    credentialTesterBinder.addBinding().to(HiveCredentialTester.class);
-    credentialTesterBinder.addBinding().to(HydraCredentialTester.class);
     credentialTesterBinder.addBinding().to(NcrackCredentialTester.class);
     credentialTesterBinder.addBinding().to(PostgresCredentialTester.class);
-    credentialTesterBinder.addBinding().to(WordpressCredentialTester.class);
-    credentialTesterBinder.addBinding().to(GrafanaCredentialTester.class);
-    credentialTesterBinder.addBinding().to(RStudioCredentialTester.class);
     credentialTesterBinder.addBinding().to(RabbitMQCredentialTester.class);
+    credentialTesterBinder.addBinding().to(RStudioCredentialTester.class);
+    credentialTesterBinder.addBinding().to(WordpressCredentialTester.class);
     credentialTesterBinder.addBinding().to(ZenMlCredentialTester.class);
 
     Multibinder<CredentialProvider> credentialProviderBinder =

@@ -22,6 +22,7 @@ import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.templatedplugin.proto.PluginAction;
 import com.google.tsunami.templatedplugin.proto.PluginWorkflow;
 import com.google.tsunami.templatedplugin.proto.TemplatedPlugin;
@@ -76,6 +77,11 @@ public final class TemplatedDetector implements VulnDetector {
         "No workflow matched the current setup. Is plugin '%s' misconfigured?",
         this.proto.getInfo().getName());
     return DetectionReportList.getDefaultInstance();
+  }
+
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(this.proto.getFinding());
   }
 
   @Inject

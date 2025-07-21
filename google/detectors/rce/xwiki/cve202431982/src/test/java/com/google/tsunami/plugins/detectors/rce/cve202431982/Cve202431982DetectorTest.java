@@ -29,11 +29,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -54,20 +51,6 @@ public final class Cve202431982DetectorTest {
 
   private static final String VULN_CONTENT =
       "<title>RSS feed for search on tsunami-detection:3025</title>";
-
-  private static final Vulnerability EXPECTED_VULN =
-      Vulnerability.newBuilder()
-          .setMainId(VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE-2024-31982"))
-          .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2024-31982"))
-          .setSeverity(Severity.CRITICAL)
-          .setTitle("xwiki instance vulnerable to CVE-2024-31982")
-          .setRecommendation(
-              "Update to one of the patched versions of xwiki: 14.10.20, 15.5.4, 15.10-rc-1")
-          .setDescription(
-              "The xwiki instance is vulnerable to CVE-2024-31982. This vulnerability allows"
-                  + " an attacker to take control of the xwiki instance and does not require"
-                  + " authentication.")
-          .build();
 
   private MockWebServer mockWebServer;
 
@@ -113,7 +96,7 @@ public final class Cve202431982DetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(EXPECTED_VULN)
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

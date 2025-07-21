@@ -1,1 +1,13 @@
 rootProject.name = 'confluence_cve_2022_26134_detector'
+
+sourceControl {
+    gitRepository("https://github.com/google/tsunami-security-scanner.git") {
+        producesModule("com.google.tsunami:tsunami-common")
+        producesModule("com.google.tsunami:tsunami-plugin")
+        producesModule("com.google.tsunami:tsunami-proto")
+    }
+
+    gitRepository("https://github.com/google/tsunami-security-scanner-callback-server.git") {
+        producesModule("com.google.tsunami:tcs-proto")
+    }
+}

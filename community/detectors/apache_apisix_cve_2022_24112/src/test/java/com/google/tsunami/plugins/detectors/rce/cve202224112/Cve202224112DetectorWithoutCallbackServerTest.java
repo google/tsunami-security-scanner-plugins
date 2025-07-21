@@ -84,7 +84,8 @@ public final class Cve202224112DetectorWithoutCallbackServerTest {
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
 
     assertThat(detectionReports.getDetectionReportsList())
-        .containsExactly(TestHelper.buildValidDetectionReport(targetInfo, service, fakeUtcClock));
+        .containsExactly(
+            TestHelper.buildValidDetectionReport(detector, targetInfo, service, fakeUtcClock));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(4);
   }
 
@@ -121,4 +122,3 @@ public final class Cve202224112DetectorWithoutCallbackServerTest {
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
 }
-

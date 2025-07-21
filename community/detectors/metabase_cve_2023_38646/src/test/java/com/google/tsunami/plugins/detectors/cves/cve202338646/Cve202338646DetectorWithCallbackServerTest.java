@@ -19,7 +19,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.flogger.GoogleLogger;
 import com.google.inject.Guice;
 import com.google.protobuf.util.JsonFormat;
 import com.google.tsunami.callbackserver.proto.PollingResult;
@@ -51,7 +50,6 @@ public final class Cve202338646DetectorWithCallbackServerTest {
   private MockWebServer mockWebServer;
   private MockWebServer mockCallbackServer;
   private NetworkService service;
-  private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private TargetInfo targetInfo;
 
   @Inject private Cve202338646Detector detector;
@@ -95,10 +93,10 @@ public final class Cve202338646DetectorWithCallbackServerTest {
         new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(body));
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
     mockWebServer.takeRequest();
-    okhttp3.mockwebserver.RecordedRequest secondReq = mockWebServer.takeRequest();
 
     assertThat(detectionReports.getDetectionReportsList())
-        .containsExactly(TestHelper.buildValidDetectionReport(targetInfo, service, fakeUtcClock));
+        .containsExactly(
+            TestHelper.buildValidDetectionReport(detector, targetInfo, service, fakeUtcClock));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
   }

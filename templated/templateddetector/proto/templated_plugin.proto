@@ -10,6 +10,7 @@ import "action_utils.proto";
 
 option java_multiple_files = true;
 option java_package = "com.google.tsunami.templatedplugin.proto";
+option go_package = "github.com/google/tsunami-security-scanner-plugins/templated/templateddetector/proto/templated_plugin_go_proto";
 
 // An action is a single unit of work that the plugin can perform. For example
 // sending an HTTP request. Each returns a boolean indicating whether the

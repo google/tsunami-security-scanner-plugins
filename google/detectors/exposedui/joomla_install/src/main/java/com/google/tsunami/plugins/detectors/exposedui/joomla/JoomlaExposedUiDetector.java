@@ -63,6 +63,26 @@ public final class JoomlaExposedUiDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("GOOGLE")
+                    .setValue("JOOMLA_INSTALL_EXPOSED_UI"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Joomla Web Installer Exposed Ui")
+            .setRecommendation(
+                "Ensure Joomla is not externally accessible (firewall) until the installation is"
+                    + " complete. Complete the installation process and set a strong password for"
+                    + " the initial admin account.")
+            // TODO: b/313042871 - determine CVSS score.
+            .setDescription(
+                "The Joomla installation was not completed and is accessible without restrictions.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting exposed ui detection for Joomla Web Installer");
@@ -112,22 +132,7 @@ public final class JoomlaExposedUiDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("JOOMLA_INSTALL_EXPOSED_UI"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Joomla Web Installer Exposed Ui")
-                .setRecommendation(
-                    "Ensure Joomla is not externally accessible (firewall) until the installation"
-                        + " is complete. Complete the installation process and set a strong"
-                        + " password for the initial admin account.")
-                // TODO: b/313042871 - determine CVSS score.
-                .setDescription(
-                    "The Joomla installation was not completed and is accessible without"
-                        + " restrictions."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

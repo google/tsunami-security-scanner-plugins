@@ -75,6 +75,23 @@ public final class Cve202432113Detector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
+                    .setValue(VULNERABILITY_REPORT_ID))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue(VULNERABILITY_REPORT_ID))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle(VULNERABILITY_REPORT_TITLE)
+            .setDescription(VULNERABILITY_REPORT_DESCRIPTION)
+            .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION)
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Apache OFBiz CVE-2024-32113 Detector starts detecting.");
@@ -149,20 +166,7 @@ public final class Cve202432113Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(utcClock.instant().toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
-                        .setValue(VULNERABILITY_REPORT_ID))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("CVE")
-                        .setValue(VULNERABILITY_REPORT_ID))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(VULNERABILITY_REPORT_TITLE)
-                .setDescription(VULNERABILITY_REPORT_DESCRIPTION)
-                .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

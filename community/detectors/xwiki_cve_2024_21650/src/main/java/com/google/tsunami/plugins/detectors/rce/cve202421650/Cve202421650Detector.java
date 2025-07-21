@@ -91,6 +91,30 @@ public final class Cve202421650Detector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE-2024-21650"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2024-21650"))
+            .setSeverity(vulnSeverity)
+            .setTitle("XWiki RCE (CVE-2024-21650)")
+            .setDescription(
+                "XWiki is vulnerable to a remote code execution (RCE) attack through its user "
+                    + "registration feature. This issue allows an attacker to execute "
+                    + "arbitrary code by crafting malicious payloads in the \"first name\" "
+                    + "or \"last name\" fields during user registration. This impacts all "
+                    + "installations that have user registration enabled for guests. This "
+                    + "vulnerability has been patched in XWiki 14.10.17, 15.5.3 "
+                    + "and 15.8 RC1.")
+            .setRecommendation("Update XWiki 14.10.17, 15.5.3 or 15.8 RC1.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Cve202421650Detector starts detecting.");
@@ -240,22 +264,7 @@ public final class Cve202421650Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE-2024-21650"))
-                .setSeverity(vulnSeverity)
-                .setTitle("XWiki RCE (CVE-2024-21650)")
-                .setDescription(
-                    "XWiki is vulnerable to a remote code execution (RCE) attack through its user "
-                        + "registration feature. This issue allows an attacker to execute "
-                        + "arbitrary code by crafting malicious payloads in the \"first name\" "
-                        + "or \"last name\" fields during user registration. This impacts all "
-                        + "installations that have user registration enabled for guests. This "
-                        + "vulnerability has been patched in XWiki 14.10.17, 15.5.3 "
-                        + "and 15.8 RC1."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

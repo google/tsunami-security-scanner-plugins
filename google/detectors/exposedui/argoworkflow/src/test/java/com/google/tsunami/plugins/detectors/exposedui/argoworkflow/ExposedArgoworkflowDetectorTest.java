@@ -30,12 +30,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -92,19 +89,7 @@ public final class ExposedArgoworkflowDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("ARGOWORKFLOW_INSTANCE_EXPOSED"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("ArgoWorkflow instance Exposed")
-                        .setDescription(
-                            "Argo Workflow instance is misconfigured.The instance is not"
-                                + " authenticated.All workflows can be accessed by public and"
-                                + " therefore can be modified.Results in instance being"
-                                + " compromised."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

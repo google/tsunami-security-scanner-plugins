@@ -36,11 +36,8 @@ import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -124,23 +121,7 @@ public final class ApacheSparksExposedApiVulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("Apache_Spark_Exposed_Api"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(
-                            "Exposed Apache Spark API which allows unauthenticated RCE detected.")
-                        .setDescription(
-                            "An exposed Apache Spark API allows an unauthenticated attacker to"
-                                + " submit a malicious task. If an Apache Spark worker processes"
-                                + " such a task, it loads and executes attacker-controlled content"
-                                + " from an external resource. This allows an attacker to execute"
-                                + " arbitrary Java Code within the context of the worker node.")
-                        .setRecommendation(
-                            "Don't expose the Apache Spark API to unauthenticated attackers."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

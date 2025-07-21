@@ -71,6 +71,27 @@ public final class ExposedArgoworkflowDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("GOOGLE")
+                    .setValue("ARGOWORKFLOW_INSTANCE_EXPOSED"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("ArgoWorkflow instance Exposed")
+            .setDescription(
+                "Argo Workflow instance is misconfigured."
+                    + "The instance is not authenticated."
+                    + "All workflows can be accessed by public and therefore can be modified."
+                    + "Results in instance being compromised.")
+            .setRecommendation(
+                "Authentication should be enabled on the instance or network access to the"
+                    + " instance restricted.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting exposed Argo Workflow instances detection.");
@@ -122,19 +143,7 @@ public final class ExposedArgoworkflowDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("ARGOWORKFLOW_INSTANCE_EXPOSED"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("ArgoWorkflow instance Exposed")
-                .setDescription(
-                    "Argo Workflow instance is misconfigured."
-                        + "The instance is not authenticated."
-                        + "All workflows can be accessed by public and therefore can be modified."
-                        + "Results in instance being compromised."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

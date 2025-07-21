@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.rce.cve202322518;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.tsunami.common.data.NetworkEndpointUtils.toUriAuthority;
 import static com.google.tsunami.common.data.NetworkServiceUtils.buildWebApplicationRootUrl;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
@@ -96,6 +95,28 @@ public class Cve202322518VulnDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE-2023-22518"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-22518"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Atlassian Confluence Data Center Improper Authorization CVE-2023-22515")
+            .setDescription(
+                "This Improper Authorization vulnerability allows an unauthenticated attacker"
+                    + " to reset Confluence and create a Confluence instance administrator"
+                    + " account.")
+            .setRecommendation(
+                "Patch the confluence version to one of the following versions: "
+                    + "7.19.16, 8.3.4, 8.4.4, 8.5.3, 8.6.1")
+            .build());
+  }
+
   @VisibleForTesting
   String buildRootUri(NetworkService networkService) {
     return buildWebApplicationRootUrl(networkService);
@@ -158,21 +179,7 @@ public class Cve202322518VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE-2023-22518"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Atlassian Confluence Data Center Improper Authorization CVE-2023-22515")
-                .setDescription(
-                    "This Improper Authorization vulnerability allows an unauthenticated attacker"
-                        + " to reset Confluence and create a Confluence instance administrator"
-                        + " account.")
-                .setRecommendation(
-                    "Patch the confluence version to one of the following versions: "
-                        + "7.19.16, 8.3.4, 8.4.4, 8.5.3, 8.6.1"))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

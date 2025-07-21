@@ -36,12 +36,9 @@ import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.ServiceContext;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
 import java.time.Instant;
@@ -191,30 +188,15 @@ public final class SpringBootExposedEndpointDetectorTest {
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("EXPOSED_SPRING_BOOT_ACTUATOR_ENDPOINT"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Exposed Spring Boot Actuator Endpoint")
-                        .setDescription(
-                            "Spring Boot applications have several built-in Actuator endpoints"
-                                + " enabled by default. For example, '/env' endpoint exposes all"
-                                + " properties from Spring's ConfigurableEnvironment including"
-                                + " system environment variables, and '/heapdump' will dump the"
-                                + " entire memory of the server into a file. Exposing these"
-                                + " endpoints could potentially leak sensitive information to any"
-                                + " unauthenticated users.")
-                        .setRecommendation("Disable public access to Actuator endpoints.")
-                        .addAdditionalDetails(
-                            AdditionalDetail.newBuilder()
-                                .setTextData(
-                                    TextData.newBuilder()
-                                        .setText(
-                                            String.format(
-                                                "Vulnerable endpoint: '%s'",
-                                                mockWebServer.url("/actuator/heapdump"))))))
+                    detector.getAdvisory(
+                        AdditionalDetail.newBuilder()
+                            .setTextData(
+                                TextData.newBuilder()
+                                    .setText(
+                                        String.format(
+                                            "Vulnerable endpoint: '%s'",
+                                            mockWebServer.url("/actuator/heapdump"))))
+                            .build()))
                 .build());
   }
 

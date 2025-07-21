@@ -35,12 +35,9 @@ import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Queue;
@@ -200,18 +197,7 @@ public final class PortalCve20207961DetectorTest {
             .setTargetInfo(targetInfo)
             .setNetworkService(networkServices.get(0))
             .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-            .setVulnerability(
-                Vulnerability.newBuilder()
-                    .setMainId(
-                        VulnerabilityId.newBuilder()
-                            .setPublisher("GOOGLE")
-                            .setValue("CVE_2020_7961"))
-                    .setSeverity(Severity.CRITICAL)
-                    .setTitle("Liferay Portal Pre-Auth RCE Vulnerability (CVE-2020-7961)")
-                    .setDescription(
-                        "Deserialization of Untrusted Data in Liferay Portal prior to 7.2.1 CE GA2"
-                            + " allows remote attackers to execute arbitrary code via JSON web"
-                            + " services (JSONWS)."))
+            .setVulnerability(detector.getAdvisories().get(0))
             .build();
 
     DetectionReportList reports = detector.detect(targetInfo, networkServices);

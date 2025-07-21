@@ -30,12 +30,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -99,29 +96,7 @@ public final class Cve202140539VulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2021_40539"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(
-                            "CVE-2021-40539 ADSelfService Plus REST API Authentication Bypass "
-                                + "(RCE)")
-                        .setRecommendation(
-                            "1. Disconnect the affected system from your network.\n2. Back up the "
-                                + "ADSelfService Plus database using these steps.\n3. Format the "
-                                + "compromised machine. \n4. Download and install ADSelfService "
-                                + "Plus. \n5. Restore the backup and start the server.\n6. Once the"
-                                + " server is up and running, update ADSelfService Plus to the "
-                                + "latest build, 6114, using the service pack.\n7. Check for "
-                                + "unauthorized access or use of accounts. Also, check for any "
-                                + "evidences of lateral movement from the compromised machine to "
-                                + "other machines. If there are any indications of compromised "
-                                + "Active Directory accounts, initiate password reset for those "
-                                + "accounts.")
-                        .setDescription(Cve202140539VulnDetector.VULN_DESCRIPTION))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

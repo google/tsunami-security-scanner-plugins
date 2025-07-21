@@ -59,7 +59,6 @@ import javax.inject.Inject;
             + " code execution vulnerability (CVE-2021-3129), due to unsafe user input handling.",
     author = "Timo Mueller (work@mtimo.de)",
     bootstrapModule = Cve20213129VulnDetectorBootstrapModule.class)
-
 @ForWebService
 public final class Cve20213129VulnDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
@@ -96,6 +95,30 @@ public final class Cve20213129VulnDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2021_3129"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-3129"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("CVE-2021-3129: Unauthenticated RCE in Laravel using Debug Mode")
+            .setDescription(
+                "Ignition before 2.5.2, as used in Laravel, allows unauthenticated remote"
+                    + " attackers to execute arbitrary code because of insecure usage of"
+                    + " file_get_contents() and file_put_contents(). This is exploitable on"
+                    + " sites using debug mode with Laravel before 8.4.3")
+            .setRecommendation(
+                "Update Laravel to at least version 8.4.3, and facade/ignition to at least"
+                    + " version 2.5.2.For production systems it is advised to disable debug"
+                    + " mode within the Laravel configuration.")
+            .build());
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
     String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + QUERY_PATH;
     try {
@@ -124,23 +147,7 @@ public final class Cve20213129VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2021_3129"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2021-3129: Unauthenticated RCE in Laravel using Debug Mode")
-                .setDescription(
-                    "Ignition before 2.5.2, as used in Laravel, allows unauthenticated remote"
-                        + " attackers to execute arbitrary code because of insecure usage of"
-                        + " file_get_contents() and file_put_contents(). This is exploitable on"
-                        + " sites using debug mode with Laravel before 8.4.3")
-                .setRecommendation(
-                    "Update Laravel to at least version 8.4.3, and facade/ignition to at least"
-                        + " version 2.5.2.For production systems it is advised to disable debug"
-                        + " mode within the Laravel configuration."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

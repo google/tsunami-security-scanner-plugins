@@ -29,3 +29,6 @@ eclipsebin
 
 # VSCode history
 .history
+
+# Python Module Compile Bytecode
+__pycache__/

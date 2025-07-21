@@ -36,10 +36,7 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -130,25 +127,7 @@ public final class Cve202017526DetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE-2020-17526"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(
-                            "CVE-2020-17526 Authentication bypass lead to Arbitrary Code Execution"
-                                + " in Apache Airflow prior to 1.10.14")
-                        .setDescription(
-                            "An attacker can bypass the authentication and then use a default DAG"
-                                + " to execute arbitrary code on the server hosting the apache"
-                                + " airflow application.")
-                        .setRecommendation(
-                            "update to version 1.10.14. Also, you can change the default value for"
-                                + " the '[webserver] secret_key' config to a securely generated"
-                                + " random value to sign the cookies with a non-default secret"
-                                + " key."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 
@@ -206,7 +185,7 @@ public final class Cve202017526DetectorTest {
           @Override
           public MockResponse dispatch(RecordedRequest request) {
             switch (request.getPath()) {
-                // fall through
+              // fall through
               case "/admin/":
                 return new MockResponse()
                     .setResponseCode(200)
@@ -218,7 +197,7 @@ public final class Cve202017526DetectorTest {
                         .equals("session=aaaaaa")) {
                   return new MockResponse().setResponseCode(200);
                 }
-                // fall through
+              // fall through
               case "/admin/airflow/trigger?dag_id=example_trigger_target_dag&origin=%2Fadmin%2Fairflow%2Ftree%3Fdag_id%3Dexample_trigger_target_dag":
                 if (Objects.requireNonNull(request.getHeaders().get("X-CSRFToken")).equals("bbbbbb")
                     && Objects.requireNonNull(request.getHeaders().get("Cookie"))
@@ -229,7 +208,7 @@ public final class Cve202017526DetectorTest {
                         .contains("dag_id=example_trigger_target_dag&origin=")) {
                   return new MockResponse().setResponseCode(200);
                 }
-                // fall through
+              // fall through
               default:
                 return new MockResponse().setResponseCode(400);
             }
