@@ -30,12 +30,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -100,20 +97,7 @@ public final class VBulletinCve201916759DetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2019_16759"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("vBulletin Pre-Auth RCE Vulnerability (CVE-2019-16759)")
-                        .setDescription(
-                            "Unauthenticated attacked can gain privileged access and control over"
-                                + " any vBulletin server running versions 5.0.0 up to 5.5.4, and"
-                                + " potentially lock organizations out from their own sites.")
-                        .setRecommendation(
-                            "Upgrade vBulletin to the latest version with security patches."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

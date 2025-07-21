@@ -77,6 +77,22 @@ public final class JupyterExposedUiDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("GOOGLE")
+                    .setValue("JUPYTER_NOTEBOOK_EXPOSED_UI"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Jupyter Notebook Exposed Ui")
+            // TODO(b/147455413): determine CVSS score.
+            .setDescription("Jupyter Notebook is not password or token protected")
+            .setRecommendation(FINDING_RECOMMENDATION_TEXT)
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting exposed ui detection for Jupyter Notebook");
@@ -123,17 +139,7 @@ public final class JupyterExposedUiDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("JUPYTER_NOTEBOOK_EXPOSED_UI"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Jupyter Notebook Exposed Ui")
-                // TODO(b/147455413): determine CVSS score.
-                .setDescription("Jupyter Notebook is not password or token protected")
-                .setRecommendation(FINDING_RECOMMENDATION_TEXT))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

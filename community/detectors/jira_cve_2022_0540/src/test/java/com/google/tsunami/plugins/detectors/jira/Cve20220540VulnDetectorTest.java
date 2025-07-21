@@ -29,12 +29,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -100,29 +97,7 @@ public final class Cve20220540VulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2022_0540"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(
-                            "CVE-2022-0540: Authentication Bypass in Atlassian Jira Service"
-                                + " Management Server and Data Center")
-                        .setRecommendation("Upgrade Jira to the latest version")
-                        .setDescription(
-                            "A vulnerability in Jira Seraph allows a remote, unauthenticated"
-                                + " attacker to bypass authentication by sending a specially"
-                                + " crafted HTTP request. This affects Atlassian Jira Server and"
-                                + " Data Center versions before 8.13.18, versions 8.14.0 and later"
-                                + " before 8.20.6, and versions 8.21.0 and later before 8.22.0."
-                                + " This also affects Atlassian Jira Service Management Server and"
-                                + " Data Center versions before 4.13.18, versions 4.14.0 and later"
-                                + " before 4.20.6, and versions 4.21.0 and later before"
-                                + " 4.22.0, using insights prior to 8.10.0 and WBSGantt plugin"
-                                + " versions prior to 9.14.4.1 can cause a remote code execution"
-                                + " hazard."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 
@@ -154,29 +129,7 @@ public final class Cve20220540VulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2022_0540"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(
-                            "CVE-2022-0540: Authentication Bypass in Atlassian Jira Service"
-                                + " Management Server and Data Center")
-                        .setRecommendation("Upgrade Jira to the latest version")
-                        .setDescription(
-                            "A vulnerability in Jira Seraph allows a remote, unauthenticated"
-                                + " attacker to bypass authentication by sending a specially"
-                                + " crafted HTTP request. This affects Atlassian Jira Server and"
-                                + " Data Center versions before 8.13.18, versions 8.14.0 and later"
-                                + " before 8.20.6, and versions 8.21.0 and later before 8.22.0."
-                                + " This also affects Atlassian Jira Service Management Server and"
-                                + " Data Center versions before 4.13.18, versions 4.14.0 and later"
-                                + " before 4.20.6, and versions 4.21.0 and later before"
-                                + " 4.22.0, using insights prior to 8.10.0 and WBSGantt plugin"
-                                + " versions prior to 9.14.4.1 can cause a remote code execution"
-                                + " hazard."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

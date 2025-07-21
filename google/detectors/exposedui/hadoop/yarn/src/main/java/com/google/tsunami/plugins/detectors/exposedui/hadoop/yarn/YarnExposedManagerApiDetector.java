@@ -81,7 +81,7 @@ public final class YarnExposedManagerApiDetector implements VulnDetector {
   private static final int POLLING_ATTEMPTS = 30;
 
   @Inject
-  public YarnExposedManagerApiDetector(
+  YarnExposedManagerApiDetector(
       @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
@@ -108,6 +108,25 @@ public final class YarnExposedManagerApiDetector implements VulnDetector {
         "YarnExposedManagerApiDetector finished, detected '%d' vulns.",
         detectionReports.getDetectionReportsCount());
     return detectionReports;
+  }
+
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue(VULN_ID))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Hadoop Yarn Unauthenticated ResourceManager API")
+            // TODO(b/147455448): determine CVSS score.
+            .setDescription(
+                "Hadoop Yarn ResourceManager controls the computation and storage resources of"
+                    + " a Hadoop cluster. Unauthenticated ResourceManager API allows any"
+                    + " remote users to create and execute arbitrary applications on the"
+                    + " host.")
+            .setRecommendation(
+                "Set up authentication by following the instructions at"
+                    + " https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/HttpAuthentication.html.")
+            .build());
   }
 
   private boolean isUnauthenticatedYarnManager(NetworkService networkService) {
@@ -145,20 +164,7 @@ public final class YarnExposedManagerApiDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue(VULN_ID))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Hadoop Yarn Unauthenticated ResourceManager API")
-                // TODO(b/147455448): determine CVSS score.
-                .setDescription(
-                    "Hadoop Yarn ResourceManager controls the computation and storage resources of"
-                        + " a Hadoop cluster. Unauthenticated ResourceManager API allows any"
-                        + " remote users to create and execute arbitrary applications on the"
-                        + " host.")
-                .setRecommendation(
-                    "Set up authentication by following the instructions at"
-                        + " https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/HttpAuthentication.html."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 

@@ -79,6 +79,23 @@ public final class KubernetesApiExposedDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(getAdvisory(TextData.getDefaultInstance()));
+  }
+
+  Vulnerability getAdvisory(TextData details) {
+    return Vulnerability.newBuilder()
+        .setMainId(
+            VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("KUBERNETES_API_EXPOSED"))
+        .setSeverity(Severity.CRITICAL)
+        .setTitle("Kubernetes API Exposed")
+        .setDescription("Kubernetes API endpoint is exposed.")
+        .setRecommendation("Restrict access to the Kubernetes API endpoint.")
+        .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details))
+        .build();
+  }
+
   /** Checks if a {@link NetworkService} has a Kubernetes API endpoint exposed. */
   private boolean isServiceVulnerable(NetworkService networkService) {
     String targetUri =
@@ -117,16 +134,7 @@ public final class KubernetesApiExposedDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("KUBERNETES_API_EXPOSED"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Kubernetes API Exposed")
-                .setDescription("Kubernetes API endpoint is exposed.")
-                .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
+        .setVulnerability(getAdvisory(details))
         .build();
   }
 }

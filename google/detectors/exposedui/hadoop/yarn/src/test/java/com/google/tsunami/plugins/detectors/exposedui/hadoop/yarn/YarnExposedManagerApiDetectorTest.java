@@ -38,12 +38,9 @@ import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.ServiceContext;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -63,23 +60,6 @@ import org.junit.runners.JUnit4;
 /** Tests for {@link YarnExposedManagerApiDetector}. */
 @RunWith(JUnit4.class)
 public final class YarnExposedManagerApiDetectorTest {
-  private static final Vulnerability DETECTED_VULNERABILITY =
-      Vulnerability.newBuilder()
-          .setMainId(
-              VulnerabilityId.newBuilder()
-                  .setPublisher("GOOGLE")
-                  .setValue("HADOOP_YARN_UNAUTHENTICATED_RESOURCE_MANAGER_API"))
-          .setSeverity(Severity.CRITICAL)
-          .setTitle("Hadoop Yarn Unauthenticated ResourceManager API")
-          .setDescription(
-              "Hadoop Yarn ResourceManager controls the computation and storage"
-                  + " resources of a Hadoop cluster. Unauthenticated ResourceManager"
-                  + " API allows any remote users to create and execute arbitrary"
-                  + " applications on the host.")
-          .setRecommendation(
-              "Set up authentication by following the instructions at"
-                  + " https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/HttpAuthentication.html.")
-          .build();
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
@@ -160,7 +140,7 @@ public final class YarnExposedManagerApiDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(DETECTED_VULNERABILITY)
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 
@@ -205,7 +185,7 @@ public final class YarnExposedManagerApiDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(DETECTED_VULNERABILITY)
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

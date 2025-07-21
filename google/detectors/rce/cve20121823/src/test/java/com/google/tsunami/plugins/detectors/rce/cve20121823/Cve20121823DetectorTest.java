@@ -29,11 +29,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -95,21 +92,7 @@ public final class Cve20121823DetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2012_1823"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2012-1823")
-                        .setDescription(
-                            "sapi/cgi/cgi_main.c in PHP before 5.3.12 and 5.4.x before 5.4.2, when"
-                                + " configured as a CGI script (aka php-cgi), does not properly"
-                                + " handle query strings that lack an = (equals sign) character,"
-                                + " which allows remote attackers to execute arbitrary code by"
-                                + " placing command-line options in the query string, related to"
-                                + " lack of skipping a certain php_getopt for the 'd' case."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

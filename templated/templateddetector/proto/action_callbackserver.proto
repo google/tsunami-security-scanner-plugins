@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package tsunami_templated_detector;
+
+option java_multiple_files = true;
+option java_package = "com.google.tsunami.templatedplugin.proto";
+option go_package = "github.com/google/tsunami-security-scanner-plugins/templated/templateddetector/proto/templated_plugin_go_proto";
+
+// CallbackServerAction is used to perform actions that are related to the
+// callback server.
+message CallbackServerAction {
+  enum ActionType {
+    ACTION_TYPE_UNSPECIFIED = 0;
+    CHECK = 1;
+  }
+
+  // The action to perform. `CHECK` is probably the most common and is used to
+  // check whether the vulnerability was received by the callback server.
+  ActionType action_type = 1;
+}

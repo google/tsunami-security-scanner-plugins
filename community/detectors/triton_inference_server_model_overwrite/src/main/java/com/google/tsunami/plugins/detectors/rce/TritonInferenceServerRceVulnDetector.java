@@ -154,6 +154,28 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("TritonInferenceServerRce"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Triton Inference Server RCE")
+            .setDescription(
+                "This detector checks triton inference server RCE with explicit model-control"
+                    + " option enabled. \n"
+                    + "All versions of triton inference server with the `--model-control"
+                    + " explicit` option allows for loaded models to be overwritten by "
+                    + " malicious models and lead to RCE.")
+            .setRecommendation("don't use `--model-control explicit` option with public access")
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-31036"))
+            .build());
+  }
+
   @VisibleForTesting
   String buildRootUri(NetworkService networkService) {
     return buildWebApplicationRootUrl(networkService);
@@ -281,23 +303,7 @@ public class TritonInferenceServerRceVulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("TritonInferenceServerRce"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Triton Inference Server RCE")
-                .setDescription(
-                    "This detector checks triton inference server RCE with explicit model-control"
-                        + " option enabled. \n"
-                        + "All versions of triton inference server with the `--model-control"
-                        + " explicit` option allows for loaded models to be overwritten by "
-                        + " malicious models and lead to RCE.")
-                .setRecommendation("don't use `--model-control explicit` option with public access")
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-31036")))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

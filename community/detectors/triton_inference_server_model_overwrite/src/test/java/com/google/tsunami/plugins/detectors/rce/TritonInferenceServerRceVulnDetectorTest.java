@@ -37,10 +37,7 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -116,26 +113,7 @@ public final class TritonInferenceServerRceVulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("TritonInferenceServerRce"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Triton Inference Server RCE")
-                        .setDescription(
-                            "This detector checks triton inference server RCE with explicit"
-                                + " model-control option enabled. \n"
-                                + "All versions of triton inference server with the"
-                                + " `--model-control explicit` option allows for loaded models to"
-                                + " be overwritten by  malicious models and lead to RCE.")
-                        .setRecommendation(
-                            "don't use `--model-control explicit` option with public access")
-                        .addRelatedId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CVE")
-                                .setValue("CVE-2023-31036")))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
     Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(5);
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);

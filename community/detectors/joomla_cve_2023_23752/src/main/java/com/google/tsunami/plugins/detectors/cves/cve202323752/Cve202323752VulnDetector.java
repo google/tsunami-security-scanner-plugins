@@ -82,10 +82,31 @@ public final class Cve202323752VulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
+                .filter(NetworkServiceUtils::isWebService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
+  }
+
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2023_23752"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-23752"))
+            .setSeverity(Severity.HIGH)
+            .setTitle("Joomla unauthorized access to webservice endpoints")
+            .setDescription(
+                "CVE-2023-23752: An improper access check allows unauthorized access to"
+                    + " webservice endpoints. attacker can get the host address "
+                    + "and username and password of the configured joomla database.")
+            .setRecommendation("Upgrade Joomla to 4.2.8 and above versions.")
+            .build());
   }
 
   private DetectionReport buildDetectionReport(
@@ -96,18 +117,7 @@ public final class Cve202323752VulnDetector implements VulnDetector {
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2023_23752"))
-                .setSeverity(Severity.HIGH)
-                .setTitle("Joomla unauthorized access to webservice endpoints")
-                .setDescription(
-                    "CVE-2023-23752: An improper access check allows unauthorized access to"
-                        + " webservice endpoints. attacker can get the host address "
-                        + "and username and password of the configured joomla database.")
-                .setRecommendation("Upgrade Joomla to 4.2.8 and above versions.")
+            this.getAdvisories().get(0).toBuilder()
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
                         .setTextData(TextData.newBuilder().setText(exposedConfig))))

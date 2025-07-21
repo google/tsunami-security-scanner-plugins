@@ -73,6 +73,26 @@ public final class ApacheSparksExposedApiVulnDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("Apache_Spark_Exposed_Api"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Exposed Apache Spark API which allows unauthenticated RCE detected.")
+            .setDescription(
+                "An exposed Apache Spark API allows an unauthenticated attacker to submit a"
+                    + " malicious task. If an Apache Spark worker processes such a task, it"
+                    + " loads and executes attacker-controlled content from an external"
+                    + " resource. This allows an attacker to execute arbitrary Java Code within"
+                    + " the context of the worker node.")
+            .setRecommendation("Don't expose the Apache Spark API to unauthenticated attackers.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("ApacheSparksExposedApiVulnDetector starts detecting.");
@@ -144,22 +164,7 @@ public final class ApacheSparksExposedApiVulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("Apache_Spark_Exposed_Api"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Exposed Apache Spark API which allows unauthenticated RCE detected.")
-                .setDescription(
-                    "An exposed Apache Spark API allows an unauthenticated attacker to submit a"
-                        + " malicious task. If an Apache Spark worker processes such a task, it"
-                        + " loads and executes attacker-controlled content from an external"
-                        + " resource. This allows an attacker to execute arbitrary Java Code within"
-                        + " the context of the worker node.")
-                .setRecommendation(
-                    "Don't expose the Apache Spark API to unauthenticated attackers."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

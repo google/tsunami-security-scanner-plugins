@@ -131,6 +131,25 @@ public final class Cve202122205VulnDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2021_22205"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-22205"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("CVE-2021-22205 GitLab CE/EE Unauthenticated RCE using ExifTool")
+            .setRecommendation(
+                "GitLab users should upgrade to the latest version of GitLab as soon as "
+                    + "possible. In addition, ideally, GitLab should not be an internet facing"
+                    + " service. If you need to access your GitLab from the internet, consider "
+                    + "placing it behind a VPN.")
+            .setDescription(VULN_DESCRIPTION).build());
+  }
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("CVE-2921-22205 starts detecting.");
@@ -220,20 +239,7 @@ public final class Cve202122205VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2021_22205"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2021-22205 GitLab CE/EE Unauthenticated RCE using ExifTool")
-                .setRecommendation(
-                    "GitLab users should upgrade to the latest version of GitLab as soon as "
-                        + "possible. In addition, ideally, GitLab should not be an internet facing"
-                        + " service. If you need to access your GitLab from the internet, consider "
-                        + "placing it behind a VPN.")
-                .setDescription(VULN_DESCRIPTION))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

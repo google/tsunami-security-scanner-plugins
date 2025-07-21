@@ -31,12 +31,9 @@ import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.ServiceContext;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
 import java.time.Instant;
@@ -104,21 +101,7 @@ public final class JoomlaExposedUiDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("JOOMLA_INSTALL_EXPOSED_UI"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Joomla Web Installer Exposed Ui")
-                        .setDescription(
-                            "The Joomla installation was not completed and is accessible without"
-                                + " restrictions.")
-                        .setRecommendation(
-                            "Ensure Joomla is not externally accessible (firewall) until the"
-                                + " installation is complete. Complete the installation process and"
-                                + " set a strong password for the initial admin account."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 
@@ -149,21 +132,7 @@ public final class JoomlaExposedUiDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("JOOMLA_INSTALL_EXPOSED_UI"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Joomla Web Installer Exposed Ui")
-                        .setDescription(
-                            "The Joomla installation was not completed and is accessible without"
-                                + " restrictions.")
-                        .setRecommendation(
-                            "Ensure Joomla is not externally accessible (firewall) until the"
-                                + " installation is complete. Complete the installation process and"
-                                + " set a strong password for the initial admin account."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

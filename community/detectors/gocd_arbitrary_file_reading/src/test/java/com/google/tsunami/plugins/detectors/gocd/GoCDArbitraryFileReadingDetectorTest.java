@@ -30,12 +30,9 @@ import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -102,21 +99,7 @@ public final class GoCDArbitraryFileReadingDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("GoCD_ARBITRARY_FILE_READING"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("GoCD Pre-Auth Arbitrary File Reading vulnerability")
-                        .setDescription(
-                            "In GoCD 21.2.0 and earlier, there is an endpoint that can be accessed "
-                                + "without authentication. This endpoint has a directory traversal "
-                                + "vulnerability, and any user can read any file on the server "
-                                + "without authentication, causing information leakage."
-                                + "https://www.gocd.org/releases/#21-3-0")
-                        .setRecommendation("Update 21.3.0 released, or later released.")
-                )
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
     assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
   }

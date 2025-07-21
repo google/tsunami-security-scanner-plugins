@@ -32,13 +32,10 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -106,28 +103,17 @@ public final class NodeRedDashboardDirectoryTraversalDetectorTest {
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2021_3223"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Node-RED-Dashboard directory traversal vulnerability")
-                        .setDescription(
-                            "Directory Traversal vulnerability in exposed Node-RED-Dashboard")
-                        .setRecommendation(
-                            "Upgrade node-red-dashboard to version 2.26.2 or greater.")
-                        .addAdditionalDetails(
-                            AdditionalDetail.newBuilder()
-                                .setTextData(
-                                    TextData.newBuilder()
-                                        .setText(
-                                            String.format(
-                                                "Node-RED-Dashboard before 2.26.2 allows"
-                                                    + " http://%s:%d/ui_base/js/..%%2f directory"
-                                                    + " traversal to read files.",
-                                                mockWebServer.getHostName(),
-                                                mockWebServer.getPort())))))
+                    detector.getAdvisory(
+                        AdditionalDetail.newBuilder()
+                            .setTextData(
+                                TextData.newBuilder()
+                                    .setText(
+                                        String.format(
+                                            "Node-RED-Dashboard before 2.26.2 allows"
+                                                + " http://%s:%d/ui_base/js/..%%2f directory"
+                                                + " traversal to read files.",
+                                            mockWebServer.getHostName(), mockWebServer.getPort())))
+                            .build()))
                 .build());
   }
 

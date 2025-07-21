@@ -21,12 +21,6 @@ import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.CURRENCY_ENDPOINT_PATH;
 import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VERSION_ENDPOINT_PATH;
-import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VULNERABILITY_REPORT_DESCRIPTION_CALLBACK;
-import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VULNERABILITY_REPORT_DESCRIPTION_RESPONSE_MATCHING;
-import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VULNERABILITY_REPORT_ID;
-import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VULNERABILITY_REPORT_PUBLISHER;
-import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VULNERABILITY_REPORT_RECOMMENDATION;
-import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VULNERABILITY_REPORT_TITLE;
 import static com.google.tsunami.plugins.detectors.cves.cve202434102.MagentoCosmicStingXxe.VULNERABLE_ENDPOINT_PATH;
 
 import com.google.common.collect.ImmutableList;
@@ -42,17 +36,13 @@ import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.plugins.detectors.cves.cve202434102.Annotations.OobSleepDuration;
-import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -128,7 +118,7 @@ public final class MagentoCosmicStingXxeTest {
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
 
     DetectionReport expectedDetection =
-        generateDetectionReportWithCallback(targetInfo, httpServices.get(0));
+        generateDetectionReportWithCallback(detector, targetInfo, httpServices.get(0));
     assertThat(detectionReports.getDetectionReportsList()).containsExactly(expectedDetection);
     assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
@@ -148,7 +138,7 @@ public final class MagentoCosmicStingXxeTest {
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
 
     DetectionReport expectedDetection =
-        generateDetectionReportWithResponseMatching(targetInfo, httpServices.get(0));
+        generateDetectionReportWithResponseMatching(detector, targetInfo, httpServices.get(0));
     assertThat(detectionReports.getDetectionReportsList()).containsExactly(expectedDetection);
     assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(0);
@@ -191,7 +181,7 @@ public final class MagentoCosmicStingXxeTest {
   }
 
   private DetectionReport generateDetectionReportWithCallback(
-      TargetInfo targetInfo, NetworkService networkService) {
+      MagentoCosmicStingXxe detector, TargetInfo targetInfo, NetworkService networkService) {
     String additionalDetails = "Magento version: " + MOCK_MAGENTO_VERSION;
 
     return DetectionReport.newBuilder()
@@ -199,24 +189,12 @@ public final class MagentoCosmicStingXxeTest {
         .setNetworkService(networkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
-                        .setValue(VULNERABILITY_REPORT_ID))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(VULNERABILITY_REPORT_TITLE)
-                .setDescription(VULNERABILITY_REPORT_DESCRIPTION_CALLBACK)
-                .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION)
-                .addAdditionalDetails(
-                    AdditionalDetail.newBuilder()
-                        .setTextData(TextData.newBuilder().setText(additionalDetails))))
+        .setVulnerability(detector.getAdvisory(Severity.CRITICAL, additionalDetails))
         .build();
   }
 
   private DetectionReport generateDetectionReportWithResponseMatching(
-      TargetInfo targetInfo, NetworkService networkService) {
+      MagentoCosmicStingXxe detector, TargetInfo targetInfo, NetworkService networkService) {
     String additionalDetails = "Magento version: " + MOCK_MAGENTO_VERSION;
 
     return DetectionReport.newBuilder()
@@ -224,19 +202,7 @@ public final class MagentoCosmicStingXxeTest {
         .setNetworkService(networkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
-                        .setValue(VULNERABILITY_REPORT_ID))
-                .setSeverity(Severity.HIGH)
-                .setTitle(VULNERABILITY_REPORT_TITLE)
-                .setDescription(VULNERABILITY_REPORT_DESCRIPTION_RESPONSE_MATCHING)
-                .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION)
-                .addAdditionalDetails(
-                    AdditionalDetail.newBuilder()
-                        .setTextData(TextData.newBuilder().setText(additionalDetails))))
+        .setVulnerability(detector.getAdvisory(Severity.HIGH, additionalDetails))
         .build();
   }
 
