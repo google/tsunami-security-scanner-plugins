@@ -1,2 +1,10 @@
 rootProject.name = 'apache_http_server_cve_2021_41773'
 
+
+sourceControl {
+    gitRepository("https://github.com/google/tsunami-security-scanner.git") {
+        producesModule("com.google.tsunami:tsunami-common")
+        producesModule("com.google.tsunami:tsunami-plugin")
+        producesModule("com.google.tsunami:tsunami-proto")
+    }
+}
