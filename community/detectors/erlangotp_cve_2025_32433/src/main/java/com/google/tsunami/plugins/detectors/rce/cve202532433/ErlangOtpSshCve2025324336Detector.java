@@ -56,7 +56,7 @@ import javax.net.SocketFactory;
     name = "ErlangOtpSshCve2025324336Detector",
     version = "0.1",
     description = "This plugin detects the Erlang/OTP SSH CVE-2025-32433 RCE vulnerability.",
-    author = "Raul Mijan (raul@doyensec.com)",
+    author = "mr-mosi",
     bootstrapModule = ErlangOtpSshCve2025324336DetectorBootstrapModule.class)
 public final class ErlangOtpSshCve2025324336Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
