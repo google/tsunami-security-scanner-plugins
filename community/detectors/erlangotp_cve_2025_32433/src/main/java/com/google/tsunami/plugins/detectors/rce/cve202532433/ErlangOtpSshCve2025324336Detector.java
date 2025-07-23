@@ -31,16 +31,16 @@ import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.plugins.detectors.rce.cve202532433.Annotations.OobSleepDuration;
 import com.google.tsunami.plugins.detectors.rce.cve202532433.Annotations.SocketFactoryInstance;
+import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.PayloadGeneratorConfig;
+import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
-import com.google.tsunami.proto.Severity;
-import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.DetectionReport;
-import com.google.tsunami.proto.PayloadGeneratorConfig;
-import com.google.tsunami.proto.DetectionStatus;
-import com.google.tsunami.proto.TransportProtocol;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -89,12 +89,14 @@ public final class ErlangOtpSshCve2025324336Detector implements VulnDetector {
             .setSeverity(Severity.CRITICAL)
             .setTitle("Erlang/OTP SSH Remote Code Execution Vulnerability (CVE-2025-32433)")
             .setDescription(
-                "Erlang/OTP before OTP-27.3.3, OTP-26.2.5.11, and OTP-25.3.2.20 contains a command injection vulnerability in the SSH subsystem. "
-                    + "An unauthenticated attacker can exploit this flaw by sending a crafted SSH message, leading to remote code execution "
-                    + "on the affected system.")
+                "Erlang/OTP before OTP-27.3.3, OTP-26.2.5.11, and OTP-25.3.2.20 contains a command"
+                    + " injection vulnerability in the SSH subsystem. An unauthenticated attacker"
+                    + " can exploit this flaw by sending a crafted SSH message, leading to remote"
+                    + " code execution on the affected system.")
             .setRecommendation(
-                "Upgrade Erlang/OTP to version OTP-27.3.3, OTP-26.2.5.11, and OTP-25.3.2.20 or later to address CVE-2025-32433. "
-                    + "Additionally, restrict or remove SSH exposure to untrusted networks to reduce risk.")
+                "Upgrade Erlang/OTP to version OTP-27.3.3, OTP-26.2.5.11, and OTP-25.3.2.20 or"
+                    + " later to address CVE-2025-32433. Additionally, restrict or remove SSH"
+                    + " exposure to untrusted networks to reduce risk.")
             .addRelatedId(
                 VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2025-32433"))
             .build());

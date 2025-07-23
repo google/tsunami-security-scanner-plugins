@@ -1,7 +1,6 @@
 package com.google.tsunami.plugins.detectors.rce.cve202532433;
 
 import com.google.common.flogger.GoogleLogger;
-
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
