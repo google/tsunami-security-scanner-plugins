@@ -1,0 +1,36 @@
+plugins {
+    id 'java-library'
+}
+
+description = 'CVE-2024-4577 RCE vulnerability in PHP-CGI.'
+group = 'com.google.tsunami'
+version = '0.0.1-SNAPSHOT'
+
+repositories {
+    maven { // The google mirror is less flaky than mavenCentral()
+        url 'https://maven-central.storage-download.googleapis.com/repos/central/data/'
+    }
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    implementation("com.google.tsunami:tsunami-common") {
+      version { branch = "stable" }
+    }
+    implementation("com.google.tsunami:tsunami-plugin") {
+      version { branch = "stable" }
+    }
+    implementation("com.google.tsunami:tsunami-proto") {
+      version { branch = "stable" }
+    }
+
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "com.google.inject:guice:4.2.3"
+    testImplementation "com.google.inject.extensions:guice-testlib:4.2.3"
+    testImplementation "org.mockito:mockito-core:2.28.2"
+    testImplementation "com.google.truth:truth:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-java8-extension:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-proto-extension:1.4.4"
+    testImplementation "com.squareup.okhttp3:mockwebserver:3.12.0"
+}
