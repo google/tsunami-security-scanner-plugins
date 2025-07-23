@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.exposedui.argoworkflow;
+package com.google.tsunami.plugins.detectors.exposedui.argoworkflows;
 
-import com.google.tsunami.plugin.PluginBootstrapModule;
+import com.google.tsunami.common.config.annotations.ConfigProperties;
 
-/** A {@link PluginBootstrapModule} for {@link ExposedArgoworkflowDetector}. */
-public final class ExposedArgoworkflowDetectorBootstrapModule extends PluginBootstrapModule {
-
-  @Override
-  protected void configurePlugin() {
-    registerPlugin(ExposedArgoworkflowDetector.class);
-  }
+@ConfigProperties("plugins.community.detectors.argoworkflows_exposed_ui")
+final class ExposedArgoWorkflowsDetectorConfigs {
+  int oobSleepDuration;
 }

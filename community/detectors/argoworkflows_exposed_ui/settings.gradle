@@ -1,5 +1,4 @@
-rootProject.name = 'exposed_argoworkflow_instance_detector'
-
+rootProject.name = 'exposed_argoworkflows_instance_detector'
 sourceControl {
     gitRepository("https://github.com/google/tsunami-security-scanner.git") {
         producesModule("com.google.tsunami:tsunami-common")
