@@ -56,7 +56,7 @@ public class KubeflowCredentialTesterTest {
     mockWebServer = new MockWebServer();
     Guice.createInjector(new HttpClientModule.Builder().build()).injectMembers(this);
   }
-
+  
   @Test
   public void detect_weakCredentialsExist_returnsFirstWeakCredentials() throws Exception {
     startMockWebServer();
@@ -133,18 +133,18 @@ public class KubeflowCredentialTesterTest {
                     .getBody()
                     .toString()
                     .contains("login=user%40example.com&password=12341234")) {
-              return new MockResponse().setResponseCode(200).setHeader("location", "/location5");
+              return new MockResponse().setResponseCode(302).setHeader("location", "/location5");
             } else if (request.getPath().startsWith("/location5")
                 && Objects.equals(request.getMethod(), "GET")) {
               return new MockResponse()
                   .setResponseCode(200)
                   .setHeader("location", "/")
-                  .setHeader("set-cookie", "oauth2_proxy_kubeflow=D1EtyeQnMFozaaaa;");
+                  .setHeader("set-cookie", "authservice_session=D1EtyeQnMFozaaaa;");
             } else if (request.getPath().startsWith("/api/dashboard-links")
                 && Objects.equals(request.getMethod(), "GET")
                 && request
                     .getHeader("Cookie")
-                    .contains("oauth2_proxy_kubeflow=D1EtyeQnMFozaaaa;")) {
+                    .contains("authservice_session=D1EtyeQnMFozaaaa;")) {
               return new MockResponse()
                   .setResponseCode(200)
                   .setHeader("content-type", "application/json; charset=utf-8")

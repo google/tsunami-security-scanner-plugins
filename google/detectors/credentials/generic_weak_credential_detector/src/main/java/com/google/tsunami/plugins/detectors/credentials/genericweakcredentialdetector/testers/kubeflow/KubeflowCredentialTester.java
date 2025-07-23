@@ -83,24 +83,20 @@ public final class KubeflowCredentialTester extends CredentialTester {
     // Always return 1st weak credential to gracefully handle no auth configured case, where we
     // return empty credential instead of all the weak credentials
     return credentials.stream()
-        .filter(cred -> Objects.equals(cred.username(), "user@example.com"))
+        .filter(cred -> cred.username().contains("@"))
         .filter(cred -> isKubeflowAccessible(networkService, cred))
-        .collect(toImmutableList());
+        .findFirst()
+        .map(ImmutableList::of)
+        .orElseGet(ImmutableList::of);
   }
 
   private boolean isKubeflowAccessible(NetworkService networkService, TestCredential credential) {
     checkNotNull(networkService);
     String rootUri;
-    // the buildWebApplicationUri method doesn't work for kubeflow and return un-excepted error
-    if (!((networkService.getSupportedHttpMethodsCount() > 0)
-        || isWebService(Optional.of(networkService.getServiceName())))) {
-      rootUri =
-          "http://"
-              + NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint())
-              + "/";
-    } else {
-      return false;
-    }
+    rootUri =
+      "http://"
+      + NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint())
+      + "/";
     try {
       logger.atInfo().log(
           "url: %s, username: %s, password: %s",
@@ -159,7 +155,7 @@ public final class KubeflowCredentialTester extends CredentialTester {
                   .setRequestBody(
                       ByteString.copyFromUtf8(
                           String.format(
-                              "login=%s&password=%s",
+                              "login=%s&password=%s&submit=Login",
                               URLEncoder.encode(credential.username(), StandardCharsets.UTF_8),
                               URLEncoder.encode(
                                   credential.password().get(), StandardCharsets.UTF_8))))
@@ -180,7 +176,7 @@ public final class KubeflowCredentialTester extends CredentialTester {
       String authCookie = "";
       ImmutableList<String> setCookieHeaders = rsp.headers().getAll("set-cookie");
       for (String setCookieHeader : setCookieHeaders) {
-        if (setCookieHeader.startsWith("oauth2_proxy_kubeflow=")) {
+        if (setCookieHeader.startsWith("authservice_session=")) {
           authCookie = setCookieHeader;
         }
       }
@@ -211,12 +207,12 @@ public final class KubeflowCredentialTester extends CredentialTester {
   private boolean isValidKubeflowResponse(JsonObject bodyJsonObj) {
     return (bodyJsonObj.has("menuLinks")
             && bodyJsonObj.get("menuLinks").isJsonArray()
-            && !bodyJsonObj.getAsJsonArray("menuLinks").isEmpty())
+            && bodyJsonObj.getAsJsonArray("menuLinks").size() > 0)
         || (bodyJsonObj.has("documentationItems")
             && bodyJsonObj.get("documentationItems").isJsonArray()
-            && !bodyJsonObj.getAsJsonArray("documentationItems").isEmpty())
+            && bodyJsonObj.getAsJsonArray("documentationItems").size() > 0)
         || (bodyJsonObj.has("quickLinks")
             && bodyJsonObj.get("quickLinks").isJsonArray()
-            && !bodyJsonObj.getAsJsonArray("quickLinks").isEmpty());
+            && bodyJsonObj.getAsJsonArray("quickLinks").size() > 0);
   }
 }
