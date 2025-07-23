@@ -1,0 +1,103 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Kestra_ExposedUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/v1/main/usages/all"
+        status: 200
+        body_content:
+        '"startUuid"'
+        '"instanceUuid"'
+        '"dailyStatistics"'
+        '"executions"'
+        '"queueType"'
+        '"configurations"'
+        '"flows"'
+      },
+      {
+        uri: "/api/v1/main/flows"
+        status: 200
+        body_content:
+          '"namespace"'
+          '"id":"tsunami_security_scanner"'
+          '"io.kestra.core.tasks.scripts.Bash"'
+      },
+      {
+        uri: "/api/v1/main/executions/company.team/tsunami_security_scanner"
+        status: 200
+        body_content:
+          '"namespace":"company.team"'
+          '"flowId":"tsunami_security_scanner"'
+      }
+    ]
+  }
+}
+
+
+tests: {
+  name: "whenNotKestra_returnsNoVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri:  "/api/v1/main/usages/all"
+        status: 400
+        body_content: "..."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/v1/main/usages/all"
+        status: 200
+        body_content:
+            '"startUuid"'
+                '"instanceUuid"'
+                '"dailyStatistics"'
+                '"executions"'
+                '"queueType"'
+                '"configurations"'
+                '"flows"'
+      },
+      {
+        uri: "/api/v1/main/flows"
+        status: 200
+        body_content:
+            'id: tsunami_security_scanner\nnamespace: company.team\n\ntasks:\n  - id: bash\n    type: \"io.kestra.core.tasks.scripts.Bash\"\n    commands:\n      - \'curl {{ T_CBS_URI }}\'\n'
+      },
+      {
+        uri: "/api/v1/main/executions/company.team/tsunami_security_scanner"
+        status: 200
+        body_content:
+            '"namespace":"company.team"'
+                '"flowId":"tsunami_security_scanner"'
+      }
+    ]
+  }
+}
