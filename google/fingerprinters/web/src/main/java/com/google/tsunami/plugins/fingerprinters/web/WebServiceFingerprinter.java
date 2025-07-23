@@ -433,9 +433,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
       if (loginPageResponse
           .bodyString()
           .get()
-          .contains(
-              "<button type=\"submit\" class=\"button block is-primary\">Sign in with"
-                  + " Dex</button>")) {
+          .contains("<title>dex</title>")) {
         software.add(
             DetectedSoftware.builder()
                 .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("kubeflow").build())
