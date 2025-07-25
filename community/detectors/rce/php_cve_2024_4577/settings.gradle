@@ -5,4 +5,8 @@ sourceControl {
         producesModule("com.google.tsunami:tsunami-plugin")
         producesModule("com.google.tsunami:tsunami-proto")
     }
+
+    gitRepository("https://github.com/google/tsunami-security-scanner-callback-server.git") {
+        producesModule("com.google.tsunami:tcs-proto")
+    }
 }

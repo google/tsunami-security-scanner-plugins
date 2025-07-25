@@ -25,6 +25,10 @@ dependencies {
       version { branch = "stable" }
     }
 
+    testImplementation("com.google.tsunami:tcs-proto") {
+      version { branch = "stable" }
+    }
+
     testImplementation "junit:junit:4.13.2"
     testImplementation "com.google.inject:guice:4.2.3"
     testImplementation "com.google.inject.extensions:guice-testlib:4.2.3"
