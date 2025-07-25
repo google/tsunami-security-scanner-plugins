@@ -18,7 +18,11 @@ repositories {
     mavenLocal()
 }
 
-
+java {
+  jar {
+    exclude 'com/google/tsunami/plugins/fingerprinters/web/tools/**'
+  }
+}
 
 
 protobuf {
