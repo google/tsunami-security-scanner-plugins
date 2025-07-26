@@ -1,2 +1,10 @@
 rootProject.name = 'apache_druid_preauth_rce_cve_2021_25646'
 
+
+sourceControl {
+    gitRepository("https://github.com/google/tsunami-security-scanner.git") {
+        producesModule("com.google.tsunami:tsunami-common")
+        producesModule("com.google.tsunami:tsunami-plugin")
+        producesModule("com.google.tsunami:tsunami-proto")
+    }
+}

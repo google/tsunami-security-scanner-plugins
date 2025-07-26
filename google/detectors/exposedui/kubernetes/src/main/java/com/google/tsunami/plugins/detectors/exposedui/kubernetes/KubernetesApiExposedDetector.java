@@ -91,6 +91,7 @@ public final class KubernetesApiExposedDetector implements VulnDetector {
         .setSeverity(Severity.CRITICAL)
         .setTitle("Kubernetes API Exposed")
         .setDescription("Kubernetes API endpoint is exposed.")
+        .setRecommendation("Restrict access to the Kubernetes API endpoint.")
         .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details))
         .build();
   }

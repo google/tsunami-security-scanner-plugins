@@ -88,6 +88,7 @@ public final class MantisBTAuthenticationBypassDetector implements VulnDetector 
             .setDescription(
                 "MantisBT through 2.3.0 allows arbitrary password reset and unauthenticated"
                     + " admin access via an empty confirm_hash value to verify.php.")
+            .setRecommendation("Update MantisBT to a newer version.")
             .build());
   }
 

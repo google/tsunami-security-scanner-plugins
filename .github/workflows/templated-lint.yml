@@ -13,6 +13,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
     name: 'Verify templated plugins'
     steps:
       - uses: actions/checkout@v2

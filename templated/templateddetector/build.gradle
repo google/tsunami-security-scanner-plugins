@@ -12,33 +12,21 @@ repositories {
     mavenLocal()
 }
 
-ext {
-    tsunamiVersion = 'latest.release'
-    protobufVersion = '3.25.5'
-    protocVersion = protobufVersion
-    grpcVersion = '1.72.0'
-    jspecifyVersion = 'latest.release'
-
-    okhttpVersion = '3.12.0'
-    junitVersion = '4.13'
-    truthVersion = '1.4.0'
-    testParamInjectorVersion = 'latest.release'
-}
 
 dependencies {
-    implementation "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
-    implementation "com.google.tsunami:tsunami-common:${tsunamiVersion}"
-    implementation "com.google.tsunami:tsunami-plugin:${tsunamiVersion}"
-    implementation "com.google.tsunami:tsunami-proto:${tsunamiVersion}"
-    implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
-    implementation "org.jspecify:jspecify:${jspecifyVersion}"
+    implementation "io.grpc:protoc-gen-grpc-java:1.72.0"
+    implementation "com.google.tsunami:tsunami-common:latest.release"
+    implementation "com.google.tsunami:tsunami-plugin:latest.release"
+    implementation "com.google.tsunami:tsunami-proto:latest.release"
+    implementation "com.google.protobuf:protobuf-java:3.25.5"
+    implementation "org.jspecify:jspecify:1.0.0"
 
-    testImplementation "com.google.truth:truth:${truthVersion}"
-    testImplementation "com.google.truth.extensions:truth-java8-extension:${truthVersion}"
-    testImplementation "com.google.truth.extensions:truth-proto-extension:${truthVersion}"
-    testImplementation "com.squareup.okhttp3:mockwebserver:${okhttpVersion}"
-    testImplementation "com.google.testparameterinjector:test-parameter-injector:${testParamInjectorVersion}"
-    testImplementation "junit:junit:${junitVersion}"
+    testImplementation "com.google.truth:truth:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-java8-extension:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-proto-extension:1.4.4"
+    testImplementation "com.squareup.okhttp3:mockwebserver:3.12.0"
+    testImplementation "com.google.testparameterinjector:test-parameter-injector:latest.release"
+    testImplementation "junit:junit:4.13.2"
 }
 
 abstract class CompileTextproto extends DefaultTask {
@@ -118,11 +106,11 @@ gradle.projectsEvaluated {
 protobuf {
     generatedFilesBaseDir = "${projectDir}/build/generated"
     protoc {
-        artifact = "com.google.protobuf:protoc:${protocVersion}"
+        artifact = "com.google.protobuf:protoc:3.25.5"
     }
     plugins {
         grpc {
-            artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+            artifact = "io.grpc:protoc-gen-grpc-java:1.72.0"
         }
     }
     generateProtoTasks {
@@ -156,32 +144,3 @@ sourceSets {
     }
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-
-    jar.manifest {
-        attributes('Implementation-Title': name,
-                'Implementation-Version': version,
-                'Built-By': System.getProperty('user.name'),
-                'Built-JDK': System.getProperty('java.version'),
-                'Source-Compatibility': sourceCompatibility,
-                'Target-Compatibility': targetCompatibility)
-    }
-
-    javadoc.options {
-        encoding = 'UTF-8'
-        use = true
-        links 'https://docs.oracle.com/javase/8/docs/api/'
-    }
-
-    test {
-        testLogging {
-            exceptionFormat = 'full'
-            showExceptions true
-            showCauses true
-            showStackTraces true
-        }
-        maxHeapSize = '1500m'
-    }
-}

@@ -117,6 +117,7 @@ public final class Cve202231137Detector implements VulnDetector {
             .setDescription(
                 "Roxy-wi Versions prior to 6.1.1.0 are subject to a remote code execution"
                     + " vulnerability.")
+            .setRecommendation("Update Roxy-wi to version 6.1.1.0 or later.")
             .build());
   }
 

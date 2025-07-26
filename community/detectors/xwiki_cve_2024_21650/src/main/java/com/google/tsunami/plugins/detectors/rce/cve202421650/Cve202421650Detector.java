@@ -110,6 +110,7 @@ public final class Cve202421650Detector implements VulnDetector {
                     + "installations that have user registration enabled for guests. This "
                     + "vulnerability has been patched in XWiki 14.10.17, 15.5.3 "
                     + "and 15.8 RC1.")
+            .setRecommendation("Update XWiki 14.10.17, 15.5.3 or 15.8 RC1.")
             .build());
   }
 
