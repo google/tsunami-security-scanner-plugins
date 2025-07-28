@@ -7,7 +7,7 @@
 
 info: {
   type: VULN_DETECTION
-  name: "Jenkins_CVE_2025_47889.textproto"
+  name: "Jenkins_CVE_2025_47889"
   author: "alessandro-Doyensec"
   version: "1.0"
 }
@@ -43,22 +43,6 @@ actions: {
       expect_all: {
         conditions: [
           { body: {} contains: "<title>Dashboard [Jenkins]</title>" }
-        ]
-      }
-    }
-  }
-}
-
-actions: {
-  name: "login_endpoint"
-  http_request: {
-    method: GET
-    uri: "/login?from=/"
-    response: {
-      http_status: 200
-      expect_all: {
-        conditions: [
-          { body: {} contains: "<form method=\"post\" name=\"login\" action=\"j_acegi_security_check\" style=\"text-size:smaller\">" }
         ]
       }
     }
@@ -113,7 +97,6 @@ actions: {
 workflows: {
   actions: [
     "jenkins_fingerprint",
-    "login_endpoint",
     "login_with_arbitrary_credentials",
     "authenticated_request"
   ]
