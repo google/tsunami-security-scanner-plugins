@@ -295,6 +295,27 @@ public class UptrainExposedApiDetector implements VulnDetector {
     }
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("UptrainExposedApi"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Exposed Uptrain API Server")
+            .setDescription(
+                "An exposed Uptrain API server can be exploited by attackers to create a"
+                    + " project with malicious AI Model. This can lead to remote code execution"
+                    + " on the server.")
+            .setRecommendation(
+                "Set proper authentication for the Uptrain API server and "
+                    + "ensure the API is not publicly exposed through a "
+                    + "misconfigured reverse proxy.")
+            .build());
+  }
+
   private DetectionReport buildDetectionReport(
       TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
     return DetectionReport.newBuilder()
@@ -302,22 +323,7 @@ public class UptrainExposedApiDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("UptrainExposedApi"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Exposed Uptrain API Server")
-                .setDescription(
-                    "An exposed Uptrain API server can be exploited by attackers to create a"
-                        + " project with malicious AI Model. This can lead to remote code execution"
-                        + " on the server.")
-                .setRecommendation(
-                    "Set proper authentication for the Uptrain API server and "
-                        + "ensure the API is not publicly exposed through a "
-                        + "misconfigured reverse proxy."))
+        .setVulnerability(this.getAdvisories().getFirst())
         .build();
   }
 }
