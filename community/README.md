@@ -39,3 +39,7 @@ This directory contains plugins contributed by community members.
 *   [CVE-2024-2029 LocalAI RCE detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/localai_cve_2024_2029)
 *   [CVE-2024-4577 PHP-CGI RCE detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/php_cve_2024_4577)
 *   [Exposed Argo Workflows Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/argoworkflows_exposed_ui)
+
+#### XML External Entity (XXE) Injection
+
+*   [CVE-2019-9670 Synacor Zimbra Collaboration Suite XXE](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/zimbra_cve_2019_9670)
