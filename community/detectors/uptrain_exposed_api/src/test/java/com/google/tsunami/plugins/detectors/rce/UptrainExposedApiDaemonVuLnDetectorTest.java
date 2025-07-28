@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.rce;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.rce.UptrainExposedApiDetector.PAYLOAD;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -37,10 +36,7 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -120,22 +116,7 @@ public final class UptrainExposedApiDaemonVuLnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("UptrainExposedApi"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Exposed Uptrain API Server")
-                        .setDescription(
-                            "An exposed Uptrain API server can be exploited by attackers to create"
-                                + " a project with malicious AI Model. This can lead to remote code"
-                                + " execution on the server.")
-                        .setRecommendation(
-                            "Set proper authentication for the Uptrain API server and "
-                                + "ensure the API is not publicly exposed through a "
-                                + "misconfigured reverse proxy."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
     assertThat(mockTargetService.getRequestCount()).isEqualTo(3);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
@@ -182,11 +163,17 @@ public final class UptrainExposedApiDaemonVuLnDetectorTest {
                           + "3:I[\"(app-pages-browser)");
             }
             if (Objects.equals(request.getPath(), "/api/public/create_project")
-                && request.getMethod().equals("POST")
-                && request
-                    .getBody()
-                    .readString(StandardCharsets.UTF_8)
-                    .startsWith(PAYLOAD.substring(0, 309))) {
+                && request.getMethod().equals("POST")) {
+              String body = request.getBody().readString(StandardCharsets.UTF_8);
+              if (body.contains("project_name")
+                  && body.contains("project_description")
+                  && body.contains(
+                      "__import__(\\'os\\').system(\\'apt update && apt install curl -y &&")
+                  && body.contains("project_type")) {
+                return new MockResponse()
+                    .setBody("{\"project_id\": \"test_project_id\"}")
+                    .setResponseCode(200);
+              }
               return new MockResponse().setResponseCode(500);
             }
             return new MockResponse().setResponseCode(403);
