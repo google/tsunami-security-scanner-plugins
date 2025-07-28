@@ -31,12 +31,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -100,21 +97,7 @@ public final class JoomlaCve20158562DetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2015_8562"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(
-                            "Joomla RCE via PHP object injection in HTTP headers"
-                                + " (CVE-2015-8562)")
-                        .setDescription(
-                            "The Joomla application is vulnerable to CVE-2015-8562, which allow"
-                                + " remote attackers to conduct PHP object injection attacks and"
-                                + " execute arbitrary PHP code via the HTTP User-Agent header.")
-                        .setRecommendation("Upgrade to Joomla 3.4.6 or greater."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

@@ -64,7 +64,7 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
-        uri: "TSUNAMI_ANY_URI"
+        uri: "TSUNAMI_MAGIC_ANY_URI"
         status: 200
         body_content: "Login to your Drupal account"
       }

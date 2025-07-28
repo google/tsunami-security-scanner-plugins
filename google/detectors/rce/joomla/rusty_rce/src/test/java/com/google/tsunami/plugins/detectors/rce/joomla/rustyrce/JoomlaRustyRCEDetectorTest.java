@@ -31,12 +31,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -102,21 +99,7 @@ public final class JoomlaRustyRCEDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("JOOMLA_RUSTY_RCE"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(
-                            "Joomla RCE via PHP object injection in HTTP POST (Rusty RCE, no CVE"
-                                + " assigned)")
-                        .setDescription(
-                            "The Joomla application is vulnerable to Rusty RCE, which"
-                                + " allows remote unprivileged attackers to execute arbitrary"
-                                + " PHP code.")
-                        .setRecommendation("Upgrade to Joomla 3.4.7 or greater."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

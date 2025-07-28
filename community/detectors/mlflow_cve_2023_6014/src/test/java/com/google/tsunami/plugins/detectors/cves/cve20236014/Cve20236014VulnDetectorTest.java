@@ -29,12 +29,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -97,23 +94,7 @@ public class Cve20236014VulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2023_6014"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2023-6014 MLflow Auth Bypasss Vulnerability")
-                        .setRecommendation(
-                            "Update the MLflow instances to a version that provides a fix which is"
-                                + " newer than version 2.8.0, and check the user list for potential"
-                                + " users that were created by exploiting this vulnerability.")
-                        .addRelatedId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CVE")
-                                .setValue("CVE-2023-6014"))
-                        .setDescription(Cve20236014VulnDetector.VULN_DESCRIPTION))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

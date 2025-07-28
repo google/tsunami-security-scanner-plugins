@@ -70,20 +70,25 @@ public final class Cve20199193Detector implements VulnDetector {
 
   @VisibleForTesting static final String RECOMMENDATION = "Change the default login credentials.";
 
-  @VisibleForTesting
-  static final Vulnerability VULNERABILITY =
-      Vulnerability.newBuilder()
-          .setMainId(VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2019_9193"))
-          .setSeverity(Severity.CRITICAL)
-          .setTitle("PostgreSQL RCE CVE-2019-9193 Detected")
-          .setDescription(DESCRIPTION)
-          .setRecommendation(RECOMMENDATION)
-          .build();
-
   @Inject
   Cve20199193Detector(@UtcClock Clock utcClock, ConnectionProviderInterface connectionProvider) {
     this.utcClock = checkNotNull(utcClock);
     this.connectionProvider = checkNotNull(connectionProvider);
+  }
+
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2019_9193"))
+            .setSeverity(Severity.CRITICAL)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2019-9193"))
+            .setTitle("PostgreSQL RCE CVE-2019-9193 Detected")
+            .setDescription(DESCRIPTION)
+            .setRecommendation(RECOMMENDATION)
+            .build());
   }
 
   @Override
@@ -148,7 +153,7 @@ public final class Cve20199193Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(VULNERABILITY)
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 

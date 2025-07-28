@@ -93,6 +93,23 @@ public final class JoomlaRustyRCEDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("JOOMLA_RUSTY_RCE"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle(
+                "Joomla RCE via PHP object injection in HTTP POST (Rusty RCE, no CVE assigned)")
+            .setDescription(
+                "The Joomla application is vulnerable to Rusty RCE, which"
+                    + " allows remote unprivileged attackers to execute arbitrary"
+                    + " PHP code.")
+            .setRecommendation("Upgrade to Joomla 3.4.7 or greater.")
+            .build());
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
     String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     targetUri = targetUri + VULNERABLE_ENDPOINT;
@@ -198,20 +215,7 @@ public final class JoomlaRustyRCEDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("JOOMLA_RUSTY_RCE"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(
-                    "Joomla RCE via PHP object injection in HTTP POST (Rusty RCE, no CVE assigned)")
-                .setDescription(
-                    "The Joomla application is vulnerable to Rusty RCE, which"
-                        + " allows remote unprivileged attackers to execute arbitrary"
-                        + " PHP code.")
-                .setRecommendation("Upgrade to Joomla 3.4.7 or greater."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

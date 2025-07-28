@@ -17,6 +17,7 @@ finding: {
     publisher: "GOOGLE"
     value: "SOME_PLUGIN_DETECTION"
   }
+  severity: CRITICAL
   title: "Example templated plugin"
   description: "This is an example templated plugin."
   recommendation: "No recommendation, this is an example."

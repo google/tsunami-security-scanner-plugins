@@ -79,8 +79,7 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final Severity DEFAULT_SEVERITY = Severity.CRITICAL;
 
-  @VisibleForTesting
-  final ImmutableSet<CredentialProvider> providers;
+  @VisibleForTesting final ImmutableSet<CredentialProvider> providers;
   private final ImmutableSet<CredentialTester> testers;
   private final Clock utcClock;
 
@@ -134,6 +133,14 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
                     targetInfo, networkService, detectionReportsBuilder));
     logger.atInfo().log("Weak credential detection finished in %s.", stopwatch.stop());
     return detectionReportsBuilder.build();
+  }
+
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    // Currently, we do not return any advisories for weak credentials. The notion of an advisory
+    // is very close to one having an identifier (e.g. CVE, GHSA, RSA, ...) and does not necessarily
+    // makes sense for weak credentials.
+    return ImmutableList.of();
   }
 
   private void testServiceAndAddDetectionReport(
@@ -250,5 +257,4 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
         .setCredentials(Credentials.newBuilder().addAllCredential(credentials))
         .build();
   }
-
 }

@@ -171,12 +171,13 @@ public final class VcenterUploadOvaDetectorTest {
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
                     Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2021_21972"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("vCenter OVA Upload RCE")
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("GOOGLE")
+                        .setValue("CVE_2021_21972"))
+                .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-21972"))
+                .setSeverity(Severity.CRITICAL)
+                .setTitle("vCenter OVA Upload RCE")
                         .setDescription(
                             "The vSphere Client (HTML5) contains a remote code execution"
                                 + " vulnerability in a vCenter Server plugin. A malicious actor"

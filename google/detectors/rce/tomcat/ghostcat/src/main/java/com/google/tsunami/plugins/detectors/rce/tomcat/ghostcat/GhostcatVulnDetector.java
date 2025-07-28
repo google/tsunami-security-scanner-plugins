@@ -72,6 +72,11 @@ public final class GhostcatVulnDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(getAdvisory(AdditionalDetail.getDefaultInstance()));
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting Ghostcat vulnerability detection.");
@@ -87,6 +92,23 @@ public final class GhostcatVulnDetector implements VulnDetector {
         .build();
   }
 
+  Vulnerability getAdvisory(AdditionalDetail additionalDetail) {
+    return Vulnerability.newBuilder()
+        .setMainId(VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("GHOSTCAT"))
+        .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2020-1938"))
+        .setSeverity(Severity.CRITICAL)
+        .setTitle("Apache Tomcat AJP File Read/Inclusion Vulnerability")
+        .setDescription(
+            "Apache Tomcat is an open source web server and servlet container developed by"
+                + " the Apache Software Foundation Apache Tomcat fixed a vulnerability"
+                + " (CVE-2020-1938) that allows an attacker to read any webapps files. If"
+                + " the Tomcat instance supports file uploads, the vulnerability could"
+                + " also be leveraged to achieve remote code execution.")
+        .setRecommendation("Install the latest security patches for Apache Tomcat.")
+        .addAdditionalDetails(additionalDetail)
+        .build();
+  }
+
   private static boolean isAjpService(NetworkService networkService) {
     return NetworkServiceUtils.getServiceName(networkService).startsWith("ajp");
   }
@@ -97,8 +119,7 @@ public final class GhostcatVulnDetector implements VulnDetector {
       int port = networkService.getNetworkEndpoint().getPort().getPortNumber();
       AjpResponse response = connectionFactory.create(ip, port).performGhostcat(REQ_URI, PATH);
       logger.atInfo().log(
-          "Got %s from %s:%d: %s",
-          response.getStatusCode(), ip, port, formatAjpResponse(response));
+          "Got %s from %s:%d: %s", response.getStatusCode(), ip, port, formatAjpResponse(response));
       // Check if the connector is willing to disclose information
       if (!VALID_STATUS_CODES.contains(response.getStatusCode())) {
         return EndpointProbingResult.invulnerableForNetworkService(networkService);
@@ -121,19 +142,7 @@ public final class GhostcatVulnDetector implements VulnDetector {
         .setNetworkService(endpointProbingResult.networkService())
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("GHOSTCAT"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Apache Tomcat AJP File Read/Inclusion Vulnerability")
-                .setDescription(
-                    "Apache Tomcat is an open source web server and servlet container developed by"
-                        + " the Apache Software Foundation Apache Tomcat fixed a vulnerability"
-                        + " (CVE-2020-1938) that allows an attacker to read any webapps files. If"
-                        + " the Tomcat instance supports file uploads, the vulnerability could"
-                        + " also be leveraged to achieve remote code execution.")
-                .setRecommendation("Install the latest security patches for Apache Tomcat.")
-                .addAdditionalDetails(buildAdditionalDetail(endpointProbingResult)))
+        .setVulnerability(getAdvisory(buildAdditionalDetail(endpointProbingResult)))
         .build();
   }
 
@@ -158,7 +167,9 @@ public final class GhostcatVulnDetector implements VulnDetector {
   @AutoValue
   abstract static class EndpointProbingResult {
     abstract boolean isVulnerable();
+
     abstract NetworkService networkService();
+
     abstract Optional<AjpResponse> ajpResponse();
 
     static Builder builder() {
@@ -172,7 +183,9 @@ public final class GhostcatVulnDetector implements VulnDetector {
     @AutoValue.Builder
     abstract static class Builder {
       abstract Builder setIsVulnerable(boolean value);
+
       abstract Builder setNetworkService(NetworkService value);
+
       abstract Builder setAjpResponse(AjpResponse response);
 
       abstract EndpointProbingResult build();

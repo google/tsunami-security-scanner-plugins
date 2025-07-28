@@ -102,6 +102,25 @@ public final class Cve202231137Detector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE-2022-31137"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-31137"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Roxy-wi RCE (CVE-2022-31137)")
+            .setDescription(
+                "Roxy-wi Versions prior to 6.1.1.0 are subject to a remote code execution"
+                    + " vulnerability.")
+            .setRecommendation("Update Roxy-wi to version 6.1.1.0 or later.")
+            .build());
+  }
+
   private boolean isRoxyWiWebService(NetworkService networkService) {
     // note that this fingerprint phase is only for vulnerable versions,
     // because newer Roxy-Wi versions have different endpoints for login
@@ -164,17 +183,7 @@ public final class Cve202231137Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE-2022-31137"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Roxy-wi RCE (CVE-2022-31137)")
-                .setDescription(
-                    "Roxy-wi Versions prior to 6.1.1.0 are subject to a remote code execution"
-                        + " vulnerability."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

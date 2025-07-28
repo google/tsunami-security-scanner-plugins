@@ -66,6 +66,24 @@ public final class ApacheNiFiApiExposedUiDetector implements VulnDetector {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(true).build();
   }
+
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("GOOGLE")
+                    .setValue("APACHE_NIFI_API_EXPOSED_UI"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Apache NiFi API Exposed UI")
+            .setDescription("Apache NiFi API is not password or token protected.")
+            .setRecommendation(
+                "Do not expose Apache NiFi API externally. Add authentication or bind it to"
+                    + " local network.")
+            .build());
+  }
+
   /** Method for detecting the vulnerability and returning the corresponding detection report */
   @Override
   public DetectionReportList detect(
@@ -124,18 +142,7 @@ public final class ApacheNiFiApiExposedUiDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("APACHE_NIFI_API_EXPOSED_UI"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Apache NiFi API Exposed UI")
-                .setDescription("Apache NiFi API is not password or token protected.")
-                .setRecommendation(
-                    "Do not expose Apache NiFi API externally. Add authentication or bind it to"
-                        + " local network."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

@@ -82,6 +82,34 @@ public final class Cve202140539VulnDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2021_40539"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-40539"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("CVE-2021-40539 ADSelfService Plus REST API Authentication Bypass (RCE)")
+            .setRecommendation(
+                "1. Disconnect the affected system from your network.\n2. Back up the "
+                    + "ADSelfService Plus database using these steps.\n3. Format the "
+                    + "compromised machine. \n4. Download and install ADSelfService Plus. \n"
+                    + "5. Restore the backup and start the server.\n6. Once the server is up "
+                    + "and running, update ADSelfService Plus to the latest build, 6114, using"
+                    + " the service pack.\n7. Check for unauthorized access or use of accounts."
+                    + " Also, check for any evidences of lateral movement from the compromised"
+                    + " machine to other machines. If there are any indications of compromised"
+                    + " Active Directory accounts, initiate password reset for those accounts.")
+            .setDescription(
+                "Zoho ManageEngine ADSelfService Plus version 6113 and prior is vulnerable to REST"
+                    + " API authentication bypass with resultant remote code execution.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("CVE-2921-40539 starts detecting.");
@@ -127,25 +155,7 @@ public final class Cve202140539VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2021_40539"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2021-40539 ADSelfService Plus REST API Authentication Bypass (RCE)")
-                .setRecommendation(
-                    "1. Disconnect the affected system from your network.\n2. Back up the "
-                        + "ADSelfService Plus database using these steps.\n3. Format the "
-                        + "compromised machine. \n4. Download and install ADSelfService Plus. \n"
-                        + "5. Restore the backup and start the server.\n6. Once the server is up "
-                        + "and running, update ADSelfService Plus to the latest build, 6114, using"
-                        + " the service pack.\n7. Check for unauthorized access or use of accounts."
-                        + " Also, check for any evidences of lateral movement from the compromised"
-                        + " machine to other machines. If there are any indications of compromised"
-                        + " Active Directory accounts, initiate password reset for those accounts.")
-                .setDescription(VULN_DESCRIPTION))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

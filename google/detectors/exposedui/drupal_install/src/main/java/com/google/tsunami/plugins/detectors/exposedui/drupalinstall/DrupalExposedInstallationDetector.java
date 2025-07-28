@@ -63,6 +63,27 @@ public final class DrupalExposedInstallationDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("GOOGLE")
+                    .setValue("DRUPAL_VULNERABLE_INSTALLATION_EXPOSED"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Drupal unfinished installation is exposed")
+            // TODO: b/315448255 - Determine CVSS score.
+            .setDescription(
+                "The drupal installation file is exposed and unfinished. Someone could hijack"
+                    + "the installation process and execute code on the target machine.")
+            .setRecommendation(
+                "Ensure Drupal is not externally accessible (firewall) until the installation is"
+                    + " complete. Complete the installation process and set a strong password for"
+                    + " the initial admin account.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting DrupalExposedInstallationDetector.");
@@ -137,22 +158,7 @@ public final class DrupalExposedInstallationDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("DRUPAL_VULNERABLE_INSTALLATION_EXPOSED"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Drupal unfinished installation is exposed")
-                // TODO: b/315448255 - Determine CVSS score.
-                .setDescription(
-                    "The drupal installation file is exposed and unfinished. Someone could hijack"
-                        + "the installation process and execute code on the target machine.")
-                .setRecommendation(
-                    "Ensure Drupal is not externally accessible (firewall) until the installation"
-                        + " is complete. Complete the installation process and set a strong"
-                        + " password for the initial admin account."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

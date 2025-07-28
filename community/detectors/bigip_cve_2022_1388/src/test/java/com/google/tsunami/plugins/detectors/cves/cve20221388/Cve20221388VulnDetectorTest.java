@@ -29,12 +29,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -98,22 +95,7 @@ public final class Cve20221388VulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2022_1388"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2022-1388 F5 BIG-IP iControl REST Auth Bypass RCE")
-                        .setRecommendation(
-                            "Update the BIG-IP installation to a version that provides a fix"
-                                + " (17.0.0, 16.1.2.2, 15.1.5.1, 14.1.4.6 or 13.1.5) or implement"
-                                + " the recommended mitigation measures to protect the affected"
-                                + " devices/modules, Blocking iControl REST access through the"
-                                + " self IP address, Blocking iControl REST access through the"
-                                + " management interface,Modifying the BIG-IP httpd configuration")
-                        .setDescription(Cve20221388VulnDetector.VULN_DESCRIPTION))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 
