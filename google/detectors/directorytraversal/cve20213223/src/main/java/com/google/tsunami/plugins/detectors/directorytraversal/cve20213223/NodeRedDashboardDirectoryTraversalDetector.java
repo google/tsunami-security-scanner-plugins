@@ -69,6 +69,11 @@ public final class NodeRedDashboardDirectoryTraversalDetector implements VulnDet
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(getAdvisory(AdditionalDetail.getDefaultInstance()));
+  }
+
   // Main entry point of VulnDetector. Both parameters will be populated by the scanner.
   // targetInfo contains the general information about the scan target.
   // matchedServices parameter contains all exposed network services on the scan target.
@@ -86,6 +91,18 @@ public final class NodeRedDashboardDirectoryTraversalDetector implements VulnDet
                 // Build DetectionReport message for vulnerable services.
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
+        .build();
+  }
+
+  Vulnerability getAdvisory(AdditionalDetail details) {
+    return Vulnerability.newBuilder()
+        .setMainId(VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2021_3223"))
+        .setSeverity(Severity.CRITICAL)
+        .setTitle("Node-RED-Dashboard directory traversal vulnerability")
+        .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-3223"))
+        .setDescription("Directory Traversal vulnerability in exposed Node-RED-Dashboard")
+        .setRecommendation("Upgrade node-red-dashboard to version 2.26.2 or greater.")
+        .addAdditionalDetails(details)
         .build();
   }
 
@@ -128,15 +145,7 @@ public final class NodeRedDashboardDirectoryTraversalDetector implements VulnDet
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2021_3223"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Node-RED-Dashboard directory traversal vulnerability")
-                .setDescription("Directory Traversal vulnerability in exposed Node-RED-Dashboard")
-                .setRecommendation("Upgrade node-red-dashboard to version 2.26.2 or greater.")
-                .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
+        .setVulnerability(getAdvisory(AdditionalDetail.newBuilder().setTextData(details).build()))
         .build();
   }
 }

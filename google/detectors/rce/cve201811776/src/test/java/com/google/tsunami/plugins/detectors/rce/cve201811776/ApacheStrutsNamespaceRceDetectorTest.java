@@ -236,7 +236,10 @@ public final class ApacheStrutsNamespaceRceDetectorTest {
         .setVulnerability(
             Vulnerability.newBuilder()
                 .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2018_11776"))
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("GOOGLE")
+                        .setValue("CVE_2018_11776"))
+                .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2018-11776"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Apache Struts Command Injection via Namespace (CVE-2018-11776)")
                 .setDescription(

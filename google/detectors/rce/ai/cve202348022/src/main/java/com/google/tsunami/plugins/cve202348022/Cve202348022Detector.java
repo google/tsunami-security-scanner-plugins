@@ -74,6 +74,26 @@ public final class Cve202348022Detector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE-2023-48022"))
+            .setSeverity(Severity.CRITICAL)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-48022"))
+            .setTitle("CVE-2023-48022 Arbitrary Code Execution in Ray")
+            .setDescription(
+                "An attacker can use the job upload functionality to execute arbitrary code on"
+                    + " the server hosting the ray application.")
+            .setRecommendation(
+                "There is no patch available as this is considered intended functionality."
+                    + " Restrict access to ray to be local only, and do not expose it to the"
+                    + " network.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     return DetectionReportList.newBuilder()
@@ -149,19 +169,7 @@ public final class Cve202348022Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE-2023-48022"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2023-48022 Arbitrary Code Execution in Ray")
-                .setDescription(
-                    "An attacker can use the job upload functionality to execute arbitrary code on"
-                        + " the server hosting the ray application.")
-                .setRecommendation(
-                    "There is no patch available as this is considered intended functionality."
-                        + " Restrict access to ray to be local only, and do not expose it to the"
-                        + " network."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

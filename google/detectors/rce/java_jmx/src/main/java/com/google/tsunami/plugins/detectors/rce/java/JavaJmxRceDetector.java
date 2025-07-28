@@ -73,6 +73,25 @@ public final class JavaJmxRceDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("GOOGLE")
+                    .setValue("JAVA_UNPROTECTED_JMX_RMI_SERVER"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Unprotected Java JMX RMI Server")
+            .setDescription(
+                "Java Management Extension (JMX) allows remote monitoring and diagnostics for Java"
+                    + " applications. Running JMX with unprotected RMI endpoint allows any remote"
+                    + " users to create a javax.management.loading.MLet MBean and use it to create"
+                    + " new MBeans from arbitrary URLs.")
+            .setRecommendation("Enable authentication and upgrade to the latest JDK environment.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("JavaJmxRceDetector starts detecting.");
@@ -131,21 +150,7 @@ public final class JavaJmxRceDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("JAVA_UNPROTECTED_JMX_RMI_SERVER"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Unprotected Java JMX RMI Server")
-                .setDescription(
-                    "Java Management Extension (JMX) allows remote monitoring and diagnostics for"
-                        + " Java applications. Running JMX with unprotected RMI endpoint allows"
-                        + " any remote users to create a javax.management.loading.MLet MBean and"
-                        + " use it to create new MBeans from arbitrary URLs.")
-                .setRecommendation(
-                    "Enable authentication and upgrade to the latest JDK environment."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 
@@ -170,6 +175,8 @@ public final class JavaJmxRceDetector implements VulnDetector {
       Socket socket = new Socket();
       socket.connect(
           new InetSocketAddress(hostAndPort.getHost(), hostAndPort.getPort()), 10 * 1000);
+      // ensure reads don't block for more than 2 seconds
+      socket.setSoTimeout(2 * 1000);
 
       DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
       DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());

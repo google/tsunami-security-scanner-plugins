@@ -24,11 +24,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.time.Instant;
 import okhttp3.mockwebserver.MockWebServer;
 
@@ -49,26 +46,16 @@ final class TestHelper {
   }
 
   static DetectionReport buildValidDetectionReport(
-      TargetInfo targetInfo, NetworkService service, FakeUtcClock fakeUtcClock) {
+      Cve202224112Detector detector,
+      TargetInfo targetInfo,
+      NetworkService service,
+      FakeUtcClock fakeUtcClock) {
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(service)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE-2022-24112"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Apache APISIX RCE (CVE-2022-24112)")
-                .setDescription(
-                    "Some of Apache APISIX 2.x versions allows attacker to"
-                        + " bypass IP restrictions of Admin API through the batch-requests plugin."
-                        + " A default configuration of Apache APISIX (with default API key) is"
-                        + " vulnerable to remote code execution through the plugin."))
+        .setVulnerability(detector.getAdvisories().get(0))
         .build();
   }
 }
-

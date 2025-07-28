@@ -102,8 +102,6 @@ public final class ExampleCallingCommand implements VulnDetector {
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
-    logger.atInfo().log("ExampleVulnDetector starts detecting.");
-
     // An example implementation for a VulnDetector.
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
@@ -114,6 +112,25 @@ public final class ExampleCallingCommand implements VulnDetector {
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
+  }
+
+  // Your detector must provide information about the vulnerabilities it detects.
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("vulnerability_id_publisher")
+                    .setValue("VULNERABILITY_ID"))
+            // If your vulnerability is a CVE, you need to reference it in the related advisories.
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-1234-12345"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Vulnerability Title")
+            .setDescription("Verbose description of the issue")
+            .setRecommendation("Verbose recommended solution")
+            .build());
   }
 
   // Checks whether a given network service is vulnerable. Real detection logic implemented here.
@@ -150,15 +167,7 @@ public final class ExampleCallingCommand implements VulnDetector {
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("vulnerability_id_publisher")
-                        .setValue("VULNERABILITY_ID"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Vulnerability Title")
-                .setDescription("Verbose description of the issue")
-                .setRecommendation("Verbose recommended solution")
+            this.getAdvisories().get(0).toBuilder()
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
                         .setTextData(

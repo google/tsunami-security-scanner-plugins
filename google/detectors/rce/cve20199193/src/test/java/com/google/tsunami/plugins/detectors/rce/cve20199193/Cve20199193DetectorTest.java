@@ -115,7 +115,7 @@ public final class Cve20199193DetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(Cve20199193Detector.VULNERABILITY)
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 
@@ -213,7 +213,7 @@ public final class Cve20199193DetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(Cve20199193Detector.VULNERABILITY)
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 
@@ -246,7 +246,7 @@ public final class Cve20199193DetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(Cve20199193Detector.VULNERABILITY)
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 }

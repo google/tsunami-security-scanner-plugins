@@ -34,8 +34,6 @@ import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -110,21 +108,7 @@ public final class ExposedAirflowServerDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("APACHE_AIRFLOW_SERVER_EXPOSED"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Exposed Apache Airflow Server")
-                        .setDescription(
-                            "Apache Airflow Server is misconfigured and can be accessed publicly,"
-                                + " Tsunami security scanner confirmed this by sending an HTTP"
-                                + " request with test connection API and receiving the"
-                                + " corresponding callback on tsunami callback server")
-                        .setRecommendation(
-                            "Please disable public access to your apache airflow instance."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 
@@ -208,19 +192,7 @@ public final class ExposedAirflowServerDetectorTest {
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("APACHE_AIRFLOW_SERVER_EXPOSED"))
-                        .setSeverity(Severity.HIGH)
-                        .setTitle("Exposed Apache Airflow Server")
-                        .setDescription(
-                            "Apache Airflow Server is misconfigured and can be accessed publicly,"
-                                + " We confirmed this by checking API endpoint and matching the"
-                                + " responses with our pattern")
-                        .setRecommendation(
-                            "Please disable public access to your apache airflow instance."))
+                    detector.getAdvisories().get(0).toBuilder().setSeverity(Severity.HIGH))
                 .build());
   }
 

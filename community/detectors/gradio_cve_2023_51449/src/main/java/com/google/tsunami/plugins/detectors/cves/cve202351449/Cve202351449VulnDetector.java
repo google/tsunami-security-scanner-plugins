@@ -92,6 +92,23 @@ public final class Cve202351449VulnDetector implements VulnDetector {
     this.httpClient = checkNotNull(httpClient);
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2023_51449"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("CVE-2023-51449 Gradio File Traversal Vulnerability")
+            .setRecommendation("Update the Gradio instances to version 4.11.0 or later.")
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-51449"))
+            .setDescription(VULN_DESCRIPTION)
+            .build());
+  }
+
   private HttpResponse sendUploadRequest(NetworkService networkService) throws IOException {
     String uploadUrl =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + POST_UPLOAD_PATH;
@@ -183,17 +200,7 @@ public final class Cve202351449VulnDetector implements VulnDetector {
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2023_51449"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2023-51449 Gradio File Traversal Vulnerability")
-                .setRecommendation("Update the Gradio instances to version 4.11.0 or later.")
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-51449"))
-                .setDescription(VULN_DESCRIPTION)
+            this.getAdvisories().get(0).toBuilder()
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
                         .setDescription("Contents of /etc/passwd")

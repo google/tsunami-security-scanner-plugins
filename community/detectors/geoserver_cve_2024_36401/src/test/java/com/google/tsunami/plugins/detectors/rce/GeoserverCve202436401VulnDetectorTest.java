@@ -36,10 +36,7 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -117,27 +114,7 @@ public final class GeoserverCve202436401VulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("GeoserverCve202436401"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Geoserver RCE (CVE-2024-36401)")
-                        .setDescription(
-                            "This detector checks for Geoserver RCE (CVE-2024-36401). Multiple OGC"
-                                + " request parameters allow Remote Code Execution (RCE) by"
-                                + " unauthenticated users through specially crafted input against a"
-                                + " default GeoServer installation due to unsafely evaluating"
-                                + " property names as XPath expressions.")
-                        .setRecommendation(
-                            "Upgrade Geoserver to a patched version. The vulnerability was fixed in"
-                                + " versions 2.23.6, 2.24.4, and 2.25.2.")
-                        .addRelatedId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CVE")
-                                .setValue("CVE-2024-36401")))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
     Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);

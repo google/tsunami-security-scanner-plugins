@@ -28,12 +28,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -105,26 +102,7 @@ public final class Cve202423897DetectorTest {
             .setNetworkService(service)
             .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
             .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-            .setVulnerability(
-                Vulnerability.newBuilder()
-                    .setMainId(
-                        VulnerabilityId.newBuilder()
-                            .setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("CVE_2024_23897"))
-                    .addRelatedId(
-                        VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2024-23897"))
-                    .setSeverity(Severity.CRITICAL)
-                    .setTitle("Jenkins Arbitrary File Read")
-                    .setDescription(
-                        "Jenkins uses the args4j library to parse command arguments and options on"
-                            + " the Jenkins controller when processing CLI commands. This command"
-                            + " parser has a feature that replaces an @ character followed by a"
-                            + " file path in an argument with the file's contents (expandAtFiles)."
-                            + " This feature is enabled by default and Jenkins 2.441 and earlier,"
-                            + " LTS 2.426.2 and earlier does not disable it. This allows attackers"
-                            + " to read arbitrary files on the Jenkins controller file system using"
-                            + " the default character encoding of the Jenkins controller process.")
-                    .setRecommendation("Upgrade to version 2.426.3 or higher"))
+            .setVulnerability(detector.getAdvisories().get(0))
             .build();
     assertThat(actual).isEqualTo(expected);
   }

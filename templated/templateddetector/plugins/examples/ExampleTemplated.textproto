@@ -1,0 +1,159 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ExampleTemplated"
+  author: "Tsunami developper team <tsunami-dev@google.com>"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "SOME_PLUGIN_DETECTION"
+  }
+  severity: CRITICAL
+  title: "Example templated plugin"
+  description: "This is an example templated plugin."
+  recommendation: "No recommendation, this is an example."
+}
+
+config: {
+  # Important note: this assumption is used in unit testing. Do not change it,
+  # without updating the unit tests accordingly.
+  disabled: true
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "has_no_status_expectation"
+  http_request: {
+    method: GET
+    uri: "/"
+  }
+}
+
+actions: {
+  name: "has_no_expectation_but_custom_headers"
+  http_request: {
+    method: GET
+    uri: "/"
+    headers: [
+      { name: "Plugin-name" value: "ApacheExposedUI" }
+    ]
+    response: { http_status: 200 }
+  }
+}
+
+actions: {
+  name: "simple_response_body_expectation"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "enabled:true" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "simple_response_header_expectation"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { header: { name: "Server" } contains: "SimpleHTTP" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "workflow_variable_and_extraction"
+  http_request: {
+    method: GET
+    uri: "/index.html?secret_key={{ varfromworkflow }}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "enabled:true" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_header: { name: "Server" }
+            regexp: "([a-zA-Z0-9_]+)"
+            variable_name: "servername"
+          },
+          {
+            from_body: {}
+            regexp: "job_id=([a-zA-Z0-9_]+)"
+            variable_name: "varfromextract"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "local_variable_usage_and_fails"
+  http_request: {
+    method: GET
+    uri: "/version?job_id={{ varfromextract }}&server={{ servername }}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{version:'1.0'}" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  variables: [
+    { name: "varfromworkflow" value: "ThisWasDefinedInWorkflow" }
+  ]
+
+  actions: [
+    "has_no_status_expectation",
+    "has_no_expectation_but_custom_headers",
+    "simple_response_body_expectation",
+    "simple_response_header_expectation",
+    "workflow_variable_and_extraction",
+    "local_variable_usage_and_fails"
+  ]
+}
+
+# this workflow succeeds but should not be executed because the previous one
+# is always selected (has no condition).
+workflows: {
+  actions: [
+    "has_no_status_expectation"
+  ]
+}

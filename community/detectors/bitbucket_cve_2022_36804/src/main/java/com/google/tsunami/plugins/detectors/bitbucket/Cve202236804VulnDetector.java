@@ -73,6 +73,28 @@ public class Cve202236804VulnDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE-2022-36804"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-36804"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("CVE-2022-36804: Bitbucket Command injection vulnerability")
+            .setDescription(
+                "A vulnerability in Bitbucket allows remote code execution. An attacker with"
+                    + " read to a repository can execute arbitrary code by sending a malicious"
+                    + " HTTP request. Versions between 6.10.17 and 8.3.0 (included) are"
+                    + " affected.")
+            .setRecommendation(
+                "Update the Bitbucket Server and Data Center  installation to a version that "
+                    + "provides a fix (7.6.17 (LTS), 7.17.10 (LTS), 7.21.4 (LTS), 8.0.3, 8.1.3,"
+                    + " 8.2.2, 8.3.1)or later").build());
+  }
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("CVE-2022-36804 starts detecting.");
@@ -184,25 +206,7 @@ public class Cve202236804VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE-2022-36804"))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-36804"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2022-36804: Bitbucket Command injection vulnerability")
-                .setDescription(
-                    "A vulnerability in Bitbucket allows remote code execution. An attacker with"
-                        + " read to a repository can execute arbitrary code by sending a malicious"
-                        + " HTTP request. Versions between 6.10.17 and 8.3.0 (included) are"
-                        + " affected.")
-                .setRecommendation(
-                    "Update the Bitbucket Server and Data Center  installation to a version that "
-                        + "provides a fix (7.6.17 (LTS), 7.17.10 (LTS), 7.21.4 (LTS), 8.0.3, 8"
-                        + ".1.3, 8.2.2, 8.3.1)or later"))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

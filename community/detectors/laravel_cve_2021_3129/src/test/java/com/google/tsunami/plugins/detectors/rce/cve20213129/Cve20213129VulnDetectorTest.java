@@ -30,11 +30,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -114,24 +111,7 @@ public final class Cve20213129VulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2021_3129"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2021-3129: Unauthenticated RCE in Laravel using Debug Mode")
-                        .setDescription(
-                            "Ignition before 2.5.2, as used in Laravel, allows unauthenticated"
-                                + " remote attackers to execute arbitrary code because of insecure"
-                                + " usage of file_get_contents() and file_put_contents(). This is"
-                                + " exploitable on sites using debug mode with Laravel before"
-                                + " 8.4.3")
-                        .setRecommendation(
-                            "Update Laravel to at least version 8.4.3, and facade/ignition to at"
-                                + " least version 2.5.2.For production systems it is advised to"
-                                + " disable debug mode within the Laravel configuration."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

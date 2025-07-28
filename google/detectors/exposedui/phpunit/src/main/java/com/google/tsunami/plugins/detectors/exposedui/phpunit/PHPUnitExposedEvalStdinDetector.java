@@ -86,6 +86,30 @@ public final class PHPUnitExposedEvalStdinDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("GOOGLE")
+                    .setValue("EXPOSED_PHPUNIT_EVAL_STDIN"))
+            .setSeverity(Severity.CRITICAL)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2017-9841"))
+            .setTitle("CVE-2017-9841: Exposed Vulnerable eval-stdin.php in PHPUnit")
+            .setDescription(
+                "CVE-2017-9841: For vulnerable versions of PHPUnit, its eval-stdin.php script"
+                    + " allows RCE via a POST request payload.")
+            .setRecommendation("Remove the PHPUnit module or upgrade to the latest version.")
+            .addAdditionalDetails(
+                AdditionalDetail.newBuilder()
+                    .setTextData(
+                        TextData.newBuilder()
+                            .setText("Vulnerable endpoint: " + EVAL_STDIN_SCRIPT_PATH)))
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting exposed ui detection for eval-stdin.php script.");
@@ -138,23 +162,7 @@ public final class PHPUnitExposedEvalStdinDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("EXPOSED_PHPUNIT_EVAL_STDIN"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2017-9841: Exposed Vulnerable eval-stdin.php in PHPUnit")
-                .setDescription(
-                    "CVE-2017-9841: For vulnerable versions of PHPUnit, its eval-stdin.php script"
-                        + " allows RCE via a POST request payload.")
-                .setRecommendation("Remove the PHPUnit module or upgrade to the latest version.")
-                .addAdditionalDetails(
-                    AdditionalDetail.newBuilder()
-                        .setTextData(
-                            TextData.newBuilder()
-                                .setText("Vulnerable endpoint: " + EVAL_STDIN_SCRIPT_PATH))))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

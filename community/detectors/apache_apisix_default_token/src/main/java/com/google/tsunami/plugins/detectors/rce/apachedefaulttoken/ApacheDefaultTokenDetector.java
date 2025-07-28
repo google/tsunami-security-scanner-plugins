@@ -103,6 +103,22 @@ public final class ApacheDefaultTokenDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("APISIX_DEFAULT_TOKEN"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Apache APISIX's Admin API Default Access Token (RCE)")
+            .setRecommendation(
+                "Change the default admin API key and set appropriate IP access control lists.")
+            .setDescription(VULN_DESCRIPTION)
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Apache APISIX Default Admin Token starts detecting.");
@@ -185,17 +201,7 @@ public final class ApacheDefaultTokenDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("APISIX_DEFAULT_TOKEN"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Apache APISIX's Admin API Default Access Token (RCE)")
-                .setRecommendation(
-                    "Change the default admin API key and set appropriate IP access control lists.")
-                .setDescription(VULN_DESCRIPTION))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

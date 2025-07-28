@@ -30,13 +30,10 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -153,18 +150,7 @@ public final class Cve202323752VulnDetectorTest {
             .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
             .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
             .setVulnerability(
-                Vulnerability.newBuilder()
-                    .setMainId(
-                        VulnerabilityId.newBuilder()
-                            .setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("CVE_2023_23752"))
-                    .setSeverity(Severity.HIGH)
-                    .setTitle("Joomla unauthorized access to webservice endpoints")
-                    .setDescription(
-                        "CVE-2023-23752: An improper access check allows unauthorized access to"
-                            + " webservice endpoints. attacker can get the host address "
-                            + "and username and password of the configured joomla database.")
-                    .setRecommendation("Upgrade Joomla to 4.2.8 and above versions.")
+                detector.getAdvisories().get(0).toBuilder()
                     .addAdditionalDetails(
                         AdditionalDetail.newBuilder()
                             .setTextData(TextData.newBuilder().setText(LEAKED_DATA_JSON_SAMPLE))))

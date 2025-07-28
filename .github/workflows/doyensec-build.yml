@@ -1,33 +1,35 @@
 name: doyensec-plugins-build
 
 on:
-  push:
-    paths:
-      - 'doyensec/**'
   pull_request:
     paths:
       - 'doyensec/**'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: google/tsunami-plugins-doyensec
+  PLUGINS_CATEGORY: doyensec
+  PLUGINS_FOLDER: doyensec
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest ]
-        java: [ 11 ]
-    runs-on: ${{ matrix.os }}
-    name: 'Build doyensec plugins on ${{ matrix.os }} using Java ${{ matrix.java }}'
+  build-image:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
     steps:
-      - name: 'Check out repository'
-        uses: actions/checkout@v2
-      - name: 'Set up JDK ${{ matrix.java }}'
-        uses: actions/setup-java@v1
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        id: build
+        uses: docker/build-push-action@v6
         with:
-          java-version: ${{ matrix.java }}
-      - name: 'Cache Gradle resources'
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-gradle
-      - name: 'Build Doyensec plugins'
-        run: ./doyensec/build_all.sh
+          context: .
+          push: false
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            "TSUNAMI_PLUGIN_FOLDER=${{ env.PLUGINS_FOLDER }}"

@@ -1,0 +1,9 @@
+rootProject.name = 'ApacheOFBiz_CVE_2024_32113_Detector'
+
+sourceControl {
+    gitRepository("https://github.com/google/tsunami-security-scanner.git") {
+        producesModule("com.google.tsunami:tsunami-common")
+        producesModule("com.google.tsunami:tsunami-plugin")
+        producesModule("com.google.tsunami:tsunami-proto")
+    }
+}

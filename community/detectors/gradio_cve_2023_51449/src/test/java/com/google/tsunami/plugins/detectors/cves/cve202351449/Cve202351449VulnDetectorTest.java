@@ -30,13 +30,10 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -108,20 +105,7 @@ public class Cve202351449VulnDetectorTest {
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2023_51449"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2023-51449 Gradio File Traversal Vulnerability")
-                        .setRecommendation(
-                            "Update the Gradio instances to version 4.11.0 or later.")
-                        .addRelatedId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("CVE")
-                                .setValue("CVE-2023-51449"))
-                        .setDescription(Cve202351449VulnDetector.VULN_DESCRIPTION)
+                    detector.getAdvisories().get(0).toBuilder()
                         .addAdditionalDetails(
                             AdditionalDetail.newBuilder()
                                 .setDescription("Contents of /etc/passwd")

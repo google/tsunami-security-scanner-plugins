@@ -120,6 +120,21 @@ public final class ApacheSolrArbitraryFileReadingDetector implements VulnDetecto
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("APACHE_SOLR_REMOTE_STREAMING_FILE_READING"))
+            .setSeverity(Severity.HIGH)
+            .setTitle("Apache Solr RemoteStreaming Arbitrary File Reading")
+            .setDescription(DESCRIPTION)
+            .setRecommendation(RECOMMENDATION)
+            .build());
+  }
+
   private CheckResult checkService(NetworkService networkService) {
     for (String core : getCores(networkService)) {
       var checkTracesBuilder = CheckTraces.builder();
@@ -239,16 +254,7 @@ public final class ApacheSolrArbitraryFileReadingDetector implements VulnDetecto
             .setNetworkService(checkResult.networkService())
             .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
             .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-            .setVulnerability(
-                Vulnerability.newBuilder()
-                    .setMainId(
-                        VulnerabilityId.newBuilder()
-                            .setPublisher("TSUNAMI_COMMUNITY")
-                            .setValue("APACHE_SOLR_REMOTE_STREAMING_FILE_READING"))
-                    .setSeverity(Severity.HIGH)
-                    .setTitle("Apache Solr RemoteStreaming Arbitrary File Reading")
-                    .setDescription(DESCRIPTION)
-                    .setRecommendation(RECOMMENDATION));
+            .setVulnerability(this.getAdvisories().get(0));
     checkResult
         .checkTraces()
         .ifPresent(

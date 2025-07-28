@@ -34,7 +34,12 @@ This directory contains plugins contributed by community members.
 *   [CVE-2022-36804 Bitbucket Server RCE via command injection](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/bitbucket_cve_2022_36804)
 *   [Spring Cloud Function CVE-2022-22963 VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/spring_cloud_function_cve_2022_22963)
 *   [Apache Spark Exposed API VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/rce/apache_spark_exposed_api)
+*   [CVE-2023-0669 GoAnywhere MFT RCE vulnerability Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/goanywhere_cve_2023_0669)
+*   [AutoGPT Exposed UI VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/autogpt_exposed_ui)
+*   [CVE-2024-2029 LocalAI RCE detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/localai_cve_2024_2029)
+*   [CVE-2024-4577 PHP-CGI RCE detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/php_cve_2024_4577)
+*   [Exposed Argo Workflows Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/argoworkflows_exposed_ui)
 
-#### Information Disclosure
+#### XML External Entity (XXE) Injection
 
-*   [Apache Sparks exposed Web UI Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/apache_spark_exposed_webui)
+*   [CVE-2019-9670 Synacor Zimbra Collaboration Suite XXE](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/zimbra_cve_2019_9670)
