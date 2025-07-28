@@ -26,7 +26,11 @@ finding: {
   }
 }
 
-config: {}
+
+config: {
+  disable_follow_redirects: true
+ debug: true
+}
 
 ###########
 # ACTIONS #
@@ -68,10 +72,36 @@ actions: {
   name: "login_with_arbitrary_credentials"
   http_request: {
     method: POST
+    headers: [
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" }
+    ]
     uri: "/j_acegi_security_check"
-    data: "j_username=aaaa&j_password=aaaa&from=%2F&json=%7B%22j_username%22%3A+%22aaaa%22%2C+%22j_password%22%3A+%22aaaa%22%2C+%22from%22%3A+%22%2F%22%7D&Submit=log+in"
+    data: "j_username=aaaa&j_password=aaaa"
     response: {
       http_status: 302
+      extract_all: {
+        patterns: [
+          {
+            from_header: { name: "Set-Cookie" }
+            regexp: "(JSESSIONID\\.[a-zA-Z0-9]+=[a-z0-9]+)"
+            variable_name: "session_cookie"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "authenticated_request"
+  http_request: {
+    method: GET
+    headers: [
+        { name: "Cookie" value: "{{ session_cookie }}" }
+    ]
+    uri: "/manage"
+    response: {
+      http_status: 200
     }
   }
 }
@@ -84,6 +114,7 @@ workflows: {
   actions: [
     "jenkins_fingerprint",
     "login_endpoint",
-    "login_with_arbitrary_credentials"
+    "login_with_arbitrary_credentials",
+    "authenticated_request"
   ]
 }
