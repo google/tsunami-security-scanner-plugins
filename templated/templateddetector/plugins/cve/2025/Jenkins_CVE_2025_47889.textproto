@@ -57,7 +57,7 @@ actions: {
       { name: "Content-Type" value: "application/x-www-form-urlencoded" }
     ]
     uri: "/j_acegi_security_check"
-    config: {
+    client_options: {
       disable_follow_redirects: true
     }
     data: "j_username=aaaa&j_password=aaaa"
