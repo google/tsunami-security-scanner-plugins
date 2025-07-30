@@ -152,6 +152,7 @@ public final class RocketMqCve202333246Detector implements VulnDetector {
     var servicePort = service.getNetworkEndpoint().getPort().getPortNumber();
 
     try (var socket = socketFactory.createSocket(serviceIp, servicePort)) {
+      socket.setSoTimeout(2000);
       socket.getOutputStream().write(payload);
 
       byte[] response = new byte[4096];
