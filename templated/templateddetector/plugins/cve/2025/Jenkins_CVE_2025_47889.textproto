@@ -20,6 +20,7 @@ finding: {
   severity: CRITICAL
   title: "Authentication bypass vulnerability in WSO2 Oauth Plugin (CVE-2025-47889)"
   description: "In WSO2 Oauth Plugin 1.0 and earlier authentication claims are accepted without validation by the \"WSO2 Oauth\" security realm. This allows unauthenticated attackers to log in to controllers using this security realm using any username and any password, including usernames that do not exist."
+  recommendation: "Follow the official recommendation for this issue: https://www.jenkins.io/security/advisory/2025-05-14/#SECURITY-3481"
   related_id: {
     publisher: "CVE"
     value: "CVE-2025-47889"
