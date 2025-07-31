@@ -203,10 +203,10 @@ public final class Cve20241728VulnDetector implements VulnDetector {
             JsonObject jsonInOutputKey = jsonResponse.get("output").getAsJsonObject();
             if (jsonInOutputKey.keySet().contains("data")) {
               JsonArray jsonArrayInDataArrayKeyOuter = jsonInOutputKey.get("data").getAsJsonArray();
-              if (!jsonArrayInDataArrayKeyOuter.isEmpty()) {
+              if (jsonArrayInDataArrayKeyOuter.size() > 0) {
                 JsonArray jsonArrayInDataArrayKeyInner =
                     jsonArrayInDataArrayKeyOuter.get(0).getAsJsonArray();
-                if (!jsonArrayInDataArrayKeyInner.isEmpty()) {
+                if (jsonArrayInDataArrayKeyInner.size() > 0) {
                   JsonObject jsonPathKey = jsonArrayInDataArrayKeyInner.get(0).getAsJsonObject();
                   this.pathId = jsonPathKey.get("path").getAsString();
                   logger.atInfo().log("Parsed Path Id: %s", this.pathId);
