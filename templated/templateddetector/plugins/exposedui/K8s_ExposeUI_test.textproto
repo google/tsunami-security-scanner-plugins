@@ -1,0 +1,93 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "K8s_ExposeUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/api/v1/namespace"
+        status: 200
+        body_content: "\"name\": \"kubernetes-dashboard\","
+      },
+      {
+        uri: "/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/api/v1/csrftoken/appdeploymentfromfile"
+        status: 200
+        body_content: "\"token\": \"TIM-HcANnZ3XwpXVB9D745jtuYo:1753310053154\""
+      },
+      {
+        uri: "/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/api/v1/appdeploymentfromfile"
+        status: 201
+        condition: {
+          headers: [
+            { name: "X-CSRF-TOKEN" value: "TIM-HcANnZ3XwpXVB9D745jtuYo:1753310053154" },
+            { name: "Content-Type" value: "application/json" }
+          ]
+          body_content:[
+            '{"name":"","namespace":"default","content":"apiVersion: batch/v1\\nkind: Job\\nmetadata:\\n  name: curl-job\\n  labels:\\n    app: curl-example\\nspec:\\n  template:\\n    metadata:\\n      labels:\\n        app: curl-example\\n    spec:\\n      containers:\\n      - name: curl-container\\n        image: curlimages/curl:latest\\n        command: [\\"/bin/sh\\", \\"-c\\"]\\n'
+          ]
+        }
+      },
+      {
+        uri: "/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/api/v1/_raw/job/namespace/default/name/curl-job"
+        status: 200
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/"
+        status: 200
+        body_content: "<title>Kubernetes Dashboard</title>"
+      },
+      {
+        uri: "/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/api/v1/appdeploymentfromfile"
+        status: 200
+        body_content: "\"token\": \"TIM-HcANnZ3XwpXVB9D745jtuYo:1753310053154\""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotK8s_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
