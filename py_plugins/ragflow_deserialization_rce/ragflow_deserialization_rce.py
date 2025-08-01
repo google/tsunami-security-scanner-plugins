@@ -160,7 +160,7 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
                 return (
                     __import__("os").system,
                     (
-                        f'/bin/sh -c "apt-get update; apt-get install -y curl; {payload.get_payload()}"',
+                        f'/bin/sh -c "{payload.get_payload()}"',
                     ),
                 )
 
