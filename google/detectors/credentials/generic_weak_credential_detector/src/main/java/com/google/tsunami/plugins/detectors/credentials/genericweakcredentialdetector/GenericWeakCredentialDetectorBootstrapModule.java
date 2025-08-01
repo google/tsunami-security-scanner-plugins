@@ -43,6 +43,7 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.hive.HiveCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.hydra.HydraCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.jenkins.JenkinsCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.kubeflow.KubeflowCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.mlflow.MlFlowCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.mysql.MysqlCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack.NcrackCredentialTester;
@@ -70,6 +71,7 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
 
     Multibinder<CredentialTester> credentialTesterBinder =
         Multibinder.newSetBinder(binder(), CredentialTester.class);
+    credentialTesterBinder.addBinding().to(KubeflowCredentialTester.class);
     credentialTesterBinder.addBinding().to(AirbyteCredentialTester.class);
     credentialTesterBinder.addBinding().to(AirflowCredentialTester.class);
     credentialTesterBinder.addBinding().to(ArgoCdCredentialTester.class);
