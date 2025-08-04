@@ -1,4 +1,4 @@
-import gradio as gr
+from google3.third_party.java_src.tsunami.plugin_server.py.google3.third_party.java_src.tsunami.proto from google3.third_party.java_src.tsunami.plugin_server.py import gradio as gr
 
 def greet(name, intensity):
     return "Hello, " + name + "!" * int(intensity)

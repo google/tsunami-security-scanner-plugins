@@ -236,6 +236,75 @@ public final class HttpActionRunnerTest {
   }
 
   @Test
+  public void followRedirectsDisabled_matchesTheRedirectPage() throws InterruptedException {
+    HttpAction.HttpResponse httpResponse =
+        HttpAction.HttpResponse.newBuilder()
+            .setHttpStatus(302)
+            .setExpectAll(
+                HttpAction.HttpResponse.ExpectAll.newBuilder()
+                    .addConditions(
+                        HttpAction.HttpResponse.Expectation.newBuilder()
+                            .setContains("REDIRECT")
+                            .setBody(HttpAction.HttpResponse.Body.getDefaultInstance())))
+            .build();
+    PluginAction action =
+        PluginAction.newBuilder()
+            .setName("action")
+            .setHttpRequest(
+                HttpAction.newBuilder()
+                    .setMethod(HttpAction.HttpMethod.GET)
+                    .addUri("/")
+                    .setClientOptions(
+                        HttpAction.HttpClientOptions.newBuilder().setDisableFollowRedirects(true))
+                    .setResponse(httpResponse))
+            .build();
+
+    this.mockWebServer.enqueue(
+        new MockResponse().setResponseCode(302).setBody("REDIRECT").addHeader("Location", "/new"));
+    this.mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody("FINAL"));
+    var result = runner.run(this.service, action, this.environment);
+    RecordedRequest request = this.mockWebServer.takeRequest();
+
+    assertThat(result).isTrue();
+    assertThat(request.getPath()).isEqualTo("/");
+    assertThat(this.mockWebServer.getRequestCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void followRedirectsEnabled_matchesTheFinalPage() throws InterruptedException {
+    HttpAction.HttpResponse httpResponse =
+        HttpAction.HttpResponse.newBuilder()
+            .setHttpStatus(200)
+            .setExpectAll(
+                HttpAction.HttpResponse.ExpectAll.newBuilder()
+                    .addConditions(
+                        HttpAction.HttpResponse.Expectation.newBuilder()
+                            .setContains("FINAL")
+                            .setBody(HttpAction.HttpResponse.Body.getDefaultInstance())))
+            .build();
+    PluginAction action =
+        PluginAction.newBuilder()
+            .setName("action")
+            .setHttpRequest(
+                HttpAction.newBuilder()
+                    .setMethod(HttpAction.HttpMethod.GET)
+                    .addUri("/")
+                    .setResponse(httpResponse))
+            .build();
+
+    this.mockWebServer.enqueue(
+        new MockResponse().setResponseCode(302).setBody("REDIRECT").addHeader("Location", "/new"));
+    this.mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody("FINAL"));
+    var result = runner.run(this.service, action, this.environment);
+    this.mockWebServer.takeRequest();
+    RecordedRequest request2 = this.mockWebServer.takeRequest();
+
+    assertThat(result).isTrue();
+    assertThat(request2.getPath()).isEqualTo("/new");
+    assertThat(this.mockWebServer.getRequestCount()).isEqualTo(2);
+  }
+
+  @Test
   public void multipleUris_runUntilOneSucceeds() throws InterruptedException {
     PluginAction action =
         PluginAction.newBuilder()
