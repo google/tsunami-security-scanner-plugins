@@ -71,6 +71,11 @@ public final class VcenterUploadOvaDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(getAdvisory(TextData.getDefaultInstance()));
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting VcenterUploadOva RCE detection.");
@@ -81,6 +86,31 @@ public final class VcenterUploadOvaDetector implements VulnDetector {
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
+        .build();
+  }
+
+  Vulnerability getAdvisory(TextData details) {
+    return Vulnerability.newBuilder()
+        .setMainId(VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2021_21972"))
+        .setSeverity(Severity.CRITICAL)
+        .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-21972"))
+        .setTitle("vCenter OVA Upload RCE")
+        .setDescription(
+            "The vSphere Client (HTML5) contains a remote code execution vulnerability in a"
+                + " vCenter Server plugin. A malicious actor with network access to port"
+                + " 443 may exploit this issue to execute commands with unrestricted"
+                + " privileges on the underlying operating system that hosts vCenter"
+                + " Server. This affects VMware vCenter Server (7.x before 7.0 U1c, 6.7"
+                + " before 6.7 U3l and 6.5 before 6.5 U3n) and VMware Cloud Foundation (4.x"
+                + " before 4.2 and 3.x before 3.10.1.2).")
+        .setRecommendation(
+            "To remediate CVE-2021-21972 apply the updates listed in the 'Fixed Version'"
+                + " column of the 'Response Matrix' below to affected deployments.\n"
+                + "\n"
+                + "Please see"
+                + " https://www.vmware.com/security/advisories/VMSA-2021-0002.html for the"
+                + " Response Matrix and the remediation instructions.")
+        .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details))
         .build();
   }
 
@@ -125,28 +155,7 @@ public final class VcenterUploadOvaDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2021_21972"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("vCenter OVA Upload RCE")
-                .setDescription(
-                    "The vSphere Client (HTML5) contains a remote code execution vulnerability in a"
-                        + " vCenter Server plugin. A malicious actor with network access to port"
-                        + " 443 may exploit this issue to execute commands with unrestricted"
-                        + " privileges on the underlying operating system that hosts vCenter"
-                        + " Server. This affects VMware vCenter Server (7.x before 7.0 U1c, 6.7"
-                        + " before 6.7 U3l and 6.5 before 6.5 U3n) and VMware Cloud Foundation (4.x"
-                        + " before 4.2 and 3.x before 3.10.1.2).")
-                .setRecommendation(
-                    "To remediate CVE-2021-21972 apply the updates listed in the 'Fixed Version'"
-                        + " column of the 'Response Matrix' below to affected deployments.\n"
-                        + "\n"
-                        + "Please see"
-                        + " https://www.vmware.com/security/advisories/VMSA-2021-0002.html for the"
-                        + " Response Matrix and the remediation instructions.")
-                .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
+        .setVulnerability(getAdvisory(details))
         .build();
   }
 }

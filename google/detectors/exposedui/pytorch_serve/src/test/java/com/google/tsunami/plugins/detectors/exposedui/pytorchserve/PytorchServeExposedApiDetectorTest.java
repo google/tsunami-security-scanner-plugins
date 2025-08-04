@@ -17,11 +17,6 @@ package com.google.tsunami.plugins.detectors.exposedui.pytorchserve;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.exposedui.pytorchserve.PytorchServeExposedApiDetector.RECOMMENDATION;
-import static com.google.tsunami.plugins.detectors.exposedui.pytorchserve.PytorchServeExposedApiDetector.VULNERABILITY_REPORT_ID;
-import static com.google.tsunami.plugins.detectors.exposedui.pytorchserve.PytorchServeExposedApiDetector.VULNERABILITY_REPORT_PUBLISHER;
-import static com.google.tsunami.plugins.detectors.exposedui.pytorchserve.PytorchServeExposedApiDetector.VULNERABILITY_REPORT_TITLE;
-import static com.google.tsunami.plugins.detectors.exposedui.pytorchserve.PytorchServeExposedApiDetector.VULN_DESCRIPTION;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -36,10 +31,7 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -126,16 +118,7 @@ public final class PytorchServeExposedApiDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
-                                .setValue(VULNERABILITY_REPORT_ID))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(VULNERABILITY_REPORT_TITLE)
-                        .setDescription(VULN_DESCRIPTION)
-                        .setRecommendation(RECOMMENDATION))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

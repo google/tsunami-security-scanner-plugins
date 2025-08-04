@@ -34,10 +34,7 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -99,28 +96,7 @@ public class Cve20243104VulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2024_3104"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2024-3104 anything-llm RCE")
-                        .setRecommendation(
-                            "You can upgrade your anything-llm instances to a version whose commit"
-                                + " ID is bfedfebfab032e6f4d5a369c8a2f947c5d0c5286 or later.")
-                        .setDescription(
-                            "A remote code execution vulnerability exists in"
-                                + " mintplex-labs/anything-llm due to improper handling of"
-                                + " environment variables. Attackers can exploit this vulnerability"
-                                + " by injecting arbitrary environment variables via the POST"
-                                + " /api/system/update-env endpoint, which allows for the execution"
-                                + " of arbitrary code on the host running anything-llm.Successful"
-                                + " exploitation could lead to code execution on the host, enabling"
-                                + " attackers to read and modify data accessible to the user"
-                                + " running the service, potentially leading to a denial of"
-                                + " service."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
     assertThat(mockWebServer.getRequestCount()).isEqualTo(4);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);

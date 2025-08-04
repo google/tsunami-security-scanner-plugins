@@ -2,10 +2,12 @@ syntax = "proto3";
 
 package tsunami_templated_detector_tests;
 
-import "action_http_tests.proto";
+import "mock_callback_server_tests.proto";
+import "mock_http_server_tests.proto";
 
 option java_multiple_files = true;
 option java_package = "com.google.tsunami.templatedplugin.proto.tests";
+option go_package = "github.com/google/tsunami-security-scanner-plugins/templated/templateddetector/proto/templated_plugin_go_proto";
 
 // Defines a set of unit test for a templated plugin.
 message TemplatedPluginTests {
@@ -24,10 +26,11 @@ message TemplatedPluginTests {
     // Whether this test ensure that the vulnerability is found or not.
     bool expect_vulnerability = 2;
 
-    // The action being tested.
-    oneof anyAction {
-      HttpTestAction mock_http_server = 3;
-    }
+    // Provides a mock for the callback server.
+    MockCallbackServer mock_callback_server = 3;
+
+    // Provides a mock for the HTTP server.
+    MockHttpServer mock_http_server = 4;
   }
 
   // Configuration for this set of unit tests. For example, the name of the

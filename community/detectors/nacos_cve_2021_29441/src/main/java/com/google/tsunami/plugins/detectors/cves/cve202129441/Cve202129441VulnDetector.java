@@ -66,6 +66,7 @@ public final class Cve202129441VulnDetector implements VulnDetector {
   private static final String CHECK_VUL_PATH = "nacos/v1/auth/users/?pageNo=1&pageSize=9";
 
   @VisibleForTesting static final String DETECTION_STRING = "pageItems";
+
   @VisibleForTesting
   static final String VULN_DESCRIPTION =
       "Nacos is a platform designed for dynamic service discovery and configuration"
@@ -101,6 +102,25 @@ public final class Cve202129441VulnDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2021_29441"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-29441"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("CVE-2021-29441 Nacos Authentication Bypass Via Backdoor")
+            .setRecommendation(
+                "Configure nacos.core.auth.enabled to true, upgrade nacos to the latest"
+                    + " version, configure custom authentication key-value pair information")
+            .setDescription(VULN_DESCRIPTION)
+            .build());
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
     String targetUri =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + CHECK_VUL_PATH;
@@ -131,18 +151,7 @@ public final class Cve202129441VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2021_29441"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2021-29441 Nacos Authentication Bypass Via Backdoor")
-                .setRecommendation(
-                    "Configure nacos.core.auth.enabled to true, upgrade nacos to the latest"
-                        + " version, configure custom authentication key-value pair information")
-                .setDescription(VULN_DESCRIPTION))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

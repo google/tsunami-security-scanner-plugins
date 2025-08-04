@@ -155,6 +155,28 @@ public final class Cve202233891VulnDetector implements VulnDetector {
     return this.payloadGenerator.generate(config);
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2022_33891"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-33891"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("CVE-2022-33891 Apache Spark UI RCE")
+            .setDescription(
+                "The Apache Spark UI has spark.acls.enable configuration option which provides"
+                    + " capability to modify the application according to user's permissions."
+                    + " When the config is true, the vulnerable versions of Spark checks the"
+                    + " group membership of the user without proper controls, that results in"
+                    + " blind command injection in username parameter.")
+            .setRecommendation("You can upgrade your Spark instances to 3.2.2, or 3.3.0 or later")
+            .build());
+  }
+
   private DetectionReport buildDetectionReport(
       TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
     return DetectionReport.newBuilder()
@@ -162,22 +184,7 @@ public final class Cve202233891VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2022_33891"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2022-33891 Apache Spark UI RCE")
-                .setDescription(
-                    "The Apache Spark UI has spark.acls.enable configuration option which provides"
-                        + " capability to modify the application according to user's permissions."
-                        + " When the config is true, the vulnerable versions of Spark checks the"
-                        + " group membership of the user without proper controls, that results in"
-                        + " blind command injection in username parameter.")
-                .setRecommendation(
-                    "You can upgrade your Spark instances to 3.2.2, or 3.3.0 or later"))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

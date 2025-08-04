@@ -146,6 +146,24 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
+                    .setValue(VULNERABILITY_REPORT_ID))
+            .setSeverity(vulnSeverity)
+            .setTitle(VULNERABILITY_REPORT_TITLE)
+            .setDescription(VULNERABILITY_REPORT_DESCRIPTION)
+            .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION)
+            .addAdditionalDetails(
+                AdditionalDetail.newBuilder()
+                    .setTextData(TextData.newBuilder().setText(VULNERABILITY_REPORT_DETAILS)))
+            .build());
+  }
+
   // Checks whether a given Kubernetes service is exposed and vulnerable.
   private boolean isServiceVulnerable(NetworkService networkService) {
 
@@ -269,19 +287,7 @@ public final class RCEInKubernetesClusterWithOpenAccessDetector implements VulnD
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
-                        .setValue(VULNERABILITY_REPORT_ID))
-                .setSeverity(vulnSeverity)
-                .setTitle(VULNERABILITY_REPORT_TITLE)
-                .setDescription(VULNERABILITY_REPORT_DESCRIPTION)
-                .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION)
-                .addAdditionalDetails(
-                    AdditionalDetail.newBuilder()
-                        .setTextData(TextData.newBuilder().setText(VULNERABILITY_REPORT_DETAILS))))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

@@ -72,6 +72,26 @@ public class GoCDArbitraryFileReadingDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("GoCD_ARBITRARY_FILE_READING"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("GoCD Pre-Auth Arbitrary File Reading vulnerability")
+            .setDescription(
+                "In GoCD 21.2.0 and earlier, there is an endpoint that can be accessed "
+                    + "without authentication. This endpoint has a directory traversal "
+                    + "vulnerability, and any user can read any file on the server "
+                    + "without authentication, causing information leakage."
+                    + "https://www.gocd.org/releases/#21-3-0")
+            .setRecommendation("Update 21.3.0 released, or later released.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     return DetectionReportList.newBuilder()
@@ -109,21 +129,7 @@ public class GoCDArbitraryFileReadingDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("GoCD_ARBITRARY_FILE_READING"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("GoCD Pre-Auth Arbitrary File Reading vulnerability")
-                .setDescription(
-                    "In GoCD 21.2.0 and earlier, there is an endpoint that can be accessed "
-                        + "without authentication. This endpoint has a directory traversal "
-                        + "vulnerability, and any user can read any file on the server "
-                        + "without authentication, causing information leakage."
-                        + "https://www.gocd.org/releases/#21-3-0")
-                .setRecommendation("Update 21.3.0 released, or later released.")
-        )
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

@@ -114,6 +114,25 @@ public final class RedisUnauthenticatedCommandExecutionDetector implements VulnD
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(getAdvisory(AdditionalDetail.getDefaultInstance()));
+  }
+
+  Vulnerability getAdvisory(AdditionalDetail details) {
+    return Vulnerability.newBuilder()
+        .setMainId(
+            VulnerabilityId.newBuilder()
+                .setPublisher("GOOGLE")
+                .setValue("REDIS_UNAUTHENTICATED_COMMAND_EXECUTION"))
+        .setSeverity(Severity.CRITICAL)
+        .setTitle("Redis unauthenticated command execution")
+        .setDescription(VULN_DESCRIPTION)
+        .setRecommendation(VULN_RECOMMENDATION)
+        .addAdditionalDetails(details)
+        .build();
+  }
+
   private boolean isTransportProtocolTcp(NetworkService networkService) {
     return TransportProtocol.TCP.equals(networkService.getTransportProtocol());
   }
@@ -163,19 +182,11 @@ public final class RedisUnauthenticatedCommandExecutionDetector implements VulnD
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("REDIS_UNAUTHENTICATED_COMMAND_EXECUTION"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Redis unauthenticated command execution")
-                .setDescription(VULN_DESCRIPTION)
-                .setRecommendation(VULN_RECOMMENDATION)
-                .addAdditionalDetails(
-                    AdditionalDetail.newBuilder()
-                        .setDescription("response (first 100 bytes)")
-                        .setTextData(TextData.newBuilder().setText(probingDetails.response))))
+            getAdvisory(
+                AdditionalDetail.newBuilder()
+                    .setDescription("response (first 100 bytes)")
+                    .setTextData(TextData.newBuilder().setText(probingDetails.response))
+                    .build()))
         .build();
   }
 }

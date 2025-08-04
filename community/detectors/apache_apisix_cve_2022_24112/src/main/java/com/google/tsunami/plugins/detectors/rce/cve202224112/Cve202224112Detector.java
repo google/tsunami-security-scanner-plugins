@@ -100,6 +100,27 @@ public final class Cve202224112Detector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE-2022-24112"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Apache APISIX RCE (CVE-2022-24112)")
+            .setDescription(
+                "Some of Apache APISIX 2.x versions allows attacker to"
+                    + " bypass IP restrictions of Admin API through the batch-requests plugin."
+                    + " A default configuration of Apache APISIX (with default API key) is"
+                    + " vulnerable to remote code execution through the plugin.")
+            .setRecommendation("Update Apache APISIX to a newer version.")
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-24112"))
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Cve202224112Detector starts detecting.");
@@ -275,20 +296,7 @@ public final class Cve202224112Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE-2022-24112"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Apache APISIX RCE (CVE-2022-24112)")
-                .setDescription(
-                    "Some of Apache APISIX 2.x versions allows attacker to"
-                        + " bypass IP restrictions of Admin API through the batch-requests plugin."
-                        + " A default configuration of Apache APISIX (with default API key) is"
-                        + " vulnerable to remote code execution through the plugin."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }
-

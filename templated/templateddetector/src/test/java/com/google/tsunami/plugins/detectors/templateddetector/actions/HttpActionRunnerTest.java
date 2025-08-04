@@ -6,6 +6,7 @@ import static org.junit.Assert.assertThrows;
 import com.google.inject.Guice;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpClientModule;
+import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.plugins.detectors.templateddetector.Environment;
 import com.google.tsunami.proto.Hostname;
 import com.google.tsunami.proto.NetworkEndpoint;
@@ -15,6 +16,7 @@ import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.templatedplugin.proto.HttpAction;
 import com.google.tsunami.templatedplugin.proto.PluginAction;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.regex.PatternSyntaxException;
 import javax.inject.Inject;
 import okhttp3.mockwebserver.MockResponse;
@@ -35,11 +37,14 @@ public final class HttpActionRunnerTest {
 
   @Inject private HttpClient httpClient;
 
+  private static final FakeUtcClock utcClock =
+      FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
+
   @Before
   public void setup() {
     Guice.createInjector(new HttpClientModule.Builder().build()).injectMembers(this);
     this.runner = new HttpActionRunner(httpClient, false);
-    this.environment = new Environment(false);
+    this.environment = new Environment(false, utcClock);
   }
 
   @Before
@@ -228,6 +233,75 @@ public final class HttpActionRunnerTest {
     assertThat(result).isTrue();
     assertThat(request.getPath()).isEqualTo("/index");
     assertThat(this.mockWebServer.getRequestCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void followRedirectsDisabled_matchesTheRedirectPage() throws InterruptedException {
+    HttpAction.HttpResponse httpResponse =
+        HttpAction.HttpResponse.newBuilder()
+            .setHttpStatus(302)
+            .setExpectAll(
+                HttpAction.HttpResponse.ExpectAll.newBuilder()
+                    .addConditions(
+                        HttpAction.HttpResponse.Expectation.newBuilder()
+                            .setContains("REDIRECT")
+                            .setBody(HttpAction.HttpResponse.Body.getDefaultInstance())))
+            .build();
+    PluginAction action =
+        PluginAction.newBuilder()
+            .setName("action")
+            .setHttpRequest(
+                HttpAction.newBuilder()
+                    .setMethod(HttpAction.HttpMethod.GET)
+                    .addUri("/")
+                    .setClientOptions(
+                        HttpAction.HttpClientOptions.newBuilder().setDisableFollowRedirects(true))
+                    .setResponse(httpResponse))
+            .build();
+
+    this.mockWebServer.enqueue(
+        new MockResponse().setResponseCode(302).setBody("REDIRECT").addHeader("Location", "/new"));
+    this.mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody("FINAL"));
+    var result = runner.run(this.service, action, this.environment);
+    RecordedRequest request = this.mockWebServer.takeRequest();
+
+    assertThat(result).isTrue();
+    assertThat(request.getPath()).isEqualTo("/");
+    assertThat(this.mockWebServer.getRequestCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void followRedirectsEnabled_matchesTheFinalPage() throws InterruptedException {
+    HttpAction.HttpResponse httpResponse =
+        HttpAction.HttpResponse.newBuilder()
+            .setHttpStatus(200)
+            .setExpectAll(
+                HttpAction.HttpResponse.ExpectAll.newBuilder()
+                    .addConditions(
+                        HttpAction.HttpResponse.Expectation.newBuilder()
+                            .setContains("FINAL")
+                            .setBody(HttpAction.HttpResponse.Body.getDefaultInstance())))
+            .build();
+    PluginAction action =
+        PluginAction.newBuilder()
+            .setName("action")
+            .setHttpRequest(
+                HttpAction.newBuilder()
+                    .setMethod(HttpAction.HttpMethod.GET)
+                    .addUri("/")
+                    .setResponse(httpResponse))
+            .build();
+
+    this.mockWebServer.enqueue(
+        new MockResponse().setResponseCode(302).setBody("REDIRECT").addHeader("Location", "/new"));
+    this.mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody("FINAL"));
+    var result = runner.run(this.service, action, this.environment);
+    this.mockWebServer.takeRequest();
+    RecordedRequest request2 = this.mockWebServer.takeRequest();
+
+    assertThat(result).isTrue();
+    assertThat(request2.getPath()).isEqualTo("/new");
+    assertThat(this.mockWebServer.getRequestCount()).isEqualTo(2);
   }
 
   @Test

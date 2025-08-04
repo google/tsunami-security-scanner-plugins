@@ -34,11 +34,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TextData;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -67,16 +64,20 @@ public final class GhostcatVulnDetectorTest {
   @Before
   public void setUp() throws IOException {
     Guice.createInjector(
-        new FakeUtcClockModule(fakeUtcClock), new GhostcatVulnDetectorBootstrapModule(true),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            bind(AjpConnection.Factory.class).toProvider(() -> {
-              when(connectionFactoryMock.create(any(), anyInt())).thenReturn(ajpConnectionMock);
-              return connectionFactoryMock;
-            });
-          }
-        })
+            new FakeUtcClockModule(fakeUtcClock),
+            new GhostcatVulnDetectorBootstrapModule(true),
+            new AbstractModule() {
+              @Override
+              protected void configure() {
+                bind(AjpConnection.Factory.class)
+                    .toProvider(
+                        () -> {
+                          when(connectionFactoryMock.create(any(), anyInt()))
+                              .thenReturn(ajpConnectionMock);
+                          return connectionFactoryMock;
+                        });
+              }
+            })
         .injectMembers(this);
 
     when(ajpConnectionMock.performGhostcat(any(), any())).thenReturn(ajpResponseMock);
@@ -94,9 +95,7 @@ public final class GhostcatVulnDetectorTest {
         detector.detect(TargetInfo.getDefaultInstance(), ImmutableList.of(ajpService));
 
     assertThat(detectionReports.getDetectionReportsList())
-        .containsExactly(
-            buildExpectedDetectionReport(
-                ajpService, 200, "abc", "{x=[y]}", "1337"));
+        .containsExactly(buildExpectedDetectionReport(ajpService, 200, "abc", "{x=[y]}", "1337"));
   }
 
   @Test
@@ -112,8 +111,7 @@ public final class GhostcatVulnDetectorTest {
 
     assertThat(detectionReports.getDetectionReportsList())
         .containsExactly(
-            buildExpectedDetectionReport(
-                ajpService, 404, "Not found", "{x=[y]}", "1337"));
+            buildExpectedDetectionReport(ajpService, 404, "Not found", "{x=[y]}", "1337"));
   }
 
   @Test
@@ -180,35 +178,24 @@ public final class GhostcatVulnDetectorTest {
       String statusMessage,
       String headers,
       String content) {
+    AdditionalDetail details =
+        AdditionalDetail.newBuilder()
+            .setTextData(
+                TextData.newBuilder()
+                    .setText(
+                        String.format(
+                            "Status code: %d\n"
+                                + "Status message: %s\n"
+                                + "Headers: %s\n"
+                                + "/WEB-INF/web.xml content: %s\n",
+                            statusCode, statusMessage, headers, content)))
+            .build();
     return DetectionReport.newBuilder()
         .setTargetInfo(TargetInfo.getDefaultInstance())
         .setNetworkService(ajpService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("GHOSTCAT"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Apache Tomcat AJP File Read/Inclusion Vulnerability")
-                .setDescription(
-                    "Apache Tomcat is an open source web server and servlet container"
-                        + " developed by the Apache Software Foundation Apache Tomcat"
-                        + " fixed a vulnerability (CVE-2020-1938) that allows an attacker"
-                        + " to read any webapps files. If the Tomcat instance supports"
-                        + " file uploads, the vulnerability could also be leveraged to"
-                        + " achieve remote code execution.")
-                .setRecommendation("Install the latest security patches for Apache Tomcat.")
-                .addAdditionalDetails(
-                    AdditionalDetail.newBuilder()
-                        .setTextData(
-                            TextData.newBuilder()
-                                .setText(
-                                    String.format(
-                                        "Status code: %d\n"
-                                            + "Status message: %s\n"
-                                            + "Headers: %s\n"
-                                            + "/WEB-INF/web.xml content: %s\n",
-                                        statusCode, statusMessage, headers, content)))))
+        .setVulnerability(detector.getAdvisory(details))
         .build();
   }
 }

@@ -17,8 +17,6 @@ package com.google.tsunami.plugins.detectors.cves.cve202346604;
 
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forIpAndPort;
-import static com.google.tsunami.plugins.detectors.cves.cve202346604.Cve202346604Detector.VULN_DESCRIPTION_OF_OOB_VERIFY;
-import static com.google.tsunami.plugins.detectors.cves.cve202346604.Cve202346604Detector.VULN_DESCRIPTION_OF_VERSION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -46,13 +44,10 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -186,16 +181,8 @@ public final class Cve202346604DetectorTest {
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2023_46604"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2023-46604 Apache ActiveMQ RCE")
-                        .setRecommendation("Upgrade to version 5.15.16, 5.16.7, 5.17.6, or 5.18.3")
-                        .setDescription(VULN_DESCRIPTION_OF_OOB_VERIFY)
-                        .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
+                    detector.getAdvisory(
+                        AdditionalDetail.newBuilder().setTextData(details).build()))
                 .build());
   }
 
@@ -275,16 +262,8 @@ public final class Cve202346604DetectorTest {
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_PRESENT)
                 .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2023_46604"))
-                        .setSeverity(Severity.HIGH)
-                        .setTitle("CVE-2023-46604 Apache ActiveMQ RCE")
-                        .setRecommendation("Upgrade to version 5.15.16, 5.16.7, 5.17.6, or 5.18.3")
-                        .setDescription(VULN_DESCRIPTION_OF_VERSION)
-                        .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
+                    detector.getAdvisory(
+                        AdditionalDetail.newBuilder().setTextData(details).build()))
                 .build());
   }
 

@@ -19,8 +19,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.exposedui.docker.DockerExposedUiDetector.DESCRIPTION;
-import static com.google.tsunami.plugins.detectors.exposedui.docker.DockerExposedUiDetector.FINDING_RECOMMENDATION_TEXT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
@@ -33,18 +31,13 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
-import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -115,21 +108,7 @@ public final class DockerExposedUiDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("DOCKER_EXPOSED_UI"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Docker API Exposed Ui")
-                        .setDescription(DESCRIPTION)
-                        .setRecommendation(FINDING_RECOMMENDATION_TEXT)
-                        .addAdditionalDetails(
-                            AdditionalDetail.newBuilder()
-                                .setTextData(
-                                    TextData.newBuilder().setText(validApiResponse).build())
-                                .build()))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

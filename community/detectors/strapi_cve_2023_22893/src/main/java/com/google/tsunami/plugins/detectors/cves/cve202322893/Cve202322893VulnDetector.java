@@ -92,6 +92,30 @@ public final class Cve202322893VulnDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2023_22893"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-22893"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Authentication Bypass For Strapi AWS Cognito Login Provider")
+            .setDescription(
+                "Strapi before 4.5.5 does not verify the access or ID tokens issued during the"
+                    + " OAuth flow when the AWS Cognito login provider is used for"
+                    + " authentication. A remote attacker could forge an ID token that is"
+                    + " signed using the 'None' type algorithm to bypass authentication and"
+                    + " impersonate any user that use AWS Cognito for authentication. with the"
+                    + " help of CVE-2023-22621 and CVE-2023-22894 attackers can gain"
+                    + " Unauthenticated Remote Code Execution on this version of Strapi")
+            .setRecommendation("Upgrade to version 4.5.6 and higher")
+            .build());
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
     HttpHeaders httpHeaders =
         HttpHeaders.builder()
@@ -126,23 +150,7 @@ public final class Cve202322893VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2023_22893"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Authentication Bypass For Strapi AWS Cognito Login Provider")
-                .setDescription(
-                    "Strapi before 4.5.5 does not verify the access or ID tokens issued during the"
-                        + " OAuth flow when the AWS Cognito login provider is used for"
-                        + " authentication. A remote attacker could forge an ID token that is"
-                        + " signed using the 'None' type algorithm to bypass authentication and"
-                        + " impersonate any user that use AWS Cognito for authentication. with the"
-                        + " help of CVE-2023-22621 and CVE-2023-22894 attackers can gain"
-                        + " Unauthenticated Remote Code Execution on this version of Strapi")
-                .setRecommendation("Upgrade to version 4.5.6 and higher"))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

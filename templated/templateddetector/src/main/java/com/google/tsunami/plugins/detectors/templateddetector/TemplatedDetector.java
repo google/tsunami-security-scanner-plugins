@@ -16,11 +16,13 @@ import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.PayloadSecretGenerator;
 import com.google.tsunami.plugins.detectors.templateddetector.actions.CallbackServerActionRunner;
 import com.google.tsunami.plugins.detectors.templateddetector.actions.HttpActionRunner;
+import com.google.tsunami.plugins.detectors.templateddetector.actions.UtilityActionRunner;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.templatedplugin.proto.PluginAction;
 import com.google.tsunami.templatedplugin.proto.PluginWorkflow;
 import com.google.tsunami.templatedplugin.proto.TemplatedPlugin;
@@ -77,6 +79,11 @@ public final class TemplatedDetector implements VulnDetector {
     return DetectionReportList.getDefaultInstance();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(this.proto.getFinding());
+  }
+
   @Inject
   void setHttpClient(HttpClient httpClient) {
     this.httpClient = checkNotNull(httpClient);
@@ -112,6 +119,8 @@ public final class TemplatedDetector implements VulnDetector {
         return new HttpActionRunner(this.httpClient, this.proto.getConfig().getDebug());
       case CALLBACK_SERVER:
         return new CallbackServerActionRunner(this.tcsClient, this.proto.getConfig().getDebug());
+      case UTILITY:
+        return new UtilityActionRunner();
       default:
         throw new IllegalArgumentException(
             String.format("Unsupported action type: %s", action.getAnyActionCase()));
@@ -136,7 +145,7 @@ public final class TemplatedDetector implements VulnDetector {
   // note: expect action names to have been validated already
   private final boolean runWorkflowForService(NetworkService service, PluginWorkflow workflow) {
     // We prepare a new environment for that workflow.
-    Environment environment = new Environment(this.proto.getConfig().getDebug());
+    Environment environment = new Environment(this.proto.getConfig().getDebug(), this.utcClock);
     environment.initializeFor(service, this.tcsClient, this.secretGenerator);
 
     for (var parameter : workflow.getVariablesList()) {
@@ -144,26 +153,60 @@ public final class TemplatedDetector implements VulnDetector {
       environment.set(parameter.getName(), value);
     }
 
+    // Run every individual action and inventorize clean up actions.
+    boolean success = true;
+    ImmutableList.Builder<String> cleanupActionsBuilder = ImmutableList.builder();
     for (String actionName : workflow.getActionsList()) {
       PluginAction action = this.actionsCache.get(actionName);
       if (!dispatchAction(service, action, environment)) {
         logger.atInfo().log("No vulnerability found because action '%s' failed.", actionName);
-        return false;
+        success = false;
+        break;
+      }
+
+      cleanupActionsBuilder.addAll(action.getCleanupActionsList());
+    }
+
+    var cleanupActions = cleanupActionsBuilder.build();
+    if (cleanupActions.isEmpty()) {
+      return success;
+    }
+
+    // Run all the clean up actions that were registered.
+    logger.atInfo().log("Running %d cleanup action(s)", cleanupActions.size());
+    for (String cleanupActionName : cleanupActions) {
+      PluginAction cleanupAction = this.actionsCache.get(cleanupActionName);
+      if (!dispatchAction(service, cleanupAction, environment)) {
+        logger.atWarning().log(
+            "Cleanup action '%s' failed: manual clean up of service on port %d might be needed",
+            cleanupActionName, service.getNetworkEndpoint().getPort().getPortNumber());
       }
     }
 
-    return true;
+    return success;
   }
 
   private final DetectionReportList useWorkflow(
       TargetInfo targetInfo,
       ImmutableList<NetworkService> matchedService,
       PluginWorkflow workflow) {
-    // First we precheck that all registered actions exists.
+    // First we check that all registered actions exists.
     for (String actionName : workflow.getActionsList()) {
       if (!this.actionsCache.containsKey(actionName)) {
         throw new IllegalArgumentException(
             String.format("Plugin definition error: action '%s' not found.", actionName));
+      }
+    }
+
+    // Also check that all registered cleanups are valid.
+    for (PluginAction action : this.actionsCache.values()) {
+      for (String cleanupActionName : action.getCleanupActionsList()) {
+        if (!this.actionsCache.containsKey(cleanupActionName)) {
+          throw new IllegalArgumentException(
+              String.format(
+                  "Plugin definition error: cleanup action '%s' defined in action '%s' not found.",
+                  cleanupActionName, action.getName()));
+        }
       }
     }
 
