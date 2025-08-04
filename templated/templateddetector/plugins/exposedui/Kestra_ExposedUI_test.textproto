@@ -39,8 +39,21 @@ tests: {
         uri: "/api/v1/main/executions/company.team/tsunami_security_scanner"
         status: 200
         body_content:
-          '"namespace":"company.team"'
-          '"flowId":"tsunami_security_scanner"'
+            '{"id":"1akWxARie7J99zysiimsrZ","namespace":"company.team","flowId":"tsunami_security_scanner","flowRevision":9,"labels":[{"key":"system.correlationId","value":"1akWxARie7J99zysiimsrZ"}],"state":{"current":"CREATED","histories":[{"state":"CREATED","date":"2025-08-04T15:20:41.552250928Z"}],"startDate":"2025-08-04T15:20:41.552250928Z","duration":"PT0.003091614S"},"originalId":"1akWxARie7J99zysiimsrZ","deleted":false,"metadata":{"attemptNumber":1,"originalCreatedDate":"2025-08-04T15:20:41.552255958Z"},"url":"/ui/main/executions/company.team/tsunami_security_scanner/1akWxARie7J99zysiimsrZ"}'
+      },
+      {
+        uri: "/api/v1/main/executions/1akWxARie7J99zysiimsrZ?deleteLogs=true&deleteMetrics=true&deleteStorage=true"
+        status: 204
+      },
+      {
+        uri: "/api/v1/main/flows/delete/by-ids"
+        status: 200
+        condition: {
+          body_content: '[{"id":"tsunami_security_scanner","namespace":"company.team","enabled":true}]'
+          headers: [
+            { name: "Content-Type" value: "application/json" }
+          ]
+        }
       }
     ]
   }

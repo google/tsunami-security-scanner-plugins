@@ -81,6 +81,15 @@ actions: {
         conditions: { body {} contains: '"flowId":"tsunami_security_scanner"' }
         conditions: { body {} contains: '"namespace":"company.team"' }
       }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"id\":\"([a-zA-Z0-9]+)\",\"namespace\""
+            variable_name: "executionid"
+          }
+        ]
+      }
     }
   }
 }
@@ -95,6 +104,31 @@ actions: {
   callback_server: { action_type: CHECK }
 }
 
+actions: {
+  name: "remove_tsunami_flow_execution"
+  http_request: {
+    method: DELETE
+    uri: "/api/v1/main/executions/{{ executionid }}?deleteLogs=true&deleteMetrics=true&deleteStorage=true"
+    response: {
+      http_status: 204
+    }
+  }
+}
+
+actions: {
+  name: "remove_tsunami_flow"
+  http_request: {
+    method: DELETE
+    uri: "/api/v1/main/flows/delete/by-ids"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: '[{"id":"tsunami_security_scanner","namespace":"company.team","enabled":true}]'
+    response: {
+      http_status: 200
+    }
+  }
+}
 
 #############
 # WORKFLOWS #
@@ -106,6 +140,8 @@ workflows: {
     "create_tsunami_flow",
     "execute_tsunami_flow",
     "sleep",
-    "check_callback_server_logs"
+    "check_callback_server_logs",
+    "remove_tsunami_flow_execution",
+    "remove_tsunami_flow"
   ]
 }
