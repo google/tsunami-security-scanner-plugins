@@ -107,10 +107,6 @@ public final class TemplatedDetectorDynamicTest {
       initMockCallbackServer(testCase);
     }
 
-    if (testCase.hasMockHttpServer()) {
-      initMockHttpServer(testCase);
-    }
-
     // initialize the engine and retrieve the detector.
     var detectors = initializeDetectors();
     if (!detectors.containsKey(pluginName)) {
@@ -119,6 +115,11 @@ public final class TemplatedDetectorDynamicTest {
               + pluginName
               + "' not found (ensure the tested_plugin field is set correctly).");
     }
+
+    if (testCase.hasMockHttpServer()) {
+      initMockHttpServer(testCase);
+    }
+
     var detector = detectors.get(pluginName);
     var targetInfo = targetInfoBuilder.build();
     var netServices = netServicesBuilder.build();
