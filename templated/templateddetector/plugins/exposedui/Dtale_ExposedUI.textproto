@@ -7,7 +7,7 @@
 
 info: {
   type: VULN_DETECTION
-  name: "Dtale_CVE_2024_9016"
+  name: "Dtale_ExposedUI"
   author: "VickyTheViking"
   version: "1.0"
 }
@@ -15,16 +15,12 @@ info: {
 finding: {
   main_id: {
     publisher: "GOOGLE"
-    value: "CVE-2024-9016"
+    value: "DTALE_EXPOSED_UI"
   }
   severity: CRITICAL
-  title: "Remote code execution affecting DocsGPT (CVE-2024-9016)"
-  description: "D-Tale is a visualizer for Pandas data structures. Users hosting D-Tale publicly can be vulnerable to remote code execution allowing attackers to run malicious code on the server."
-  recommendation: "Enable Authentication in the application to prevent unauthorized access."
-  related_id: {
-    publisher: "CVE"
-    value: "CVE-2024-9016"
-  }
+  title: "Remote code execution affecting Dtale"
+  description: "D-Tale is a visualizer for Pandas data structures. Users hosting D-Tale publicly can be vulnerable to remote code execution allowing attackers to run malicious code on the server, this is because D-Tale has a query engine and the query engine allow to run python scripts by design."
+  recommendation: "You can change the query engine or Enable Authentication in the application to prevent unauthorized access. Check out this link for more information: https://github.com/man-group/dtale/blob/master/docs/CONFIGURATION.md"
 }
 
 config: {}

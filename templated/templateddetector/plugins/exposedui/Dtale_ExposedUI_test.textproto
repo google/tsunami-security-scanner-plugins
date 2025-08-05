@@ -2,7 +2,7 @@
 # proto-message: TemplatedPluginTests
 
 config: {
-  tested_plugin: "Dtale_CVE_2024_9016"
+  tested_plugin: "Dtale_ExposedUI"
 }
 
 tests: {
