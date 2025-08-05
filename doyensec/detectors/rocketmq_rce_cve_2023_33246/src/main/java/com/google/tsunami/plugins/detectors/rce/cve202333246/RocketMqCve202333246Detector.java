@@ -96,6 +96,8 @@ public final class RocketMqCve202333246Detector implements VulnDetector {
             .setRecommendation(
                 "Remove RocketMQ from internet exposure and apply the latest patches to mitigate"
                     + " the issue.")
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-33246"))
             .build());
   }
 
@@ -150,6 +152,7 @@ public final class RocketMqCve202333246Detector implements VulnDetector {
     var servicePort = service.getNetworkEndpoint().getPort().getPortNumber();
 
     try (var socket = socketFactory.createSocket(serviceIp, servicePort)) {
+      socket.setSoTimeout(2000);
       socket.getOutputStream().write(payload);
 
       byte[] response = new byte[4096];
