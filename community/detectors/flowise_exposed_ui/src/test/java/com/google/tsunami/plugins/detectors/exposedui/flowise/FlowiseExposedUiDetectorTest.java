@@ -1,6 +1,7 @@
 package com.google.tsunami.plugins.detectors.exposedui.flowise;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.tsunami.plugins.detectors.exposedui.flowise.FlowiseExposedUiDetector.RECOMMENDATION;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -101,9 +102,7 @@ public final class FlowiseExposedUiDetectorTest {
                         .setTitle("Flowise UI Exposed")
                         .setDescription(
                             "Flowise UI instance is exposed without proper authentication.")
-                        .setRecommendation(
-                            "Secure the Flowise UI by implementing proper authentication.\n"
-                                + "Consider restricting access to trusted networks only.")
+                        .setRecommendation(RECOMMENDATION)
                         .addAdditionalDetails(
                             AdditionalDetail.newBuilder()
                                 .setTextData(

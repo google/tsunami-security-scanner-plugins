@@ -18,6 +18,7 @@ package com.google.tsunami.plugins.detectors.exposedui.flowise;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
@@ -60,6 +61,12 @@ public final class FlowiseExposedUiDetector implements VulnDetector {
 
   private final Clock utcClock;
   private final HttpClient httpClient;
+
+  @VisibleForTesting
+  static final String RECOMMENDATION =
+      "Please disable public access to your Flowise instance. You can enable authentication"
+          + " for your instance by following the instructions here:"
+          + " https://docs.flowiseai.com/configuration/authorization/app-level";
 
   @Inject
   FlowiseExposedUiDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
@@ -125,9 +132,7 @@ public final class FlowiseExposedUiDetector implements VulnDetector {
                 .setSeverity(Severity.HIGH)
                 .setTitle("Flowise UI Exposed")
                 .setDescription("Flowise UI instance is exposed without proper authentication.")
-                .setRecommendation(
-                    "Secure the Flowise UI by implementing proper authentication.\n"
-                        + "Consider restricting access to trusted networks only.")
+                .setRecommendation(RECOMMENDATION)
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
                         .setTextData(
