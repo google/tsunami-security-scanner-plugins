@@ -55,3 +55,7 @@ This directory contains plugins contributed by community members.
 #### Arbitrary File Read
 
 *   [CVE-2024-1728 Gradio LFI Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/gradio_cve_2024_1728)
+
+#### Exposed UI / API
+
+*   [Ollama Exposed API Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/ollama_exposed_api)
