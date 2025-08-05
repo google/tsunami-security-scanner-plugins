@@ -19,7 +19,7 @@ public final class UtilityActionRunner implements ActionRunner {
     var actionType = utility.getActionCase();
 
     switch (actionType) {
-      case UtilityAction.ActionCase.SLEEP:
+      case SLEEP:
         return performActionSleep(utility);
       default:
         logger.atSevere().log("Unknown utility type: %s", actionType);

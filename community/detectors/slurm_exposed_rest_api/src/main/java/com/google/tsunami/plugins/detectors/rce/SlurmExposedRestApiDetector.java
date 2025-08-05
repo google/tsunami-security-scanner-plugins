@@ -120,6 +120,27 @@ public class SlurmExposedRestApiDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("SlurmExposedRestApi"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Exposed Slurm REST API Server")
+            .setDescription(
+                "An exposed Slurm REST API server can be exploited by attackers to submit a job"
+                    + " and therefore execute arbitrary OS-level commands on Slurm compute"
+                    + " nodes")
+            .setRecommendation(
+                "Set proper authentication for the Slurm Rest API server and "
+                    + "ensure the API is not publicly exposed through a "
+                    + "misconfigured reverse proxy.")
+            .build());
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
     final String rootUri = buildWebApplicationRootUrl(networkService);
 
@@ -194,22 +215,7 @@ public class SlurmExposedRestApiDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("SlurmExposedRestApi"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Exposed Slurm REST API Server")
-                .setDescription(
-                    "An exposed Slurm REST API server can be exploited by attackers to submit a job"
-                        + " and therefore execute arbitrary OS-level commands on Slurm compute"
-                        + " nodes")
-                .setRecommendation(
-                    "Set proper authentication for the Slurm Rest API server and "
-                        + "ensure the API is not publicly exposed through a "
-                        + "misconfigured reverse proxy."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 

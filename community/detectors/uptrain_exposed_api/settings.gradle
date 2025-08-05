@@ -1,0 +1,8 @@
+rootProject.name = 'uptrain_exposed_api'
+sourceControl {
+    gitRepository("https://github.com/google/tsunami-security-scanner.git") {
+        producesModule("com.google.tsunami:tsunami-common")
+        producesModule("com.google.tsunami:tsunami-plugin")
+        producesModule("com.google.tsunami:tsunami-proto")
+    }
+}

@@ -63,10 +63,16 @@ public final class ComfyUiExposedUi implements VulnDetector {
   @VisibleForTesting static final String VULNERABILITY_REPORT_TITLE = "ComfyUI Exposed UI";
 
   static final String VULNERABILITY_REPORT_DESCRIPTION =
-      "The scanner detected an exposed ComfyUI instance.";
+      "The scanner detected a publicly accessible ComfyUI instance without authentication. This may"
+          + " allow unauthenticated attackers to interact or exploit the instance. The"
+          + " detection was performed by identifying the default ComfyUI interface exposed over"
+          + " HTTP without any access control.";
 
   @VisibleForTesting
-  static final String VULNERABILITY_REPORT_RECOMMENDATION = "Segregate the ComfyUI instance.";
+  static final String VULNERABILITY_REPORT_RECOMMENDATION =
+      "Avoid exposing ComfyUI to the internet. If exposure is"
+          + " required, restrict access using network-level controls such as firewall rules or IP"
+          + " whitelisting";
 
   @VisibleForTesting static final String MANAGER_VERSION_ENDPOINT = "api/manager/version";
 
@@ -83,6 +89,21 @@ public final class ComfyUiExposedUi implements VulnDetector {
   ComfyUiExposedUi(@UtcClock Clock utcClock, HttpClient httpClient) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient);
+  }
+
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
+                    .setValue("COMFYUI_EXPOSED_UI"))
+            .setSeverity(Severity.HIGH)
+            .setTitle(VULNERABILITY_REPORT_TITLE)
+            .setDescription(VULNERABILITY_REPORT_DESCRIPTION)
+            .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION)
+            .build());
   }
 
   // This is the main entry point of VulnDetector.
@@ -187,14 +208,7 @@ public final class ComfyUiExposedUi implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher(VULNERABILITY_REPORT_PUBLISHER))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(VULNERABILITY_REPORT_TITLE)
-                .setDescription(VULNERABILITY_REPORT_DESCRIPTION)
-                .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

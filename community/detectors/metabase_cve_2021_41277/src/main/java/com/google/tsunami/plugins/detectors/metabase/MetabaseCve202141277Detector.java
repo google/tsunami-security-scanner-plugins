@@ -44,9 +44,7 @@ import java.time.Instant;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 
-/**
- * A {@link VulnDetector} that detects MetaBase Local File Inclusion(CVE-2021-41277)
- */
+/** A {@link VulnDetector} that detects MetaBase Local File Inclusion(CVE-2021-41277) */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "MetabaseCve202141277Detector",
@@ -81,9 +79,33 @@ public final class MetabaseCve202141277Detector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2021_41277"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-41277"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Metabase CVE-2021-41277 Local File Inclusion Vulnerability")
+            .setDescription(
+                "Metabase is an open source data analytics platform. In affected "
+                    + "versions a security issue has been discovered with the custom GeoJSON map "
+                    + "(`admin->settings->maps->custom maps->add a map`) support and potential "
+                    + "local file inclusion (including environment variables). URLs were not "
+                    + "validated prior to being loaded. This issue is fixed in a new maintenance "
+                    + "release (0.40.5 and 1.40.5), and any subsequent release after that.")
+            .setRecommendation("upgrade to latest version")
+            .build());
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
-    String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
-        + "api/geojson?url=file:///etc/passwd";
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + "api/geojson?url=file:///etc/passwd";
     try {
       HttpResponse response =
           httpClient.send(get(targetUri).withEmptyHeaders().build(), networkService);
@@ -105,19 +127,7 @@ public final class MetabaseCve202141277Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                    .setValue("CVE_2021_41277"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Metabase CVE-2021-41277 Local File Inclusion Vulnerability")
-                .setDescription("Metabase is an open source data analytics platform. In affected "
-                    + "versions a security issue has been discovered with the custom GeoJSON map "
-                    + "(`admin->settings->maps->custom maps->add a map`) support and potential "
-                    + "local file inclusion (including environment variables). URLs were not "
-                    + "validated prior to being loaded. This issue is fixed in a new maintenance "
-                    + "release (0.40.5 and 1.40.5), and any subsequent release after that.")
-                .setRecommendation("upgrade to latest version")
-        ).build();
+        .setVulnerability(this.getAdvisories().get(0))
+        .build();
   }
 }

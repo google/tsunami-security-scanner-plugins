@@ -26,7 +26,7 @@ import detection_pb2
 import network_service_pb2
 import reconnaissance_pb2
 import vulnerability_pb2
-from third_party.tsunami_plugins.py_plugins.examples import example_py_vuln_detector
+from py_plugins.examples import example_py_vuln_detector
 
 
 # Callback server

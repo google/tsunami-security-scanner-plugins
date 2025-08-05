@@ -21,10 +21,6 @@ import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 import static com.google.tsunami.plugins.detectors.comfyui.exposed.ComfyUiExposedUi.MANAGER_VERSION_ENDPOINT;
 import static com.google.tsunami.plugins.detectors.comfyui.exposed.ComfyUiExposedUi.STATS_ENDPOINT;
-import static com.google.tsunami.plugins.detectors.comfyui.exposed.ComfyUiExposedUi.VULNERABILITY_REPORT_DESCRIPTION;
-import static com.google.tsunami.plugins.detectors.comfyui.exposed.ComfyUiExposedUi.VULNERABILITY_REPORT_PUBLISHER;
-import static com.google.tsunami.plugins.detectors.comfyui.exposed.ComfyUiExposedUi.VULNERABILITY_REPORT_RECOMMENDATION;
-import static com.google.tsunami.plugins.detectors.comfyui.exposed.ComfyUiExposedUi.VULNERABILITY_REPORT_TITLE;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -40,11 +36,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -112,7 +105,8 @@ public final class ComfyUiExposedUiTest {
 
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
 
-    DetectionReport expectedDetection = generateDetectionReport(targetInfo, httpServices.get(0));
+    DetectionReport expectedDetection =
+        generateDetectionReport(detector, targetInfo, httpServices.get(0));
     assertThat(detectionReports.getDetectionReportsList()).containsExactly(expectedDetection);
     assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
   }
@@ -129,27 +123,21 @@ public final class ComfyUiExposedUiTest {
 
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
 
-    DetectionReport expectedDetection = generateDetectionReport(targetInfo, httpServices.get(0));
+    DetectionReport expectedDetection =
+        generateDetectionReport(detector, targetInfo, httpServices.get(0));
     assertThat(detectionReports.getDetectionReportsList()).containsExactly(expectedDetection);
     assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
   }
 
   private DetectionReport generateDetectionReport(
-      TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
+      ComfyUiExposedUi detector, TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
 
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher(VULNERABILITY_REPORT_PUBLISHER))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(VULNERABILITY_REPORT_TITLE)
-                .setDescription(VULNERABILITY_REPORT_DESCRIPTION)
-                .setRecommendation(VULNERABILITY_REPORT_RECOMMENDATION))
+        .setVulnerability(detector.getAdvisories().get(0))
         .build();
   }
 

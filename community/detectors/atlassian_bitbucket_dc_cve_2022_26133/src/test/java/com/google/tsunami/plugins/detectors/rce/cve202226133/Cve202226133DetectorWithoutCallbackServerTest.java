@@ -97,7 +97,8 @@ public final class Cve202226133DetectorWithoutCallbackServerTest {
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
 
     assertThat(detectionReports.getDetectionReportsList())
-        .containsExactly(TestHelper.buildValidDetectionReport(targetInfo, service, fakeUtcClock));
+        .containsExactly(
+            TestHelper.buildValidDetectionReport(detector, targetInfo, service, fakeUtcClock));
   }
 
   @Test

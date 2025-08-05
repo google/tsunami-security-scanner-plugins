@@ -85,6 +85,33 @@ public final class PapercutNgMfVulnDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2023_27350"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-27350"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Papercut NG/MF Authentication Bypass and RCE")
+            .setDescription(
+                "This vulnerability allows remote attackers to bypass authentication"
+                    + " on affected installations of PaperCut NG/MF."
+                    + " Authentication is not required to exploit this vulnerability."
+                    + " The specific flaw exists within the SetupCompleted class and the"
+                    + " issue results from improper access control."
+                    + " An attacker can leverage this vulnerability to bypass authentication"
+                    + " and execute arbitrary code in the context of SYSTEM (Windows) "
+                    + "or Root/Papercut User (Linux).")
+            .setRecommendation(
+                "Update to versions that are at least 20.1.7, 21.2.11, 22.0.9, or any later"
+                    + " version.")
+            .build());
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
     boolean isVulnerable = false;
 
@@ -201,26 +228,7 @@ public final class PapercutNgMfVulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2023_27350"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Papercut NG/MF Authentication Bypass and RCE")
-                .setDescription(
-                    "This vulnerability allows remote attackers to bypass authentication"
-                        + " on affected installations of PaperCut NG/MF."
-                        + " Authentication is not required to exploit this vulnerability."
-                        + " The specific flaw exists within the SetupCompleted class and the"
-                        + " issue results from improper access control."
-                        + " An attacker can leverage this vulnerability to bypass authentication"
-                        + " and execute arbitrary code in the context of SYSTEM (Windows) "
-                        + "or Root/Papercut User (Linux).")
-                .setRecommendation(
-                    "Update to versions that are at least 20.1.7, 21.2.11, 22.0.9, or any later"
-                        + " version."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

@@ -101,6 +101,26 @@ public final class Cve20236014VulnDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2023_6014"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("CVE-2023-6014 MLflow Auth Bypasss Vulnerability")
+            .setRecommendation(
+                "Update the MLflow instances to a version that provides a fix which is newer"
+                    + " than version 2.8.0, and check the user list for potential users that"
+                    + " were created by exploiting this vulnerability.")
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-6014"))
+            .setDescription(VULN_DESCRIPTION)
+            .build());
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
     String targetVulnerabilityUrl =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + VUL_PATH;
@@ -140,21 +160,7 @@ public final class Cve20236014VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2023_6014"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2023-6014 MLflow Auth Bypasss Vulnerability")
-                .setRecommendation(
-                    "Update the MLflow instances to a version that provides a fix which is newer"
-                        + " than version 2.8.0, and check the user list for potential users that"
-                        + " were created by exploiting this vulnerability.")
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-6014"))
-                .setDescription(VULN_DESCRIPTION))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

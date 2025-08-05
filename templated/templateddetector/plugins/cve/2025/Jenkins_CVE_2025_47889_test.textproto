@@ -1,0 +1,83 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Jenkins_CVE_2025_47889"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<html><head><title>Dashboard [Jenkins]</title></head><body></body></html>"
+      },
+      {
+        uri: "/j_acegi_security_check"
+        status: 302
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID.355b1f77=1s1ocf52xs5ojxcsysesofwrz;Path=/;HttpOnly" }
+        ]
+      },
+      {
+        uri: "/manage"
+        status: 200
+        body_content: "<html><title>Manage Jenkins</title></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_invalidLoginRejected_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<html><head><title>Dashboard [Jenkins]</title></head><body></body></html>"
+      },
+      {
+        uri: "/j_acegi_security_check"
+        status: 404
+        body_content: "Invalid username or password"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotJenkins_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<html><title>Some Other App</title></html>"
+      }
+    ]
+  }
+}

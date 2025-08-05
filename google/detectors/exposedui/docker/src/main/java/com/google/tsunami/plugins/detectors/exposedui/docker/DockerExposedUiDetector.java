@@ -82,6 +82,20 @@ public final class DockerExposedUiDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("DOCKER_EXPOSED_UI"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Docker API Exposed Ui")
+            .setDescription(DESCRIPTION)
+            .setRecommendation(FINDING_RECOMMENDATION_TEXT)
+            .addAllAdditionalDetails(additionalDetails)
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting exposed ui detection for Docker API");
@@ -129,17 +143,7 @@ public final class DockerExposedUiDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("DOCKER_EXPOSED_UI"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Docker API Exposed Ui")
-                .setDescription(DESCRIPTION)
-                .setRecommendation(FINDING_RECOMMENDATION_TEXT)
-                .addAllAdditionalDetails(additionalDetails))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }
