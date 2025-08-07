@@ -1,0 +1,116 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Kestra_ExposedUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/v1/main/usages/all"
+        status: 200
+        body_content:
+        '"startUuid"'
+        '"instanceUuid"'
+        '"dailyStatistics"'
+        '"executions"'
+        '"queueType"'
+        '"configurations"'
+        '"flows"'
+      },
+      {
+        uri: "/api/v1/main/flows"
+        status: 200
+        body_content:
+          '"namespace"'
+          '"id":"tsunami_security_scanner"'
+          '"io.kestra.core.tasks.scripts.Bash"'
+      },
+      {
+        uri: "/api/v1/main/executions/company.team/tsunami_security_scanner"
+        status: 200
+        body_content:
+            '{"id":"1akWxARie7J99zysiimsrZ","namespace":"company.team","flowId":"tsunami_security_scanner","flowRevision":9,"labels":[{"key":"system.correlationId","value":"1akWxARie7J99zysiimsrZ"}],"state":{"current":"CREATED","histories":[{"state":"CREATED","date":"2025-08-04T15:20:41.552250928Z"}],"startDate":"2025-08-04T15:20:41.552250928Z","duration":"PT0.003091614S"},"originalId":"1akWxARie7J99zysiimsrZ","deleted":false,"metadata":{"attemptNumber":1,"originalCreatedDate":"2025-08-04T15:20:41.552255958Z"},"url":"/ui/main/executions/company.team/tsunami_security_scanner/1akWxARie7J99zysiimsrZ"}'
+      },
+      {
+        uri: "/api/v1/main/executions/1akWxARie7J99zysiimsrZ?deleteLogs=true&deleteMetrics=true&deleteStorage=true"
+        status: 204
+      },
+      {
+        uri: "/api/v1/main/flows/delete/by-ids"
+        status: 200
+        condition: {
+          body_content: '[{"id":"tsunami_security_scanner","namespace":"company.team","enabled":true}]'
+          headers: [
+            { name: "Content-Type" value: "application/json" }
+          ]
+        }
+      }
+    ]
+  }
+}
+
+
+tests: {
+  name: "whenNotKestra_returnsNoVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri:  "/api/v1/main/usages/all"
+        status: 400
+        body_content: "..."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/v1/main/usages/all"
+        status: 200
+        body_content:
+            '"startUuid"'
+                '"instanceUuid"'
+                '"dailyStatistics"'
+                '"executions"'
+                '"queueType"'
+                '"configurations"'
+                '"flows"'
+      },
+      {
+        uri: "/api/v1/main/flows"
+        status: 200
+        body_content:
+            'id: tsunami_security_scanner\nnamespace: company.team\n\ntasks:\n  - id: bash\n    type: \"io.kestra.core.tasks.scripts.Bash\"\n    commands:\n      - \'curl {{ T_CBS_URI }}\'\n'
+      },
+      {
+        uri: "/api/v1/main/executions/company.team/tsunami_security_scanner"
+        status: 200
+        body_content:
+            '"namespace":"company.team"'
+                '"flowId":"tsunami_security_scanner"'
+      }
+    ]
+  }
+}
