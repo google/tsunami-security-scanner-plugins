@@ -1,0 +1,151 @@
+name: prp-issue-workflow
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  on-request-post-welcome:
+    if: github.event.label.name == 'PRP:Request'
+    runs-on: ubuntu-latest
+
+    permissions:
+      issues: write
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      GH_OWNER: ${{ github.repository_owner }}
+      GH_REPO_NAME: ${{ github.event.repository.name }}
+      NUMBER: ${{ github.event.issue.number }}
+      AUTHOR: ${{ github.event.issue.user.login }}
+
+    steps:
+      - name: Assign to author
+        run: gh issue edit "$NUMBER" --add-assignee "$AUTHOR"
+
+      - name: Post comment
+        run: gh issue comment "$NUMBER" --body "$BODY"
+        env:
+          BODY: |
+              Welcome to the Tsunami patch reward program!
+
+              Your issue has been added to our triage queue and will reviewed
+              shortly. The panel usually takes a decision once per week, so it
+              can take up to a week before you hear back from us.
+
+              Please, do not start the work until the panel has reached a
+              decision. Although we always welcome contributions, unapproved
+              work is not eligible for a reward.
+
+              *~The Tsunami PRP team*
+
+      - name: Compute contributors stats
+        env:
+          GRAPHQL_QUERY: |
+            query($name: String!, $owner: String!, $author: String!, $label: String!) {
+              repository(owner: $owner, name: $name) {
+                issues(states:OPEN, filterBy:{assignee: $author}, labels:[$label]){
+                  totalCount
+                }
+              }
+            }
+        run: |
+          numMainIssues="$(gh api graphql \
+              -F author=$AUTHOR -F owner=$GH_OWNER -F name=$GH_REPO_NAME\
+              -F label="Contributor main" \
+              -f query="$GRAPHQL_QUERY" \
+              --jq '.data.repository.issues.totalCount')"
+          numQueueIssues="$(gh api graphql \
+              -F author=$AUTHOR -F owner=$GH_OWNER -F name=$GH_REPO_NAME\
+              -F label="Contributor queue" \
+              -f query="$GRAPHQL_QUERY" \
+              --jq '.data.repository.issues.totalCount')"
+          echo 'NUM_MAIN_ISSUES='$numMainIssues >> $GITHUB_ENV
+          echo 'NUM_QUEUED_ISSUES='$numQueueIssues >> $GITHUB_ENV
+
+      - name: Post contributor stats
+        run: gh issue comment "$NUMBER" --body "$BODY"
+        env:
+          BODY: |
+              *This message is addressed to the Tsunami panel.*
+
+              ### Contributor stats
+
+              - The contributor has [${{ env.NUM_MAIN_ISSUES }} issues](https://github.com/${{ env.GH_REPO }}/issues?q=is%3Aissue%20state%3Aopen%20author%3A${{ env.AUTHOR }}%20label%3A%22Contributor%20main%22) tagged as main;
+              - The contributor has [${{ env.NUM_QUEUED_ISSUES }} issues](https://github.com/${{ env.GH_REPO }}/issues?q=is%3Aissue%20state%3Aopen%20author%3A${{ env.AUTHOR }}%20label%3A%22Contributor%20queue%22) tagged as queue.
+
+              ### Useful links
+
+              - [All open issues from this contributor](https://github.com/${{ env.GH_REPO }}/issues?q=is%3Aissue%20state%3Aopen%20author%3A${{ env.AUTHOR }})
+              - [All open PRs from this contributor](https://github.com/${{ env.GH_REPO }}/issues?q=is%3Apr+is%3Aopen+author%3A${{ env.AUTHOR }})
+
+  on-accepted-post-doc:
+    if: github.event.label.name == 'PRP:Accepted'
+    runs-on: ubuntu-latest
+
+    permissions:
+      issues: write
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      NUMBER: ${{ github.event.issue.number }}
+      AUTHOR: ${{ github.event.issue.user.login }}
+
+
+    steps:
+      - name: Post comment
+        run: gh issue comment "$NUMBER" --body "$BODY"
+        env:
+          BODY: |
+              Congratulations, your request has been approved! 🎉
+
+              This means that you can start working on this contribution.
+
+              ❗ Please take a moment to fill the [participation form](https://bughunters.google.com/report/tsunami)
+
+              If you are unsure where to start, we have compiled a set of
+              useful guides in our documentation:
+
+              📖 https://google.github.io/tsunami-security-scanner/howto/
+
+              *Unfortunately, our documentation is not yet complete for
+              fingerprints, Python plugins and weak credential detectors. For
+              these, we recommend looking at existing plugins.*
+
+              📢 Read latest announcements on [GitHub pages](https://google.github.io/tsunami-security-scanner/)
+
+              *~The Tsunami PRP team*
+
+  on-queue-post-explanation:
+    if: github.event.label.name == 'Contributor queue'
+    runs-on: ubuntu-latest
+
+    permissions:
+      issues: write
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      NUMBER: ${{ github.event.issue.number }}
+      AUTHOR: ${{ github.event.issue.user.login }}
+
+    steps:
+      - name: Post comment
+        run: gh issue comment "$NUMBER" --body "$BODY"
+        env:
+          BODY: |
+              This issue has been put in your contributor queue. This usually
+              means that you already are working on a contribution and the
+              panel is waiting for your other contributions to be fully
+              merged.
+
+              An issue in your queue is not pre-approved. Any issue that is
+              not explicitely approved by the panel will not be eligible for
+              a reward.
+
+              Unless there is an emergency, an issue in your queue cannot be
+              claimed by another contributor.
+
+              *~The Tsunami PRP team*
