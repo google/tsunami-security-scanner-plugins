@@ -243,6 +243,7 @@ public final class KubeflowRceDetectorTest {
                 && request.getMethod().equals("POST")
                 && request
                     .getBody()
+                    .readString(StandardCharsets.UTF_8)
                     .equals(
                         "{\"description\":\"\",\"display_name\":\"Run of TsunamiPipeline2"
                             + " (f510b)\",\"experiment_id\":\"2aae0438-bc6b-48af-bdcd-78f333028426\",\"pipeline_version_reference\":{\"pipeline_id\":\"c71bf706-24a9-410a-9aec-d5c1264d205f\",\"pipeline_version_id\":\"8373284f-596b-42b7-af6e-d8fc72e14300\"},\"runtime_config\":{\"parameters\":{}},\"service_account\":\"\"}")) {
