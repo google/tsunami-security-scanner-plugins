@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.exposedui.jupyter;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.exposedui.jupyter.JupyterExposedUiDetector.FINDING_RECOMMENDATION_TEXT;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -31,12 +30,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -163,16 +159,7 @@ public final class JupyterExposedUiDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("JUPYTER_NOTEBOOK_EXPOSED_UI"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Jupyter Notebook Exposed Ui")
-                        .setDescription("Jupyter Notebook is not password or token protected")
-                        .setRecommendation(FINDING_RECOMMENDATION_TEXT))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

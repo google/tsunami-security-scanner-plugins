@@ -66,28 +66,18 @@ import org.apache.activemq.util.MarshallingSupport;
     type = PluginType.VULN_DETECTION,
     name = "Apache ActiveMQ RCE CVE-2023-46604 Detector",
     version = "0.1",
-    description = Cve202346604Detector.VULN_DESCRIPTION_OF_OOB_VERIFY,
+    description = Cve202346604Detector.DESCRIPTION,
     author = "hh-hunter",
     bootstrapModule = Cve202346604DetectorBootstrapModule.class)
 @ForServiceName({"apachemq"})
 public final class Cve202346604Detector implements VulnDetector {
 
   @VisibleForTesting
-  static final String VULN_DESCRIPTION_OF_OOB_VERIFY =
+  static final String DESCRIPTION =
       "Apache ActiveMQ is vulnerable to Remote Code Execution (RCE). This vulnerability could allow"
           + " a remote attacker with network access to a broker to execute arbitrary shell commands"
           + " by manipulating serialized class types within the OpenWire protocol, causing the"
-          + " broker to instantiate any class on the classpath. The presence of this vulnerability"
-          + " was confirmed through an out-of-band callback.";
-
-  @VisibleForTesting
-  static final String VULN_DESCRIPTION_OF_VERSION =
-      "Apache ActiveMQ is susceptible to a Remote Code Execution (RCE) vulnerability. This flaw"
-          + " could enable a remote attacker with network access to a broker to execute arbitrary"
-          + " shell commands by manipulating serialized class types within the OpenWire protocol,"
-          + " thereby causing the broker to instantiate any class on the classpath. Although the"
-          + " vulnerability was identified based on the server's version number, it has not been"
-          + " verified.";
+          + " broker to instantiate any class on the classpath.";
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
@@ -142,6 +132,26 @@ public final class Cve202346604Detector implements VulnDetector {
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
+        .build();
+  }
+
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(getAdvisory(AdditionalDetail.getDefaultInstance()));
+  }
+
+  Vulnerability getAdvisory(AdditionalDetail details) {
+    return Vulnerability.newBuilder()
+        .setMainId(
+            VulnerabilityId.newBuilder()
+                .setPublisher("TSUNAMI_COMMUNITY")
+                .setValue("CVE_2023_46604"))
+        .addRelatedId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-46604"))
+        .setSeverity(useOobVerifyVulnerable ? Severity.CRITICAL : Severity.HIGH)
+        .setTitle("CVE-2023-46604 Apache ActiveMQ RCE")
+        .setRecommendation("Upgrade to version 5.15.16, 5.16.7, 5.17.6, or 5.18.3")
+        .setDescription(DESCRIPTION)
+        .addAdditionalDetails(details)
         .build();
   }
 
@@ -255,20 +265,7 @@ public final class Cve202346604Detector implements VulnDetector {
             useOobVerifyVulnerable
                 ? DetectionStatus.VULNERABILITY_VERIFIED
                 : DetectionStatus.VULNERABILITY_PRESENT)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2023_46604"))
-                .setSeverity(useOobVerifyVulnerable ? Severity.CRITICAL : Severity.HIGH)
-                .setTitle("CVE-2023-46604 Apache ActiveMQ RCE")
-                .setRecommendation("Upgrade to version 5.15.16, 5.16.7, 5.17.6, or 5.18.3")
-                .setDescription(
-                    useOobVerifyVulnerable
-                        ? VULN_DESCRIPTION_OF_OOB_VERIFY
-                        : VULN_DESCRIPTION_OF_VERSION)
-                .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
+        .setVulnerability(getAdvisory(AdditionalDetail.newBuilder().setTextData(details).build()))
         .build();
   }
 

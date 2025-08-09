@@ -33,12 +33,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -113,23 +110,7 @@ public final class Cve202322518VuLnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE-2023-22518"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(
-                            "Atlassian Confluence Data Center Improper Authorization"
-                                + " CVE-2023-22515")
-                        .setDescription(
-                            "This Improper Authorization vulnerability allows an unauthenticated"
-                                + " attacker to reset Confluence and create a Confluence instance"
-                                + " administrator account.")
-                        .setRecommendation(
-                            "Patch the confluence version to one of the following versions: "
-                                + "7.19.16, 8.3.4, 8.4.4, 8.5.3, 8.6.1"))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

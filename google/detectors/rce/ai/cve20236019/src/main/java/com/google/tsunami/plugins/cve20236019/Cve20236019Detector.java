@@ -75,6 +75,24 @@ public final class Cve20236019Detector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE-2023-6019"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("CVE-2023-6019")
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-6019"))
+            .setDescription(
+                "A command injection exists in Ray's cpu_profile URL parameter allowing"
+                    + " attackers to execute os commands on the system running the ray"
+                    + " dashboard remotely without authentication.")
+            .setRecommendation("Upgrade Ray to version 2.8.0. or later.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
 
@@ -145,19 +163,7 @@ public final class Cve20236019Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE-2023-6019"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2023-6019")
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-6019"))
-                .setDescription(
-                    "A command injection exists in Ray's cpu_profile URL parameter allowing"
-                        + " attackers to execute os commands on the system running the ray"
-                        + " dashboard remotely without authentication.")
-                .setRecommendation("Upgrade Ray to version 2.8.0. or later."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

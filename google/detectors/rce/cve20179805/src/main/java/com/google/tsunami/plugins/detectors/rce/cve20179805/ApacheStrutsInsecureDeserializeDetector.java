@@ -92,6 +92,25 @@ public final class ApacheStrutsInsecureDeserializeDetector implements VulnDetect
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2017_9805"))
+            .setSeverity(Severity.CRITICAL)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2017-9805"))
+            .setTitle("Apache Struts Command Injection via Unsafe Deserialization (CVE-2017-9805)")
+            .setDescription(
+                "The REST Plugin in Apache Struts 2.1.1 through 2.3.x before 2.3.34 and 2.5.x"
+                    + " before 2.5.13 uses an XStreamHandler with an instance of XStream for"
+                    + " deserialization without any type filtering, which can lead to Remote Code"
+                    + " Execution when deserializing XML payloads.")
+            .setRecommendation("Upgrade to Struts 2.5.13 or Struts 2.3.34.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log(
@@ -173,19 +192,7 @@ public final class ApacheStrutsInsecureDeserializeDetector implements VulnDetect
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2017_9805"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle(
-                    "Apache Struts Command Injection via Unsafe Deserialization (CVE-2017-9805)")
-                .setDescription(
-                    "The REST Plugin in Apache Struts 2.1.1 through 2.3.x before 2.3.34 and 2.5.x"
-                        + " before 2.5.13 uses an XStreamHandler with an instance of XStream for"
-                        + " deserialization without any type filtering, which can lead to Remote"
-                        + " Code Execution when deserializing XML payloads.")
-                .setRecommendation("Upgrade to Struts 2.5.13 or Struts 2.3.34."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

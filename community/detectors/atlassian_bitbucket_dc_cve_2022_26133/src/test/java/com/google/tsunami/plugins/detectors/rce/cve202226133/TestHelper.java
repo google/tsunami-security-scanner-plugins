@@ -22,11 +22,8 @@ import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.time.Instant;
 
 final class TestHelper {
@@ -48,26 +45,16 @@ final class TestHelper {
   }
 
   static DetectionReport buildValidDetectionReport(
-      TargetInfo targetInfo, NetworkService service, FakeUtcClock fakeUtcClock) {
+      Cve202226133Detector detector,
+      TargetInfo targetInfo,
+      NetworkService service,
+      FakeUtcClock fakeUtcClock) {
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo())
         .setNetworkService(bitbucketClusterService())
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2022_26133"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Atlassian Bitbucket DC RCE (CVE-2022-26133)")
-                .setDescription(
-                    "SharedSecretClusterAuthenticator in Atlassian Bitbucket Data Center versions"
-                        + " 5.14.0 and later before 7.6.14, 7.7.0 and later prior to 7.17.6,"
-                        + " 7.18.0 and later prior to 7.18.4, 7.19.0 and later prior"
-                        + " to 7.19.4, and 7.20.0 allow a remote, unauthenticated attacker to "
-                        + "execute arbitrary code via Java deserialization."))
+        .setVulnerability(detector.getAdvisories().get(0))
         .build();
   }
 

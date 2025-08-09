@@ -18,9 +18,6 @@ package com.google.tsunami.plugins.detectors.rce.cve202342793;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.rce.cve202342793.TeamCityAuthBypassDetector.RECOMMENDATION;
-import static com.google.tsunami.plugins.detectors.rce.cve202342793.TeamCityAuthBypassDetector.VULNERABILITY_REPORT_TITLE;
-import static com.google.tsunami.plugins.detectors.rce.cve202342793.TeamCityAuthBypassDetector.VULN_DESCRIPTION;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -36,11 +33,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -157,16 +151,7 @@ public final class TeamCityAuthBypassDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("CVE_2023_42793"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle(VULNERABILITY_REPORT_TITLE)
-                        .setDescription(VULN_DESCRIPTION)
-                        .setRecommendation(RECOMMENDATION))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

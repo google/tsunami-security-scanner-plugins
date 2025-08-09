@@ -64,6 +64,24 @@ public final class VBulletinCve201916759Detector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2019_16759"))
+            .setSeverity(Severity.CRITICAL)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2019-16759"))
+            .setTitle("vBulletin Pre-Auth RCE Vulnerability (CVE-2019-16759)")
+            .setDescription(
+                "Unauthenticated attacked can gain privileged access and control over any"
+                    + " vBulletin server running versions 5.0.0 up to 5.5.4, and potentially"
+                    + " lock organizations out from their own sites.")
+            .setRecommendation("Upgrade vBulletin to the latest version with security patches.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("VBulletinRceVulnDetector starts detecting.");
@@ -112,18 +130,7 @@ public final class VBulletinCve201916759Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2019_16759"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("vBulletin Pre-Auth RCE Vulnerability (CVE-2019-16759)")
-                .setDescription(
-                    "Unauthenticated attacked can gain privileged access and control over any"
-                        + " vBulletin server running versions 5.0.0 up to 5.5.4, and potentially"
-                        + " lock organizations out from their own sites.")
-                .setRecommendation(
-                    "Upgrade vBulletin to the latest version with security patches."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

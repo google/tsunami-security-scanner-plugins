@@ -29,12 +29,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -101,20 +98,7 @@ public final class Cve202122205VulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2021_22205"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("CVE-2021-22205 GitLab CE/EE Unauthenticated RCE using ExifTool")
-                        .setRecommendation(
-                            "GitLab users should upgrade to the latest version of GitLab as soon as"
-                                + " possible. In addition, ideally, GitLab should not be an "
-                                + "internet facing service. If you need to access your GitLab from"
-                                + " the internet, consider placing it behind a VPN.")
-                        .setDescription(Cve202122205VulnDetector.VULN_DESCRIPTION))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

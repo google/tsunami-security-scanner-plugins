@@ -100,6 +100,31 @@ public final class JenkinsCliDeserializeRceDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2017_1000353"))
+            .setSeverity(Severity.CRITICAL)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2017-1000353"))
+            .setTitle("Jenkins CLI Deserialization RCE")
+            .setDescription(
+                "Jenkins versions 2.56 and earlier as well as 2.46.1 LTS and earlier are"
+                    + " vulnerable to an unauthenticated remote code execution. An"
+                    + " unauthenticated remote code execution vulnerability allowed attackers"
+                    + " to transfer a serialized Java `SignedObject` object to the Jenkins"
+                    + " CLI, that would be deserialized using a new `ObjectInputStream`,"
+                    + " bypassing the existing blacklist-based protection mechanism. We're"
+                    + " fixing this issue by adding `SignedObject` to the blacklist. We're"
+                    + " also backporting the new HTTP CLI protocol from Jenkins 2.54 to LTS"
+                    + " 2.46.2, and deprecating the remoting-based (i.e. Java serialization)"
+                    + " CLI protocol, disabling it by default.")
+            .setRecommendation("Upgrade Jenkins to the latest version.")
+            .build());
+  }
+
   /**
    * Check if the web service is vulnerable. This implements the logic in
    * https://ssd-disclosure.com/ssd-advisory-cloudbees-jenkins-unauthenticated-code-execution/.
@@ -228,26 +253,7 @@ public final class JenkinsCliDeserializeRceDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("CVE_2017_1000353"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Jenkins CLI Deserialization RCE")
-                .setDescription(
-                    "Jenkins versions 2.56 and earlier as well as 2.46.1 LTS and earlier are"
-                        + " vulnerable to an unauthenticated remote code execution. An"
-                        + " unauthenticated remote code execution vulnerability allowed attackers"
-                        + " to transfer a serialized Java `SignedObject` object to the Jenkins"
-                        + " CLI, that would be deserialized using a new `ObjectInputStream`,"
-                        + " bypassing the existing blacklist-based protection mechanism. We're"
-                        + " fixing this issue by adding `SignedObject` to the blacklist. We're"
-                        + " also backporting the new HTTP CLI protocol from Jenkins 2.54 to LTS"
-                        + " 2.46.2, and deprecating the remoting-based (i.e. Java serialization)"
-                        + " CLI protocol, disabling it by default.")
-                .setRecommendation("Upgrade Jenkins to the latest version."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

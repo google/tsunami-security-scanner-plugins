@@ -37,10 +37,7 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -120,22 +117,7 @@ public final class SlurmExposedRestApiDaemonVuLnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("SlurmExposedRestApi"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Exposed Slurm REST API Server")
-                        .setDescription(
-                            "An exposed Slurm REST API server can be exploited by attackers to"
-                                + " submit a job and therefore execute arbitrary OS-level commands"
-                                + " on Slurm compute nodes")
-                        .setRecommendation(
-                            "Set proper authentication for the Slurm Rest API server and "
-                                + "ensure the API is not publicly exposed through a "
-                                + "misconfigured reverse proxy."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
     assertThat(mockTargetService.getRequestCount()).isEqualTo(2);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);

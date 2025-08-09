@@ -21,7 +21,7 @@ import java.io.IOException;
 public final class HttpActionRunner implements ActionRunner {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  private final HttpClient httpClient;
+  private HttpClient httpClient;
   private final boolean debug;
 
   public HttpActionRunner(HttpClient httpClient, boolean debug) {
@@ -35,6 +35,17 @@ public final class HttpActionRunner implements ActionRunner {
       throw new IllegalArgumentException(
           String.format(
               "Action '%s' is not an HTTP action. Is the plugin misconfigured?", action.getName()));
+    }
+
+    // Configure the client to follow redirects or not accordingly to the configuration. If we are
+    // in debug mode, we make the user aware of the configuration.
+    boolean shouldFollowRedirects =
+        !action.getHttpRequest().getClientOptions().getDisableFollowRedirects();
+    this.httpClient = this.httpClient.modify().setFollowRedirects(shouldFollowRedirects).build();
+    if (this.debug) {
+      logger.atInfo().log(
+          "For action '%s', client will follow redirects: %s",
+          action.getName(), shouldFollowRedirects);
     }
 
     return action.getHttpRequest().getUriList().stream()
@@ -62,7 +73,8 @@ public final class HttpActionRunner implements ActionRunner {
             .setUrl(targetUrl)
             .setMethod(HttpMethod.valueOf(httpAction.getMethod().toString()));
     HttpHeaders.Builder headersBuilder = HttpHeaders.builder();
-    httpAction.getHeadersList()
+    httpAction
+        .getHeadersList()
         .forEach(
             header ->
                 headersBuilder.addHeader(
@@ -121,7 +133,8 @@ public final class HttpActionRunner implements ActionRunner {
       default:
         throw new IllegalArgumentException(
             String.format(
-                "Invalid expectation type: %s (did you specify body or header for your expectation?)",
+                "Invalid expectation type: %s (did you specify body or header for your"
+                    + " expectation?)",
                 expectation.getExpectationCase()));
     }
   }

