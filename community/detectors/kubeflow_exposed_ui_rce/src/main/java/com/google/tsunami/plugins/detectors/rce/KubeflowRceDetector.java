@@ -65,7 +65,6 @@ import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import okio.Buffer;
-import org.apache.commons.lang3.RandomStringUtils;
 
 /** A {@link VulnDetector} that detects publicly exposed kubeflow instances. */
 @PluginInfo(
@@ -259,8 +258,7 @@ public final class KubeflowRceDetector implements VulnDetector {
                 post(rootUrl
                         + String.format(
                             "pipeline/apis/v2beta1/pipelines/upload?name=%s&description=&namespace=%s",
-                            "TsunamiPipeline-" + RandomStringUtils.randomAlphanumeric(10),
-                            nameSpace))
+                            "TsunamiPipeline-" + generateRandomAlphanumeric(), nameSpace))
                     .setHeaders(
                         HttpHeaders.builder()
                             .addHeader(
@@ -421,7 +419,7 @@ public final class KubeflowRceDetector implements VulnDetector {
     try {
       JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
       JsonArray pipelineVersions = jsonObject.getAsJsonArray("pipeline_versions");
-      if (!pipelineVersions.isEmpty()) {
+      if (pipelineVersions.size() > 0) {
         JsonObject firstPipelineVersion = pipelineVersions.get(0).getAsJsonObject();
         return firstPipelineVersion.get("pipeline_version_id").getAsString();
       }
@@ -431,6 +429,32 @@ public final class KubeflowRceDetector implements VulnDetector {
     return "";
   }
 
+  private static String generateRandomAlphanumeric() {
+    String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    StringBuilder result = new StringBuilder();
+    java.util.Random random = new java.util.Random();
+    for (int i = 0; i < 10; i++) {
+      result.append(characters.charAt(random.nextInt(characters.length())));
+    }
+    return result.toString();
+  }
+
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("KUBEFLOW_EXPOSED_API_RCE"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Exposed kubeflow API")
+            .setDescription(
+                "This vulnerability check exposed Kubeflow API by executing a OS command in a"
+                    + " kubeflow pipeline.")
+            .build());
+  }
+
   private DetectionReport buildDetectionReport(
       TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
     return DetectionReport.newBuilder()
@@ -438,17 +462,7 @@ public final class KubeflowRceDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("KUBEFLOW_EXPOSED_API_RCE"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Exposed kubeflow API")
-                .setDescription(
-                    "This vulnerability check exposed Kubeflow API by executing a OS command in a"
-                        + " kubeflow pipeline."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }
