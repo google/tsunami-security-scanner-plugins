@@ -71,11 +71,6 @@ actions: {
 #############
 
 workflows: {
-  variables: [
-    { name: "payload" value: "echo tsunami$((1250+50*2))" },
-    { name: "payload_result" value: "tsunami1350" }
-  ]
-
   actions: [
     "fingerprint_pinot",
     "check_auth_bypass"
