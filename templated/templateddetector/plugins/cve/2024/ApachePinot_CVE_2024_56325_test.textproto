@@ -40,7 +40,7 @@ tests: {
       {
         uri: "/tables\\;."
         status: 403
-        body_content: '{"tables":[]}'
+        body_content: '{"code":401,"error":"HTTP 401 Unauthorized"}'
       }
     ]
   }
