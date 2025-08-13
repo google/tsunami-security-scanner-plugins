@@ -15,14 +15,14 @@ info: {
 finding: {
   main_id: {
     publisher: "GOOGLE"
-    value: "KESTRA_EXPOSED_UI"
+    value: "FLOWABLE_EXPOSED_UI"
   }
-  title: "Exposed Kestra instance"
-  description: "Kestra instance is exposed and can be used to compromise the system."
+  title: "Exposed Flowable instance"
+  description: "Flowable instance is exposed and can be used to compromise the system."
   recommendation:
-    "Configure authentication or ensure the Kestra instance is not exposed "
+    "Configure authentication or ensure the Flowable instance is not exposed "
     "to the network. See "
-    "https://kestra.io/docs/enterprise/auth/authentication for details."
+    "https://www.flowable.com/open-source/docs/header-rest/#installation-and-authentication."
   severity: CRITICAL
 }
 
