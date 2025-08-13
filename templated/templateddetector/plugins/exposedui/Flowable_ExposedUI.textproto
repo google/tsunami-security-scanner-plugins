@@ -35,9 +35,6 @@ actions: {
   http_request: {
     method: GET
     uri: "/flowable-rest/docs/"
-    headers: [
-      { name: "Authorization" value: "Basic cmVzdC1hZG1pbjp0ZXN0" }
-    ]
     response: {
       http_status: 200
       expect_all: {
@@ -54,7 +51,6 @@ actions: {
     method: POST
     uri: "/flowable-rest/service/repository/deployments"
     headers: [
-      { name: "Authorization" value: "Basic cmVzdC1hZG1pbjp0ZXN0" },
       { name: "Content-Type" value: "multipart/form-data; boundary=------------------------gxyhRpqEx2dfbXUDrMqEEL" }
     ]
     data: '--------------------------gxyhRpqEx2dfbXUDrMqEEL\r\nContent-Disposition: form-data; name="file"; filename="jsScript.bpmn"\r\nContent-Type: application/octet-stream\r\n\r\n<?xml version="1.0" encoding="UTF-8"?>\n<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"\nxmlns:flowable="http://flowable.org/bpmn"\ntargetNamespace="Examples">\n\n<process id="jsScriptProcess" name="JavaScript Script Process">\n<startEvent id="start" />\n<sequenceFlow sourceRef="start" targetRef="scriptTask" />\n<scriptTask id="scriptTask" name="Execute Command via JavaScript"\nscriptFormat="javascript"\nflowable:autoStoreVariables="true">\n<script>\nvar ProcessBuilder = Java.type(\'java.lang.ProcessBuilder\');\nvar Arrays = Java.type(\'java.util.Arrays\');\nvar Scanner = Java.type(\'java.util.Scanner\');\n\nvar processBuilder = new ProcessBuilder(Arrays.asList(\'wget\', \'{{ T_CBS_URI }}\'));\nvar process = processBuilder.start();\n\nvar scanner = new Scanner(process.getInputStream()).useDelimiter("\\A");\nvar result = scanner.hasNext() ? scanner.next() : "";\n\nexecution.setVariable(\'commandOutput\', result);\n</script>\n</scriptTask>\n<sequenceFlow sourceRef="scriptTask" targetRef="end" />\n<endEvent id="end" />\n</process>\n\n</definitions>\n\r\n--------------------------gxyhRpqEx2dfbXUDrMqEEL--\r\n'
@@ -76,7 +72,6 @@ actions: {
     uri: "/flowable-rest/service/runtime/process-instances"
     data: '{"processDefinitionKey": "jsScriptProcess"}'
     headers: [
-      { name: "Authorization" value: "Basic cmVzdC1hZG1pbjp0ZXN0" },
       { name: "Content-Type" value: "application/json" }
     ]
     response: {
@@ -105,6 +100,9 @@ actions: {
 #############
 # WORKFLOWS #
 #############
+config {
+  debug: true
+}
 
 workflows: {
   actions: [
