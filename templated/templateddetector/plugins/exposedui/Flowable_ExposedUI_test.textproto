@@ -1,0 +1,89 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Flowable_ExposedUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/flowable-rest/docs/"
+        status: 200
+        body_content:
+            'case "specfile/process/flowable-swagger-process.json":'
+              'case "specfile/dmn/flowable-swagger-decision.json":'
+      },
+      {
+        uri: "/flowable-rest/service/repository/deployments"
+        status: 200
+        body_content:
+          '--------------------------gxyhRpqEx2dfbXUDrMqEEL\r\nContent-Disposition: form-data; name="file"; filename="jsScript.bpmn"\r\nContent-Type: application/octet-stream\r\n\r\n<?xml version="1.0" encoding="UTF-8"?>\n<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"\nxmlns:flowable="http://flowable.org/bpmn"\ntargetNamespace="Examples">\n\n<process id="jsScriptProcess" name="JavaScript Script Process">\n<startEvent id="start" />\n<sequenceFlow sourceRef="start" targetRef="scriptTask" />\n<scriptTask id="scriptTask" name="Execute Command via JavaScript"\nscriptFormat="javascript"\nflowable:autoStoreVariables="true">\n<script>\nvar ProcessBuilder = Java.type(\'java.lang.ProcessBuilder\');\nvar Arrays = Java.type(\'java.util.Arrays\');\nvar Scanner = Java.type(\'java.util.Scanner\');\n\nvar processBuilder = new ProcessBuilder(Arrays.asList'
+      },
+      {
+        uri: "/flowable-rest/service/runtime/process-instances"
+        status: 200
+        body_content:
+            '{"processDefinitionKey": "jsScriptProcess"}'
+      }
+    ]
+  }
+}
+
+
+tests: {
+  name: "whenNotFlowable_returnsNoVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri:  "/api/v1/main/usages/all"
+        status: 400
+        body_content: "..."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/flowable-rest/docs/"
+        status: 200
+        body_content:
+            'case "specfile/process/flowable-swagger-process.json":'
+                'case "specfile/dmn/flowable-swagger-decision.json":'
+      },
+      {
+        uri: "/flowable-rest/service/repository/deployments"
+        status: 200
+        body_content:
+            '--------------------------gxyhRpqEx2dfbXUDrMqEEL\r\nContent-Disposition: form-data; name="file"; filename="jsScript.bpmn"\r\nContent-Type: application/octet-stream\r\n\r\n<?xml version="1.0" encoding="UTF-8"?>\n<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"\nxmlns:flowable="http://flowable.org/bpmn"\ntargetNamespace="Examples">\n\n<process id="jsScriptProcess" name="JavaScript Script Process">\n<startEvent id="start" />\n<sequenceFlow sourceRef="start" targetRef="scriptTask" />\n<scriptTask id="scriptTask" name="Execute Command via JavaScript"\nscriptFormat="javascript"\nflowable:autoStoreVariables="true">\n<script>\nvar ProcessBuilder = Java.type(\'java.lang.ProcessBuilder\');\nvar Arrays = Java.type(\'java.util.Arrays\');\nvar Scanner = Java.type(\'java.util.Scanner\');\n\nvar processBuilder = new ProcessBuilder(Arrays.asList'
+      },
+      {
+        uri: "/flowable-rest/service/runtime/process-instances"
+        status: 200
+        body_content:
+            '{"processDefinitionKey": "jsScriptProcess"}'
+      }
+    ]
+  }
+}
