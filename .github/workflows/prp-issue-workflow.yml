@@ -21,9 +21,6 @@ jobs:
       AUTHOR: ${{ github.event.issue.user.login }}
 
     steps:
-      - name: Assign to author
-        run: gh issue edit "$NUMBER" --add-assignee "$AUTHOR"
-
       - name: Post comment
         run: gh issue comment "$NUMBER" --body "$BODY"
         env:
@@ -39,6 +36,10 @@ jobs:
               work is not eligible for a reward.
 
               *~The Tsunami PRP team*
+
+      - name: Assign to author
+        continue-on-error: true
+        run: gh issue edit "$NUMBER" --add-assignee "$AUTHOR"
 
       - name: Compute contributors stats
         env:
