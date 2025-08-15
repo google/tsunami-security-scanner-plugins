@@ -1,0 +1,45 @@
+plugins {
+    id 'java-library'
+}
+
+description = 'Tsunami VulnDetector plugin for exposed Apache Flink UI.'
+group = 'com.google.tsunami'
+version = '0.0.1-SNAPSHOT'
+
+repositories {
+    maven { // The google mirror is less flaky than mavenCentral()
+        url 'https://maven-central.storage-download.googleapis.com/repos/central/data/'
+    }
+    mavenCentral()
+    mavenLocal()
+}
+
+
+
+dependencies {
+    implementation "com.google.flogger:flogger:0.9"
+    implementation "com.google.flogger:google-extensions:0.9"
+    implementation "com.google.flogger:flogger-system-backend:0.9"
+    implementation "com.google.guava:guava:33.0.0-jre"
+    implementation "com.google.protobuf:protobuf-java:3.25.5"
+    implementation "com.google.protobuf:protobuf-javalite:3.25.5"
+    implementation "com.google.protobuf:protobuf-java-util:3.25.5"
+    implementation("com.google.tsunami:tsunami-common") {
+      version { branch = "stable" }
+    }
+    implementation("com.google.tsunami:tsunami-plugin") {
+      version { branch = "stable" }
+    }
+    implementation("com.google.tsunami:tsunami-proto") {
+      version { branch = "stable" }
+    }
+    implementation "javax.inject:javax.inject:1"
+    implementation "org.jsoup:jsoup:1.9.2"
+
+    testImplementation "com.google.truth:truth:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-java8-extension:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-proto-extension:1.4.4"
+    testImplementation "com.squareup.okhttp3:mockwebserver:3.12.0"
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "org.mockito:mockito-core:5.18.0"
+}
