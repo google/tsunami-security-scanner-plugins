@@ -129,6 +129,23 @@ public final class Cve202328432VulnDetector implements VulnDetector {
     return detectionReports;
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("MINIO_INFORMATION_DISCLOSURE_CLUSTER_ENVIRONMENT"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2023-28432"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("MinIO Information Disclosure in Cluster Environment")
+            .setDescription(DESCRIPTION)
+            .setRecommendation(RECOMMENDATION)
+            .build());
+  }
+
   private EndpointProbingResult checkEndpointForNetworkService(NetworkService networkService) {
     String baseUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     String targetUri = String.format("%s%s", baseUrl, MINIO_VERIFY_PATH);
@@ -281,15 +298,7 @@ public final class Cve202328432VulnDetector implements VulnDetector {
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("MINIO_INFORMATION_DISCLOSURE_CLUSTER_ENVIRONMENT"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("MinIO Information Disclosure in Cluster Environment")
-                .setDescription(DESCRIPTION)
-                .setRecommendation(RECOMMENDATION)
+            this.getAdvisories().get(0).toBuilder()
                 .addAdditionalDetails(buildAdditionalDetail(endpointProbingResult)))
         .build();
   }

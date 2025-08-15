@@ -37,10 +37,7 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -54,9 +51,9 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.junit.Test;
 
 /** Unit tests for {@link ExposedArgoCdApiDetector}. */
 @RunWith(JUnit4.class)
@@ -124,26 +121,7 @@ public final class ExposedArgoCdApiDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("ARGOCD_API_SERVER_EXPOSED"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Argo CD API server Exposed")
-                        .setDescription(
-                            "Argo CD API server is vulnerable to CVE-2022-29165. The authentication"
-                                + " of Argo CD API server can be bypassed and All applications can"
-                                + " be accessed by public and therefore can be modified resulting"
-                                + " in all application instances being compromised. The Argo CD UI"
-                                + " does not support executing OS commands in the hosting machine"
-                                + " at this time. We detected this vulnerable Argo CD API server by"
-                                + " receiving a HTTP response from an endpoint that needs"
-                                + " authentication")
-                        .setRecommendation(
-                            "Patched versions are 2.1.15, and 2.3.4, and 2.2.9, and"
-                                + " 2.1.15. Please update Argo CD to these versions and higher."))
+                .setVulnerability(detector.getAdvisories().get(1))
                 .build());
     Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(5);
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
@@ -167,23 +145,7 @@ public final class ExposedArgoCdApiDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("ARGOCD_API_SERVER_EXPOSED"))
-                        .setSeverity(Severity.HIGH)
-                        .setTitle("Argo CD API server Exposed")
-                        .setDescription(
-                            "Argo CD API server is vulnerable to CVE-2022-29165. The authentication"
-                                + " can be bypassed. We can't confirm that this API server has an"
-                                + " admin role because we can't create a new application and"
-                                + " receive an out-of-band callback from it, but we are able to"
-                                + " receive some endpoint data without authentication")
-                        .setRecommendation(
-                            "Patched versions are 2.1.15, and 2.3.4, and 2.2.9, and"
-                                + " 2.1.15. Please update Argo CD to these versions and higher."))
+                .setVulnerability(detector.getAdvisories().get(1))
                 .build());
     Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(0);
@@ -206,24 +168,7 @@ public final class ExposedArgoCdApiDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("ARGOCD_API_SERVER_EXPOSED"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Argo CD API server Exposed")
-                        .setDescription(
-                            "Argo CD API server is misconfigured. The API server is not"
-                                + " authenticated. All applications can be accessed by the public"
-                                + " and therefore can be modified resulting in all application"
-                                + " instances being compromised. The Argo CD UI does not support"
-                                + " executing OS commands in the hosting machine at this time. We"
-                                + " detected this vulnerable Argo CD API server by creating a test"
-                                + " application and receiving out-of-band callback")
-                        .setRecommendation(
-                            "Please disable public access to your Argo CD API server."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
     Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
@@ -247,22 +192,7 @@ public final class ExposedArgoCdApiDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("ARGOCD_API_SERVER_EXPOSED"))
-                        .setSeverity(Severity.HIGH)
-                        .setTitle("Argo CD API server Exposed")
-                        .setDescription(
-                            "Argo CD API server is misconfigured. The API server is not"
-                                + " authenticated.We can't confirm that this API server has an"
-                                + " admin role because we can't create a new application and"
-                                + " receive an out-of-band callback from it, but we are able to"
-                                + " receive some endpoint data without authentication")
-                        .setRecommendation(
-                            "Please disable public access to your Argo CD API server."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
     Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(3);
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(0);

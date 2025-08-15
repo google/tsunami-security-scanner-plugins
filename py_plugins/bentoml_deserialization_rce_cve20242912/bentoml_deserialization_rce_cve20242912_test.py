@@ -30,7 +30,7 @@ import plugin_representation_pb2
 import reconnaissance_pb2
 import software_pb2
 import vulnerability_pb2
-import google3.third_party.tsunami_plugins.py_plugins.bentoml_deserialization_rce.bentoml_deserialization_rce as bentoml_rce
+import py_plugins.bentoml_deserialization_rce.bentoml_deserialization_rce as bentoml_rce
 
 
 # Callback server

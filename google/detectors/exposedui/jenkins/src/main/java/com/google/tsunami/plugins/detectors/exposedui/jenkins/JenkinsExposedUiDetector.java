@@ -87,6 +87,25 @@ public final class JenkinsExposedUiDetector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("GOOGLE")
+                    .setValue("UNAUTHENTICATED_JENKINS_NEW_ITEM_CONSOLE"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Unauthenticated Jenkins New Item Console")
+            // TODO(b/147455413): determine CVSS score.
+            .setDescription(
+                "Unauthenticated Jenkins instance allows anonymous users to create arbitrary"
+                    + " projects, which usually leads to code downloading from the internet and"
+                    + " remote code executions.")
+            .setRecommendation(FINDING_RECOMMENDATION_TEXT)
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting exposed ui detection for Jenkins");
@@ -128,20 +147,7 @@ public final class JenkinsExposedUiDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("GOOGLE")
-                        .setValue("UNAUTHENTICATED_JENKINS_NEW_ITEM_CONSOLE"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Unauthenticated Jenkins New Item Console")
-                // TODO(b/147455413): determine CVSS score.
-                .setDescription(
-                    "Unauthenticated Jenkins instance allows anonymous users to create arbitrary"
-                        + " projects, which usually leads to code downloading from the internet"
-                        + " and remote code executions.")
-                .setRecommendation(FINDING_RECOMMENDATION_TEXT))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 

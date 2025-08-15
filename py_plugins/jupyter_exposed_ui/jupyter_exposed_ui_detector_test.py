@@ -30,8 +30,8 @@ import network_service_pb2
 import reconnaissance_pb2
 import software_pb2
 import vulnerability_pb2
-from third_party.tsunami_plugins.py_plugins.jupyter_exposed_ui import jupyter_exposed_ui_detector
-from third_party.tsunami_plugins.py_plugins.jupyter_exposed_ui.jupyter_exposed_ui_detector import _VULN_REMEDIATION
+from py_plugins.jupyter_exposed_ui import jupyter_exposed_ui_detector
+from py_plugins.jupyter_exposed_ui.jupyter_exposed_ui_detector import _VULN_REMEDIATION
 
 
 _TARGET_URL = 'vuln-target.com'

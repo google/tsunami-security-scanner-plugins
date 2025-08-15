@@ -30,12 +30,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -110,18 +107,7 @@ public final class ApacheDefaultTokenDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("APISIX_DEFAULT_TOKEN"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Apache APISIX's Admin API Default Access Token (RCE)")
-                        .setRecommendation(
-                            "Change the default admin API key and set appropriate IP access control"
-                                + " lists.")
-                        .setDescription(ApacheDefaultTokenDetector.VULN_DESCRIPTION))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

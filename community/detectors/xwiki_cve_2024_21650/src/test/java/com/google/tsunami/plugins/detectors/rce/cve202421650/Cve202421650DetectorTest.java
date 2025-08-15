@@ -33,11 +33,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -123,22 +120,7 @@ public final class Cve202421650DetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE-2024-21650"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("XWiki RCE (CVE-2024-21650)")
-                        .setDescription(
-                            "XWiki is vulnerable to a remote code execution (RCE) attack through"
-                                + " its user registration feature. This issue allows an attacker to"
-                                + " execute arbitrary code by crafting malicious payloads in the"
-                                + " \"first name\" or \"last name\" fields during user"
-                                + " registration. This impacts all installations that have user"
-                                + " registration enabled for guests. This vulnerability has been"
-                                + " patched in XWiki 14.10.17, 15.5.3 and 15.8 RC1."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 
@@ -169,22 +151,7 @@ public final class Cve202421650DetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE-2024-21650"))
-                        .setSeverity(Severity.HIGH)
-                        .setTitle("XWiki RCE (CVE-2024-21650)")
-                        .setDescription(
-                            "XWiki is vulnerable to a remote code execution (RCE) attack through"
-                                + " its user registration feature. This issue allows an attacker to"
-                                + " execute arbitrary code by crafting malicious payloads in the"
-                                + " \"first name\" or \"last name\" fields during user"
-                                + " registration. This impacts all installations that have user"
-                                + " registration enabled for guests. This vulnerability has been"
-                                + " patched in XWiki 14.10.17, 15.5.3 and 15.8 RC1."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

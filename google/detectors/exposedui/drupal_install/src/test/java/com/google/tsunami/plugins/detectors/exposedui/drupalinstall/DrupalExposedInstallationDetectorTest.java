@@ -32,12 +32,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -103,22 +100,7 @@ public final class DrupalExposedInstallationDetectorTest {
                 .setNetworkService(httpServices.get(0))
                 .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.millis()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("DRUPAL_VULNERABLE_INSTALLATION_EXPOSED"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Drupal unfinished installation is exposed")
-                        .setDescription(
-                            "The drupal installation file is exposed and unfinished. Someone could"
-                                + " hijackthe installation process and execute code on the target"
-                                + " machine.")
-                        .setRecommendation(
-                            "Ensure Drupal is not externally accessible (firewall) until the"
-                                + " installation is complete. Complete the installation process and"
-                                + " set a strong password for the initial admin account."))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

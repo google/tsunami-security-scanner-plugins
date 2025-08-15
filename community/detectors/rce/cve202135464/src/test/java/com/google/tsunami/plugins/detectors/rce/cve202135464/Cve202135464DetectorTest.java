@@ -197,6 +197,10 @@ public final class Cve202135464DetectorTest {
                     VulnerabilityId.newBuilder()
                         .setPublisher("TSUNAMI_COMMUNITY")
                         .setValue("CVE_2021_35464"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("CVE")
+                        .setValue("CVE-2021-35464"))
                 .setSeverity(Severity.CRITICAL)
                 .setTitle("Pre-auth RCE in OpenAM 14.6.3/ForgeRock AM 7.0 (CVE-2021-35464)")
                 .setDescription(

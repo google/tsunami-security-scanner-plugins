@@ -110,6 +110,30 @@ public final class Cve202222947VulnDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2022_22947"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-22947"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("CVE-2022-22947 Spring Cloud Gateway Actuator API SpEL Code Injection")
+            .setRecommendation(
+                "Users of affected versions should apply the following remediation. 3.1.x users"
+                    + " should upgrade to 3.1.1+. 3.0.x users should upgrade to 3.0.7+. If the"
+                    + " Gateway actuator endpoint is not needed it should be disabled via "
+                    + "management.endpoint.gateway.enabled: false. If the actuator is required"
+                    + " it should be secured using Spring Security, "
+                    + "see https://docs.spring.io/spring-boot/docs/current/reference/html/"
+                    + "actuator.html#actuator.endpoints.security.")
+            .setDescription(VULN_DESCRIPTION)
+            .build());
+  }
+
   private String createRouter(NetworkService networkService) throws IOException {
     String router = UUID.randomUUID().toString().replace("-", "").substring(0, 6);
     String url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + ROUTES + router;
@@ -195,23 +219,7 @@ public final class Cve202222947VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2022_22947"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("CVE-2022-22947 Spring Cloud Gateway Actuator API SpEL Code Injection")
-                .setRecommendation(
-                    "Users of affected versions should apply the following remediation. 3.1.x users"
-                        + " should upgrade to 3.1.1+. 3.0.x users should upgrade to 3.0.7+. If the"
-                        + " Gateway actuator endpoint is not needed it should be disabled via "
-                        + "management.endpoint.gateway.enabled: false. If the actuator is required"
-                        + " it should be secured using Spring Security, "
-                        + "see https://docs.spring.io/spring-boot/docs/current/reference/html/"
-                        + "actuator.html#actuator.endpoints.security.")
-                .setDescription(VULN_DESCRIPTION))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

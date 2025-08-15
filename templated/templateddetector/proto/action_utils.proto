@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package tsunami_templated_detector;
+
+option java_multiple_files = true;
+option java_package = "com.google.tsunami.templatedplugin.proto";
+option go_package = "github.com/google/tsunami-security-scanner-plugins/templated/templateddetector/proto/templated_plugin_go_proto";
+
+message SleepUtilityAction {
+  // The duration of the sleep in milliseconds.
+  int64 duration_ms = 1;
+}
+
+// Set of utilities that can be used by plugins.
+message UtilityAction {
+  oneof action {
+    SleepUtilityAction sleep = 1;
+  }
+}

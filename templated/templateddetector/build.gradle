@@ -1,0 +1,162 @@
+plugins {
+    id 'java-library'
+    id 'com.google.protobuf' version '0.9.4'
+    id 'idea'
+}
+
+repositories {
+    maven { // The google mirror is less flaky than mavenCentral()
+        url 'https://maven-central.storage-download.googleapis.com/repos/central/data/'
+    }
+    mavenCentral()
+    mavenLocal()
+}
+
+
+dependencies {
+    implementation("com.google.tsunami:tsunami-common") {
+      version { branch = "stable" }
+    }
+    implementation("com.google.tsunami:tsunami-plugin") {
+      version { branch = "stable" }
+    }
+    implementation("com.google.tsunami:tsunami-proto") {
+      version { branch = "stable" }
+    }
+
+    implementation "io.grpc:protoc-gen-grpc-java:1.72.0"
+    implementation "com.google.protobuf:protobuf-java:3.25.5"
+    implementation "org.jspecify:jspecify:1.0.0"
+
+    testImplementation "com.google.truth:truth:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-java8-extension:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-proto-extension:1.4.4"
+    testImplementation "com.squareup.okhttp3:mockwebserver:3.12.0"
+    testImplementation "com.google.testparameterinjector:test-parameter-injector:latest.release"
+    testImplementation "junit:junit:4.13.2"
+}
+
+abstract class CompileTextproto extends DefaultTask {
+    {
+        group = 'build'
+        description = 'Compiles textproto files into binary proto files.'
+    }
+
+    // The input textproto files.
+    @InputFiles
+    abstract Property<FileTree> getSourceFiles()
+
+    // The proto message type to use to encode the textproto files.
+    @Input
+    abstract Property<String> getEncodeAs()
+
+    // The proto file where the message type (specified in EncodeAs) is defined.
+    // Note: the proto file is expected to be in the `proto` directory.
+    @Input
+    abstract Property<String> getFromProto()
+
+    // The output directory where the binary proto files should be written.
+    @OutputDirectory
+    abstract DirectoryProperty getOutputDirectory()
+
+    @TaskAction
+    void executeTask() {
+        def protoDir = project.file("proto")
+        def protoDepsPath
+
+        // Manually resolve the protobuf dependencies from the core engine
+        // gitRepository.
+        project.file('../../').traverse(
+            type: groovy.io.FileType.DIRECTORIES,
+            nameFilter: ~/tsunami-security-scanner/)
+        {
+            directory ->
+                protoDepsPath = project.file(directory.getAbsolutePath() + "/proto").absolutePath
+        }
+
+        sourceFiles.get().forEach{
+            def srcFile = project.file(it.getAbsolutePath())
+            def outFile = project.file(outputDirectory.get().file(it.name.replace(".textproto", ".binarypb")))
+
+            project.exec {
+                commandLine "protoc", "-I=${protoDir}", "-I=${protoDepsPath}", "--encode=${encodeAs.get()}", "${fromProto.get()}"
+                standardInput = new FileInputStream(srcFile)
+                standardOutput = new FileOutputStream(outFile)
+            }
+        }
+    }
+}
+
+tasks.register("generatePluginsProtobin", CompileTextproto) {
+    encodeAs = "tsunami_templated_detector.TemplatedPlugin"
+    fromProto = "templated_plugin.proto"
+    sourceFiles = fileTree("plugins").matching {
+        include "**/*.textproto"
+        exclude "**/*_test.textproto"
+    }
+    outputDirectory = file("$buildDir/src/main/resources/templateddetector/plugins")
+}
+
+tasks.register("generateTestsProtobin", CompileTextproto) {
+    encodeAs = "tsunami_templated_detector_tests.TemplatedPluginTests"
+    fromProto = "templated_plugin_tests.proto"
+    sourceFiles = fileTree("plugins").matching {
+        include "**/*_test.textproto"
+    }
+    outputDirectory = file("$buildDir/src/test/resources/templateddetector/plugins")
+}
+
+gradle.projectsEvaluated {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs += ["-parameters"]
+    }
+}
+
+gradle.projectsEvaluated {
+    tasks.withType(ProcessResources) {
+        dependsOn(generatePluginsProtobin)
+        dependsOn(generateTestsProtobin)
+    }
+}
+
+protobuf {
+    generatedFilesBaseDir = "${projectDir}/build/generated"
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.5"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:1.72.0"
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins { grpc {} }
+    }
+}
+
+idea {
+    module {
+        sourceDirs += file("${buildDir}/generated/main/java");
+        sourceDirs += file("${buildDir}/generated/main/grpc");
+    }
+}
+
+sourceSets {
+    main {
+        proto {
+            srcDir "proto/"
+            exclude "build/**"
+        }
+
+        resources {
+            srcDirs += "${buildDir}/src/main/resources";
+        }
+    }
+
+    test {
+        resources {
+            srcDirs += "${buildDir}/src/test/resources";
+        }
+    }
+}
+

@@ -89,6 +89,25 @@ public final class Cve202431982Detector implements VulnDetector {
     return detectionReports;
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE-2024-31982"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2024-31982"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("xwiki instance vulnerable to CVE-2024-31982")
+            .setRecommendation(
+                "Update to one of the patched versions of xwiki: 14.10.20, 15.5.4, 15.10-rc-1")
+            .setDescription(
+                "The xwiki instance is vulnerable to CVE-2024-31982. This vulnerability allows"
+                    + " an attacker to take control of the xwiki instance and does not require"
+                    + " authentication.")
+            .build());
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
     return POSSIBLE_SUBPATHS.stream()
         .anyMatch(endpoint -> isEndpointVulnerable(networkService, endpoint));
@@ -119,20 +138,7 @@ public final class Cve202431982Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE-2024-31982"))
-                .addRelatedId(
-                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2024-31982"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("xwiki instance vulnerable to CVE-2024-31982")
-                .setRecommendation(
-                    "Update to one of the patched versions of xwiki: 14.10.20, 15.5.4, 15.10-rc-1")
-                .setDescription(
-                    "The xwiki instance is vulnerable to CVE-2024-31982. This vulnerability allows"
-                        + " an attacker to take control of the xwiki instance and does not require"
-                        + " authentication."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

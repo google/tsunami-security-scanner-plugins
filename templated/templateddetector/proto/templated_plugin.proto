@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package tsunami_templated_detector;
+
+import "plugin_representation.proto";
+import "vulnerability.proto";
+import "action_http.proto";
+import "action_callbackserver.proto";
+import "action_utils.proto";
+
+option java_multiple_files = true;
+option java_package = "com.google.tsunami.templatedplugin.proto";
+option go_package = "github.com/google/tsunami-security-scanner-plugins/templated/templateddetector/proto/templated_plugin_go_proto";
+
+// An action is a single unit of work that the plugin can perform. For example
+// sending an HTTP request. Each returns a boolean indicating whether the
+// action was successful and the last running action defines whether the
+// plugin is considered successful (the vulnerability was found).
+message PluginAction {
+  // Each action must have a unique name that will be referenced in the
+  // workflows. It must be named using the `[a-zA-Z0-9_]` character set.
+  string name = 1;
+
+  // A set of cleanup action to be executed if this action is successful.
+  // Once the current action succeed, the cleanups are registered and will
+  // always be executed after the last workflow action, whether it is successful
+  // or not.
+  repeated string cleanup_actions = 2;
+
+  // Each action can have one of the following types.
+  oneof any_action {
+    HttpAction http_request = 3;
+    CallbackServerAction callback_server = 4;
+    UtilityAction utility = 5;
+  }
+}
+
+// A workflow is a sequence of actions taken in linear order. Having different
+// workflows allows the plugin to cover different scenarios based on the
+// current Tsunami runtime, for example if the callback server is running.
+// Workflows should be defined in order of priority, the first matching workflow
+// will be the one selected for running.
+message PluginWorkflow {
+  enum Condition {
+    CONDITION_UNSPECIFIED = 0;
+    REQUIRES_CALLBACK_SERVER = 1;
+  }
+
+  message Variable {
+    string name = 1;
+    string value = 2;
+  }
+
+  // The condition that must be met for this workflow to be selected to run.
+  Condition condition = 1;
+
+  // Variables defined at the workflow level that will be available to all
+  // actions running in this workflow. These variables are reset to the value
+  // defined here between each workflow run.
+  repeated Variable variables = 2;
+
+  // List of actions (by name) to be run in this workflow.
+  repeated string actions = 3;
+}
+
+// Each plugin can be slightly configured. For example, it can be disabled or
+// debug mode can be enabled.
+message PluginConfig {
+  // Whether the plugin is to be disabled. By default, plugins are enabled. So
+  // we recommend using this option only to explicitly disable a plugin.
+  bool disabled = 1;
+
+  // Debug mode enables very verbose logging for the plugin. For example, for
+  // HTTP requests, every request and response will be logged.
+  bool debug = 2;
+}
+
+message TemplatedPlugin {
+  // Plugin metadata, such as its name, author and description.
+  tsunami.proto.PluginInfo info = 1;
+
+  // Finding that this plugin will report if it finds a vulnerability.
+  tsunami.proto.Vulnerability finding = 2;
+
+  // Plugin-level configuration. For example, to enable debug mode.
+  PluginConfig config = 3;
+
+  // Actions that the plugin can run.
+  repeated PluginAction actions = 4;
+
+  // Workflows that the plugin can run.
+  repeated PluginWorkflow workflows = 5;
+}
