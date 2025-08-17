@@ -24,7 +24,7 @@ dependencies {
     implementation("com.google.tsunami:tsunami-proto") {
       version { branch = "stable" }
     }
-    implementation "org.jspecify:jspecify:latest.release"
+    implementation "org.jspecify:jspecify:1.0.0"
 
     testImplementation "junit:junit:4.13.2"
     testImplementation "com.google.truth:truth:1.4.4"
