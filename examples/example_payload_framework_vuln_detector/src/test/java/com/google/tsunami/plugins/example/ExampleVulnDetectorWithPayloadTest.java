@@ -32,11 +32,8 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TextData;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -136,15 +133,7 @@ public final class ExampleVulnDetectorWithPayloadTest {
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("vulnerability_id_publisher")
-                                .setValue("VULNERABILITY_ID"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Vulnerability Title")
-                        .setDescription("Verbose description of the issue")
-                        .setRecommendation("Verbose recommended solution")
+                    detector.getAdvisories().get(0).toBuilder()
                         .addAdditionalDetails(
                             AdditionalDetail.newBuilder()
                                 .setTextData(

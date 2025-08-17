@@ -113,6 +113,28 @@ public final class GenericPathTraversalDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(getAdvisory(null, ImmutableSet.of()));
+  }
+
+  Vulnerability getAdvisory(
+      AdditionalDetail details, ImmutableSet<AdditionalDetail> additionalDetails) {
+    return Vulnerability.newBuilder()
+        .setMainId(VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("GENERIC_PT"))
+        .setSeverity(Severity.MEDIUM)
+        .setTitle("Generic Path Traversal Vulnerability")
+        .setDescription(FINDING_DESCRIPTION_TEXT)
+        .setRecommendation(
+            "Do not accept user-controlled file paths or restrict file paths to a set of"
+                + " pre-defined paths. If the application is meant to let users define file"
+                + " names, apply `basename` or equivalent before handling the provided file"
+                + " name.")
+        .addAdditionalDetails(details)
+        .addAllAdditionalDetails(additionalDetails)
+        .build();
+  }
+
   private boolean shouldFuzzCrawlResult(CrawlResult crawlResult) {
     int responseCode = crawlResult.getResponseCode();
     CrawlTarget crawlTarget = crawlResult.getCrawlTarget();
@@ -184,26 +206,16 @@ public final class GenericPathTraversalDetector implements VulnDetector {
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("GENERIC_PT"))
-                .setSeverity(Severity.MEDIUM)
-                .setTitle("Generic Path Traversal Vulnerability")
-                .setDescription(FINDING_DESCRIPTION_TEXT)
-                .setRecommendation(
-                    "Do not accept user-controlled file paths or restrict file paths to a set of"
-                        + " pre-defined paths. If the application is meant to let users define file"
-                        + " names, apply `basename` or equivalent before handling the provided file"
-                        + " name.")
-                .addAdditionalDetails(
-                    AdditionalDetail.newBuilder()
-                        .setTextData(
-                            TextData.newBuilder()
-                                .setText(
-                                    String.format(
-                                        "Found %s distinct vulnerable configurations.",
-                                        detections.size()))))
-                .addAllAdditionalDetails(this.buildAdditionalDetails(detections)))
+            getAdvisory(
+                AdditionalDetail.newBuilder()
+                    .setTextData(
+                        TextData.newBuilder()
+                            .setText(
+                                String.format(
+                                    "Found %s distinct vulnerable configurations.",
+                                    detections.size())))
+                    .build(),
+                this.buildAdditionalDetails(detections)))
         .build();
   }
 }

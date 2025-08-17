@@ -4,6 +4,7 @@ package tsunami_templated_detector;
 
 option java_multiple_files = true;
 option java_package = "com.google.tsunami.templatedplugin.proto";
+option go_package = "github.com/google/tsunami-security-scanner-plugins/templated/templateddetector/proto/templated_plugin_go_proto";
 
 // HttpAction is used to perform HTTP requests.
 message HttpAction {
@@ -104,6 +105,13 @@ message HttpAction {
     }
   }
 
+  message HttpClientOptions {
+    // Whether the HTTP client should follow redirects.
+    // By default, we follow redirects so this flag can be used to disable this
+    // behavior.
+    bool disable_follow_redirects = 1;
+  }
+
   // The HTTP method to use (e.g. GET, POST, ...).
   HttpMethod method = 1;
 
@@ -121,4 +129,7 @@ message HttpAction {
 
   // Actions to be performed on the HTTP response.
   HttpResponse response = 5;
+
+  // Configuration of the HTTP client.
+  HttpClientOptions client_options = 6;
 }

@@ -76,6 +76,23 @@ public final class MantisBTAuthenticationBypassDetector implements VulnDetector 
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2017_7615"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("MantisBT Authentication Bypass (CVE-2017-7615)")
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2017-7615"))
+            .setDescription(
+                "MantisBT through 2.3.0 allows arbitrary password reset and unauthenticated"
+                    + " admin access via an empty confirm_hash value to verify.php.")
+            .setRecommendation("Update MantisBT to a newer version.")
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting authentication bypass (CVE-2017-7615) detection for MantisBT.");
@@ -125,15 +142,7 @@ public final class MantisBTAuthenticationBypassDetector implements VulnDetector 
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2017_7615"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("MantisBT Authentication Bypass (CVE-2017-7615)")
-                .setDescription(
-                    "MantisBT through 2.3.0 allows arbitrary password reset and unauthenticated"
-                        + " admin access via an empty confirm_hash value to verify.php."))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

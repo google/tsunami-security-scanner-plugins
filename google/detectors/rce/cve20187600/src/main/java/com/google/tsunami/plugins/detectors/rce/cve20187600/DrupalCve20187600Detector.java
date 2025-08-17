@@ -79,6 +79,32 @@ public final class DrupalCve20187600Detector implements VulnDetector {
   }
 
   @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    TextData details =
+        TextData.newBuilder()
+            .setText("The Drupal platform is vulnerable to CVE-2018-7600.")
+            .build();
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2018_7600"))
+            .setSeverity(Severity.CRITICAL)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2018-7600"))
+            .setTitle("Drupalgeddon 2 Detected")
+            .setDescription(
+                "This version of Drupal is vulnerable to CVE-2018-7600. Drupal versions before"
+                    + " 7.58, 8.x before 8.3.9, 8.4.x before 8.4.6, and 8.5.x before 8.5.1 are"
+                    + " vulnerable to this vulnerability. Drupal has insufficient input sanitation"
+                    + " on Form API AJAX requests. This enables an attacker to inject a malicious"
+                    + " payload into the internal form structure which would then be executed"
+                    + " without any authentication")
+            .setRecommendation("Upgrade to Drupal 8.3.9 or Drupal 8.5.1.")
+            .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details))
+            .build());
+  }
+
+  @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("Starting Drupalgeddon 2 RCE detection.");
@@ -128,21 +154,7 @@ public final class DrupalCve20187600Detector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("GOOGLE").setValue("CVE_2018_7600"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Drupalgeddon 2 Detected")
-                .setDescription(
-                    "This version of Drupal is vulnerable to CVE-2018-7600. Drupal versions before"
-                        + " 7.58, 8.x before 8.3.9, 8.4.x before 8.4.6, and 8.5.x before 8.5.1 are"
-                        + " vulnerable to this vulnerability. Drupal has insufficient input"
-                        + " sanitation on Form API AJAX requests. This enables an attacker to"
-                        + " inject a malicious payload into the internal form structure which would"
-                        + " then be executed without any authentication")
-                .setRecommendation("Upgrade to Drupal 8.3.9 or Drupal 8.5.1.")
-                .addAdditionalDetails(AdditionalDetail.newBuilder().setTextData(details)))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

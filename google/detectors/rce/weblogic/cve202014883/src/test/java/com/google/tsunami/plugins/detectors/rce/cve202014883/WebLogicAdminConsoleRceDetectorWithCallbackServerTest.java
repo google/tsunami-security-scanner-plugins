@@ -100,7 +100,7 @@ public final class WebLogicAdminConsoleRceDetectorWithCallbackServerTest {
     DetectionReportList detectionReports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(detectionReports.getDetectionReportsList())
-        .contains(TestHelper.buildValidDetectionReport(target, service, fakeUtcClock));
+        .contains(TestHelper.buildValidDetectionReport(detector, target, service, fakeUtcClock));
   }
 
   @Test

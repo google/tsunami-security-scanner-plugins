@@ -49,24 +49,22 @@ import java.time.Instant;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 
-/**
- * A {@link VulnDetector} that detects the CVE-2021-25646 vulnerability.
- */
+/** A {@link VulnDetector} that detects the CVE-2021-25646 vulnerability. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "ApacheDruidPreAuthRCECVE202125646VulnDetector",
     version = "1.0",
-    description = "This detector checks for Apache Druid <= 0.20.0 CVE-2021-25646 "
-        + "Pre-Auth RCE vulnerability.",
+    description =
+        "This detector checks for Apache Druid <= 0.20.0 CVE-2021-25646 "
+            + "Pre-Auth RCE vulnerability.",
     author = "threedr3am (qiaoer1320@gmail.com)",
-    bootstrapModule = ApacheDruidPreAuthRCECVE202125646VulnDetectorBootstrapModule.class
-)
+    bootstrapModule = ApacheDruidPreAuthRCECVE202125646VulnDetectorBootstrapModule.class)
 public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetector {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final String CHECK_VUL_PATH = "druid/indexer/v1/sampler";
-  private static final Pattern VULNERABILITY_RESPONSE_PATTERN = Pattern.compile(
-      "uid=.+?gid=.+?groups=.+?");
+  private static final Pattern VULNERABILITY_RESPONSE_PATTERN =
+      Pattern.compile("uid=.+?gid=.+?groups=.+?");
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -78,8 +76,8 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
     this.httpClient = checkNotNull(httpClient);
     String payloadString;
     try {
-      payloadString = Resources.toString(
-          Resources.getResource(this.getClass(), "payloadString.json"), UTF_8);
+      payloadString =
+          Resources.toString(Resources.getResource(this.getClass(), "payloadString.json"), UTF_8);
     } catch (IOException e) {
       throw new AssertionError("Couldn't load payload resource file.", e);
     }
@@ -99,18 +97,50 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2021_25646"))
+            .setSeverity(Severity.HIGH)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2021-25646"))
+            .setTitle("Apache Druid Pre-Auth RCE vulnerability (CVE-2021-25646)")
+            .setDescription(
+                "Apache Druid includes the ability to execute user-provided JavaScript code "
+                    + "embedded in various types of requests. "
+                    + "This functionality is intended for use in high-trust environments, "
+                    + "and is disabled by default. "
+                    + "However, in Druid 0.20.0 and earlier, it is possible for an "
+                    + "authenticated user "
+                    + "to send a specially-crafted request that forces Druid to run "
+                    + "user-provided "
+                    + "JavaScript code for that request, regardless of server configuration. "
+                    + "This can be leveraged to execute code on the target machine with the "
+                    + "privileges of the Druid server process."
+                    + "https://nvd.nist.gov/vuln/detail/CVE-2021-25646")
+            .setRecommendation("Update 0.20.1 released, or later released.")
+            .build());
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
-    HttpHeaders httpHeaders = HttpHeaders.builder()
-        .addHeader(com.google.common.net.HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
-        .build();
+    HttpHeaders httpHeaders =
+        HttpHeaders.builder()
+            .addHeader(
+                com.google.common.net.HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
+            .build();
 
     ByteString requestBody = ByteString.copyFromUtf8(payloadString);
     String targetUri =
         NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + CHECK_VUL_PATH;
     try {
-      HttpResponse response = httpClient.send(
-          post(targetUri).setHeaders(httpHeaders).setRequestBody(requestBody).build(),
-          networkService);
+      HttpResponse response =
+          httpClient.send(
+              post(targetUri).setHeaders(httpHeaders).setRequestBody(requestBody).build(),
+              networkService);
       if (response.status() == HttpStatus.OK && response.bodyString().isPresent()) {
         String responseBody = response.bodyString().get();
         if (VULNERABILITY_RESPONSE_PATTERN.matcher(responseBody).find()) {
@@ -130,28 +160,7 @@ public class ApacheDruidPreAuthRCECVE202125646VulnDetector implements VulnDetect
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder().setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2021_25646"))
-                .setSeverity(Severity.HIGH)
-                .setTitle("Apache Druid Pre-Auth RCE vulnerability (CVE-2021-25646)")
-                .setDescription(
-                    "Apache Druid includes the ability to execute user-provided JavaScript code "
-                        + "embedded in various types of requests. "
-                        + "This functionality is intended for use in high-trust environments, "
-                        + "and is disabled by default. "
-                        + "However, in Druid 0.20.0 and earlier, it is possible for an "
-                        + "authenticated user "
-                        + "to send a specially-crafted request that forces Druid to run "
-                        + "user-provided "
-                        + "JavaScript code for that request, regardless of server configuration. "
-                        + "This can be leveraged to execute code on the target machine with the "
-                        + "privileges of the Druid server process."
-                        + "https://nvd.nist.gov/vuln/detail/CVE-2021-25646")
-                .setRecommendation("Update 0.20.1 released, or later released.")
-        )
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

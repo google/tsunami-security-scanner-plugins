@@ -18,8 +18,6 @@ package com.google.tsunami.plugins.detectors.solr;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static com.google.tsunami.plugins.detectors.solr.ApacheSolrArbitraryFileReadingDetector.DESCRIPTION;
-import static com.google.tsunami.plugins.detectors.solr.ApacheSolrArbitraryFileReadingDetector.RECOMMENDATION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
@@ -35,13 +33,10 @@ import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkEndpoint;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -52,17 +47,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for {@link ApacheSolrArbitraryFileReadingDetector}.
- */
+/** Unit tests for {@link ApacheSolrArbitraryFileReadingDetector}. */
 @RunWith(JUnit4.class)
 public final class ApacheSolrArbitraryFileReadingDetectorTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
-  @Inject
-  private ApacheSolrArbitraryFileReadingDetector detector;
+  @Inject private ApacheSolrArbitraryFileReadingDetector detector;
 
   private MockWebServer mockWebServer;
   private NetworkService solrService;
@@ -108,15 +100,7 @@ public final class ApacheSolrArbitraryFileReadingDetectorTest {
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("APACHE_SOLR_REMOTE_STREAMING_FILE_READING"))
-                        .setSeverity(Severity.HIGH)
-                        .setTitle("Apache Solr RemoteStreaming Arbitrary File Reading")
-                        .setDescription(DESCRIPTION)
-                        .setRecommendation(RECOMMENDATION)
+                    detector.getAdvisories().get(0).toBuilder()
                         .addAdditionalDetails(buildAdditionalDetail("vulnerable_check_trace.txt")))
                 .build());
   }
@@ -145,15 +129,7 @@ public final class ApacheSolrArbitraryFileReadingDetectorTest {
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("APACHE_SOLR_REMOTE_STREAMING_FILE_READING"))
-                        .setSeverity(Severity.HIGH)
-                        .setTitle("Apache Solr RemoteStreaming Arbitrary File Reading")
-                        .setDescription(DESCRIPTION)
-                        .setRecommendation(RECOMMENDATION)
+                    detector.getAdvisories().get(0).toBuilder()
                         .addAdditionalDetails(
                             buildAdditionalDetail("vulnerable_with_permission_denied_trace.txt")))
                 .build());
@@ -183,15 +159,7 @@ public final class ApacheSolrArbitraryFileReadingDetectorTest {
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("APACHE_SOLR_REMOTE_STREAMING_FILE_READING"))
-                        .setSeverity(Severity.HIGH)
-                        .setTitle("Apache Solr RemoteStreaming Arbitrary File Reading")
-                        .setDescription(DESCRIPTION)
-                        .setRecommendation(RECOMMENDATION)
+                    detector.getAdvisories().get(0).toBuilder()
                         .addAdditionalDetails(
                             buildAdditionalDetail("vulnerable_with_file_not_found_trace.txt")))
                 .build());
@@ -207,11 +175,11 @@ public final class ApacheSolrArbitraryFileReadingDetectorTest {
     mockWebServer.url("/");
 
     assertThat(
-        detector
-            .detect(
-                buildTargetInfo(forHostname(mockWebServer.getHostName())),
-                ImmutableList.of(solrService))
-            .getDetectionReportsList())
+            detector
+                .detect(
+                    buildTargetInfo(forHostname(mockWebServer.getHostName())),
+                    ImmutableList.of(solrService))
+                .getDetectionReportsList())
         .isEmpty();
   }
 

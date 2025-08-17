@@ -94,6 +94,23 @@ public final class Cve202222963VulnDetector implements VulnDetector {
         .build();
   }
 
+  @Override
+  public ImmutableList<Vulnerability> getAdvisories() {
+    return ImmutableList.of(
+        Vulnerability.newBuilder()
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2022_22963"))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2022-22963"))
+            .setSeverity(Severity.CRITICAL)
+            .setTitle("Spring Cloud Function SpEL Code Injection RCE (CVE-2022-22963)")
+            .setRecommendation("Users of affected versions should upgrade to 3.1.7, 3.2.3.")
+            .setDescription(VULN_DESCRIPTION)
+            .build());
+  }
+
   private boolean isServiceVulnerable(NetworkService networkService) {
     PayloadGeneratorConfig config =
         PayloadGeneratorConfig.newBuilder()
@@ -132,16 +149,7 @@ public final class Cve202222963VulnDetector implements VulnDetector {
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(
-            Vulnerability.newBuilder()
-                .setMainId(
-                    VulnerabilityId.newBuilder()
-                        .setPublisher("TSUNAMI_COMMUNITY")
-                        .setValue("CVE_2022_22963"))
-                .setSeverity(Severity.CRITICAL)
-                .setTitle("Spring Cloud Function SpEL Code Injection RCE (CVE-2022-22963)")
-                .setRecommendation("Users of affected versions should upgrade to 3.1.7, 3.2.3.")
-                .setDescription(VULN_DESCRIPTION))
+        .setVulnerability(this.getAdvisories().get(0))
         .build();
   }
 }

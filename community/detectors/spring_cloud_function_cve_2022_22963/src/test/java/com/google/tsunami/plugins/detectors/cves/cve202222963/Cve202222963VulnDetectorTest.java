@@ -31,12 +31,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -121,17 +118,7 @@ public final class Cve202222963VulnDetectorTest {
                 .setDetectionTimestamp(
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-                .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("TSUNAMI_COMMUNITY")
-                                .setValue("CVE_2022_22963"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Spring Cloud Function SpEL Code Injection RCE (CVE-2022-22963)")
-                        .setRecommendation(
-                            "Users of affected versions should upgrade to " + "3.1.7, 3.2.3.")
-                        .setDescription(Cve202222963VulnDetector.VULN_DESCRIPTION))
+                .setVulnerability(detector.getAdvisories().get(0))
                 .build());
   }
 

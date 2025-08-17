@@ -20,21 +20,23 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
+import static com.google.tsunami.common.net.http.HttpStatus.TEMPORARY_REDIRECT;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.ByteString;
+import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
-import com.google.tsunami.plugin.annotations.ForWebService;
-import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.ServiceFingerprinter;
+import com.google.tsunami.plugin.annotations.ForWebService;
+import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.Crawler;
 import com.google.tsunami.plugins.fingerprinters.web.crawl.ScopeUtils;
 import com.google.tsunami.plugins.fingerprinters.web.data.FingerprintData;
@@ -280,6 +282,8 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
 
     checkForMlflow(detectedSoftware, networkService, startingUrl);
     checkForZenMl(detectedSoftware, networkService, startingUrl);
+    checkForArgoCd(detectedSoftware, networkService, startingUrl);
+    checkForAirbyte(detectedSoftware, networkService, startingUrl);
     return ImmutableSet.copyOf(detectedSoftware);
   }
 
@@ -370,6 +374,80 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
               .build());
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", loginUrl);
+    }
+  }
+
+  private void checkForArgoCd(
+      Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
+    logger.atInfo().log("probing Argo CD - custom fingerprint phase");
+
+    var uriAuthority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
+    var applicationsApiUrl = String.format("http://%s/%s", uriAuthority, "api/v1/applications");
+    try {
+      HttpHeaders apiApplicationsReqHeaders =
+          HttpHeaders.builder().addHeader("Content-Type", "application/json").build();
+      HttpResponse apiApplicationsResponse =
+          httpClient.send(post(applicationsApiUrl).setHeaders(apiApplicationsReqHeaders).build());
+      if (apiApplicationsResponse.status() == TEMPORARY_REDIRECT) {
+        applicationsApiUrl = String.format("https://%s/%s", uriAuthority, "api/v1/applications");
+        apiApplicationsResponse =
+            httpClient.send(post(applicationsApiUrl).setHeaders(apiApplicationsReqHeaders).build());
+      }
+      if (apiApplicationsResponse.status() != HttpStatus.INTERNAL_SERVER_ERROR
+          || apiApplicationsResponse.bodyString().isEmpty()) {
+        return;
+      }
+
+      if (apiApplicationsResponse
+          .bodyString()
+          .get()
+          .contains(
+              "{\"error\":\"grpc: error while marshaling: proto: required field \\\"application\\\""
+                  + " not set\",\"code\":13,\"message\":\"grpc: error while marshaling: "
+                  + "proto: required field \\\"application\\\" not set\"}")) {
+        software.add(
+            DetectedSoftware.builder()
+                .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("argocd").build())
+                .setRootPath(startingUrl)
+                .setContentHashes(ImmutableMap.of())
+                .build());
+      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", applicationsApiUrl);
+    }
+  }
+
+  private void checkForAirbyte(
+      Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
+    logger.atInfo().log("probing Airbyte root page - custom fingerprint phase");
+
+    var rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    try {
+      HttpResponse rootResponse = httpClient.send(get(rootUrl).withEmptyHeaders().build());
+      // if the airbyte has basic authentication, the first condition will be pass
+      // if the airbyte doesn't have any authentication second condition will be pass
+      if (!((rootResponse.status() == HttpStatus.UNAUTHORIZED
+              && rootResponse.bodyString().isPresent()
+              && rootResponse.bodyString().get().contains("<title>Airbyte - Access Denied</title>"))
+          || (rootResponse.status() == HttpStatus.OK
+              && rootResponse.bodyString().isPresent()
+              && rootResponse
+                  .bodyString()
+                  .get()
+                  .contains(
+                      "content=\"Airbyte is the turnkey open-source data integration platform that"
+                          + " syncs data from applications, APIs and databases to"
+                          + " warehouses.\"")))) {
+        return;
+      }
+      software.add(
+          DetectedSoftware.builder()
+              .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("airbyte").build())
+              .setRootPath(startingUrl)
+              .setContentHashes(ImmutableMap.of())
+              .build());
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", rootUrl);
     }
   }
 }

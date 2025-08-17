@@ -1,0 +1,78 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "NodeRED_ExposedUI"
+  author: "Nicolas Golubovic (ngolubovic@google.com)"
+  version: "0.2"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "NODERED_EXPOSED_UI"
+  }
+  title: "Exposed Node-RED instance"
+  description: "Node-RED instance is exposed and can be used to compromise the system."
+  recommendation:
+    "Configure authentication or ensure the Node-RED instance is not exposed "
+    "to the network. See "
+    "https://nodered.org/docs/user-guide/runtime/securing-node-red for details."
+  severity: CRITICAL
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "is_nodered"
+  http_request: {
+    method: GET
+    uri: "/red/tours/welcome.js"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: { body: {} contains: "Welcome to Node-RED" }
+      }
+    }
+  }
+}
+
+
+# Checks if the settings are accessible. The /settings page will either return a
+# JSON content or a permission denied error depending on the configuration for
+# authentication. Because /settings can be a pretty common endpoint, we want to
+# ensure that this is a rednode instance whilst not really performing JSON
+# parsing hence the pattern matching instead.
+actions: {
+  name: "is_settings_available"
+  http_request: {
+    method: GET
+    uri: "/settings"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: { body {} contains: '"httpNodeRoot"' }
+        conditions: { body {} contains: '"version"' }
+        conditions: { body {} contains: '"workflow"' }
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "is_nodered",
+    "is_settings_available"
+  ]
+}

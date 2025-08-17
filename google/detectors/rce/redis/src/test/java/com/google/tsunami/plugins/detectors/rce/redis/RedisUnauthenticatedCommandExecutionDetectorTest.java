@@ -36,12 +36,9 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
-import com.google.tsunami.proto.Vulnerability;
-import com.google.tsunami.proto.VulnerabilityId;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -114,22 +111,11 @@ public final class RedisUnauthenticatedCommandExecutionDetectorTest {
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
-                    Vulnerability.newBuilder()
-                        .setMainId(
-                            VulnerabilityId.newBuilder()
-                                .setPublisher("GOOGLE")
-                                .setValue("REDIS_UNAUTHENTICATED_COMMAND_EXECUTION"))
-                        .setSeverity(Severity.CRITICAL)
-                        .setTitle("Redis unauthenticated command execution")
-                        .setDescription(
-                            RedisUnauthenticatedCommandExecutionDetector.VULN_DESCRIPTION)
-                        .setRecommendation(
-                            RedisUnauthenticatedCommandExecutionDetector.VULN_RECOMMENDATION)
-                        .addAdditionalDetails(
-                            AdditionalDetail.newBuilder()
-                                .setDescription("response (first 100 bytes)")
-                                .setTextData(
-                                    TextData.newBuilder().setText(redisServerInfoResponse))))
+                    detector.getAdvisory(
+                        AdditionalDetail.newBuilder()
+                            .setDescription("response (first 100 bytes)")
+                            .setTextData(TextData.newBuilder().setText(redisServerInfoResponse))
+                            .build()))
                 .build());
   }
 
