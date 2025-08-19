@@ -14,10 +14,17 @@ repositories {
 
 
 dependencies {
+    implementation("com.google.tsunami:tsunami-common") {
+      version { branch = "stable" }
+    }
+    implementation("com.google.tsunami:tsunami-plugin") {
+      version { branch = "stable" }
+    }
+    implementation("com.google.tsunami:tsunami-proto") {
+      version { branch = "stable" }
+    }
+
     implementation "io.grpc:protoc-gen-grpc-java:1.72.0"
-    implementation "com.google.tsunami:tsunami-common:latest.release"
-    implementation "com.google.tsunami:tsunami-plugin:latest.release"
-    implementation "com.google.tsunami:tsunami-proto:latest.release"
     implementation "com.google.protobuf:protobuf-java:3.25.5"
     implementation "org.jspecify:jspecify:1.0.0"
 
@@ -55,15 +62,24 @@ abstract class CompileTextproto extends DefaultTask {
     @TaskAction
     void executeTask() {
         def protoDir = project.file("proto")
-        def extractedProtos = project.file("${project.buildDir}/extracted-protos/main/")
-        def includeProtos = project.file("${project.buildDir}/extracted-include-protos/main/")
+        def protoDepsPath
+
+        // Manually resolve the protobuf dependencies from the core engine
+        // gitRepository.
+        project.file('../../').traverse(
+            type: groovy.io.FileType.DIRECTORIES,
+            nameFilter: ~/tsunami-security-scanner/)
+        {
+            directory ->
+                protoDepsPath = project.file(directory.getAbsolutePath() + "/proto").absolutePath
+        }
 
         sourceFiles.get().forEach{
             def srcFile = project.file(it.getAbsolutePath())
             def outFile = project.file(outputDirectory.get().file(it.name.replace(".textproto", ".binarypb")))
 
             project.exec {
-                commandLine "protoc", "-I=${protoDir}", "-I=${includeProtos}", "-I=${extractedProtos}", "--encode=${encodeAs.get()}", "${fromProto.get()}"
+                commandLine "protoc", "-I=${protoDir}", "-I=${protoDepsPath}", "--encode=${encodeAs.get()}", "${fromProto.get()}"
                 standardInput = new FileInputStream(srcFile)
                 standardOutput = new FileOutputStream(outFile)
             }

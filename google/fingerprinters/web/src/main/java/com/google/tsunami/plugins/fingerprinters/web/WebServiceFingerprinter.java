@@ -283,6 +283,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
     checkForMlflow(detectedSoftware, networkService, startingUrl);
     checkForZenMl(detectedSoftware, networkService, startingUrl);
     checkForArgoCd(detectedSoftware, networkService, startingUrl);
+    checkForKubeflow(detectedSoftware, networkService, startingUrl);
     checkForAirbyte(detectedSoftware, networkService, startingUrl);
     return ImmutableSet.copyOf(detectedSoftware);
   }
@@ -414,6 +415,32 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
       }
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", applicationsApiUrl);
+    }
+  }
+
+  private void checkForKubeflow(
+      Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
+    logger.atInfo().log("probing KubeFlow Dex Login - custom fingerprint phase");
+
+    var loginUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    try {
+      HttpResponse loginPageResponse = httpClient.send(get(loginUrl).withEmptyHeaders().build());
+
+      if (loginPageResponse.status() != HttpStatus.FORBIDDEN
+          && loginPageResponse.bodyString().isEmpty()) {
+        return;
+      }
+
+      if (loginPageResponse.bodyString().get().contains("<title>dex</title>")) {
+        software.add(
+            DetectedSoftware.builder()
+                .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("kubeflow").build())
+                .setRootPath(startingUrl)
+                .setContentHashes(ImmutableMap.of())
+                .build());
+      }
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to query '%s'.", loginUrl);
     }
   }
 

@@ -25,7 +25,7 @@ dependencies {
       version { branch = "stable" }
     }
 
-    testImplementation "junit:junit:4.13.1"
+    testImplementation "junit:junit:4.13.2"
     testImplementation "org.mockito:mockito-core:5.18.0"
     testImplementation "com.google.truth:truth:1.4.4"
     testImplementation "com.squareup.okhttp3:mockwebserver:3.12.0"

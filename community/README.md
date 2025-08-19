@@ -9,6 +9,7 @@ This directory contains plugins contributed by community members.
 ### Detectors
 
 #### Path Traversal
+
 *   [Apache HTTP Server Path traversal and disclosure (CVE-2021-41773) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/apache_http_server_cve_2021_41773)
 *   [Apache Solr RemoteStreaming Arbitrary File Reading Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/apache_solr_arbitrary_file_reading)
 *   [Grafana Pre-Auth Arbitrary File Reading vulnerability Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/grafana_arbitrary_file_reading_cve_2021_43798)
@@ -16,7 +17,12 @@ This directory contains plugins contributed by community members.
 *   [Metabase CVE-2021-41277 LFI (Local File Inclusion) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/metabase_cve_2021_41277)
 
 #### Authentication Bypass
+
 *   [CVE-2021-29441 Nacos < 1.4.1 Authentication Bypass](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/nacos_cve_2021_29441)
+
+#### Arbitrary File Read
+
+*   [CVE-2024-8438 Agentscope Studio Arbitrary File Download Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/agentscope_cve_2024_8438)
 
 #### Remote Code Execution
 
@@ -37,7 +43,20 @@ This directory contains plugins contributed by community members.
 *   [CVE-2023-0669 GoAnywhere MFT RCE vulnerability Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/goanywhere_cve_2023_0669)
 *   [AutoGPT Exposed UI VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/autogpt_exposed_ui)
 *   [CVE-2024-2029 LocalAI RCE detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/localai_cve_2024_2029)
+*   [CVE-2024-4577 PHP-CGI RCE detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/php_cve_2024_4577)
+*   [Exposed Argo Workflows Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/argoworkflows_exposed_ui)
+*   [Uptrain Exposed API VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/uptrain_exposed_api)
+*   [CVE-2025-0655 D-Tale Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/dtale_cve_2025_0655)
+*   [Flowise Exposed UI Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/flowise_exposed_ui)
 
-#### Information Disclosure
+#### XML External Entity (XXE) Injection
 
-*   [Apache Sparks exposed Web UI Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/apache_spark_exposed_webui)
+*   [CVE-2019-9670 Synacor Zimbra Collaboration Suite XXE](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/zimbra_cve_2019_9670)
+
+#### Arbitrary File Read
+
+*   [CVE-2024-1728 Gradio LFI Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/gradio_cve_2024_1728)
+
+#### Exposed UI / API
+
+*   [Ollama Exposed API Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/ollama_exposed_api)
