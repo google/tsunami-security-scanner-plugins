@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.plugins.detectors.rce.cve202532433.SshClient.connectAndExecuteCommand;
 
+import com.beust.jcommander.internal.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -28,6 +29,7 @@ import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.plugin.payload.NotImplementedException;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.plugins.detectors.rce.cve202532433.Annotations.OobSleepDuration;
@@ -59,7 +61,7 @@ import javax.net.SocketFactory;
     description = "This plugin detects the Erlang/OTP SSH CVE-2025-32433 RCE vulnerability.",
     author = "mr-mosi",
     bootstrapModule = ErlangOtpSshCve2025324336DetectorBootstrapModule.class)
-public final class ErlangOtpSshCve2025324336Detector implements VulnDetector {
+public class ErlangOtpSshCve2025324336Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final Clock utcClock;
@@ -158,16 +160,14 @@ public final class ErlangOtpSshCve2025324336Detector implements VulnDetector {
   private boolean isServiceVulnerable(NetworkService service) {
     logger.atInfo().log("Checking if Erlang/OTP SSH service is vulnerable.");
 
-    Payload payload = generateCallbackServerPayload();
-    // Check callback server is enabled
-    if (!payload.getPayloadAttributes().getUsesCallbackServer()) {
-      logger.atInfo().log(
+    var payload = getTsunamiCallbackHttpPayload();
+    // Check the callback server is enabled
+    if (payload == null || !payload.getPayloadAttributes().getUsesCallbackServer()) {
+      logger.atWarning().log(
           "The Tsunami callback server is not setup for this environment, so we cannot confirm the"
               + " RCE callback");
       return false;
     }
-    logger.atInfo().log("Callback server is available!");
-
     String command = payload.getPayload();
 
     var serviceIp = service.getNetworkEndpoint().getIpAddress().getAddress();
@@ -185,17 +185,19 @@ public final class ErlangOtpSshCve2025324336Detector implements VulnDetector {
     }
   }
 
-  private Payload generateCallbackServerPayload() {
-    PayloadGeneratorConfig config =
-        PayloadGeneratorConfig.newBuilder()
-            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
-            .setInterpretationEnvironment(
-                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
-            .setExecutionEnvironment(
-                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
-            .build();
-
-    return this.payloadGenerator.generate(config);
+  private Payload getTsunamiCallbackHttpPayload() {
+    try {
+      return this.payloadGenerator.generate(
+          PayloadGeneratorConfig.newBuilder()
+              .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
+              .setInterpretationEnvironment(
+                  PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
+              .setExecutionEnvironment(
+                  PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+              .build());
+    } catch (NotImplementedException n) {
+      return null;
+    }
   }
 
   private DetectionReport buildDetectionReport(TargetInfo targetInfo, NetworkService service) {
