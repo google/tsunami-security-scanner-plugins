@@ -18,10 +18,9 @@ finding: {
     value: "Supabase_ExposedUI"
   }
   title: "Exposed Supabase instance"
-  description: "Supabase instance is exposed and can be used to compromise the system."
+  description: "Supabase instance appears publicly reachable without proper authentication. unauthenticated access to pg-meta endpoints can allow arbitrary SQL (e.g., using COPY FROM PROGRAM) leading to data exfiltration, schema tampering, and potential remote command execution."
   recommendation:
-      "Configure authentication or ensure the Supabase instance is not exposed "
-          "to the network. See "
+      " Restrict network exposure, enforce API key / auth, Configure authentication or ensure the Supabase instance is not exposed to the network. See "
           "https://supabase.com/docs/guides/self-hosting/docker#managing-your-secrets for details."
   severity: CRITICAL
 }
