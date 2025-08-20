@@ -19,7 +19,7 @@ finding: {
   }
   severity: CRITICAL
   title: "Nexus Repository 3 Arbitrary File Read (CVE-2024-4956)"
-  description: "Sonatype Nexus Repository is the single source of truth for all your internal and third-party binaries, components, and packages. Integrate all your development tools into a centralized binary repository manager so that you can choose the best open source components, optimize your build performance, and ship code quickly while increasing visibility across your SDLC."
+  description: "Sonatype Nexus Repository is the single source of truth for all your internal and third-party binaries, components, and packages. Integrate all your development tools into a centralized binary repository manager so that you can choose the best open source components, optimize your build performance, and ship code quickly while increasing visibility across your SDLC. Path Traversal in Sonatype Nexus Repository 3 allows an unauthenticated attacker to read system files."
   recommendation: "Update the version to 3.68.1 or later."
   related_id: {
     publisher: "CVE"
