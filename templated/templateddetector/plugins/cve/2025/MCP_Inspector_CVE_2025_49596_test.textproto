@@ -17,6 +17,14 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
+        uri: "/"
+        status: 404
+        headers: [
+          { name: "Access-Control-Expose-Headers" value: "mcp-session-id" }
+        ]
+        body_content: "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /</pre>\n</body>\n</html>\n"
+      },
+      {
         uri: "/sse?transportType=stdio&command=curl&args={{ T_CBS_URI }}"
         status: 200
         body_content: "event: endpoint\ndata: /message?sessionId=c868d434-b75d-49cb-9f91-ca9d2c86e518"
@@ -36,6 +44,14 @@ tests: {
 
   mock_http_server: {
     mock_responses: [
+      {
+        uri: "/"
+        status: 404
+        headers: [
+          { name: "Access-Control-Expose-Headers" value: "mcp-session-id" }
+        ]
+        body_content: "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /</pre>\n</body>\n</html>\n"
+      },
       {
         uri: "/sse?transportType=stdio&command=curl&args={{ T_CBS_URI }}"
         status: 401

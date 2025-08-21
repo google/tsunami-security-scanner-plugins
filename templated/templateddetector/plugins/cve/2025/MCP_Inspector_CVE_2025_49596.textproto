@@ -34,6 +34,21 @@ config: {}
 ###########
 
 actions: {
+  name: "fingerprint_mcpinspector"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      expect_all: {
+        conditions: [
+          { header: { name: "Access-Control-Expose-Headers" } contains: "mcp-session-id" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
   name: "trigger_code_execution"
   http_request: {
     method: GET
@@ -62,6 +77,7 @@ actions: {
 workflows: {
   condition: REQUIRES_CALLBACK_SERVER
   actions: [
+    "fingerprint_mcpinspector",
     "trigger_code_execution",
     "check_callback_server_logs"
   ]
