@@ -17,6 +17,11 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
+        uri: "/"
+        status: 200
+        body_content: "<title>Sonatype Nexus Repository</title>something"
+      },
+      {
         uri: "/%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f../etc/passwd"
         status: 200
         body_content: "root:x:0:0:root:/root:/bin/bash"
@@ -37,8 +42,13 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
+        uri: "/"
+        status: 200
+        body_content: "<title>Sonatype Nexus Repository</title>something"
+      },
+      {
         uri: "/%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f../etc/passwd"
-        status: 404
+        status: 200
         body_content: ""
       }
     ]
@@ -56,6 +66,11 @@ tests: {
 
   mock_http_server: {
     mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<title>Hello World</title>something"
+      },
       {
         uri: "TSUNAMI_MAGIC_ANY_URI"
         status: 200
