@@ -1,0 +1,71 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Tikiwiki_CVE_2025_34111"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/tiki-index.php"
+        status: 200
+        body_content: "Tiki Wiki CMS Groupware"     
+        },
+      {
+        uri: "/vendor_extra/elfinder/php/connector.minimal.php"
+        status: 200
+        body_content: "added"     
+        },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "valid_tsunami"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/tiki-index.php"
+        status: 200
+        body_content: "Tiki Wiki CMS Groupware"     
+        },
+      {
+        uri: "/vendor_extra/elfinder/php/connector.minimal.php"
+        status: 200
+        body_content: "error"     
+        },
+      {wer
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "<pre>No route found. Please see http://dev.tiki.org/URL+Rewriting+Revamp</pre>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotTikiwiki_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
