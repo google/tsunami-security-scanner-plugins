@@ -78,7 +78,7 @@ actions: {
       { name: "X-CSRF-TOKEN" value: "{{ csrftoken }}" },
       { name: "Content-Type" value: "application/json" }
     ]
-    data: '{"name":"","namespace":"default","content":"apiVersion: batch/v1\\nkind: Job\\nmetadata:\\n  name: curl-job\\n  labels:\\n    app: curl-example\\nspec:\\n  template:\\n    metadata:\\n      labels:\\n        app: curl-example\\n    spec:\\n      containers:\\n      - name: curl-container\\n        image: curlimages/curl:latest\\n        command: [\\"/bin/sh\\", \\"-c\\"]\\n        args:\\n        - ^|\\n          curl -s {{ T_CBS_URI }} ^|^| exit 0\\n      restartPolicy: OnFailure\\n  backoffLimit: 3\\n  completions: 1","validate":true}'
+    data: '{"name":"","namespace":"default","content":"apiVersion: batch/v1\\nkind: Job\\nmetadata:\\n  name: curl-job\\n  labels:\\n    app: curl-example\\nspec:\\n  template:\\n    metadata:\\n      labels:\\n        app: curl-example\\n    spec:\\n      containers:\\n      - name: curl-container\\n        image: curlimages/curl:latest\\n        command: [\\"/bin/sh\\", \\"-c\\"]\\n        args:\\n        - |\\n          curl -s {{ T_CBS_URI }} || exit 0\\n      restartPolicy: OnFailure\\n  backoffLimit: 3\\n  completions: 1","validate":true}'
     response: {
       http_status: 201
     }
