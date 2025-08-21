@@ -34,6 +34,23 @@ config: {}
 ###########
 
 actions: {
+  name: "fingerprinting_for_nexus"
+  http_request: {
+    method: GET
+    uri: "/"
+    headers: []
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<title>Sonatype Nexus Repository</title>" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
   name: "trigger_arbitrary_file_read"
   http_request: {
     method: GET
@@ -56,6 +73,7 @@ actions: {
 
 workflows: {
   actions: [
+    "fingerprinting_for_nexus",
     "trigger_arbitrary_file_read"
   ]
 }
