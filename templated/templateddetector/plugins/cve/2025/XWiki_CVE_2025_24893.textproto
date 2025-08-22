@@ -49,6 +49,11 @@ actions: {
           }
         ]
       }
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<div id=\"xwikiplatformversion\">" }
+        ]
+      }
     }
   }
 }
