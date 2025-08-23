@@ -9,20 +9,28 @@ tests: {
   name: "whenVulnerable_returnsTrue"
   expect_vulnerability: true
 
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
   mock_http_server: {
     mock_responses: [
       {
         uri: "/tiki-index.php"
         status: 200
-        body_content: "Tiki Wiki CMS Groupware"     
-        },
+        body_content: '<meta name="generator" content="Tiki Wiki CMS Groupware - https://tiki.org">'
+      },
       {
         uri: "/vendor_extra/elfinder/php/connector.minimal.php"
         status: 200
-        body_content: "added"     
-        },
+        body_content: '{"added":[{"mime":"text\\/x-php","ts":1755869528,"read":1,"write":1,"size":43,"hash":"l1_dHN1bmFtaV8xNzU1ODY5NTI3OTU3LnBocA","name":"{{ file_name }}.php","phash":"l1_Lw"}]}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      },
       {
-        uri: "TSUNAMI_MAGIC_ANY_URI"
+        uri: "/vendor_extra/elfinder/files/{{ file_name }}.php"
         status: 200
         body_content: "valid_tsunami"
       }
@@ -34,22 +42,26 @@ tests: {
   name: "whenNotVulnerable_returnsFalse"
   expect_vulnerability: false
 
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
   mock_http_server: {
     mock_responses: [
       {
         uri: "/tiki-index.php"
         status: 200
-        body_content: "Tiki Wiki CMS Groupware"     
-        },
+        body_content: '<meta name="generator" content="Tiki Wiki CMS Groupware - https://tiki.org">'
+      },
       {
         uri: "/vendor_extra/elfinder/php/connector.minimal.php"
-        status: 200
-        body_content: "error"     
-        },
-      {wer
-        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 403  
+      },
+      {
+        uri: "/vendor_extra/elfinder/files/{{ file_name }}.php"
         status: 404
-        body_content: "<pre>No route found. Please see http://dev.tiki.org/URL+Rewriting+Revamp</pre>"
+        body_content: "not found"
       }
     ]
   }
@@ -69,3 +81,4 @@ tests: {
     ]
   }
 }
+

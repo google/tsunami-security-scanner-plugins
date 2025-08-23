@@ -41,6 +41,7 @@ actions: {
     method: GET
     uri: "/tiki-index.php"
     response: {
+      http_status: 200
       expect_all: {
         conditions: [
           { body: {} contains: "Tiki Wiki CMS" }
@@ -86,9 +87,6 @@ actions: {
   }
 }
 
-
-
-
 #############
 # WORKFLOWS #
 #############
@@ -98,7 +96,7 @@ workflows: {
     { name: "file_name" value:"tsunami_{{ T_UTL_CURRENT_TIMESTAMP_MS }}"}
   ]
   actions: [
-    "tikiwiki_fingerprint",
+    "tikiwiki_fingerprint"
     "tikiwiki_upload_php_webshell",
     "tikiwiki_trigger_code_execution"
   ]
