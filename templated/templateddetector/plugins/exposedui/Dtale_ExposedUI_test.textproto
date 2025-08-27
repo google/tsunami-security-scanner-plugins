@@ -1,0 +1,84 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Dtale_ExposedUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/dtale/popup/upload"
+        status: 200
+        body_content: '<link rel="preload" href="/dtale/static/fonts/istok.woff" as="font" type="font/woff" crossorigin>'
+                      "<script type=\"text/javascript\" src=\"/dtale/static/dist/base_styles_bundle.js\"></script>"
+      },
+      {
+        uri: "/dtale/upload"
+        status: 200
+        body_content: '{"data_id":"112233","success":true}'
+        condition: {
+          headers: [
+            { name: "Content-Type" value: "multipart/form-data; boundary=----geckoformboundaryb38fffc548bd5dad82328985c3f223d4" }
+          ]
+          body_content: '------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="simple-dtale-data.csv"; filename="simple-dtale-data.csv"\r\nContent-Type: text/csv\r\n\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="header"\r\n\r\ntrue\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="separatorType"\r\n\r\ncomma\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="separator"\r\n\r\n\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4--\r\n'
+        }
+      },
+      {
+        uri: "/dtale/chart-data/112233?query={{ payload }}"
+        status: 200
+        body_content: "\"error\":\""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/dtale/popup/upload"
+        status: 200
+        body_content: '<link rel="preload" href="/dtale/static/fonts/istok.woff" as="font" type="font/woff" crossorigin>'
+            "<script type=\"text/javascript\" src=\"/dtale/static/dist/base_styles_bundle.js\"></script>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotDocsGPT_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
