@@ -30,5 +30,5 @@ dependencies {
     testImplementation "com.google.truth:truth:1.4.4"
     testImplementation "com.squareup.okhttp3:mockwebserver:3.12.0"
     testImplementation "com.google.truth.extensions:truth-proto-extension:1.4.4"
-    testImplementation "com.google.inject.extensions:guice-testlib:4.2.3"
+    testImplementation "com.google.inject.extensions:guice-testlib:6.0.0"
 }

@@ -29,8 +29,8 @@ dependencies {
 
     testImplementation "junit:junit:4.13.2"
     testImplementation "org.mockito:mockito-core:5.18.0"
-    testImplementation "com.google.inject:guice:4.2.3"
-    testImplementation "com.google.inject.extensions:guice-testlib:4.2.3"
+    testImplementation "com.google.inject:guice:6.0.0"
+    testImplementation "com.google.inject.extensions:guice-testlib:6.0.0"
     testImplementation "com.google.truth:truth:1.4.4"
     testImplementation "com.google.truth.extensions:truth-java8-extension:1.4.4"
     testImplementation "com.google.truth.extensions:truth-proto-extension:1.4.4"
