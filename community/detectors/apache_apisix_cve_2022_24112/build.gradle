@@ -16,19 +16,22 @@ repositories {
 
 
 
+def coreRepoBranch = System.getenv("GITBRANCH_TSUNAMI_CORE") ?: "stable"
+def tcsRepoBranch = System.getenv("GITBRANCH_TSUNAMI_TCS") ?: "stable"
+
 dependencies {
     implementation("com.google.tsunami:tsunami-common") {
-      version { branch = "stable" }
+      version { branch = "${coreRepoBranch}" }
     }
     implementation("com.google.tsunami:tsunami-plugin") {
-      version { branch = "stable" }
+      version { branch = "${coreRepoBranch}" }
     }
     implementation("com.google.tsunami:tsunami-proto") {
-      version { branch = "stable" }
+      version { branch = "${coreRepoBranch}" }
     }
 
     testImplementation("com.google.tsunami:tcs-proto") {
-      version { branch = "stable" }
+      version { branch = "${coreRepoBranch}" }
     }
 
     testImplementation "junit:junit:4.13.2"
