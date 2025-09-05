@@ -41,6 +41,7 @@ import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
+import com.google.tsunami.templatedplugin.proto.tests.MockCallbackServer;
 import com.google.tsunami.templatedplugin.proto.tests.MockHttpServer;
 import com.google.tsunami.templatedplugin.proto.tests.TemplatedPluginTests;
 import java.io.IOException;
@@ -287,6 +288,7 @@ public final class TemplatedDetectorDynamicTest {
                   TemplatedPluginTests.Test.newBuilder()
                       .setName(testName)
                       .setExpectVulnerability(false)
+                      .setMockCallbackServer(MockCallbackServer.newBuilder().setEnabled(true))
                       .setMockHttpServer(
                           MockHttpServer.newBuilder()
                               .addMockResponses(
