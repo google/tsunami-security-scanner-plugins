@@ -22,7 +22,7 @@ tests: {
         body_content: "added"
       },
       {
-        uri: "/vendor_extra/elfinder/files/{{ payload }}.php"
+        uri: "/vendor_extra/elfinder/files/tsunami_security_scan.php"
         status: 200
         body_content: "valid_tsunami"
       }
