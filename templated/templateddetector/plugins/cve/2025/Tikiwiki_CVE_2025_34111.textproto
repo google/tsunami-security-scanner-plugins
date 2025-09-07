@@ -15,7 +15,7 @@ info: {
 finding: {
   main_id: {
     publisher: "GOOGLE"
-    value: "Tikiwiki_CVE_2025_34111"
+    value: "CVE-2025-34111"
   }
   severity: CRITICAL
   title: "Unauthenticated File Upload Tikiwiki (CVE-2025-34111)"
