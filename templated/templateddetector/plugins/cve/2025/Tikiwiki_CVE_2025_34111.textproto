@@ -18,7 +18,7 @@ finding: {
     value: "CVE-2025-34111"
   }
   severity: CRITICAL
-  title: "Unauthenticated File Upload Tikiwiki (CVE-2025-34111)"
+  title: "Tiki Wiki Unauthenticated File Upload (CVE-2025-34111)"
   description: "Vulnerable Tikiwiki versions are susceptible to unauthenticated file upload that leads to remote code execution. A remote and unauthenticated attacker can send crafted HTTP requests from this endpoint to upload malicious php file to get remote code execution."
   recommendation: "Update the version to 15.2 or later."
   related_id: {
