@@ -45,11 +45,6 @@ tests: {
         uri: "/vendor_extra/elfinder/php/connector.minimal.php"
         status: 200
         body_content: "error"  
-      },
-      {
-        uri: "/vendor_extra/elfinder/files/{{ payload }}.php"
-        status: 404
-        body_content: "not found"
       }
     ]
   }
