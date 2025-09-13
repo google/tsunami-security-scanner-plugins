@@ -39,6 +39,9 @@ sourceSets {
     }
 }
 
+def coreRepoBranch = System.getenv("GITBRANCH_TSUNAMI_CORE") ?: "stable"
+def tcsRepoBranch = System.getenv("GITBRANCH_TSUNAMI_TCS") ?: "stable"
+
 dependencies {
     implementation "com.google.auto.value:auto-value-annotations:1.11.0"
     implementation "com.google.flogger:flogger:0.9"
@@ -51,13 +54,13 @@ dependencies {
     implementation "com.google.protobuf:protobuf-javalite:3.25.5"
     implementation "com.google.protobuf:protobuf-java-util:3.25.5"
     implementation("com.google.tsunami:tsunami-common") {
-      version { branch = "stable" }
+      version { branch = "${coreRepoBranch}" }
     }
     implementation("com.google.tsunami:tsunami-plugin") {
-      version { branch = "stable" }
+      version { branch = "${coreRepoBranch}" }
     }
     implementation("com.google.tsunami:tsunami-proto") {
-      version { branch = "stable" }
+      version { branch = "${coreRepoBranch}" }
     }
     implementation "javax.inject:javax.inject:1"
     implementation "com.beust:jcommander:1.48"

@@ -73,7 +73,7 @@ public final class Cve202326360Detector implements VulnDetector {
       ImmutableList.of(VULNERABLE_REQUEST_BODY_WINDOWS, VULNERABLE_REQUEST_BODY_LINUX);
 
   private static final Pattern VULNERABLE_RESPONSE_PATTERN =
-      Pattern.compile("password=|root:[x*]:0:0:");
+      Pattern.compile("</wddxPacket>root:[x*]:0:0:");
 
   private final HttpClient httpClient;
   private final Clock utcClock;

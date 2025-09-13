@@ -4,6 +4,12 @@ FROM ghcr.io/google/tsunami-scanner-devel:latest AS build
 
 ARG TSUNAMI_PLUGIN_FOLDER
 
+ENV GITREPO_TSUNAMI_CORE="https://github.com/google/tsunami-security-scanner.git"
+ENV GITBRANCH_TSUNAMI_CORE="stable"
+
+ENV GITREPO_TSUNAMI_TCS="https://github.com/google/tsunami-security-scanner-callback-server.git"
+ENV GITBRANCH_TSUNAMI_TCS="stable"
+
 ## Compile the plugins
 WORKDIR /usr/repos/plugins
 COPY ${TSUNAMI_PLUGIN_FOLDER} /usr/repos/plugins/${TSUNAMI_PLUGIN_FOLDER}
