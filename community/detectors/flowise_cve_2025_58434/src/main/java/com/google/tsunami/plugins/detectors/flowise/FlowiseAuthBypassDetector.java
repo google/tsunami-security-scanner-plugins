@@ -84,8 +84,13 @@ public final class FlowiseAuthBypassDetector implements VulnDetector {
   public ImmutableList<Vulnerability> getAdvisories() {
     return ImmutableList.of(
         Vulnerability.newBuilder()
-            .setMainId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE_2025_58434"))
+            .setMainId(
+                VulnerabilityId.newBuilder()
+                    .setPublisher("TSUNAMI_COMMUNITY")
+                    .setValue("CVE_2025_58434"))
             .setSeverity(Severity.HIGH)
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2025-58434"))
             .setTitle("Flowise Authentication Bypass (CVE-2025-58434)")
             .setDescription(
                 "Flowise instance is vulnerable to authentication bypass via the forgot-password"
