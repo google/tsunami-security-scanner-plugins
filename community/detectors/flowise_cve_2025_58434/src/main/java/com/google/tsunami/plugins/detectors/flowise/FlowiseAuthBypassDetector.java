@@ -17,7 +17,6 @@
 package com.google.tsunami.plugins.detectors.flowise;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -36,6 +35,7 @@ import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
+import com.google.tsunami.proto.DetectionReportList.Builder;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
@@ -46,6 +46,7 @@ import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Optional;
 import javax.inject.Inject;
 
 /** A {@link VulnDetector} that detects Flowise authentication bypass vulnerability. */
@@ -70,7 +71,7 @@ public final class FlowiseAuthBypassDetector implements VulnDetector {
           + " Ensure proper authentication is enforced on the forgot-password endpoint.";
 
   @VisibleForTesting
-  static final ImmutableList<String> EXISTING_USER_EMAILS =
+  static final ImmutableList<String> EMAILS_TO_TEST =
       ImmutableList.of("admin@admin.com", "test@example.com", "user@domain.com");
 
   @Inject
@@ -83,10 +84,7 @@ public final class FlowiseAuthBypassDetector implements VulnDetector {
   public ImmutableList<Vulnerability> getAdvisories() {
     return ImmutableList.of(
         Vulnerability.newBuilder()
-            .setMainId(
-                VulnerabilityId.newBuilder()
-                    .setPublisher("TSUNAMI_COMMUNITY")
-                    .setValue("CVE_2025_58434"))
+            .setMainId(VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE_2025_58434"))
             .setSeverity(Severity.HIGH)
             .setTitle("Flowise Authentication Bypass (CVE-2025-58434)")
             .setDescription(
@@ -101,15 +99,19 @@ public final class FlowiseAuthBypassDetector implements VulnDetector {
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
     logger.atInfo().log("FlowiseAuthBypassDetector starts detecting.");
 
-    return DetectionReportList.newBuilder()
-        .addAllDetectionReports(
-            matchedServices.stream()
-                .filter(NetworkServiceUtils::isWebService)
-                .filter(this::isFlowiseService)
-                .filter(this::isServiceVulnerable)
-                .map(networkService -> buildDetectionReport(targetInfo, networkService))
-                .collect(toImmutableList()))
-        .build();
+    Builder detectionReport = DetectionReportList.newBuilder();
+    matchedServices.stream()
+        .filter(NetworkServiceUtils::isWebService)
+        .filter(this::isFlowiseService)
+        .forEach(
+            networkService -> {
+              Optional<String> vulnerableAccountEmail = isServiceVulnerable(networkService);
+              vulnerableAccountEmail.ifPresent(
+                  s ->
+                      detectionReport.addDetectionReports(
+                          buildDetectionReport(targetInfo, networkService, s)));
+            });
+    return detectionReport.build();
   }
 
   private boolean isFlowiseService(NetworkService networkService) {
@@ -129,11 +131,11 @@ public final class FlowiseAuthBypassDetector implements VulnDetector {
     }
   }
 
-  private boolean isServiceVulnerable(NetworkService networkService) {
+  private Optional<String> isServiceVulnerable(NetworkService networkService) {
     String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
 
     // Try each email in the test list
-    for (String testEmail : EXISTING_USER_EMAILS) {
+    for (String testEmail : EMAILS_TO_TEST) {
       HttpResponse response;
       try {
         String forgotPasswordUri = targetUri + "api/v1/account/forgot-password";
@@ -153,7 +155,7 @@ public final class FlowiseAuthBypassDetector implements VulnDetector {
             && response.bodyString().get().contains("\"credential\"")
             && response.bodyString().get().contains("\"tempToken\"")
             && response.bodyString().get().contains("\"tokenExpiry\"")) {
-          return true;
+          return Optional.of(testEmail);
         }
       } catch (IOException e) {
         logger.atWarning().withCause(e).log(
@@ -161,18 +163,18 @@ public final class FlowiseAuthBypassDetector implements VulnDetector {
       }
     }
 
-    return false;
+    return Optional.empty();
   }
 
   private DetectionReport buildDetectionReport(
-      TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
+      TargetInfo targetInfo, NetworkService vulnerableNetworkService, String testedAccountEmail) {
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
-            getAdvisories().get(0).toBuilder()
+            getAdvisories().getFirst().toBuilder()
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
                         .setTextData(
@@ -180,9 +182,11 @@ public final class FlowiseAuthBypassDetector implements VulnDetector {
                                 .setText(
                                     String.format(
                                         "The Flowise instance at %s is vulnerable to authentication"
-                                            + " bypass (CVE-2025-58434).",
+                                            + " bypass (CVE-2025-58434). A password reset token was"
+                                            + " successfully obtained for the account %s.",
                                         NetworkServiceUtils.buildWebApplicationRootUrl(
-                                            vulnerableNetworkService))))))
+                                            vulnerableNetworkService),
+                                        testedAccountEmail)))))
         .build();
   }
 }

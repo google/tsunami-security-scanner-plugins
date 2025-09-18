@@ -125,15 +125,18 @@ public final class FlowiseAuthBypassDetectorTest {
                     Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(
-                    detector.getAdvisories().get(0).toBuilder()
+                    detector.getAdvisories().getFirst().toBuilder()
                         .addAdditionalDetails(
                             AdditionalDetail.newBuilder()
                                 .setTextData(
                                     TextData.newBuilder()
                                         .setText(
                                             String.format(
-                                                "The Flowise instance at %s is vulnerable to"
-                                                    + " authentication bypass (CVE-2025-58434).",
+                                                "The Flowise instance at %s is"
+                                                    + " vulnerable to authentication bypass"
+                                                    + " (CVE-2025-58434). A password reset token"
+                                                    + " was successfully obtained for the account"
+                                                    + " admin@admin.com.",
                                                 NetworkServiceUtils.buildWebApplicationRootUrl(
                                                     service))))))
                 .build());
@@ -161,8 +164,7 @@ public final class FlowiseAuthBypassDetectorTest {
   }
 
   @Test
-  public void detect_whenFlowisePresent_butNotVulnerable_returnsNoVulnerability()
-      throws IOException {
+  public void detect_whenNotVulnerableFlowise_returnsNothing() throws IOException {
     mockWebServer.setDispatcher(
         new Dispatcher() {
           @Override
