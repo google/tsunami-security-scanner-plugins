@@ -107,9 +107,9 @@ public final class FlowiseAuthBypassDetector implements VulnDetector {
             networkService -> {
               Optional<String> vulnerableAccountEmail = isServiceVulnerable(networkService);
               vulnerableAccountEmail.ifPresent(
-                  s ->
+                  testedAccountEmail ->
                       detectionReport.addDetectionReports(
-                          buildDetectionReport(targetInfo, networkService, s)));
+                          buildDetectionReport(targetInfo, networkService, testedAccountEmail)));
             });
     return detectionReport.build();
   }
