@@ -1,0 +1,39 @@
+plugins {
+    id 'java-library'
+}
+
+description = 'Apache RocketMQ CVE-2023-33246 Tsunami detector plugin.'
+group = 'com.google.tsunami'
+version = '0.0.1-SNAPSHOT'
+
+repositories {
+    maven { // The google mirror is less flaky than mavenCentral()
+        url 'https://maven-central.storage-download.googleapis.com/repos/central/data/'
+    }
+    mavenCentral()
+    mavenLocal()
+}
+
+def coreRepoBranch = System.getenv("GITBRANCH_TSUNAMI_CORE") ?: "stable"
+def tcsRepoBranch = System.getenv("GITBRANCH_TSUNAMI_TCS") ?: "stable"
+
+dependencies {
+    implementation("com.google.tsunami:tsunami-common") {
+      version { branch = "${coreRepoBranch}" }
+    }
+    implementation("com.google.tsunami:tsunami-plugin") {
+      version { branch = "${coreRepoBranch}" }
+    }
+    implementation("com.google.tsunami:tsunami-proto") {
+      version { branch = "${coreRepoBranch}" }
+    }
+
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "org.mockito:mockito-core:5.18.0"
+    testImplementation "com.google.truth:truth:1.4.4"
+    testImplementation "com.squareup.okhttp3:mockwebserver:3.12.0"
+    testImplementation "com.google.truth.extensions:truth-java8-extension:1.4.4"
+    testImplementation "com.google.truth.extensions:truth-proto-extension:1.4.4"
+    testImplementation "com.google.inject:guice:6.0.0"
+    testImplementation "com.google.inject.extensions:guice-testlib:6.0.0"
+}
