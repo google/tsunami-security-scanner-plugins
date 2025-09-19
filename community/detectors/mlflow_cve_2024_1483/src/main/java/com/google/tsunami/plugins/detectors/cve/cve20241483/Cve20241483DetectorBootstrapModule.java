@@ -14,19 +14,15 @@
  * limitations under the License.
  */
 
-package com.google.tsunami.plugins.detectors.cve.cve20248438;
+package com.google.tsunami.plugins.detectors.cve.cve20241483;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-/** An example Guice module that bootstraps the {@link Cve20248438Detector}. */
-public final class Cve20248438DetectorBootstrapModule extends PluginBootstrapModule {
+/** A {@link PluginBootstrapModule} for {@link Cve20241483Detector}. */
+public final class Cve20241483DetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    // Tsunami relies heavily on Guice (https://github.com/google/guice). All Guice bindings for
-    // your plugin should be implemented here.
-
-    // registerPlugin method is required in order for the Tsunami scanner to identify your plugin.
-    registerPlugin(Cve20248438Detector.class);
+    registerPlugin(Cve20241483Detector.class);
   }
 }
