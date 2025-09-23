@@ -455,6 +455,7 @@ public final class KubeflowRceDetector implements VulnDetector {
             .setDescription(
                 "This vulnerability check exposed Kubeflow API by executing a OS command in a"
                     + " kubeflow pipeline.")
+            .setRecommendation("Restrict access to the Kubeflow API.")
             .build());
   }
 
