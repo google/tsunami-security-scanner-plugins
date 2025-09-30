@@ -33,7 +33,7 @@ actions: {
   name: "is_kubernetes_dashboard"
   http_request: {
     method: GET
-    uri: "/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/api/v1/namespace"
+    uri: "/api/v1/namespace"
     response: {
       http_status: 200
       expect_all: {
@@ -49,7 +49,7 @@ actions: {
   name: "retrieve_csrftoken"
   http_request: {
     method: GET
-    uri: "/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/api/v1/csrftoken/appdeploymentfromfile"
+    uri: "/api/v1/csrftoken/appdeploymentfromfile"
     response: {
       http_status: 200
       expect_all: {
@@ -73,7 +73,7 @@ actions: {
   name: "trigger_code_execution"
   http_request: {
     method: POST
-    uri: "/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/api/v1/appdeploymentfromfile"
+    uri: "/api/v1/appdeploymentfromfile"
     headers: [
       { name: "X-CSRF-TOKEN" value: "{{ csrftoken }}" },
       { name: "Content-Type" value: "application/json" }
@@ -89,7 +89,7 @@ actions: {
   name: "cleanup_job"
   http_request: {
     method: DELETE
-    uri: "/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/api/v1/_raw/job/namespace/default/name/curl-job"
+    uri: "/api/v1/_raw/job/namespace/default/name/curl-job"
     response: {
       http_status: 200
     }
