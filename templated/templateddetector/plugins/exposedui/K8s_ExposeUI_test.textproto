@@ -35,12 +35,12 @@ tests: {
             { name: "Content-Type" value: "application/json" }
           ]
           body_content:[
-            '{"name":"","namespace":"default","content":"apiVersion: batch/v1\\nkind: Job\\nmetadata:\\n  name: curl-job\\n  labels:\\n    app: curl-example\\nspec:\\n  template:\\n    metadata:\\n      labels:\\n        app: curl-example\\n    spec:\\n      containers:\\n      - name: curl-container\\n        image: curlimages/curl:latest\\n        command: [\\"/bin/sh\\", \\"-c\\"]\\n'
+            '{"name":"","namespace":"default","content":"apiVersion: batch/v1\\nkind: Job\\nmetadata:\\n  name: tsunami-security-scanner-job\\n  labels:\\n    app: curl-example\\nspec:\\n  template:\\n    metadata:\\n      labels:\\n        app: curl-example\\n    spec:\\n      containers:\\n      - name: curl-container\\n        image: curlimages/curl:latest\\n        command: [\\"/bin/sh\\", \\"-c\\"]\\n'
           ]
         }
       },
       {
-        uri: "/api/v1/_raw/job/namespace/default/name/curl-job"
+        uri: "/api/v1/_raw/job/namespace/default/name/tsunami-security-scanner-job"
         status: 200
       }
     ]
