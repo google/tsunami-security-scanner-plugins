@@ -29,7 +29,6 @@ import network_service_pb2
 import plugin_representation_pb2
 import reconnaissance_pb2
 import software_pb2
-import vulnerability_pb2
 import py_plugins.bentoml_deserialization_rce_cve20242912.bentoml_deserialization_rce_cve20242912 as bentoml_rce
 
 
@@ -125,22 +124,7 @@ class Cve20242912DetectorTest(absltest.TestCase):
             target_info=target_info,
             network_service=network_service,
             detection_status=detection_pb2.VULNERABILITY_VERIFIED,
-            vulnerability=vulnerability_pb2.Vulnerability(
-                main_id=vulnerability_pb2.VulnerabilityId(
-                    publisher='TSUNAMI_COMMUNITY', value='CVE_2024_2912'
-                ),
-                related_id=[
-                    vulnerability_pb2.VulnerabilityId(
-                        publisher='CVE', value='CVE-2024-2912'
-                    ),
-                ],
-                severity=vulnerability_pb2.Severity.CRITICAL,
-                title='BentoML Insecure Deserialization RCE (CVE-2024-2912)',
-                recommendation=(
-                    'Users of affected versions should upgrade to 3.1.7, 3.2.3.'
-                ),
-                description=bentoml_rce._VULN_DESCRIPTION,
-            ),
+            vulnerability=self.detector.GetAdvisories()[0],
         ),
         detection_reports.detection_reports[0],
     )

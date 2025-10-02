@@ -14,6 +14,7 @@
 """Tests for SpringCloudFunctionDetector."""
 
 import unittest.mock as umock
+
 from absl.testing import absltest
 import requests_mock
 
@@ -30,7 +31,6 @@ import network_service_pb2
 import plugin_representation_pb2
 import reconnaissance_pb2
 import software_pb2
-import vulnerability_pb2
 from py_plugins.spring_cloud_function_cve_202222963 import spring_cloud_function_detector
 from py_plugins.spring_cloud_function_cve_202222963.spring_cloud_function_detector import _VULN_DESCRIPTION
 from py_plugins.spring_cloud_function_cve_202222963.spring_cloud_function_detector import _VULN_PATH
@@ -107,20 +107,7 @@ class SpringCloudFunctionDetectorTest(absltest.TestCase):
             target_info=target_info,
             network_service=network_service,
             detection_status=detection_pb2.VULNERABILITY_VERIFIED,
-            vulnerability=vulnerability_pb2.Vulnerability(
-                main_id=vulnerability_pb2.VulnerabilityId(
-                    publisher='TSUNAMI_COMMUNITY', value='CVE_2022_22963'
-                ),
-                severity=vulnerability_pb2.CRITICAL,
-                title=(
-                    'Spring Cloud Function SpEL Code Injection RCE'
-                    ' (CVE-2022-22963)'
-                ),
-                recommendation=(
-                    'Users of affected versions should upgrade to 3.1.7, 3.2.3.'
-                ),
-                description=_VULN_DESCRIPTION,
-            ),
+            vulnerability=self.detector.GetAdvisories()[0],
         ),
         detection_reports.detection_reports[0],
     )
@@ -164,20 +151,7 @@ class SpringCloudFunctionDetectorTest(absltest.TestCase):
             target_info=target_info,
             network_service=network_service,
             detection_status=detection_pb2.VULNERABILITY_VERIFIED,
-            vulnerability=vulnerability_pb2.Vulnerability(
-                main_id=vulnerability_pb2.VulnerabilityId(
-                    publisher='TSUNAMI_COMMUNITY', value='CVE_2022_22963'
-                ),
-                severity=vulnerability_pb2.CRITICAL,
-                title=(
-                    'Spring Cloud Function SpEL Code Injection RCE'
-                    ' (CVE-2022-22963)'
-                ),
-                recommendation=(
-                    'Users of affected versions should upgrade to 3.1.7, 3.2.3.'
-                ),
-                description=_VULN_DESCRIPTION,
-            ),
+            vulnerability=self.detector.GetAdvisories()[0],
         ),
         detection_reports.detection_reports[0],
     )

@@ -1,4 +1,3 @@
-
 # Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -66,6 +65,20 @@ class JupyterExposedUiDetector(tsunami_plugin.VulnDetector):
         )
     )
 
+  def GetAdvisories(self) -> list[vulnerability_pb2.Vulnerability]:
+    """Returns the advisories for this plugin."""
+    return [
+        vulnerability_pb2.Vulnerability(
+            main_id=vulnerability_pb2.VulnerabilityId(
+                publisher='GOOGLE', value='JUPYTER_NOTEBOOK_EXPOSED_UI'
+            ),
+            severity=vulnerability_pb2.Severity.CRITICAL,
+            title='Jupyter Notebook Exposed Ui',
+            recommendation=_VULN_REMEDIATION,
+            description='Jupyter Notebook is not password or token protected',
+        ),
+    ]
+
   def Detect(
       self,
       target: tsunami_plugin.TargetInfo,
@@ -128,13 +141,5 @@ class JupyterExposedUiDetector(tsunami_plugin.VulnDetector):
         network_service=vulnerable_service,
         detection_timestamp=timestamp_pb2.Timestamp().GetCurrentTime(),
         detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
-        vulnerability=vulnerability_pb2.Vulnerability(
-            main_id=vulnerability_pb2.VulnerabilityId(
-                publisher='GOOGLE', value='JUPYTER_NOTEBOOK_EXPOSED_UI'
-            ),
-            severity=vulnerability_pb2.Severity.CRITICAL,
-            title='Jupyter Notebook Exposed Ui',
-            recommendation=_VULN_REMEDIATION,
-            description='Jupyter Notebook is not password or token protected',
-        ),
+        vulnerability=self.GetAdvisories()[0],
     )

@@ -59,6 +59,24 @@ class PyZmqRceDetector(tsunami_plugin.VulnDetector):
         )
     )
 
+  def GetAdvisories(self) -> list[vulnerability_pb2.Vulnerability]:
+    """Returns the advisories for this plugin."""
+    return [
+        vulnerability_pb2.Vulnerability(
+            main_id=vulnerability_pb2.VulnerabilityId(
+                publisher='TSUNAMI_COMMUNITY', value='PyZmqRceDetector'
+            ),
+            severity=vulnerability_pb2.Severity.CRITICAL,
+            title='PyZMQ TCP Server Insecure Deserialization RCE',
+            recommendation=(
+                'Users Should be aware of the exposed PyZMQ TCP server and'
+                ' should take necessary steps to secure it with proper'
+                ' authentication.'
+            ),
+            description=_VULN_DESCRIPTION,
+        ),
+    ]
+
   def Detect(
       self,
       target: tsunami_plugin.TargetInfo,
@@ -156,17 +174,5 @@ class PyZmqRceDetector(tsunami_plugin.VulnDetector):
         network_service=vulnerable_service,
         detection_timestamp=timestamp_pb2.Timestamp().GetCurrentTime(),
         detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
-        vulnerability=vulnerability_pb2.Vulnerability(
-            main_id=vulnerability_pb2.VulnerabilityId(
-                publisher='TSUNAMI_COMMUNITY', value='PyZmqRceDetector'
-            ),
-            severity=vulnerability_pb2.Severity.CRITICAL,
-            title='PyZMQ TCP Server Insecure Deserialization RCE',
-            recommendation=(
-                'Users Should be aware of the exposed PyZMQ TCP server and'
-                ' should take necessary steps to secure it with proper'
-                ' authentication.'
-            ),
-            description=_VULN_DESCRIPTION,
-        ),
+        vulnerability=self.GetAdvisories()[0],
     )
