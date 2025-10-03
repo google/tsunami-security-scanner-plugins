@@ -17,7 +17,7 @@ finding: {
     publisher: "GOOGLE"
     value: "APACHEPINOT_CVE_2024_56325"
   }
-  severity: CRITICAL
+  severity: HIGH
   title: "ApachePinot is vulnerable to Authentication Bypass"
   description: "The instance of ApachePinot is vulnerable Authentication Bypass. This allows to create a new user which can run pinot SQL queries."
   recommendation: "Update to version 1.4.0 or higher."
