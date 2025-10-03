@@ -28,7 +28,6 @@ finding: {
 }
 
 config: {
-  debug: true
 }
 
 ###############
