@@ -38,6 +38,10 @@ tests: {
         condition: {
           body_content: '{"processDefinitionKey": "jsScriptProcess"}'
         }
+      },
+      {
+        uri: "/flowable-rest/service/repository/deployments/15a2a09b-7833-11f0-be7c-d6c58d18e6b5"
+        status: 201
       }
     ]
   }
@@ -93,6 +97,10 @@ tests: {
         condition: {
           body_content: '{"processDefinitionKey": "jsScriptProcess"}'
         }
+      },
+      {
+        uri: "/flowable-rest/service/repository/deployments/15a2a09b-7833-11f0-be7c-d6c58d18e6b5"
+        status: 201
       }
     ]
   }

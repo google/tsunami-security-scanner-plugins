@@ -61,6 +61,15 @@ actions: {
         conditions: { body {} contains: '"name"' }
         conditions: { body {} contains: '"deploymentTime"' }
       }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"id\":\"([a-f0-9-]+)\""
+            variable_name: "deploymentid"
+          }
+        ]
+      }
     }
   }
 }
@@ -84,6 +93,15 @@ actions: {
       }
     }
   }
+  cleanup_actions:["cleanup_tsunami_process"]
+}
+
+actions: {
+  name: "cleanup_tsunami_process"
+  http_request: {
+    method: DELETE
+    uri: "/flowable-rest/service/repository/deployments/{{ deploymentid }}"
+  }
 }
 
 actions: {
@@ -100,9 +118,7 @@ actions: {
 #############
 # WORKFLOWS #
 #############
-config {
-  debug: true
-}
+config { }
 
 workflows: {
   actions: [
