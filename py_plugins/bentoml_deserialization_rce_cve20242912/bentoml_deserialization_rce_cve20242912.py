@@ -67,6 +67,27 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
         )
     )
 
+  def GetAdvisories(self) -> list[vulnerability_pb2.Vulnerability]:
+    """Returns the advisories for this plugin."""
+    return [
+        vulnerability_pb2.Vulnerability(
+            main_id=vulnerability_pb2.VulnerabilityId(
+                publisher='TSUNAMI_COMMUNITY', value='CVE_2024_2912'
+            ),
+            related_id=[
+                vulnerability_pb2.VulnerabilityId(
+                    publisher='CVE', value='CVE-2024-2912'
+                ),
+            ],
+            severity=vulnerability_pb2.Severity.CRITICAL,
+            title='BentoML Insecure Deserialization RCE (CVE-2024-2912)',
+            recommendation=(
+                'Users of affected versions should upgrade to 3.1.7, 3.2.3.'
+            ),
+            description=_VULN_DESCRIPTION,
+        )
+    ]
+
   def Detect(
       self,
       target: tsunami_plugin.TargetInfo,
@@ -220,20 +241,5 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
         network_service=vulnerable_service,
         detection_timestamp=timestamp_pb2.Timestamp().GetCurrentTime(),
         detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
-        vulnerability=vulnerability_pb2.Vulnerability(
-            main_id=vulnerability_pb2.VulnerabilityId(
-                publisher='TSUNAMI_COMMUNITY', value='CVE_2024_2912'
-            ),
-            related_id=[
-                vulnerability_pb2.VulnerabilityId(
-                    publisher='CVE', value='CVE-2024-2912'
-                ),
-            ],
-            severity=vulnerability_pb2.Severity.CRITICAL,
-            title='BentoML Insecure Deserialization RCE (CVE-2024-2912)',
-            recommendation=(
-                'Users of affected versions should upgrade to 3.1.7, 3.2.3.'
-            ),
-            description=_VULN_DESCRIPTION,
-        ),
+        vulnerability=self.GetAdvisories()[0],
     )

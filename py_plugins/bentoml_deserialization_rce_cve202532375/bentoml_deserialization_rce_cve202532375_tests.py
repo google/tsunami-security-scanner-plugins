@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Cve202532375Detector."""
+
 import unittest.mock as umock
+
 from absl.testing import absltest
 import requests_mock
+
 import tsunami_plugin
 from common.data import network_endpoint_utils
 from common.net.http.requests_http_client import RequestsHttpClientBuilder
@@ -28,9 +31,9 @@ import network_service_pb2
 import plugin_representation_pb2
 import reconnaissance_pb2
 import software_pb2
-import vulnerability_pb2
 from py_plugins.bentoml_deserialization_rce_cve202532375.bentoml_deserialization_rce_cve202532375 import _VULN_DESCRIPTION
 from py_plugins.bentoml_deserialization_rce_cve202532375.bentoml_deserialization_rce_cve202532375 import Cve202532375Detector
+
 
 # Callback server
 _CBID = "04041e8898e739ca33a250923e24f59ca41a8373f8cf6a45a1275f3b"
@@ -99,21 +102,7 @@ class Cve202532375DetectorTest(absltest.TestCase):
             target_info=target_info,
             network_service=network_service,
             detection_status=detection_pb2.VULNERABILITY_VERIFIED,
-            vulnerability=vulnerability_pb2.Vulnerability(
-                main_id=vulnerability_pb2.VulnerabilityId(
-                    publisher="TSUNAMI_COMMUNITY", value="CVE_2025_32375"
-                ),
-                severity=vulnerability_pb2.Severity.CRITICAL,
-                title=(
-                    "BentoML Insecure Deserialization RCE (CVE-2025-32375) "
-                    "for Runner Server"
-                ),
-                recommendation=(
-                    "Users should not expose the bentoml Runner Server "
-                    "endpoints to untrusted environments."
-                ),
-                description=_VULN_DESCRIPTION,
-            ),
+            vulnerability=self.detector.GetAdvisories()[0],
         ),
         detection_reports.detection_reports[0],
     )
