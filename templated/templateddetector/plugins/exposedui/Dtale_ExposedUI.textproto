@@ -52,9 +52,9 @@ actions: {
     method: POST
     uri: "/dtale/upload"
     headers: [
-      { name: "Content-Type" value: "multipart/form-data; boundary=----geckoformboundaryb38fffc548bd5dad82328985c3f223d4" }
+      { name: "Content-Type" value: "multipart/form-data; boundary=-" }
     ]
-    data: '------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="simple-dtale-data.csv"; filename="simple-dtale-data.csv"\r\nContent-Type: text/csv\r\n\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="header"\r\n\r\ntrue\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="separatorType"\r\n\r\ncomma\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4\r\nContent-Disposition: form-data; name="separator"\r\n\r\n\r\n------geckoformboundaryb38fffc548bd5dad82328985c3f223d4--\r\n'
+    data: '---\nContent-Disposition: form-data; name="data.csv"; filename="data.csv"\nContent-Type: text/csv\n\ntest,data\n\n---\nContent-Disposition: form-data; name="header"\n\ntrue\n---\nContent-Disposition: form-data; name="separatorType"\n\ncomma\n---\nContent-Disposition: form-data; name="separator"\n\n-----\n'
     response: {
       http_status: 200
       expect_all: {
@@ -87,6 +87,18 @@ actions: {
           { body: {} contains: "\"error\":\"" }
         ]
       }
+    }
+  }
+  cleanup_actions: ["cleanup_sample_table"]
+}
+
+actions: {
+  name: "cleanup_sample_table"
+  http_request: {
+    method: GET
+    uri: "/dtale/cleanup-datasets?dataIds={{ dataid }}"
+    response: {
+      http_status: 200
     }
   }
 }
