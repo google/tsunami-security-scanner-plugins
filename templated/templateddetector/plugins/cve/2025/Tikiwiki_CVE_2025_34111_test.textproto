@@ -44,7 +44,7 @@ tests: {
       {
         uri: "/vendor_extra/elfinder/php/connector.minimal.php"
         status: 200
-        body_content: "error"  
+        body_content: "error"
       }
     ]
   }
