@@ -152,7 +152,7 @@ public final class GenericWeakCredentialDetectorTest {
             .setNetworkEndpoint(
                 forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
             .setTransportProtocol(TransportProtocol.TCP)
-            .setServiceName("wordpress")
+            .setServiceName("word press")
             .build();
     wpWebService =
         NetworkService.newBuilder()
@@ -164,7 +164,7 @@ public final class GenericWeakCredentialDetectorTest {
                 ServiceContext.newBuilder()
                     .setWebServiceContext(
                         WebServiceContext.newBuilder()
-                            .setSoftware(Software.newBuilder().setName("wordpress").build())
+                            .setSoftware(Software.newBuilder().setName("word press").build())
                             .build())
                     .build())
             .build();
@@ -196,7 +196,7 @@ public final class GenericWeakCredentialDetectorTest {
                 .setNetworkEndpoint(
                     forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
                 .setTransportProtocol(TransportProtocol.TCP)
-                .setServiceName("wordpress")
+                .setServiceName("word press")
                 .build()));
   }
 
@@ -225,13 +225,13 @@ public final class GenericWeakCredentialDetectorTest {
                 .setMainId(
                     VulnerabilityId.newBuilder()
                         .setPublisher("GOOGLE")
-                        .setValue("WEAK_CREDENTIALS_FOR_WORDPRESS"))
+                        .setValue("WEAK_CREDENTIALS_FOR_WORD_PRESS"))
                 .setSeverity(Severity.CRITICAL)
-                .setTitle("Weak 'wordpress' service credential")
+                .setTitle("Weak 'word press' service credential")
                 .setCvssV3("7.5")
                 .setDescription(
                     String.format(
-                        "Well known or weak credentials are detected for 'wordpress' service on"
+                        "Well known or weak credentials are detected for 'word press' service on"
                             + " port '%s'.",
                         mockWebServer.getPort()))
                 .setRecommendation("Change the password of all affected users to a strong one.")
