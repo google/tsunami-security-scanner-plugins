@@ -14,6 +14,11 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
+        uri: "/webconsole/webpages/login.jsp"
+        status: 200
+        body_content: "<title>Sophos</title>"
+      },
+      {
         uri: "/webconsole/Controller"
         status: 200
         body_content: "{\"redirectionURL\":\"/webpages/index.jsp\",\"status\":200}"
@@ -27,6 +32,11 @@ tests: {
   expect_vulnerability: false
   mock_http_server: {
     mock_responses: [
+      {
+        uri: "/webconsole/webpages/login.jsp"
+        status: 200
+        body_content: "Not a Sophos Firewall"
+      },
       {
         uri: "/webconsole/Controller"
         status: 200

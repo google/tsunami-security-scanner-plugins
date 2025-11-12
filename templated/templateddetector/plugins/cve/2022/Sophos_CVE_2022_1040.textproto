@@ -39,6 +39,20 @@ config: {
 ###########
 
 actions: {
+  name: "fingerprint_sophos_firewall"
+  http_request: {
+    method: GET
+    uri: "/webconsole/webpages/login.jsp"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: { body {} contains: '<title>Sophos</title>' }
+      }
+    }
+  }
+}
+
+actions: {
   name: "attempt_authentication_bypass"
   http_request: {
     method: POST
@@ -64,6 +78,7 @@ actions: {
 
 workflows: {
   actions: [
+    "fingerprint_sophos_firewall",
     "attempt_authentication_bypass"
   ]
 }
