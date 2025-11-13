@@ -82,7 +82,7 @@ actions: {
 
 workflows: {
   variables: [
-	# Linux specific payload
+    # Linux specific payload
     { name: "payload" value: "%27cat+/etc/passwd%27.execute().text" },
     { name: "expectedRegex" value: "root:x:0:0:root" }
   ]
