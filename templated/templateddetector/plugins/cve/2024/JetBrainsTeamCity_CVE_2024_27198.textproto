@@ -96,6 +96,7 @@ actions: {
       }
     }
   }
+  cleanup_actions: "delete_added_user"
 }
 
 actions: {
@@ -142,7 +143,6 @@ workflows: {
     "fingerprint_teamcity",
     "create_admin_user",
     "create_admin_token",
-    "get_user_list",
-    "delete_added_user"
+    "get_user_list"
   ]
 }
