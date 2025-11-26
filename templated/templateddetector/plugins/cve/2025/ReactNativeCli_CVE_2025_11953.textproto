@@ -27,10 +27,6 @@ finding: {
   }
 }
 
-config: {
-  debug: true
-}
-
 ###########
 # ACTIONS #
 ###########
