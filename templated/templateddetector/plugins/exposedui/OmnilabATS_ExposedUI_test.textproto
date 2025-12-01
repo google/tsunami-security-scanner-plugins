@@ -1,0 +1,64 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "OmnilabATS_ExposedUI"
+}
+
+tests: {
+  name: "whenNotATS_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenATSAndVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<html><head><title>Android Test Station</title></head><body><mtt></mtt><script>window.APP_DATA = {isOmniLabBased: \"False\" === \"True\",};</script></body></html>"
+      },
+      {
+        uri: "/_ah/api/mtt/v1/builds"
+        status: 200
+        body_content: "{\"fingerprint\": \"Tsunami Fingerprint\",\"id\": \"0a0fd6f0-8241-4f76-abfc-493a245b37fd\",\"name\": \"Tsunami Build\"}"
+      },
+      {
+        uri: "/_ah/api/mtt/v1/builds/0a0fd6f0-8241-4f76-abfc-493a245b37fd"
+        status: 200
+        body_content:"{\"fingerprint\": \"Tsunami Fingerprint\",\"id\": \"0a0fd6f0-8241-4f76-abfc-493a245b37fd\",\"name\": \"Tsunami Build\"}"
+      },
+      {
+        uri: "/_ah/api/mtt/v1/builds?build_ids=0a0fd6f0-8241-4f76-abfc-493a245b37fd"
+        status: 204
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenATSAndNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 401
+        body_content: "<html><head><title>401 Authorization Required</title></head><body></body></html>" 
+      }
+    ]
+  }
+}
