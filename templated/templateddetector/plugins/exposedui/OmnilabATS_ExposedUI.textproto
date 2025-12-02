@@ -28,10 +28,6 @@ finding: {
   severity: CRITICAL
 }
 
-config {
-    debug: true
-}
-
 ###########
 # ACTIONS #
 ###########
