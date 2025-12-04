@@ -43,6 +43,7 @@ public final class KeycloakCredentialTester extends CredentialTester {
   private static final String KEYCLOAK_SERVICE = "keycloak";
 
   private final HttpClient httpClient;
+  private boolean addCredentials = false;
 
   @Inject
   KeycloakCredentialTester(HttpClient httpClient) {
@@ -107,6 +108,7 @@ public final class KeycloakCredentialTester extends CredentialTester {
               && (body.contains("keycloak") || body.contains("/realms/"))) {
             logger.atInfo().log(
                 "Detected Keycloak instance via custom fingerprinting at %s", rootUrl);
+            addCredentials = true;
             return true;
           }
         }
@@ -127,34 +129,39 @@ public final class KeycloakCredentialTester extends CredentialTester {
   @Override
   public ImmutableList<TestCredential> testValidCredentials(
       NetworkService networkService, List<TestCredential> credentials) {
-    // When Nmap doesn't detect Keycloak, credentials are fetched for the generic service type
-    // (e.g., "http") before our custom fingerprinting runs. So we need to add Keycloak-specific
-    // credentials here to ensure they're tested even when custom fingerprinting is used.
-    // TODO: remove this once fingerprinting is updated and made more robust
+    ImmutableList<TestCredential> allCredentials;
 
-    // Default Keycloak usernames and passwords
-    String[] defaultUsernames = {"admin", "username", "avery"};
-    String[] defaultPasswords = {"admin", "password", "keycloak"};
+    if (addCredentials) {
+      // Custom fingerprinting detected Keycloak (not Nmap), so credentials were fetched for
+      // generic service type (e.g., "http"). Add Keycloak-specific default credentials.
+      // TODO: remove this once fingerprinting is updated and made more robust
 
-    ImmutableList.Builder<TestCredential> keycloakDefaultsBuilder = ImmutableList.builder();
-    for (String username : defaultUsernames) {
-      for (String password : defaultPasswords) {
-        keycloakDefaultsBuilder.add(
-            TestCredential.create(username, java.util.Optional.of(password)));
+      // Default Keycloak usernames and passwords
+      String[] defaultUsernames = {"admin", "username", "avery"};
+      String[] defaultPasswords = {"admin", "password", "keycloak"};
+
+      ImmutableList.Builder<TestCredential> keycloakDefaultsBuilder = ImmutableList.builder();
+      for (String username : defaultUsernames) {
+        for (String password : defaultPasswords) {
+          keycloakDefaultsBuilder.add(
+              TestCredential.create(username, java.util.Optional.of(password)));
+        }
       }
+      ImmutableList<TestCredential> keycloakDefaults = keycloakDefaultsBuilder.build();
+
+      allCredentials =
+          ImmutableList.<TestCredential>builder()
+              .addAll(keycloakDefaults)
+              .addAll(credentials)
+              .build();
+
+      logger.atInfo().log(
+          "Custom fingerprinting detected Keycloak - testing %d credentials (%d defaults + %d provided)",
+          allCredentials.size(), keycloakDefaults.size(), credentials.size());
+    } else {
+      // Nmap detected Keycloak, use credentials from providers only
+      allCredentials = ImmutableList.copyOf(credentials);
     }
-    ImmutableList<TestCredential> keycloakDefaults = keycloakDefaultsBuilder.build();
-
-    // Combine provided credentials with Keycloak defaults
-    ImmutableList<TestCredential> allCredentials =
-        ImmutableList.<TestCredential>builder()
-            .addAll(keycloakDefaults)
-            .addAll(credentials)
-            .build();
-
-    logger.atInfo().log(
-        "Testing %d credentials (%d Keycloak defaults + %d provided)",
-        allCredentials.size(), keycloakDefaults.size(), credentials.size());
 
     // Always return 1st weak credential to gracefully handle no auth configured case
     return allCredentials.stream()
