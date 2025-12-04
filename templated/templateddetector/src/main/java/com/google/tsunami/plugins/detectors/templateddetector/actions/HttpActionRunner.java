@@ -98,9 +98,16 @@ public final class HttpActionRunner implements ActionRunner {
     try {
       response = httpClient.send(requestBuilder.build());
     } catch (IOException e) {
-      logger.atSevere().withCause(e).log(
-          "Action '%s' failed with exception: %s", action.getName(), e.getMessage());
-      return false;
+      if (httpAction.getClientOptions().getIgnoreHttpClientErrors()) {
+        logger.atWarning().withCause(e).log(
+            "HTTP client failed. Error is ignored and Action '%s' is considered succeeded.",
+            action.getName());
+        return true;
+      } else {
+        logger.atSevere().withCause(e).log(
+            "Action '%s' failed with exception: %s", action.getName(), e.getMessage());
+        return false;
+      }
     }
 
     if (this.debug) {
