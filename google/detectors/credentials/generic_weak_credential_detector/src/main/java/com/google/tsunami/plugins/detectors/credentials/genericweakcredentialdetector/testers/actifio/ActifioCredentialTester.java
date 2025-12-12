@@ -98,15 +98,7 @@ public final class ActifioCredentialTester extends CredentialTester {
    */
   private boolean isActifioService(NetworkService networkService) {
     String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-
-    // Try HTTPS first since Actifio typically uses HTTPS
-    // Skip this for localhost/127.0.0.1 (used in tests)
     String sessionUrl = rootUrl + SESSION_ENDPOINT;
-    if (sessionUrl.startsWith("http://")
-        && !sessionUrl.contains("localhost")
-        && !sessionUrl.contains("127.0.0.1")) {
-      sessionUrl = sessionUrl.replace("http://", "https://");
-    }
 
     try {
       // Check for Actifio Global Manager's session endpoint
@@ -118,6 +110,15 @@ public final class ActifioCredentialTester extends CredentialTester {
                   .setRequestBody(ByteString.copyFromUtf8("{}"))
                   .build(),
               networkService);
+
+      // Check for METHOD NOT ALLOWED error - this indicates incorrect protocol usage
+      if (response.status() == HttpStatus.METHOD_NOT_ALLOWED) {
+        throw new IOException(
+            String.format(
+                "METHOD NOT ALLOWED error received when accessing %s. The service may require HTTPS"
+                    + " or a different protocol.",
+                sessionUrl));
+      }
 
       // Actifio should return 401 Unauthorized with WWW-Authenticate: Actifio header
       if (response.status() == HttpStatus.UNAUTHORIZED
@@ -190,22 +191,21 @@ public final class ActifioCredentialTester extends CredentialTester {
     String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     String sessionUrl = rootUrl + SESSION_ENDPOINT;
 
-    // If HTTP, try HTTPS instead since Actifio often redirects HTTP to HTTPS
-    // and POST redirects don't always preserve the method/body
-    // Skip this for localhost/127.0.0.1 (used in tests)
-    if (sessionUrl.startsWith("http://")
-        && !sessionUrl.contains("localhost")
-        && !sessionUrl.contains("127.0.0.1")) {
-      sessionUrl = sessionUrl.replace("http://", "https://");
-      logger.atInfo().log("Converting HTTP to HTTPS for Actifio: %s", sessionUrl);
-    }
-
     try {
       logger.atInfo().log(
           "Testing Actifio Global Manager credentials - URL: %s, Username: %s",
           sessionUrl, credential.username());
 
       HttpResponse response = sendSessionRequest(sessionUrl, credential, networkService);
+
+      // Check for METHOD NOT ALLOWED error - this indicates incorrect protocol usage
+      if (response.status() == HttpStatus.METHOD_NOT_ALLOWED) {
+        throw new IOException(
+            String.format(
+                "METHOD NOT ALLOWED error received when accessing %s. The service may require HTTPS"
+                    + " or a different protocol.",
+                sessionUrl));
+      }
 
       // Successful authentication returns 200 with JSON containing session_id
       if (response.status() == HttpStatus.OK) {
