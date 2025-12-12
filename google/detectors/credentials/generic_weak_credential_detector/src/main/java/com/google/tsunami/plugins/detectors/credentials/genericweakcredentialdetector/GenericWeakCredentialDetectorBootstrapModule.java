@@ -56,6 +56,7 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.tomcat.TomcatHttpCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.wordpress.WordpressCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.zenml.ZenMlCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.litmus.LitmusCredentialTester;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -94,6 +95,7 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
     credentialTesterBinder.addBinding().to(WordpressCredentialTester.class);
     credentialTesterBinder.addBinding().to(ZenMlCredentialTester.class);
     credentialTesterBinder.addBinding().to(Axis2CredentialTester.class);
+    credentialTesterBinder.addBinding().to(LitmusCredentialTester.class);
 
     Multibinder<CredentialProvider> credentialProviderBinder =
         Multibinder.newSetBinder(binder(), CredentialProvider.class);
