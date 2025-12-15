@@ -19,10 +19,10 @@ finding: {
   }
   severity: CRITICAL
   title: "CVE-2022-1040 - Authentication Bypass on Sophos Firewall"
-  description: 
+  description:
     "An authentication bypass vulnerability in the User Portal and Webadmin allows a "
     "remote attacker to execute code in Sophos Firewall version v18.5 MR3 and older."
-  recommendation: 
+  recommendation:
     "Upgrade Sophos Firewall. Fix included in v19.0 GA and v18.5 MR4 (18.5.4)."
   related_id: {
     publisher: "CVE"
