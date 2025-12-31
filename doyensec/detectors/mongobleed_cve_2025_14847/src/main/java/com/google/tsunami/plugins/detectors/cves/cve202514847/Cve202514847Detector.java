@@ -45,7 +45,7 @@ import javax.net.SocketFactory;
     type = PluginType.VULN_DETECTION,
     name = "CVE-2025-14847 Detector",
     version = "0.1",
-    description = "MongoDB unauthenticated heap memory read.",
+    description = "MongoDB out-of-bounds read of heap memory",
     author = "Alessandro Versari (alessandro.versari@doyensec.com)",
     bootstrapModule = Cve202514847DetectorBootstrapModule.class)
 public final class Cve202514847Detector implements VulnDetector {
