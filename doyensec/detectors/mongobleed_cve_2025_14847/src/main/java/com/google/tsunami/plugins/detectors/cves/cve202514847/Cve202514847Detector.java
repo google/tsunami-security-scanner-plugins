@@ -30,8 +30,10 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
@@ -50,6 +52,7 @@ import javax.net.SocketFactory;
 @ForServiceName({"mongod"})
 public final class Cve202514847Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+  private static final Set<String> EXCLUDED_FIELDS = Set.of("?", "a", "$db", "ping");
 
   private final Clock utcClock;
   private final SocketFactory socketFactory;
@@ -109,7 +112,7 @@ public final class Cve202514847Detector implements VulnDetector {
 
         byte[] leaked = extractLeaks(response);
         if (leaked.length > 0) {
-          probingDetails.response = new String(leaked, 0, Math.min(100, leaked.length));
+          probingDetails.response = new String(leaked, StandardCharsets.UTF_8);
           return true;
         }
       }
@@ -175,9 +178,7 @@ public final class Cve202514847Detector implements VulnDetector {
   }
 
   private byte[] extractLeaks(byte[] response) {
-    if (response.length < 25) {
-      return new byte[0];
-    }
+    if (response.length < 25) return new byte[0];
 
     try {
       ByteBuffer hdr = ByteBuffer.wrap(response).order(ByteOrder.LITTLE_ENDIAN);
@@ -192,32 +193,24 @@ public final class Cve202514847Detector implements VulnDetector {
         System.arraycopy(response, 16, raw, 0, raw.length);
       }
 
+      String content = new String(raw, StandardCharsets.UTF_8);
       ByteArrayOutputStream leaks = new ByteArrayOutputStream();
 
-      // # Field names from BSON errors
-      Pattern fieldPattern = Pattern.compile("field name '([^']*)'");
-      Matcher m = fieldPattern.matcher(new String(raw));
-      while (m.find()) {
-        byte[] data = m.group(1).getBytes();
-        if (data.length > 0
-            && !m.group(1).equals("?")
-            && !m.group(1).equals("a")
-            && !m.group(1).equals("$db")
-            && !m.group(1).equals("ping")) {
-          leaks.write(data);
+      // Pass 1: Field names
+      Matcher m1 = Pattern.compile("field name '([^']*)'").matcher(content);
+      while (m1.find()) {
+        String val = m1.group(1);
+        if (!val.isEmpty() && !EXCLUDED_FIELDS.contains(val)) {
+          leaks.write(val.getBytes());
         }
       }
 
-      fieldPattern = Pattern.compile("type (\\d+)");
-      m = fieldPattern.matcher(new String(raw));
-      while (m.find()) {
-        byte[] data = m.group(1).getBytes();
-        if (data.length > 0
-            && !m.group(1).equals("?")
-            && !m.group(1).equals("a")
-            && !m.group(1).equals("$db")
-            && !m.group(1).equals("ping")) {
-          leaks.write(data);
+      // Pass 2: Type bytes
+      Matcher m2 = Pattern.compile("type (\\d+)").matcher(content);
+      while (m2.find()) {
+        String val = m2.group(1);
+        if (!val.isEmpty() && !EXCLUDED_FIELDS.contains(val)) {
+          leaks.write(val.getBytes());
         }
       }
 
