@@ -92,7 +92,7 @@ public final class Cve202514847DetectorTest {
     NetworkService mongodb =
         NetworkService.newBuilder()
             .setNetworkEndpoint(forIpAndPort("127.0.0.1", 27017))
-            .setServiceName("mongodb")
+            .setServiceName("mongod")
             .setTransportProtocol(TransportProtocol.TCP)
             .build();
 
@@ -130,7 +130,7 @@ public final class Cve202514847DetectorTest {
     NetworkService mongodb =
         NetworkService.newBuilder()
             .setNetworkEndpoint(forIpAndPort("127.0.0.1", 27017))
-            .setServiceName("mongodb")
+            .setServiceName("mongod")
             .setTransportProtocol(TransportProtocol.TCP)
             .build();
 
@@ -145,7 +145,7 @@ public final class Cve202514847DetectorTest {
     NetworkService mongodbUdp =
         NetworkService.newBuilder()
             .setNetworkEndpoint(forIpAndPort("127.0.0.1", 27017))
-            .setServiceName("mongodb")
+            .setServiceName("mongod")
             .setTransportProtocol(TransportProtocol.UDP)
             .build();
 
@@ -173,7 +173,7 @@ public final class Cve202514847DetectorTest {
     NetworkService mongodb =
         NetworkService.newBuilder()
             .setNetworkEndpoint(forIpAndPort("127.0.0.1", 27017))
-            .setServiceName("mongodb")
+            .setServiceName("mongod")
             .setTransportProtocol(TransportProtocol.TCP)
             .build();
 

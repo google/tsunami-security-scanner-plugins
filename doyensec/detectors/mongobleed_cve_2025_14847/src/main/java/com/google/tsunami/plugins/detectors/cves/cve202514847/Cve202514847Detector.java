@@ -11,7 +11,6 @@ import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
-import com.google.tsunami.plugin.annotations.ForServiceName;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
@@ -49,7 +48,6 @@ import javax.net.SocketFactory;
     description = "MongoDB unauthenticated heap memory read.",
     author = "Alessandro Versari (alessandro.versari@doyensec.com)",
     bootstrapModule = Cve202514847DetectorBootstrapModule.class)
-@ForServiceName({"mongod"})
 public final class Cve202514847Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private static final Set<String> EXCLUDED_FIELDS = Set.of("?", "a", "$db", "ping");
@@ -88,7 +86,7 @@ public final class Cve202514847Detector implements VulnDetector {
   }
 
   private boolean isMongoDBService(NetworkService service) {
-    return "mongod".equals(service.getServiceName());
+    return "mongod".equals(service.getServiceName()) || "mongodb".equals(service.getServiceName());
   }
 
   private boolean isServiceVulnerable(NetworkService service, ProbingDetails probingDetails) {
