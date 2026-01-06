@@ -170,7 +170,7 @@ public final class ApacheStrutsInsecureDeserializeDetector implements VulnDetect
     httpClient.send(
         post(targetUri)
             .setHeaders(headers)
-            .setRequestBody(ByteString.copyFrom(payload, "UTF-8"))
+            .setRequestBody(ByteString.copyFromUtf8(payload))
             .build(),
         networkService);
   }
