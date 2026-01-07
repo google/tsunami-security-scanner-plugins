@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.google.tsunami.plugins.detectors.cves.cve202514847;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -74,21 +90,24 @@ public final class Cve202514847Detector implements VulnDetector {
         .addAllDetectionReports(
             matchedServices.stream()
                 .filter(this::isTransportProtocolTcp)
-                .filter(this::isMongoDBService)
+                .filter(this::isMongoDbService)
                 .filter(service -> isServiceVulnerable(service, probingDetails))
                 .map(service -> buildDetectionReport(targetInfo, service, probingDetails))
                 .collect(toImmutableList()))
         .build();
   }
 
+  // Checks if the service is running over TCP.
   private boolean isTransportProtocolTcp(NetworkService service) {
     return TransportProtocol.TCP.equals(service.getTransportProtocol());
   }
 
-  private boolean isMongoDBService(NetworkService service) {
+  // Verifies if the service name indicates a MongoDB instance.
+  private boolean isMongoDbService(NetworkService service) {
     return "mongod".equals(service.getServiceName()) || "mongodb".equals(service.getServiceName());
   }
 
+  // Returns true if the service is vulnerable to the detector's CVE
   private boolean isServiceVulnerable(NetworkService service, ProbingDetails probingDetails) {
     HostAndPort hp = NetworkEndpointUtils.toHostAndPort(service.getNetworkEndpoint());
 
@@ -122,6 +141,7 @@ public final class Cve202514847Detector implements VulnDetector {
     }
   }
 
+  // Constructs a malformed OP_COMPRESSED message with mismatched length fields to trigger the leak.
   private byte[] buildProbe(int docLen, int bufferSize) throws Exception {
     byte[] content = new byte[] {0x10, 'a', 0x00, 0x01, 0x00, 0x00, 0x00};
 
@@ -157,6 +177,7 @@ public final class Cve202514847Detector implements VulnDetector {
     return out.toByteArray();
   }
 
+  // Reads a full MongoDB wire protocol response from the input stream based on the header length.
   private byte[] readMongoResponse(InputStream in) throws Exception {
     ByteArrayOutputStream buffer = new ByteArrayOutputStream();
     byte[] tmp = new byte[4096];
@@ -175,8 +196,11 @@ public final class Cve202514847Detector implements VulnDetector {
     return buffer.toByteArray();
   }
 
+  // Parses the response to identify and extract data that appears to be leaked heap memory.
   private byte[] extractLeaks(byte[] response) {
-    if (response.length < 25) return new byte[0];
+    if (response.length < 25) {
+      return new byte[0];
+    }
 
     try {
       ByteBuffer hdr = ByteBuffer.wrap(response).order(ByteOrder.LITTLE_ENDIAN);
@@ -218,6 +242,7 @@ public final class Cve202514847Detector implements VulnDetector {
     }
   }
 
+  // Compresses the provided byte array using the zlib (DEFLATE) algorithm
   private byte[] zlibCompress(byte[] input) throws Exception {
     Deflater deflater = new Deflater();
     deflater.setInput(input);
@@ -232,6 +257,7 @@ public final class Cve202514847Detector implements VulnDetector {
     return out.toByteArray();
   }
 
+  // Compresses the provided byte array using the zlib (DEFLATE) algorithm.
   private byte[] zlibDecompress(byte[] data, int off, int len) throws Exception {
     Inflater inflater = new Inflater();
     inflater.setInput(data, off, len);
