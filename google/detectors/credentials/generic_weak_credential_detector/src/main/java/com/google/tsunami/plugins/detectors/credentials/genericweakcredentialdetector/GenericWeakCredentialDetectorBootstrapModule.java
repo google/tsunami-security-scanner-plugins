@@ -37,15 +37,17 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.DefaultCredentials;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.provider.Top100Passwords;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.tester.CredentialTester;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.axis2.Axis2CredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.actifio.ActifioCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.airbyte.AirbyteCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.airflow.AirflowCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.argocd.ArgoCdCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.axis2.Axis2CredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.grafana.GrafanaCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.hive.HiveCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.hydra.HydraCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.jenkins.JenkinsCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.kubeflow.KubeflowCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.litmus.LitmusCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.mlflow.MlFlowCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.mysql.MysqlCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.ncrack.NcrackCredentialTester;
@@ -56,7 +58,6 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.tomcat.TomcatHttpCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.wordpress.WordpressCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.zenml.ZenMlCredentialTester;
-import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.litmus.LitmusCredentialTester;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -96,6 +97,7 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
     credentialTesterBinder.addBinding().to(ZenMlCredentialTester.class);
     credentialTesterBinder.addBinding().to(Axis2CredentialTester.class);
     credentialTesterBinder.addBinding().to(LitmusCredentialTester.class);
+    credentialTesterBinder.addBinding().to(ActifioCredentialTester.class);
 
     Multibinder<CredentialProvider> credentialProviderBinder =
         Multibinder.newSetBinder(binder(), CredentialProvider.class);
