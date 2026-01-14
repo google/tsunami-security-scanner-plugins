@@ -35,13 +35,13 @@ import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.common.net.socket.TsunamiSocketFactory;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.net.Socket;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Arrays;
 import javax.inject.Inject;
-import javax.net.SocketFactory;
 
 /** A {@link VulnDetector} that detects vulnerable Cisco Smart Install protocol */
 @ForServiceName({"smart-install"})
@@ -56,10 +56,10 @@ public final class CiscoSMIDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final Clock utcClock;
-  private final SocketFactory socketFactory;
+  private final TsunamiSocketFactory socketFactory;
 
   @Inject
-  public CiscoSMIDetector(@UtcClock Clock utcClock, SocketFactory socketFactory) {
+  public CiscoSMIDetector(@UtcClock Clock utcClock, TsunamiSocketFactory socketFactory) {
     this.utcClock = checkNotNull(utcClock);
     this.socketFactory = checkNotNull(socketFactory);
   }
@@ -109,7 +109,6 @@ public final class CiscoSMIDetector implements VulnDetector {
 
     try {
       Socket socket = socketFactory.createSocket(hp.getHost(), hp.getPort());
-      socket.setSoTimeout(2000);
       socket.getOutputStream().write(request);
       socket.getInputStream().read(actualResponse, 0, actualResponse.length);
       socket.close();

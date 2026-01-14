@@ -32,10 +32,5 @@ final class Annotations {
   @Target({PARAMETER, METHOD, FIELD})
   @interface OobSleepDuration {}
 
-  @Qualifier
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target({PARAMETER, METHOD, FIELD})
-  @interface SocketFactoryInstance {}
-
   private Annotations() {}
 }

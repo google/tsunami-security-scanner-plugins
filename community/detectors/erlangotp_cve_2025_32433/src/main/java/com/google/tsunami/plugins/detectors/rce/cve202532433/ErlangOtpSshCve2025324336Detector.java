@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.net.socket.TsunamiSocketFactory;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -32,7 +33,6 @@ import com.google.tsunami.plugin.payload.NotImplementedException;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.plugins.detectors.rce.cve202532433.Annotations.OobSleepDuration;
-import com.google.tsunami.plugins.detectors.rce.cve202532433.Annotations.SocketFactoryInstance;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -50,7 +50,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import javax.inject.Inject;
-import javax.net.SocketFactory;
 
 /** A Tsunami plugin that detects Erlang/OTP SSH RCE vulnerability CVE-2025-32433. */
 @PluginInfo(
@@ -65,14 +64,14 @@ public class ErlangOtpSshCve2025324336Detector implements VulnDetector {
 
   private final Clock utcClock;
   private final PayloadGenerator payloadGenerator;
-  private final SocketFactory socketFactory;
+  private final TsunamiSocketFactory socketFactory;
   private final int oobSleepDuration;
 
   @Inject
   ErlangOtpSshCve2025324336Detector(
       @UtcClock Clock utcClock,
       PayloadGenerator payloadGenerator,
-      @SocketFactoryInstance SocketFactory socketFactory,
+      TsunamiSocketFactory socketFactory,
       @OobSleepDuration int oobSleepDuration) {
     this.utcClock = checkNotNull(utcClock);
     this.payloadGenerator = checkNotNull(payloadGenerator);
@@ -130,7 +129,6 @@ public class ErlangOtpSshCve2025324336Detector implements VulnDetector {
     var servicePort = service.getNetworkEndpoint().getPort().getPortNumber();
     try (var socket = socketFactory.createSocket(serviceIp, servicePort)) {
       // Connecting to SSH server...
-      socket.setSoTimeout(5000);
       OutputStream out = socket.getOutputStream();
       InputStream in = socket.getInputStream();
       // Banner exchange

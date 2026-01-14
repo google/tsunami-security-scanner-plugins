@@ -19,8 +19,6 @@ package com.google.tsunami.plugins.detectors.rce.cve202532433;
 import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
 import com.google.tsunami.plugins.detectors.rce.cve202532433.Annotations.OobSleepDuration;
-import com.google.tsunami.plugins.detectors.rce.cve202532433.Annotations.SocketFactoryInstance;
-import javax.net.SocketFactory;
 
 /** A module for bootstrapping the {@link ErlangOtpSshCve2025324336Detector}. */
 public final class ErlangOtpSshCve2025324336DetectorBootstrapModule extends PluginBootstrapModule {
@@ -37,11 +35,5 @@ public final class ErlangOtpSshCve2025324336DetectorBootstrapModule extends Plug
       return 2;
     }
     return configs.oobSleepDuration;
-  }
-
-  @Provides
-  @SocketFactoryInstance
-  SocketFactory provideSocketFactoryInstance() {
-    return SocketFactory.getDefault();
   }
 }
