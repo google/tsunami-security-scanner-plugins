@@ -19,8 +19,8 @@ finding: {
   }
   severity: CRITICAL
   title: "Alibaba Fastjson Insecure Deserialization RCE (CVE-2025-70974)"
-  description: "Due to insecure deserialization in Alibaba's Fastjson, there is a JNDI injection allowing loading remote classes and ultimately Remote Code Execution."
-  recommendation: ""
+  description: "Due to insecure deserialization in Alibaba's Fastjson, there is a JNDI injection allowing loading remote classes and ultimately Remote Code Execution. This plugin detects the vulnerability using a DNS out of band callback server."
+  recommendation: "Update Fastjson to the latest version."
   related_id: {
     publisher: "CVE"
     value: "CVE-2025-70974"
