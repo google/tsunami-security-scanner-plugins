@@ -25,6 +25,7 @@ import com.google.common.flogger.GoogleLogger;
 import com.google.common.net.HostAndPort;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
+import com.google.tsunami.common.net.socket.TsunamiSocketFactory;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -43,13 +44,11 @@ import com.google.tsunami.proto.VulnerabilityId;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
-import javax.net.SocketFactory;
 
 /** A VulnDetector plugin for Redis CVE-2022-0543. */
 @PluginInfo(
@@ -85,14 +84,12 @@ public final class Cve20220543Detector implements VulnDetector {
           + " https://security-tracker.debian.org/tracker/CVE-2022-0543";
 
   private final Clock utcClock;
-  private final SocketFactory socketFactory;
+  private final TsunamiSocketFactory socketFactory;
   private final PayloadGenerator payloadGenerator;
-  final int connectTimeout = 5000;
-  final int readTimeout = 2000;
 
   @Inject
   Cve20220543Detector(
-      @UtcClock Clock utcClock, SocketFactory socketFactory, PayloadGenerator payloadGenerator) {
+      @UtcClock Clock utcClock, TsunamiSocketFactory socketFactory, PayloadGenerator payloadGenerator) {
     this.utcClock = checkNotNull(utcClock);
     this.socketFactory = checkNotNull(socketFactory);
     this.payloadGenerator = checkNotNull(payloadGenerator);
@@ -142,10 +139,7 @@ public final class Cve20220543Detector implements VulnDetector {
     // Create socket and connect
     HostAndPort target = NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
     try {
-      socket = socketFactory.createSocket();
-      socket.connect(new InetSocketAddress(target.getHost(), target.getPort()), connectTimeout);
-      socket.setSoTimeout(readTimeout);
-
+      socket = socketFactory.createSocket(target.getHost(), target.getPort());
       out = new BufferedOutputStream(socket.getOutputStream());
       in = new BufferedInputStream(socket.getInputStream());
     } catch (IOException e) {

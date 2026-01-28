@@ -15,9 +15,7 @@
  */
 package com.google.tsunami.plugins.detectors.rce.redis;
 
-import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
-import javax.net.SocketFactory;
 
 /** A Guice module that bootstraps the {@link RedisUnauthenticatedCommandExecutionDetector}. */
 public final class RedisUnauthenticatedCommandExecutionDetectorBootstrapModule
@@ -26,11 +24,5 @@ public final class RedisUnauthenticatedCommandExecutionDetectorBootstrapModule
   @Override
   protected void configurePlugin() {
     registerPlugin(RedisUnauthenticatedCommandExecutionDetector.class);
-  }
-
-  @Provides
-  @SocketFactoryInstance
-  SocketFactory provideSocketFactory() {
-    return SocketFactory.getDefault();
   }
 }
