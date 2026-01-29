@@ -72,7 +72,7 @@ tests: {
 
   mock_callback_server: {
     enabled: true
-    has_interaction: true
+    has_interaction: false
   }
 
   mock_http_server: {
