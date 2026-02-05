@@ -27,8 +27,8 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.multibindings.OptionalBinder;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.net.socket.TsunamiSocketFactory;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.proto.DetectionReport;
@@ -41,7 +41,6 @@ import java.io.ByteArrayOutputStream;
 import java.net.Socket;
 import java.time.Instant;
 import javax.inject.Inject;
-import javax.net.SocketFactory;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,7 +50,7 @@ public final class CiscoSMIDetectorTest {
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2021-01-01T00:00:00.00Z"));
 
-  private final SocketFactory socketFactoryMock = mock(SocketFactory.class);
+  private final TsunamiSocketFactory socketFactoryMock = mock(TsunamiSocketFactory.class);
 
   @Inject private CiscoSMIDetector detector;
 
@@ -62,9 +61,7 @@ public final class CiscoSMIDetectorTest {
             new AbstractModule() {
               @Override
               protected void configure() {
-                OptionalBinder.newOptionalBinder(binder(), SocketFactory.class)
-                    .setBinding()
-                    .toInstance(socketFactoryMock);
+                bind(TsunamiSocketFactory.class).toInstance(socketFactoryMock);
               }
             },
             new CiscoSMIDetectorBootstrapModule())

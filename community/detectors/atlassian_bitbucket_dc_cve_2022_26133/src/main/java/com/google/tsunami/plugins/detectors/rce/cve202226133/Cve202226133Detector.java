@@ -29,6 +29,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
+import com.google.tsunami.common.net.socket.TsunamiSocketFactory;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -69,7 +70,7 @@ public final class Cve202226133Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private final Clock utcClock;
   private final PayloadGenerator payloadGenerator;
-  private final SocketFactory socketFactory;
+  private final TsunamiSocketFactory socketFactory;
   private static final byte[] CLUSTER_NAME_REQUEST_GARBAGE =
       new byte[] {0x00, 0x00, 0x00, 0x02, 0x73, 0x61};
   private static final String RCE_CMD_PLACEHOLDER = "{{CMD}}";
@@ -81,7 +82,7 @@ public final class Cve202226133Detector implements VulnDetector {
   @Inject
   Cve202226133Detector(
       @UtcClock Clock utcClock,
-      @SocketFactoryInstance SocketFactory socketFactory,
+      TsunamiSocketFactory socketFactory,
       PayloadGenerator payloadGenerator) {
     this.utcClock = checkNotNull(utcClock);
     this.socketFactory = checkNotNull(socketFactory);
