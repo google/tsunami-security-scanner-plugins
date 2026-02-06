@@ -1,4 +1,4 @@
-rootProject.name = 'cve-2025-70974-alibaba-fastjson-insecure-deserialization-rce'
+rootProject.name = 'cve-2021-26855-microsoft-exchange-proxylogon-ssrf-and-rce'
 
 def coreRepository = System.getenv("GITREPO_TSUNAMI_CORE") ?: "https://github.com/google/tsunami-security-scanner.git"
 def tcsRepository = System.getenv("GITREPO_TSUNAMI_TCS") ?: "https://github.com/google/tsunami-security-scanner-callback-server.git"

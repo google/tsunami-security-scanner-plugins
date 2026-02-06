@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Google LLC
+ * Copyright 2026 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import static com.google.common.net.HttpHeaders.COOKIE;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.gson.JsonObject;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
@@ -42,6 +43,7 @@ import com.google.tsunami.plugin.payload.NotImplementedException;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.plugins.detectors.cves.cve202126855.MicrosoftExchangeCve202126855BootstrapModule;
+import com.google.tsunami.plugins.detectors.cves.cve202126855.Annotations;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -53,6 +55,7 @@ import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -96,11 +99,12 @@ public final class MicrosoftExchangeCve202126855 implements VulnDetector {
   private final Clock utcClock;
   private final HttpClient httpClient;
   private final PayloadGenerator payloadGenerator;
-  private String core;
+  private final int oobSleepDuration;
 
   @Inject
   MicrosoftExchangeCve202126855(
-      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
+      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator, 
+      @Annotations.OobSleepDuration int oobSleepDuration) {
     this.utcClock = checkNotNull(utcClock);
     // we need to disable following redirections for this detector
     // because we need to use the redirection responses
@@ -109,7 +113,7 @@ public final class MicrosoftExchangeCve202126855 implements VulnDetector {
                       .setFollowRedirects(false)
                       .build();
     this.payloadGenerator = checkNotNull(payloadGenerator);
-    this.core = "";
+    this.oobSleepDuration = oobSleepDuration;
   }
 
   @Override
@@ -173,7 +177,7 @@ public final class MicrosoftExchangeCve202126855 implements VulnDetector {
 
   private String getCookiePayload(String payload) {
 
-    return "Cookie: X-AnonResource=true; X-AnonResource-Backend=" + payload + "/#~1";
+    return "X-AnonResource=true; X-AnonResource-Backend=" + payload;
   }
 
   // Checks whether a given instance is vulnerable.
@@ -224,6 +228,8 @@ public final class MicrosoftExchangeCve202126855 implements VulnDetector {
     // payload should never be null here as we should have already returned in that
     // case
     verify(payload != null);
+    logger.atInfo().log("Waiting for callback.");
+      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
     if (payload.checkIfExecuted()) {
       logger.atInfo().log("Vulnerability confirmed via Callback Server.");
       return true;

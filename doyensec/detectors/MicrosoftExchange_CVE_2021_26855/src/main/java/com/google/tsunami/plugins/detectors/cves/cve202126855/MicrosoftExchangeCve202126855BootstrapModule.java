@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Google LLC
+ * Copyright 2026 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package com.google.tsunami.plugins.detectors.cves.cve202126855;
 
+import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
+import com.google.tsunami.plugins.detectors.cves.cve202126855.Annotations;
 
 /** A Guice module that bootstraps the {@link MicrosoftExchangeCve202126855}. */
 public final class MicrosoftExchangeCve202126855BootstrapModule extends PluginBootstrapModule {
@@ -24,5 +26,15 @@ public final class MicrosoftExchangeCve202126855BootstrapModule extends PluginBo
   @Override
   protected void configurePlugin() {
     registerPlugin(MicrosoftExchangeCve202126855.class);
+  }
+
+  @Provides
+  @Annotations.OobSleepDuration
+  int provideOobSleepDuration(MicrosoftExchangeCve202126855Configs configs) {
+    if (configs.oobSleepDuration == -1) {
+      return 1;
+    }
+
+    return configs.oobSleepDuration;
   }
 }
