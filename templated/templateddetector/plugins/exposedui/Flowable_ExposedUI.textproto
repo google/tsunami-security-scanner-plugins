@@ -72,6 +72,7 @@ actions: {
       }
     }
   }
+  cleanup_actions:["cleanup_tsunami_process"]
 }
 
 actions: {
@@ -93,7 +94,6 @@ actions: {
       }
     }
   }
-  cleanup_actions:["cleanup_tsunami_process"]
 }
 
 actions: {
