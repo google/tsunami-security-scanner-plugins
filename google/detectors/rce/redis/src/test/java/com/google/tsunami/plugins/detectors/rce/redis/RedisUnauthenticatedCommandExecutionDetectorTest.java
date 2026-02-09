@@ -26,9 +26,8 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Key;
-import com.google.inject.multibindings.OptionalBinder;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.net.socket.TsunamiSocketFactory;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.proto.AdditionalDetail;
@@ -46,7 +45,6 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
 import javax.inject.Inject;
-import javax.net.SocketFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,7 +58,7 @@ public final class RedisUnauthenticatedCommandExecutionDetectorTest {
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
-  private final SocketFactory socketFactoryMock = mock(SocketFactory.class);
+  private final TsunamiSocketFactory socketFactoryMock = mock(TsunamiSocketFactory.class);
 
   @Inject private RedisUnauthenticatedCommandExecutionDetector detector;
 
@@ -71,10 +69,7 @@ public final class RedisUnauthenticatedCommandExecutionDetectorTest {
             new AbstractModule() {
               @Override
               protected void configure() {
-                OptionalBinder.newOptionalBinder(
-                        binder(), Key.get(SocketFactory.class, SocketFactoryInstance.class))
-                    .setBinding()
-                    .toInstance(socketFactoryMock);
+                bind(TsunamiSocketFactory.class).toInstance(socketFactoryMock);
               }
             })
         .injectMembers(this);

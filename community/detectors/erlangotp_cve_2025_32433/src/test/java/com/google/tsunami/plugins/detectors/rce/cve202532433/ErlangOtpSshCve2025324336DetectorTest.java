@@ -19,6 +19,7 @@ package com.google.tsunami.plugins.detectors.rce.cve202532433;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.testing.fieldbinder.Bind;
 import com.google.inject.testing.fieldbinder.BoundFieldModule;
@@ -26,12 +27,12 @@ import com.google.inject.util.Modules;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.net.http.HttpClientModule;
+import com.google.tsunami.common.net.socket.TsunamiSocketFactory;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.plugins.detectors.rce.cve202532433.Annotations.OobSleepDuration;
-import com.google.tsunami.plugins.detectors.rce.cve202532433.Annotations.SocketFactoryInstance;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -46,7 +47,6 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import javax.inject.Inject;
-import javax.net.SocketFactory;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.After;
 import org.junit.Before;
@@ -72,9 +72,7 @@ public class ErlangOtpSshCve2025324336DetectorTest {
   @OobSleepDuration
   private final int sleepDuration = 1;
 
-  @Bind(lazy = true)
-  @SocketFactoryInstance
-  private final SocketFactory socketFactoryMock = Mockito.mock(SocketFactory.class);
+  private final TsunamiSocketFactory socketFactoryMock = Mockito.mock(TsunamiSocketFactory.class);
 
   @Before
   public void setUp() throws IOException {
@@ -84,7 +82,13 @@ public class ErlangOtpSshCve2025324336DetectorTest {
             FakePayloadGeneratorModule.builder().setCallbackServer(mockCallbackServer).build(),
             Modules.override(new ErlangOtpSshCve2025324336DetectorBootstrapModule())
                 .with(BoundFieldModule.of(this)),
-            new HttpClientModule.Builder().build())
+            new HttpClientModule.Builder().build(),
+            new AbstractModule() {
+              @Override
+              protected void configure() {
+                bind(TsunamiSocketFactory.class).toInstance(socketFactoryMock);
+              }
+            })
         .injectMembers(this);
   }
 
@@ -170,7 +174,13 @@ public class ErlangOtpSshCve2025324336DetectorTest {
             FakePayloadGeneratorModule.builder().setCallbackServer(null).build(),
             Modules.override(new ErlangOtpSshCve2025324336DetectorBootstrapModule())
                 .with(BoundFieldModule.of(this)),
-            new HttpClientModule.Builder().build())
+            new HttpClientModule.Builder().build(),
+            new AbstractModule() {
+              @Override
+              protected void configure() {
+                bind(TsunamiSocketFactory.class).toInstance(socketFactoryMock);
+              }
+            })
         .injectMembers(this);
 
     // Make target info
