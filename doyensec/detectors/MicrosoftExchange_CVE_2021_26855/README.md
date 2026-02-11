@@ -4,6 +4,8 @@
 
 The Microsoft Exchange Server contains mishandles cookies and headers sent, allowing Server-Side Request Forgery and ultimately Remote Code Execution when combined with other vulnerabilities for the same server version. The vulnerability detected is the original unauthenticated Server-Side Request Forgery vulnerability (CVE-2021-26855).
 
+This plugin requires a DNS callback server to receive the interaction.
+
 ## Affected Versions
 
 -   Exchange 2013 Versions < 15.00.1497.012
