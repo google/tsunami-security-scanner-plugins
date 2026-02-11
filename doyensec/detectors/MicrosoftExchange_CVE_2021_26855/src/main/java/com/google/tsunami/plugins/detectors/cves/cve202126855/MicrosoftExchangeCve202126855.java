@@ -26,8 +26,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
-import com.google.gson.JsonObject;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
@@ -42,8 +40,6 @@ import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.NotImplementedException;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
-import com.google.tsunami.plugins.detectors.cves.cve202126855.MicrosoftExchangeCve202126855BootstrapModule;
-import com.google.tsunami.plugins.detectors.cves.cve202126855.Annotations;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -58,42 +54,47 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
-
 import javax.inject.Inject;
 
-/**
- * A Tsunami plugin that detects CVE-2021-26855, AKA ProxyLogon, in Microsoft
- * Exchange Server.
- */
-@PluginInfo(type = PluginType.VULN_DETECTION, name = "Microsoft Exchange ProxyLogon SSRF and RCE (CVE-2021-26855)", version = "0.1", description = "Due to mishandling of cookies and headers in the Microsoft Exchange Server, Server-Side Request Forgery"
-    + " and Remote Code Execution are possible (ProxyLogon).", author = "Robert Dick (robert@doyensec.com)", bootstrapModule = MicrosoftExchangeCve202126855BootstrapModule.class)
+/** A Tsunami plugin that detects CVE-2021-26855, AKA ProxyLogon, in Microsoft Exchange Server. */
+@PluginInfo(
+    type = PluginType.VULN_DETECTION,
+    name = "Microsoft Exchange ProxyLogon SSRF and RCE (CVE-2021-26855)",
+    version = "0.1",
+    description =
+        "Due to mishandling of cookies and headers"
+            + " in the Microsoft Exchange Server, Server-Side Request Forgery"
+            + " and Remote Code Execution are possible (ProxyLogon).",
+    author = "Robert Dick (robert@doyensec.com)",
+    bootstrapModule = MicrosoftExchangeCve202126855BootstrapModule.class)
 public final class MicrosoftExchangeCve202126855 implements VulnDetector {
-  @VisibleForTesting
-  static final String VULNERABILITY_REPORT_PUBLISHER = "TSUNAMI_COMMUNITY";
-  @VisibleForTesting
-  static final String VULNERABILITY_REPORT_ID = "CVE-2025-70974";
+  @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "TSUNAMI_COMMUNITY";
+  @VisibleForTesting static final String VULNERABILITY_REPORT_ID = "CVE-2025-70974";
 
   @VisibleForTesting
-  static final String VULNERABILITY_REPORT_TITLE = "Microsoft Exchange ProxyLogon SSRF and RCE (CVE-2021-26855)";
+  static final String VULNERABILITY_REPORT_TITLE =
+      "Microsoft Exchange ProxyLogon SSRF" + " and RCE (CVE-2021-26855)";
 
   private static final String PAYLOAD_TEMPLATE = "tsunami]@HOST/#~1";
 
-  static final String VULNERABILITY_REPORT_DESCRIPTION_BASIC = "The scanner detected a vulnerable instance of the Microsoft Exchange Server"
-      + " (CVE-2021-26855). The vulnerability can be exploited by sending an unauthenticated"
-      + " HTTP GET request containing a URL that points to a malicious HTTPS server. "
-      + " This can easily lead to Remote Code Execution.";
+  static final String VULNERABILITY_REPORT_DESCRIPTION_BASIC =
+      "The scanner detected a vulnerable instance of the Microsoft Exchange Server"
+          + " (CVE-2021-26855). The vulnerability can be exploited by sending an unauthenticated"
+          + " HTTP GET request containing a URL that points to a malicious HTTPS server. "
+          + " This can easily lead to Remote Code Execution.";
 
   @VisibleForTesting
-  static final String VULNERABILITY_REPORT_DESCRIPTION_CALLBACK = VULNERABILITY_REPORT_DESCRIPTION_BASIC
-      + "The vulnerability was confirmed via an out of band callback.";
+  static final String VULNERABILITY_REPORT_DESCRIPTION_CALLBACK =
+      VULNERABILITY_REPORT_DESCRIPTION_BASIC
+          + "The vulnerability was confirmed via an out of band callback.";
 
   @VisibleForTesting
-  static final String VULNERABILITY_REPORT_RECOMMENDATION = "Update the Microsoft Exchange Server to the latest version.";
+  static final String VULNERABILITY_REPORT_RECOMMENDATION =
+      "Update the Microsoft Exchange Server to the latest version.";
 
   // from the original blog post at
   // https://blog.orange.tw/posts/2021-08-proxylogon-a-new-attack-surface-on-ms-exchange-part-1/
-  @VisibleForTesting
-  static final String EXPLOIT_ENDPOINT = "owa/auth/x.js";
+  @VisibleForTesting static final String EXPLOIT_ENDPOINT = "owa/auth/x.js";
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
   private final Clock utcClock;
@@ -103,15 +104,14 @@ public final class MicrosoftExchangeCve202126855 implements VulnDetector {
 
   @Inject
   MicrosoftExchangeCve202126855(
-      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator, 
+      @UtcClock Clock utcClock,
+      HttpClient httpClient,
+      PayloadGenerator payloadGenerator,
       @Annotations.OobSleepDuration int oobSleepDuration) {
     this.utcClock = checkNotNull(utcClock);
     // we need to disable following redirections for this detector
     // because we need to use the redirection responses
-    this.httpClient = checkNotNull(httpClient)
-                      .modify()
-                      .setFollowRedirects(false)
-                      .build();
+    this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
     this.payloadGenerator = checkNotNull(payloadGenerator);
     this.oobSleepDuration = oobSleepDuration;
   }
@@ -167,7 +167,8 @@ public final class MicrosoftExchangeCve202126855 implements VulnDetector {
     }
     Optional<String> location = response.headers().get("location");
     logger.atInfo().log("Location " + location);
-    if (response.status().equals(HttpStatus.FOUND) && location.isPresent()
+    if (response.status().equals(HttpStatus.FOUND)
+        && location.isPresent()
         && location.get().endsWith("/owa/")) {
       return true;
     } else {
@@ -184,12 +185,13 @@ public final class MicrosoftExchangeCve202126855 implements VulnDetector {
   private boolean isServiceVulnerable(NetworkService networkService) {
 
     // Generate the payload for the callback server
-    PayloadGeneratorConfig config = PayloadGeneratorConfig.newBuilder()
-        .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.SSRF)
-        .setInterpretationEnvironment(
-            PayloadGeneratorConfig.InterpretationEnvironment.INTERPRETATION_ANY)
-        .setExecutionEnvironment(PayloadGeneratorConfig.ExecutionEnvironment.EXEC_ANY)
-        .build();
+    PayloadGeneratorConfig config =
+        PayloadGeneratorConfig.newBuilder()
+            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.SSRF)
+            .setInterpretationEnvironment(
+                PayloadGeneratorConfig.InterpretationEnvironment.INTERPRETATION_ANY)
+            .setExecutionEnvironment(PayloadGeneratorConfig.ExecutionEnvironment.EXEC_ANY)
+            .build();
 
     String oobCallbackUrl = "";
     Payload payload = null;
@@ -212,13 +214,17 @@ public final class MicrosoftExchangeCve202126855 implements VulnDetector {
     String ssrfPayload = PAYLOAD_TEMPLATE.replace("HOST", oobCallbackUrl);
 
     // Send the malicious HTTP request
-    String targetUri = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + EXPLOIT_ENDPOINT;
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + EXPLOIT_ENDPOINT;
     logger.atInfo().log("Sending payload to '%s'", targetUri);
-    HttpRequest req = HttpRequest.get(targetUri)
-        .setHeaders(HttpHeaders.builder().addHeader(CONTENT_TYPE, "application/json")
-            .addHeader(COOKIE, getCookiePayload(ssrfPayload))
-            .build())
-        .build();
+    HttpRequest req =
+        HttpRequest.get(targetUri)
+            .setHeaders(
+                HttpHeaders.builder()
+                    .addHeader(CONTENT_TYPE, "application/json")
+                    .addHeader(COOKIE, getCookiePayload(ssrfPayload))
+                    .build())
+            .build();
 
     try {
       this.httpClient.send(req, networkService);
@@ -229,7 +235,7 @@ public final class MicrosoftExchangeCve202126855 implements VulnDetector {
     // case
     verify(payload != null);
     logger.atInfo().log("Waiting for callback.");
-      Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
+    Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(oobSleepDuration));
     if (payload.checkIfExecuted()) {
       logger.atInfo().log("Vulnerability confirmed via Callback Server.");
       return true;

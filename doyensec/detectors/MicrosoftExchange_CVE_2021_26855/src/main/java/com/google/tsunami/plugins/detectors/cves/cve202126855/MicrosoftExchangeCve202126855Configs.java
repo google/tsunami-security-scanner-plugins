@@ -20,5 +20,5 @@ import com.google.tsunami.common.config.annotations.ConfigProperties;
 
 @ConfigProperties("plugins.detectors.MicrosoftExchangeCve202126855")
 final class MicrosoftExchangeCve202126855Configs {
-    int oobSleepDuration = -1;
+  int oobSleepDuration = -1;
 }

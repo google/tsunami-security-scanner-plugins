@@ -55,20 +55,24 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class MicrosoftExchangeCve202126855Test {
 
-  private final FakeUtcClock fakeUtcClock = FakeUtcClock.create().setNow(Instant.parse("2026-01-23T13:37:00.00Z"));
+  private final FakeUtcClock fakeUtcClock =
+      FakeUtcClock.create().setNow(Instant.parse("2026-01-23T13:37:00.00Z"));
 
   @Bind(lazy = true)
   private final int oobSleepDuration = 0;
 
-  @Inject
-  private MicrosoftExchangeCve202126855 detector;
+  @Inject private MicrosoftExchangeCve202126855 detector;
   private MockWebServer mockWebServer = new MockWebServer();
   private MockWebServer mockCallbackServer = new MockWebServer();
 
-  private static final String SAFE_INSTANCE_RESPONSE = "<html><head><title>Object moved</title></head><body>\n" + //
-      "<h2>Object moved to <a href=\"/owa/auth/errorFE.aspx?httpCode=500\">here</a>.</h2>\n" + //
-      "</body></html>";
+  private static final String SAFE_INSTANCE_RESPONSE =
+      "<html><head><title>Object moved</title></head><body>\n"
+          + //
+          "<h2>Object moved to <a href=\"/owa/auth/errorFE.aspx?httpCode=500\">here</a>.</h2>\n"
+          + //
+          "</body></html>";
 
+  
   @Before
   public void setUp() throws IOException {
     mockWebServer = new MockWebServer();
@@ -83,13 +87,13 @@ public final class MicrosoftExchangeCve202126855Test {
 
   private void createInjector(boolean tcsAvailable) {
     Guice.createInjector(
-        new FakeUtcClockModule(fakeUtcClock),
-        new HttpClientModule.Builder().build(),
-        FakePayloadGeneratorModule.builder()
-            .setCallbackServer(tcsAvailable ? mockCallbackServer : null)
-            .build(),
-        Modules.override(new MicrosoftExchangeCve202126855BootstrapModule())
-            .with(BoundFieldModule.of(this)))
+            new FakeUtcClockModule(fakeUtcClock),
+            new HttpClientModule.Builder().build(),
+            FakePayloadGeneratorModule.builder()
+                .setCallbackServer(tcsAvailable ? mockCallbackServer : null)
+                .build(),
+            Modules.override(new MicrosoftExchangeCve202126855BootstrapModule())
+                .with(BoundFieldModule.of(this)))
         .injectMembers(this);
   }
 
@@ -97,16 +101,18 @@ public final class MicrosoftExchangeCve202126855Test {
   public void detect_whenVulnerableAndTcsAvailable_reportsCriticalVulnerability()
       throws IOException {
     ImmutableList<NetworkService> httpServices = mockWebServerSetup(true, true);
-    TargetInfo targetInfo = TargetInfo.newBuilder()
-        .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-        .build();
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
+            .build();
 
     createInjector(true);
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
     DetectionReportList detectionReports = detector.detect(targetInfo, httpServices);
 
-    DetectionReport expectedDetection = generateDetectionReportWithCallback(detector, targetInfo, httpServices.get(0));
+    DetectionReport expectedDetection =
+        generateDetectionReportWithCallback(detector, targetInfo, httpServices.get(0));
     assertThat(detectionReports.getDetectionReportsList()).containsExactly(expectedDetection);
     assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
@@ -115,9 +121,10 @@ public final class MicrosoftExchangeCve202126855Test {
   @Test
   public void detect_whenNotVulnerableAndTcsAvailable_reportsNoVulnerability() throws IOException {
     ImmutableList<NetworkService> httpServices = mockWebServerSetup(false, true);
-    TargetInfo targetInfo = TargetInfo.newBuilder()
-        .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-        .build();
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
+            .build();
 
     createInjector(true);
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
@@ -132,9 +139,10 @@ public final class MicrosoftExchangeCve202126855Test {
   @Test
   public void detect_whenNotExchangeAndTcsAvailable_reportsNoVulnerability() throws IOException {
     ImmutableList<NetworkService> httpServices = mockWebServerSetup(false, false);
-    TargetInfo targetInfo = TargetInfo.newBuilder()
-        .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-        .build();
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
+            .build();
 
     createInjector(true);
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockUnsuccessfulCallbackResponse());
@@ -147,7 +155,9 @@ public final class MicrosoftExchangeCve202126855Test {
   }
 
   private DetectionReport generateDetectionReportWithCallback(
-      MicrosoftExchangeCve202126855 detector, TargetInfo targetInfo, NetworkService networkService) {
+      MicrosoftExchangeCve202126855 detector,
+      TargetInfo targetInfo,
+      NetworkService networkService) {
 
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
@@ -188,14 +198,18 @@ public final class MicrosoftExchangeCve202126855Test {
           if (!isVulnerable) {
             return new MockResponse()
                 .setResponseCode(HttpStatus.FOUND.code())
-                .addHeader("location", "https://" + recordedRequest.getRequestUrl().host() + "/owa/")
+                .addHeader(
+                    "location", "https://" + recordedRequest.getRequestUrl().host() + "/owa/")
                 .setBody(SAFE_INSTANCE_RESPONSE);
           } else {
-            return new MockResponse().setResponseCode(HttpStatus.OK.code()).addHeader("x-calculatedbetarget",
-                "aaaaaaaaa.cb.tsunami");
+            return new MockResponse()
+                .setResponseCode(HttpStatus.OK.code())
+                .addHeader("x-calculatedbetarget", "aaaaaaaaa.cb.tsunami");
           }
         } else {
-          return new MockResponse().setResponseCode(HttpStatus.FOUND.code()).addHeader("location", "https://" + recordedRequest.getRequestUrl().host() + "/owa/");
+          return new MockResponse()
+              .setResponseCode(HttpStatus.FOUND.code())
+              .addHeader("location", "https://" + recordedRequest.getRequestUrl().host() + "/owa/");
         }
       } else {
         // Anything else, return a 404

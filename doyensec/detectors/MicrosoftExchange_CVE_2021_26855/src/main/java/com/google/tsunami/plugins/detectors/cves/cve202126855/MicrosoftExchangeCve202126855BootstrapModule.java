@@ -18,7 +18,6 @@ package com.google.tsunami.plugins.detectors.cves.cve202126855;
 
 import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
-import com.google.tsunami.plugins.detectors.cves.cve202126855.Annotations;
 
 /** A Guice module that bootstraps the {@link MicrosoftExchangeCve202126855}. */
 public final class MicrosoftExchangeCve202126855BootstrapModule extends PluginBootstrapModule {
