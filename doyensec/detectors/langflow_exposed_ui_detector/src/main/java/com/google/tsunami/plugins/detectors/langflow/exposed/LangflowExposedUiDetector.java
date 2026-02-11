@@ -58,7 +58,7 @@ import javax.inject.Inject;
 /** A Tsunami plugin that detects an exposed instance of Langflow. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "Langflow_exposedUI ",
+    name = "Langflow_exposedUI",
     version = "0.1",
     description = "This plugin detects an exposed instance of Langflow.",
     author = "Giacomo Coluccelli (giacomo@doyensec.com)",
