@@ -18,7 +18,7 @@ finding: {
     value: "DTALE_EXPOSED_UI"
   }
   severity: CRITICAL
-  title: "Remote code execution affecting Dtale"
+  title: "Unauthenticated D-Tale Allows Remote Code Execution"
   description: "D-Tale is a visualizer for Pandas data structures. Users hosting D-Tale publicly can be vulnerable to remote code execution allowing attackers to run malicious code on the server, this is because D-Tale has a query engine and the query engine allow to run python scripts by design."
   recommendation: "You can change the query engine or enable authentication in the application to prevent unauthorized access. Check out this link for more information: https://github.com/man-group/dtale/blob/master/docs/CONFIGURATION.md"
 }
