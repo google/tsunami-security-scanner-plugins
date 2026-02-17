@@ -75,7 +75,7 @@ public final class DrupalExposedInstallationDetector implements VulnDetector {
             // TODO: b/315448255 - Determine CVSS score.
             .setDescription(
                 "The drupal installation file is exposed and unfinished. Someone could hijack"
-                    + "the installation process and execute code on the target machine.")
+                    + " the installation process and execute code on the target machine.")
             .setRecommendation(
                 "Ensure Drupal is not externally accessible (firewall) until the installation is"
                     + " complete. Complete the installation process and set a strong password for"
