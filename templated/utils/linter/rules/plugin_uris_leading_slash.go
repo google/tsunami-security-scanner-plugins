@@ -34,8 +34,8 @@ func (r *PluginURIHaveLeadingSlash) Check(path string, plugin *tpb.TemplatedPlug
 	var results []*RuleResult
 
 	for _, action := range plugin.GetActions() {
-		switch action.AnyAction.(type) {
-		case *tpb.PluginAction_HttpRequest:
+		switch action.WhichAnyAction() {
+		case tpb.PluginAction_HttpRequest_case:
 			actionName := action.GetName()
 			for _, uri := range action.GetHttpRequest().GetUri() {
 				if uri == "" || !strings.HasPrefix(uri, "/") {
