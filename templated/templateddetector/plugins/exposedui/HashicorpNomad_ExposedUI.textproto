@@ -90,9 +90,6 @@ actions: {
     }
   }
 }
-config:{
-  debug: true
-}
 #############
 # WORKFLOWS #
 #############
