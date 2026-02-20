@@ -21,12 +21,12 @@ tests: {
         body_content: '<title>Livy - Sessions</title>'
       },
       {
-        uri: "/sessions"
+        uri: "/batches"
         status: 201
         body_content:
-          '{"id":6,"name":null,"appId":null,"owner":null,"proxyUser":null,"state":"starting","kind":"pyspark","appInfo":{"driverLogUrl":null,"sparkUiUrl":null},"log":["stdout: ","\\nstderr: "],"ttl":null,"driverMemory":null,"driverCores":0,"executorMemory":null,"executorCores":0,"conf":{},"archives":[],"files":[],"heartbeatTimeoutInSecond":0,"jars":[],"numExecutors":0,"pyFiles":[],"queue":null}'
+          '{"id":6,"name":null,"owner":null,"proxyUser":null,"state":"running","appId":null,"appInfo":{"driverLogUrl":null,"sparkUiUrl":null},"log":["stdout: ","\nstderr: "]}'
         condition: {
-          body_content: '{"kind":"pyspark"}'
+          body_content: '{"file":"{{ T_CBS_URI }}"}'
           headers: [
             {
               name: "Content-Type",
@@ -36,25 +36,8 @@ tests: {
         }
       },
       {
-        uri: "/sessions/6/statements"
-        status: 201
-        condition: {
-          body_content: '{"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])"}'
-          headers: [
-            {
-              name: "Content-Type",
-              value: "application/json"
-            }
-          ]
-        }
-        body_content:
-            '{"id":4,"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])","state":"running","output":null,"progress":0.0,"started":1755100962100,"completed":0}'
-      },
-      {
-        uri: "/sessions/6/statements/4"
+        uri: "/batches/6"
         status: 200
-        body_content:
-            '{"id":0,"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])","state":"available","output":{"status":"ok","execution_count":0,"data":{"text/plain":"/opt"}},"progress":1.0,"started":1754515902001,"completed":1754515902003}'
       }
     ]
   }
@@ -93,12 +76,12 @@ tests: {
         body_content: '<title>Livy - Sessions</title>'
       },
       {
-        uri: "/sessions"
+        uri: "/batches"
         status: 201
         body_content:
-            '{"id":6,"name":null,"appId":null,"owner":null,"proxyUser":null,"state":"starting","kind":"pyspark","appInfo":{"driverLogUrl":null,"sparkUiUrl":null},"log":["stdout: ","\\nstderr: "],"ttl":null,"driverMemory":null,"driverCores":0,"executorMemory":null,"executorCores":0,"conf":{},"archives":[],"files":[],"heartbeatTimeoutInSecond":0,"jars":[],"numExecutors":0,"pyFiles":[],"queue":null}'
+            '{"id":6,"name":null,"owner":null,"proxyUser":null,"state":"running","appId":null,"appInfo":{"driverLogUrl":null,"sparkUiUrl":null},"log":["stdout: ","\nstderr: "]}'
         condition: {
-          body_content: '{"kind":"pyspark"}'
+          body_content: '{"file":"{{ T_CBS_URI }}"}'
           headers: [
             {
               name: "Content-Type",
@@ -108,22 +91,7 @@ tests: {
         }
       },
       {
-        uri: "/sessions/6/statements"
-        status: 201
-        condition: {
-          body_content: '{"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])"}'
-          headers: [
-            {
-              name: "Content-Type",
-              value: "application/json"
-            }
-          ]
-        }
-        body_content:
-            '{"id":4,"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])","state":"running","output":null,"progress":0.0,"started":1755100962100,"completed":0}'
-      },
-      {
-        uri: "/sessions/6/statements/4"
+        uri: "/batches/6"
         status: 200
         body_content:
             '{"id":0,"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])","state":"available","output":{"status":"ok","execution_count":0,"data":{"text/plain":"/opt"}},"progress":1.0,"started":1754515902001,"completed":1754515902003}'

