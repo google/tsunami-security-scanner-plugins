@@ -1,0 +1,60 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "VMWareVCenter_CVE_2021_21972"
+  author: "Tsunami Team (tsunami-dev@google.com)"
+  version: "0.1"
+  description: "Detects CVE-2021-21972, upload OVA RCE in vCenter."
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE_2021_21972"
+  }
+  severity: CRITICAL
+  title: "vCenter OVA Upload RCE"
+  description: "The vSphere Client (HTML5) contains a remote code execution vulnerability in a vCenter Server plugin. A malicious actor with network access to port 443 may exploit this issue to execute commands with unrestricted privileges on the underlying operating system that hosts vCenter Server."
+  recommendation: "Apply the updates listed in the 'Fixed Version' column of the 'Response Matrix' at https://www.vmware.com/security/advisories/VMSA-2021-0002.html."
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "is_vcenter_vulnerable"
+  http_request: {
+    method: POST
+    uri: "/ui/vropspluginui/rest/services/uploadova"
+    headers: [
+      { name: "User-Agent", value: "Mozilla/5.0 (compatible; vCenter)" }
+    ]
+    response: {
+      http_status: 500
+      expect_all: {
+        conditions: [
+          { body: {} contains: "uploadFile" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "is_vcenter_vulnerable"
+  ]
+}
