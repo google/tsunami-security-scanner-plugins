@@ -8,7 +8,7 @@
 info: {
   type: VULN_DETECTION
   name: "Dtale_ExposedUI"
-  author: "VickyTheViking"
+  author: "Vicky"
   version: "1.0"
 }
 
