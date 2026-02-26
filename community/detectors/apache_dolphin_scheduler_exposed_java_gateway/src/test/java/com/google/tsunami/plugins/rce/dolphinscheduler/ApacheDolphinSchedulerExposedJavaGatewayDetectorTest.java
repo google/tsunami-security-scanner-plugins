@@ -39,6 +39,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -118,10 +120,14 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetectorTest {
 
   @Test
   public void detect_whenNotDolphinScheduler_returnsNoVulnerability() throws IOException {
-    mockWebServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setBody("Some other application content"));
+    // Enqueue responses for all fingerprinting paths: "", "dolphinscheduler",
+    // "dolphinscheduler/ui", "dolphinscheduler/ui/login"
+    for (int i = 0; i < 4; i++) {
+      mockWebServer.enqueue(
+          new MockResponse()
+              .setResponseCode(HttpStatus.OK.code())
+              .setBody("Some other application content"));
+    }
 
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
 
@@ -131,10 +137,14 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetectorTest {
   @Test
   public void detect_whenDolphinSchedulerButNoJavaGateway_returnsNoVulnerability()
       throws IOException {
-    mockWebServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setBody(DOLPHINSCHEDULER_PAGE_CONTENT));
+    // Enqueue responses for all fingerprinting paths: "", "dolphinscheduler",
+    // "dolphinscheduler/ui", "dolphinscheduler/ui/login"
+    for (int i = 0; i < 4; i++) {
+      mockWebServer.enqueue(
+          new MockResponse()
+              .setResponseCode(HttpStatus.OK.code())
+              .setBody(DOLPHINSCHEDULER_PAGE_CONTENT));
+    }
 
     // No mock Py4j server - connection to host:25333 will fail
     DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
@@ -144,10 +154,14 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetectorTest {
   @Test
   public void detect_whenDolphinSchedulerWithExposedJavaGateway_reportsVulnerability()
       throws Exception {
-    mockWebServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setBody(DOLPHINSCHEDULER_PAGE_CONTENT));
+    // Enqueue responses for all fingerprinting paths: "", "dolphinscheduler",
+    // "dolphinscheduler/ui", "dolphinscheduler/ui/login"
+    for (int i = 0; i < 4; i++) {
+      mockWebServer.enqueue(
+          new MockResponse()
+              .setResponseCode(HttpStatus.OK.code())
+              .setBody(DOLPHINSCHEDULER_PAGE_CONTENT));
+    }
 
     mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
 
@@ -192,8 +206,10 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetectorTest {
 
   /**
    * A mock Py4j server that handles the full runShellScript protocol: auth, reflection
-   * (get Runtime class), getRuntime(), and exec(script). When exec receives a script, it actually
-   * executes it to trigger the callback for RCE verification.
+   * (get Runtime class), getRuntime(), and exec(script). Instead of actually executing the
+   * payload, it returns a success response as if it was executed. This ensures the callback
+   * response stays queued for the polling request from payload.checkIfExecuted(), avoiding the
+   * race where the RCE execution consumes the response before the poll.
    */
   private static class MockPy4jServer implements Runnable {
     private final boolean acceptAuth;
@@ -207,7 +223,8 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetectorTest {
 
     void start(int port) throws IOException {
       this.port = port;
-      this.serverSocket = new ServerSocket(port);
+      this.serverSocket = new ServerSocket();
+      this.serverSocket.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), port));
     }
 
     int getPort() {
@@ -227,16 +244,11 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetectorTest {
       }
     }
 
-    private static String unescapePy4j(String s) {
-      if (s == null) return "";
-      return s.replace("\\n", "\n").replace("\\r", "\r").replace("\\\\", "\\");
-    }
-
     @Override
     public void run() {
       try {
         if (serverSocket == null) {
-          serverSocket = new ServerSocket(0);
+          serverSocket = new ServerSocket(0, 0, InetAddress.getLoopbackAddress());
         }
         ready = true;
         while (!serverSocket.isClosed()) {
@@ -286,19 +298,10 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetectorTest {
               String methodName = reader.readLine();
               String argLine = reader.readLine();
               while (argLine != null && !argLine.isEmpty() && !"e".equals(argLine)) {
-                if (argLine.startsWith("s") && "exec".equals(methodName)) {
-                  // String argument - for exec(script), execute to trigger callback
-                  String script = unescapePy4j(argLine.substring(1));
-                  try {
-                    ProcessBuilder pb = new ProcessBuilder("sh", "-c", script);
-                    pb.redirectErrorStream(true);
-                    pb.start();
-                  } catch (IOException e) {
-                    // Ignore - test environment may not have curl etc
-                  }
-                }
                 argLine = reader.readLine();
               }
+              // Return success as if exec was executed, without actually running the payload.
+              // The callback response remains queued for payload.checkIfExecuted() to consume.
               writer.write("!yr1\n");
               writer.flush();
             }

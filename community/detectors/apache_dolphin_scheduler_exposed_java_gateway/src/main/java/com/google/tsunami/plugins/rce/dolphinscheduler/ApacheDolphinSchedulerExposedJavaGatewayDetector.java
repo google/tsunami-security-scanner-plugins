@@ -211,7 +211,7 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetector implements V
       if(py4jClient.authenticate()) {
         py4jClient.runShellScript(payloadString);
       } else {
-        logger.atWarning().log("Failed to authenticate with Java Gateway.");
+        logger.atInfo().log("Failed to authenticate with Java Gateway.");
         return false;
       }
       logger.atInfo().log("Waiting for RCE callback.");
