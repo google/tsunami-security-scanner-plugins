@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
-import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
@@ -60,7 +59,8 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class ApacheDolphinSchedulerExposedJavaGatewayDetectorTest {
   private static final String DOLPHINSCHEDULER_PAGE_CONTENT =
-      "<html><head><title>DolphinScheduler</title></head><body>Apache DolphinScheduler</body></html>";
+      "<html><head><title>DolphinScheduler</title></head><body>Apache"
+          + " DolphinScheduler</body></html>";
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2025-02-20T00:00:00.00Z"));
@@ -177,8 +177,7 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetectorTest {
     mockPy4jServer.waitUntilReady();
 
     try {
-      DetectionReportList detectionReports =
-          detector.detect(targetInfo, ImmutableList.of(service));
+      DetectionReportList detectionReports = detector.detect(targetInfo, ImmutableList.of(service));
 
       assertThat(detectionReports.getDetectionReportsList()).hasSize(1);
       DetectionReport report = detectionReports.getDetectionReports(0);
@@ -196,20 +195,19 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetectorTest {
     var advisories = detector.getAdvisories();
 
     assertThat(advisories).hasSize(1);
-    assertThat(advisories.get(0).getMainId().getPublisher())
-        .isEqualTo("TSUNAMI_COMMUNITY");
+    assertThat(advisories.get(0).getMainId().getPublisher()).isEqualTo("TSUNAMI_COMMUNITY");
     assertThat(advisories.get(0).getMainId().getValue())
         .isEqualTo("DOLPHINSCHEDULER_EXPOSED_JAVA_GATEWAY");
-    assertThat(advisories.get(0).getSeverity()).isEqualTo(
-        com.google.tsunami.proto.Severity.CRITICAL);
+    assertThat(advisories.get(0).getSeverity())
+        .isEqualTo(com.google.tsunami.proto.Severity.CRITICAL);
   }
 
   /**
-   * A mock Py4j server that handles the full runShellScript protocol: auth, reflection
-   * (get Runtime class), getRuntime(), and exec(script). Instead of actually executing the
-   * payload, it returns a success response as if it was executed. This ensures the callback
-   * response stays queued for the polling request from payload.checkIfExecuted(), avoiding the
-   * race where the RCE execution consumes the response before the poll.
+   * A mock Py4j server that handles the full runShellScript protocol: auth, reflection (get Runtime
+   * class), getRuntime(), and exec(script). Instead of actually executing the payload, it returns a
+   * success response as if it was executed. This ensures the callback response stays queued for the
+   * polling request from payload.checkIfExecuted(), avoiding the race where the RCE execution
+   * consumes the response before the poll.
    */
   private static class MockPy4jServer implements Runnable {
     private final boolean acceptAuth;
@@ -253,60 +251,60 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetectorTest {
         ready = true;
         while (!serverSocket.isClosed()) {
           try (Socket client = serverSocket.accept()) {
-          BufferedReader reader =
-              new BufferedReader(
-                  new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8));
-          PrintWriter writer =
-              new PrintWriter(
-                  new OutputStreamWriter(client.getOutputStream(), StandardCharsets.UTF_8));
+            BufferedReader reader =
+                new BufferedReader(
+                    new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8));
+            PrintWriter writer =
+                new PrintWriter(
+                    new OutputStreamWriter(client.getOutputStream(), StandardCharsets.UTF_8));
 
-          while (true) {
-            String line = reader.readLine();
-            if (line == null) break;
+            while (true) {
+              String line = reader.readLine();
+              if (line == null) break;
 
-            // Auth command: A -> token (no "e" - Py4j auth doesn't use end marker)
-            if ("A".equals(line)) {
-              String token = reader.readLine();
-              if (acceptAuth
-                  && ApacheDolphinSchedulerExposedJavaGatewayDetector.DEFAULT_AUTH_TOKEN.equals(
-                      token)) {
-                writer.write("!yv\n");
-              } else {
-                writer.write("!xsBad auth token\n");
+              // Auth command: A -> token (no "e" - Py4j auth doesn't use end marker)
+              if ("A".equals(line)) {
+                String token = reader.readLine();
+                if (acceptAuth
+                    && ApacheDolphinSchedulerExposedJavaGatewayDetector.DEFAULT_AUTH_TOKEN.equals(
+                        token)) {
+                  writer.write("!yv\n");
+                } else {
+                  writer.write("!xsBad auth token\n");
+                }
+                writer.flush();
+                continue;
               }
-              writer.flush();
-              continue;
-            }
 
-            // Reflection: r -> c -> java.lang.Runtime -> e
-            if ("r".equals(line)) {
-              String sub = reader.readLine();
-              String fqn = reader.readLine();
-              reader.readLine(); // consume e
-              if ("c".equals(sub) && "java.lang.Runtime".equals(fqn)) {
-                writer.write("!yr0\n");
-              } else {
-                writer.write("!xn\n");
+              // Reflection: r -> c -> java.lang.Runtime -> e
+              if ("r".equals(line)) {
+                String sub = reader.readLine();
+                String fqn = reader.readLine();
+                reader.readLine(); // consume e
+                if ("c".equals(sub) && "java.lang.Runtime".equals(fqn)) {
+                  writer.write("!yr0\n");
+                } else {
+                  writer.write("!xn\n");
+                }
+                writer.flush();
+                continue;
               }
-              writer.flush();
-              continue;
-            }
 
-            // Call command: targetId -> methodName -> [args] -> e
-            if ("c".equals(line)) {
-              String targetId = reader.readLine();
-              String methodName = reader.readLine();
-              String argLine = reader.readLine();
-              while (argLine != null && !argLine.isEmpty() && !"e".equals(argLine)) {
-                argLine = reader.readLine();
+              // Call command: targetId -> methodName -> [args] -> e
+              if ("c".equals(line)) {
+                String targetId = reader.readLine();
+                String methodName = reader.readLine();
+                String argLine = reader.readLine();
+                while (argLine != null && !argLine.isEmpty() && !"e".equals(argLine)) {
+                  argLine = reader.readLine();
+                }
+                // Return success as if exec was executed, without actually running the payload.
+                // The callback response remains queued for payload.checkIfExecuted() to consume.
+                writer.write("!yr1\n");
+                writer.flush();
               }
-              // Return success as if exec was executed, without actually running the payload.
-              // The callback response remains queued for payload.checkIfExecuted() to consume.
-              writer.write("!yr1\n");
-              writer.flush();
             }
           }
-        }
         }
       } catch (IOException e) {
         // Ignore - socket closed

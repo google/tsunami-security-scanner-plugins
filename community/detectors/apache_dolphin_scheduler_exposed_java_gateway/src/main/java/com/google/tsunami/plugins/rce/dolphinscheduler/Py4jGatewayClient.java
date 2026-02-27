@@ -156,8 +156,8 @@ public final class Py4jGatewayClient {
   }
 
   /**
-   * Reads a Py4j response line. Returns the object ID for use in subsequent Call commands.
-   * Response format: !y + type + value (e.g. !yro0 = success, reference type, object id "o0").
+   * Reads a Py4j response line. Returns the object ID for use in subsequent Call commands. Response
+   * format: !y + type + value (e.g. !yro0 = success, reference type, object id "o0").
    */
   private String readResponse(BufferedReader reader) throws IOException {
     String line = reader.readLine();

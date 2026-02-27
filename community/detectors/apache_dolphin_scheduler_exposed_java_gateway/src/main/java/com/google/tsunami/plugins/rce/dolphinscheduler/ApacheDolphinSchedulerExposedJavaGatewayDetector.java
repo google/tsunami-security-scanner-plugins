@@ -75,8 +75,7 @@ import javax.inject.Inject;
 public final class ApacheDolphinSchedulerExposedJavaGatewayDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  @VisibleForTesting
-  static final String VULNERABILITY_REPORT_PUBLISHER = "TSUNAMI_COMMUNITY";
+  @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "TSUNAMI_COMMUNITY";
 
   @VisibleForTesting
   static final String VULNERABILITY_REPORT_ID = "DOLPHINSCHEDULER_EXPOSED_JAVA_GATEWAY";
@@ -86,11 +85,11 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetector implements V
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION =
-      "Apache DolphinScheduler's Java Gateway (Py4j) is exposed with default credentials. "
-          + "The Java Gateway uses a default auth token when deployed via the official Docker image "
-          + "(apache/dolphinscheduler-standalone-server). When exposed, attackers can authenticate "
-          + "and submit workflows with Shell or Python tasks, leading to remote code execution "
-          + "(RCE) on the DolphinScheduler worker nodes.";
+      "Apache DolphinScheduler's Java Gateway (Py4j) is exposed with default credentials. The Java"
+          + " Gateway uses a default auth token when deployed via the official Docker image"
+          + " (apache/dolphinscheduler-standalone-server). When exposed, attackers can authenticate"
+          + " and submit workflows with Shell or Python tasks, leading to remote code execution"
+          + " (RCE) on the DolphinScheduler worker nodes.";
 
   @VisibleForTesting
   static final String RECOMMENDATION =
@@ -106,16 +105,14 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetector implements V
   static final String DEFAULT_AUTH_TOKEN = "jwUDzpLsNKEFER4*a8gruBH_GsAurNxU7A@Xc";
 
   /** Default Java Gateway port (Py4j). */
-  @VisibleForTesting
-  static final int JAVA_GATEWAY_PORT = 25333;
+  @VisibleForTesting static final int JAVA_GATEWAY_PORT = 25333;
 
   @VisibleForTesting
   static final Pattern DOLPHINSCHEDULER_PATTERN =
       Pattern.compile("dolphinscheduler|DolphinScheduler", Pattern.CASE_INSENSITIVE);
 
   /** Time to wait for RCE callback after executing payload. */
-  @VisibleForTesting
-  static final int OOB_SLEEP_DURATION_SECS = 5;
+  @VisibleForTesting static final int OOB_SLEEP_DURATION_SECS = 5;
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -156,7 +153,8 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetector implements V
         .filter(this::isVulnerable)
         .forEach(
             networkService ->
-                detectionReport.addDetectionReports(buildDetectionReport(targetInfo, networkService)));
+                detectionReport.addDetectionReports(
+                    buildDetectionReport(targetInfo, networkService)));
     return detectionReport.build();
   }
 
@@ -168,7 +166,7 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetector implements V
     }
 
     // DolphinScheduler UI can be at /dolphinscheduler or root (standalone uses 12345)
-    String[] paths = {"", "dolphinscheduler", "dolphinscheduler/ui","dolphinscheduler/ui/login"};
+    String[] paths = {"", "dolphinscheduler", "dolphinscheduler/ui", "dolphinscheduler/ui/login"};
     for (String path : paths) {
       String targetUrl = rootUrl + path;
       try {
@@ -208,7 +206,7 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetector implements V
 
     try {
       String payloadString = payload.getPayload();
-      if(py4jClient.authenticate()) {
+      if (py4jClient.authenticate()) {
         py4jClient.runShellScript(payloadString);
       } else {
         logger.atInfo().log("Failed to authenticate with Java Gateway.");
@@ -218,7 +216,8 @@ public final class ApacheDolphinSchedulerExposedJavaGatewayDetector implements V
       Uninterruptibles.sleepUninterruptibly(Duration.ofSeconds(OOB_SLEEP_DURATION_SECS));
       return payload.checkIfExecuted();
     } catch (Exception e) {
-      logger.atWarning().withCause(e).log("Failed to verify RCE via Java Gateway: %s", e.getMessage());
+      logger.atWarning().withCause(e).log(
+          "Failed to verify RCE via Java Gateway: %s", e.getMessage());
       return false;
     }
   }
