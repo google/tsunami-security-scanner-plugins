@@ -17,7 +17,7 @@ finding: {
     publisher: "GOOGLE"
     value: "HASHICORPNOMAD_EXPOSED_UI"
   }
-  title: "Exposed HashicorpNomad instance"
+  title: "Exposed Hashicorp Nomad instance"
   description: "HashicorpNomad instance is exposed and can be used to compromise the system."
   recommendation:
     "Configure authentication or ensure the HashicorpNomad instance is not exposed "
