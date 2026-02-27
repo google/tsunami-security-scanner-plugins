@@ -18,7 +18,7 @@ finding: {
     value: "HASHICORPNOMAD_EXPOSED_UI"
   }
   title: "Exposed Hashicorp Nomad instance"
-  description: "HashicorpNomad instance is exposed and can be used to compromise the system."
+  description: "Hashicorp Nomad instance is exposed and can be used to execute arbitrary code. Confirmed by starting a docker container and running `curl` to fetch the callback server URI. "
   recommendation:
     "Configure authentication or ensure the Hashicorp Nomad instance is not exposed "
     "to the network. See "
