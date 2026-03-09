@@ -118,7 +118,6 @@ actions: {
 #############
 # WORKFLOWS #
 #############
-config {debug: true }
 
 workflows: {
   actions: [
