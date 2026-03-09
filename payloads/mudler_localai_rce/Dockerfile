@@ -26,12 +26,14 @@ RUN apt-get install -y \
   python3-dev \
   golang-go
 
-# Upgrade pip and install pyinstaller
-RUN python3 -m pip install --upgrade pip && \
-  python3 -m pip install pyinstaller
-
 # Set the working directory
 WORKDIR /opt
+
+# Install pyinstaller
+COPY requirements.txt requirements.txt
+RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install --require-hashes -r requirements.txt
+
 COPY app_bin_compile.py app_bin_compile.py
 
 # Start Bash

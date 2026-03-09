@@ -1,0 +1,54 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ApacheHTTPd_CVE_2021_41773"
+}
+
+tests: {
+  name: "whenVulnerableReflective_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/bin/sh"
+        status: 200
+        body_content: "TSUNAMI_PAYLOAD_STARTtsunami-rceTSUNAMI_PAYLOAD_END"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerableWithCallback_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/bin/sh"
+        status: 200
+      }
+    ]
+  }
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/bin/sh"
+        status: 404
+      }
+    ]
+  }
+}

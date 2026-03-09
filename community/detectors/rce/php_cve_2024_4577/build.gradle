@@ -29,7 +29,7 @@ dependencies {
     }
 
     testImplementation("com.google.tsunami:tcs-proto") {
-      version { branch = "${coreRepoBranch}" }
+      version { branch = "${tcsRepoBranch}" }
     }
 
     testImplementation "junit:junit:4.13.2"

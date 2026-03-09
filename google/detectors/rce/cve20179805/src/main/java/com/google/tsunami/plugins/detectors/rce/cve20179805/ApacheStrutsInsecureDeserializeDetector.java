@@ -170,7 +170,7 @@ public final class ApacheStrutsInsecureDeserializeDetector implements VulnDetect
     httpClient.send(
         post(targetUri)
             .setHeaders(headers)
-            .setRequestBody(ByteString.copyFrom(payload, "UTF-8"))
+            .setRequestBody(ByteString.copyFromUtf8(payload))
             .build(),
         networkService);
   }
@@ -182,7 +182,7 @@ public final class ApacheStrutsInsecureDeserializeDetector implements VulnDetect
         httpClient.send(get(targetUri + filename).withEmptyHeaders().build(), networkService);
     return response.status() == HttpStatus.OK
         && response.bodyBytes().isPresent()
-        && response.bodyBytes().get().toString("UTF-8").trim().equals(contents);
+        && response.bodyBytes().get().toStringUtf8().trim().equals(contents);
   }
 
   private DetectionReport buildDetectionReport(

@@ -112,11 +112,10 @@ public final class AtlassianConfluencePreAuthOgnlInjectionDetector implements Vu
               post(targetUri)
                   .setHeaders(
                       HttpHeaders.builder()
-                          .addHeader("Content-Type",
-                              "application/x-www-form-urlencoded")
+                          .addHeader("Content-Type", "application/x-www-form-urlencoded")
                           .addHeader("User-Agent", "TSUNAMI_SCANNER")
                           .build())
-                  .setRequestBody(ByteString.copyFrom(PAYLOAD, "utf-8"))
+                  .setRequestBody(ByteString.copyFromUtf8(PAYLOAD))
                   .build(),
               networkService);
       if (response.status() == HttpStatus.FORBIDDEN && response.bodyString().isPresent()) {

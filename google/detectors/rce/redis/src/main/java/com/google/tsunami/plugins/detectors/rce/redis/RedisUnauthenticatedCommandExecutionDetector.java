@@ -24,6 +24,7 @@ import com.google.common.flogger.GoogleLogger;
 import com.google.common.net.HostAndPort;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
+import com.google.tsunami.common.net.socket.TsunamiSocketFactory;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -44,7 +45,6 @@ import java.net.Socket;
 import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
-import javax.net.SocketFactory;
 
 /** Detects Redis unauthenticated command execution allowing RCE. */
 @PluginInfo(
@@ -85,11 +85,11 @@ public final class RedisUnauthenticatedCommandExecutionDetector implements VulnD
           + "Then restart Redis service for the settings to take effect.";
 
   private final Clock utcClock;
-  private final SocketFactory socketFactory;
+  private final TsunamiSocketFactory socketFactory;
 
   @Inject
   RedisUnauthenticatedCommandExecutionDetector(
-      @UtcClock Clock utcClock, @SocketFactoryInstance SocketFactory socketFactory) {
+      @UtcClock Clock utcClock, TsunamiSocketFactory socketFactory) {
     this.utcClock = checkNotNull(utcClock);
     this.socketFactory = checkNotNull(socketFactory);
   }
@@ -142,7 +142,6 @@ public final class RedisUnauthenticatedCommandExecutionDetector implements VulnD
     HostAndPort hp = NetworkEndpointUtils.toHostAndPort(networkService.getNetworkEndpoint());
 
     try (Socket socket = socketFactory.createSocket(hp.getHost(), hp.getPort())) {
-      socket.setSoTimeout(2000);
       socket.getOutputStream().write("INFO server\r\n".getBytes(UTF_8));
       byte[] responseBuffer = new byte[100];
       int bytesRead = socket.getInputStream().read(responseBuffer, 0, responseBuffer.length);

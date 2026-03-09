@@ -15,18 +15,13 @@
  */
 package com.google.tsunami.plugins.detectors.rce.ciscosmi;
 
-import com.google.inject.multibindings.OptionalBinder;
 import com.google.tsunami.plugin.PluginBootstrapModule;
-import javax.net.SocketFactory;
 
 /** A {@link PluginBootstrapModule} for {@link CiscoSMIDetector}. */
 public final class CiscoSMIDetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    OptionalBinder.newOptionalBinder(binder(), SocketFactory.class)
-        .setDefault()
-        .toInstance(SocketFactory.getDefault());
     registerPlugin(CiscoSMIDetector.class);
   }
 }

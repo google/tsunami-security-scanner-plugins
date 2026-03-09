@@ -285,6 +285,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
     checkForArgoCd(detectedSoftware, networkService, startingUrl);
     checkForKubeflow(detectedSoftware, networkService, startingUrl);
     checkForAirbyte(detectedSoftware, networkService, startingUrl);
+    checkForMcpServer(detectedSoftware, networkService, startingUrl);
     return ImmutableSet.copyOf(detectedSoftware);
   }
 
@@ -476,5 +477,111 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", rootUrl);
     }
+  }
+
+  private void checkForMcpServer(
+      Set<DetectedSoftware> software, NetworkService networkService, String startingUrl) {
+    logger.atInfo().log("probing MCP Server - custom fingerprint phase");
+
+    if (checkMcpInitialize(networkService) || checkMcpPrematureRequest(networkService)) {
+      software.add(
+          DetectedSoftware.builder()
+              .setSoftwareIdentity(SoftwareIdentity.newBuilder().setSoftware("MCP Server").build())
+              .setRootPath(startingUrl)
+              .setContentHashes(ImmutableMap.of())
+              .build());
+      logger.atInfo().log("checkForMcpServer: Added MCP Server software");
+      return;
+    }
+    logger.atInfo().log("checkForMcpServer: No MCP Server detected");
+  }
+
+  private boolean checkMcpInitialize(NetworkService networkService) {
+    String[] endpoints = {"mcp", "messages", ""};
+    String requestId = "tsunami-mcp-scan";
+    String payload =
+        String.format(
+            "{\"jsonrpc\": \"2.0\", \"id\": \"%s\", \"method\":"
+                + " \"initialize\", \"params\": {\"protocolVersion\":"
+                + " \"2024-11-05\", \"capabilities\": {}, \"clientInfo\":"
+                + " {\"name\": \"TsunamiScanner\", \"version\": \"1.0.0\"}}}",
+            requestId);
+
+    for (String endpoint : endpoints) {
+      var url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + endpoint;
+      try {
+        logger.atInfo().log("MCP Initialize Check: Probing %s", url);
+        HttpResponse response =
+            httpClient.send(
+                post(url)
+                    .setHeaders(
+                        HttpHeaders.builder().addHeader("Content-Type", "application/json").build())
+                    .setRequestBody(ByteString.copyFromUtf8(payload))
+                    .build());
+        logger.atInfo().log("MCP Initialize Check: Received status %d", response.status().code());
+
+        if ((response.status() != HttpStatus.OK && response.status() != HttpStatus.ACCEPTED)
+            || response.bodyString().isEmpty()) {
+          continue;
+        }
+        String body = response.bodyString().get();
+        logger.atInfo().log("MCP Initialize Check: Response body: %s", body);
+        if (body.contains("\"jsonrpc\":\"2.0\"")
+            && body.contains(String.format("\"id\":\"%s\"", requestId))
+            && body.contains("\"result\":")
+            && body.contains("\"protocolVersion\"")
+            && body.contains("\"capabilities\"")
+            && body.contains("\"serverInfo\"")) {
+          logger.atInfo().log("MCP Initialize Check: Found MCP Server at %s", url);
+          return true;
+        }
+        logger.atInfo().log("MCP Initialize Check: Body does not match criteria.");
+      } catch (IOException e) {
+        logger.atWarning().withCause(e).log("MCP Initialize Check: Unable to query '%s'.", url);
+      }
+    }
+    logger.atInfo().log("MCP Initialize Check: Finished probes, no match.");
+    return false;
+  }
+
+  private boolean checkMcpPrematureRequest(NetworkService networkService) {
+    String[] endpoints = {"mcp", "messages", ""};
+    String requestId = "tsunami-mcp-scan";
+    String payload =
+        String.format(
+            "{\"method\": \"tools/list\", \"jsonrpc\": \"2.0\", \"id\":" + " \"%s\"}", requestId);
+
+    for (String endpoint : endpoints) {
+      var url = NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + endpoint;
+      try {
+        logger.atInfo().log("MCP Premature Request Check: Probing %s", url);
+        HttpResponse response =
+            httpClient.send(
+                post(url)
+                    .setHeaders(
+                        HttpHeaders.builder().addHeader("Content-Type", "application/json").build())
+                    .setRequestBody(ByteString.copyFromUtf8(payload))
+                    .build());
+        logger.atInfo().log(
+            "MCP Premature Request Check: Received status %d", response.status().code());
+
+        if ((response.status() == HttpStatus.BAD_REQUEST || response.status() == HttpStatus.OK)
+            && response.bodyString().isPresent()) {
+          String body = response.bodyString().get();
+          logger.atInfo().log("MCP Premature Request Check: Response body: %s", body);
+          if (body.contains("\"jsonrpc\":\"2.0\"")
+              && body.contains(String.format("\"id\":\"%s\"", requestId))
+              && body.contains("\"error\":")) {
+            logger.atInfo().log("MCP Premature Request Check: Found MCP Server at %s", url);
+            return true;
+          }
+          logger.atInfo().log("MCP Premature Request Check: Body does not match criteria.");
+        }
+      } catch (IOException e) {
+        logger.atWarning().withCause(e).log(
+            "MCP Premature Request Check: Unable to query '%s'.", url);
+      }
+    }
+    return false;
   }
 }

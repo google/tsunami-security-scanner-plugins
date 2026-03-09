@@ -24,13 +24,11 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Key;
-import com.google.inject.multibindings.OptionalBinder;
 import com.google.tsunami.common.net.http.HttpClientModule;
+import com.google.tsunami.common.net.socket.TsunamiSocketFactory;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
-import com.google.tsunami.plugins.detectors.rce.cve202226133.Cve202226133Detector.SocketFactoryInstance;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.TargetInfo;
@@ -40,7 +38,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.time.Instant;
 import javax.inject.Inject;
-import javax.net.SocketFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -52,7 +49,7 @@ import org.mockito.stubbing.Answer;
 public final class Cve202226133DetectorWithoutCallbackServerTest {
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2022-10-20T00:00:00.00Z"));
-  private final SocketFactory socketFactoryMock = mock(SocketFactory.class);
+  private final TsunamiSocketFactory socketFactoryMock = mock(TsunamiSocketFactory.class);
   @Inject private Cve202226133Detector detector;
   private TargetInfo targetInfo;
   private NetworkService service;
@@ -64,10 +61,7 @@ public final class Cve202226133DetectorWithoutCallbackServerTest {
             new AbstractModule() {
               @Override
               protected void configure() {
-                OptionalBinder.newOptionalBinder(
-                        binder(), Key.get(SocketFactory.class, SocketFactoryInstance.class))
-                    .setBinding()
-                    .toInstance(socketFactoryMock);
+                bind(TsunamiSocketFactory.class).toInstance(socketFactoryMock);
               }
             },
             new HttpClientModule.Builder().build(),

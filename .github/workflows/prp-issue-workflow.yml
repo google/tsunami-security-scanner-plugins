@@ -41,46 +41,6 @@ jobs:
         continue-on-error: true
         run: gh issue edit "$NUMBER" --add-assignee "$AUTHOR"
 
-      - name: Compute contributors stats
-        env:
-          GRAPHQL_QUERY: |
-            query($name: String!, $owner: String!, $author: String!, $label: String!) {
-              repository(owner: $owner, name: $name) {
-                issues(states:OPEN, filterBy:{assignee: $author}, labels:[$label]){
-                  totalCount
-                }
-              }
-            }
-        run: |
-          numMainIssues="$(gh api graphql \
-              -F author=$AUTHOR -F owner=$GH_OWNER -F name=$GH_REPO_NAME\
-              -F label="Contributor main" \
-              -f query="$GRAPHQL_QUERY" \
-              --jq '.data.repository.issues.totalCount')"
-          numQueueIssues="$(gh api graphql \
-              -F author=$AUTHOR -F owner=$GH_OWNER -F name=$GH_REPO_NAME\
-              -F label="Contributor queue" \
-              -f query="$GRAPHQL_QUERY" \
-              --jq '.data.repository.issues.totalCount')"
-          echo 'NUM_MAIN_ISSUES='$numMainIssues >> $GITHUB_ENV
-          echo 'NUM_QUEUED_ISSUES='$numQueueIssues >> $GITHUB_ENV
-
-      - name: Post contributor stats
-        run: gh issue comment "$NUMBER" --body "$BODY"
-        env:
-          BODY: |
-              *This message is addressed to the Tsunami panel.*
-
-              ### Contributor stats
-
-              - The contributor has [${{ env.NUM_MAIN_ISSUES }} issues](https://github.com/${{ env.GH_REPO }}/issues?q=is%3Aissue%20state%3Aopen%20author%3A${{ env.AUTHOR }}%20label%3A%22Contributor%20main%22) tagged as main;
-              - The contributor has [${{ env.NUM_QUEUED_ISSUES }} issues](https://github.com/${{ env.GH_REPO }}/issues?q=is%3Aissue%20state%3Aopen%20author%3A${{ env.AUTHOR }}%20label%3A%22Contributor%20queue%22) tagged as queue.
-
-              ### Useful links
-
-              - [All open issues from this contributor](https://github.com/${{ env.GH_REPO }}/issues?q=is%3Aissue%20state%3Aopen%20author%3A${{ env.AUTHOR }})
-              - [All open PRs from this contributor](https://github.com/${{ env.GH_REPO }}/issues?q=is%3Apr+is%3Aopen+author%3A${{ env.AUTHOR }})
-
   on-accepted-post-doc:
     if: github.event.label.name == 'PRP:Accepted'
     runs-on: ubuntu-latest
@@ -150,3 +110,31 @@ jobs:
               claimed by another contributor.
 
               *~The Tsunami PRP team*
+
+  on-rejected-close-and-post-explanation:
+    if: github.event.label.name == 'PRP:Rejected'
+    runs-on: ubuntu-latest
+
+    permissions:
+      issues: write
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      NUMBER: ${{ github.event.issue.number }}
+
+    steps:
+      - name: Post comment
+        run: gh issue comment "$NUMBER" --body "$BODY"
+        env:
+          BODY: |
+              Thank you for willing to contribute to Tsunami. The PRP panel has decided not to
+              continue with this contribution.
+
+              We always welcome new contribution requests to Tsunami, so please continue suggesting
+              issues that you would like to work on.
+
+              *~The Tsunami PRP team*
+
+      - name: Close issue
+        run: gh issue close "$NUMBER" -r "not planned"

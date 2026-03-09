@@ -171,7 +171,7 @@ public final class SolrVelocityTemplateRceDetector implements VulnDetector {
           httpClient.send(
               post(targetUri)
                   .withEmptyHeaders()
-                  .setRequestBody(ByteString.copyFrom(payload, "UTF8"))
+                  .setRequestBody(ByteString.copyFromUtf8(payload))
                   .build(),
               networkService);
       return response.status().code() == 200;
@@ -217,7 +217,7 @@ public final class SolrVelocityTemplateRceDetector implements VulnDetector {
           httpClient.send(
               post(targetUri)
                   .withEmptyHeaders()
-                  .setRequestBody(ByteString.copyFrom(payload, "UTF8"))
+                  .setRequestBody(ByteString.copyFromUtf8(payload))
                   .build(),
               networkService);
       if (response.status().code() != 200) {
