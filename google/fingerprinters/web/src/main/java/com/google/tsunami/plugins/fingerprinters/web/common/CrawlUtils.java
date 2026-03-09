@@ -19,6 +19,7 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.proto.CrawlContentType;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
 import com.google.tsunami.proto.HttpHeader;
@@ -34,7 +35,8 @@ public final class CrawlUtils {
         CrawlResult.newBuilder()
             .setCrawlTarget(crawlTarget)
             .setCrawlDepth(crawlDepth)
-            .setResponseCode(httpResponse.status().code());
+            .setResponseCode(httpResponse.status().code())
+            .setCrawlContentType(CrawlContentType.CONTENT_TYPE_RAW);
     httpResponse.headers().get(CONTENT_TYPE).ifPresent(crawlResultBuilder::setContentType);
     httpResponse.bodyBytes().ifPresent(crawlResultBuilder::setContent);
 

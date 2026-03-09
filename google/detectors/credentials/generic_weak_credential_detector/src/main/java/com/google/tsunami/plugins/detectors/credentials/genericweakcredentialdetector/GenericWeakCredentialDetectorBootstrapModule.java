@@ -46,6 +46,7 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.hive.HiveCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.hydra.HydraCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.jenkins.JenkinsCredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.keycloak.KeycloakCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.kubeflow.KubeflowCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.litmus.LitmusCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.mlflow.MlFlowCredentialTester;
@@ -97,6 +98,7 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
     credentialTesterBinder.addBinding().to(ZenMlCredentialTester.class);
     credentialTesterBinder.addBinding().to(Axis2CredentialTester.class);
     credentialTesterBinder.addBinding().to(LitmusCredentialTester.class);
+    credentialTesterBinder.addBinding().to(KeycloakCredentialTester.class);
     credentialTesterBinder.addBinding().to(ActifioCredentialTester.class);
 
     Multibinder<CredentialProvider> credentialProviderBinder =

@@ -1,0 +1,68 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ApachePinot_ExposedUI"
+  author: "Alessandro Versari <alessandro.versari@doyensec.com>"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "ApachePinot_ExposedUI"
+  }
+  severity: HIGH
+  title: "Exposed Apache Pinot UI"
+  description: "Apache Pinot Dashboard is exposed to the internet without proper authentication, potentially allowing remote code execution. This vulnerability can lead to unauthorized access and control over the Apache Pinot cluster."
+  recommendation: "Don't Expose the ApachePinot Dashboard to the Internet. If you must expose it, ensure that proper authentication and authorization mechanisms are in place."
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "is_ApachePinot_dashboard"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: { } contains: "<meta name=\"description\" content=\"Pinot Controller UI\">" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "read_tables"
+  http_request: {
+    method: GET
+    uri: "/tables"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "is_ApachePinot_dashboard",
+    "read_tables"
+  ]
+}
