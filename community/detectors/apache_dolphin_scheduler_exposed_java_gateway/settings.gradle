@@ -1,0 +1,11 @@
+rootProject.name = 'apache_dolphin_scheduler_exposed_java_gateway'
+
+def coreRepository = System.getenv("GITREPO_TSUNAMI_CORE") ?: "https://github.com/google/tsunami-security-scanner.git"
+
+sourceControl {
+    gitRepository("${coreRepository}") {
+        producesModule("com.google.tsunami:tsunami-common")
+        producesModule("com.google.tsunami:tsunami-plugin")
+        producesModule("com.google.tsunami:tsunami-proto")
+    }
+}
