@@ -631,6 +631,46 @@ public final class WebServiceFingerprinterTest {
                 .build());
   }
 
+  @Test
+  public void fingerprint_whenMcpReturnsNotAcceptable_doesNotDetectMcpServer() throws Exception {
+    fakeCrawler.setCrawlResults(ImmutableSet.of());
+
+    // Strict MCP servers (like FastMCP) might return a 406 Not Acceptable status code if
+    // valid Accept headers are not supplied. Since checking for generic 406 responses is very
+    // prone to false positives across the web, we intentionally do NOT fingerprint servers
+    // based on 406 errors, even if they return a JSON-RPC formatted error message.
+    startMockMcpWebServer(
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            return new MockResponse()
+                .setResponseCode(406)
+                .setBody(
+                    "{\"jsonrpc\":\"2.0\",\"id\":\"tsunami-mcp-scan\",\"error\":{\"code\":-32600,\"message\":\"Not"
+                        + " Acceptable: Client must accept both application/json and"
+                        + " text/event-stream\"}}");
+          }
+        });
+    NetworkEndpoint endpoint =
+        forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort());
+    NetworkService networkService =
+        NetworkService.newBuilder().setNetworkEndpoint(endpoint).setServiceName("http").build();
+
+    FingerprintingReport fingerprintingReport =
+        fingerprinter.fingerprint(TargetInfo.getDefaultInstance(), networkService);
+
+    assertThat(fingerprintingReport)
+        .isEqualTo(
+            FingerprintingReport.newBuilder()
+                .addNetworkServices(
+                    networkService.toBuilder()
+                        .setServiceContext(
+                            ServiceContext.newBuilder()
+                                .setWebServiceContext(WebServiceContext.getDefaultInstance()))
+                        .build())
+                .build());
+  }
+
   private void startMockMcpWebServer(Dispatcher dispatcher) throws IOException {
     mockWebServer.setDispatcher(dispatcher);
     mockWebServer.start();

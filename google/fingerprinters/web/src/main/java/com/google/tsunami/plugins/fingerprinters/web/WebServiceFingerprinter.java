@@ -515,7 +515,10 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
             httpClient.send(
                 post(url)
                     .setHeaders(
-                        HttpHeaders.builder().addHeader("Content-Type", "application/json").build())
+                        HttpHeaders.builder()
+                            .addHeader("Content-Type", "application/json")
+                            .addHeader("Accept", "application/json, text/event-stream")
+                            .build())
                     .setRequestBody(ByteString.copyFromUtf8(payload))
                     .build());
         logger.atInfo().log("MCP Initialize Check: Received status %d", response.status().code());
@@ -559,7 +562,10 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
             httpClient.send(
                 post(url)
                     .setHeaders(
-                        HttpHeaders.builder().addHeader("Content-Type", "application/json").build())
+                        HttpHeaders.builder()
+                            .addHeader("Content-Type", "application/json")
+                            .addHeader("Accept", "application/json, text/event-stream")
+                            .build())
                     .setRequestBody(ByteString.copyFromUtf8(payload))
                     .build());
         logger.atInfo().log(
@@ -569,6 +575,7 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
             && response.bodyString().isPresent()) {
           String body = response.bodyString().get();
           logger.atInfo().log("MCP Premature Request Check: Response body: %s", body);
+
           if (body.contains("\"jsonrpc\":\"2.0\"")
               && body.contains(String.format("\"id\":\"%s\"", requestId))
               && body.contains("\"error\":")) {
