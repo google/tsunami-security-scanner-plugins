@@ -33,8 +33,8 @@ import network_service_pb2
 import plugin_representation_pb2
 import reconnaissance_pb2
 import software_pb2
-import vulnerability_pb2
 import py_plugins.pyzmq_deserialization_rce.pyzmq_deserialization_rce as pyzmq_rce
+
 
 # Callback server
 _CBID = '04041e8898e739ca33a250923e24f59ca41a8373f8cf6a45a1275f3b'
@@ -113,19 +113,7 @@ class Cve20242912DetectorTest(absltest.TestCase):
             target_info=target_info,
             network_service=network_service,
             detection_status=detection_pb2.VULNERABILITY_VERIFIED,
-            vulnerability=vulnerability_pb2.Vulnerability(
-                main_id=vulnerability_pb2.VulnerabilityId(
-                    publisher='TSUNAMI_COMMUNITY', value='PyZmqRceDetector'
-                ),
-                severity=vulnerability_pb2.Severity.CRITICAL,
-                title='PyZMQ TCP Server Insecure Deserialization RCE',
-                recommendation=(
-                    'Users Should be aware of the exposed PyZMQ TCP server and'
-                    ' should take necessary steps to secure it with proper'
-                    ' authentication.'
-                ),
-                description=pyzmq_rce._VULN_DESCRIPTION,
-            ),
+            vulnerability=self.detector.GetAdvisories()[0],
         ),
         detection_reports.detection_reports[0],
     )

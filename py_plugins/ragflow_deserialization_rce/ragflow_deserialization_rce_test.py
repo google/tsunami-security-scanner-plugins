@@ -33,8 +33,8 @@ import network_service_pb2
 import plugin_representation_pb2
 import reconnaissance_pb2
 import software_pb2
-import vulnerability_pb2
 import py_plugins.ragflow_deserialization_rce.ragflow_deserialization_rce as ragflow_rce
+
 
 # Callback server
 _CBID = "04041e8898e739ca33a250923e24f59ca41a8373f8cf6a45a1275f3b"
@@ -136,23 +136,7 @@ class RagFlowRceDetectorTest(absltest.TestCase):
             target_info=target_info,
             network_service=network_service,
             detection_status=detection_pb2.VULNERABILITY_VERIFIED,
-            vulnerability=vulnerability_pb2.Vulnerability(
-                main_id=vulnerability_pb2.VulnerabilityId(
-                    publisher="TSUNAMI_COMMUNITY", value="RagFlowRceDetector"
-                ),
-                related_id=[
-                vulnerability_pb2.VulnerabilityId(
-                    publisher="CVE", value="CVE-2024-12433"
-                  )
-                ],
-                severity=vulnerability_pb2.Severity.CRITICAL,
-                title="RAGFlow RPC Server Insecure Deserialization RCE",
-                recommendation=(
-                    'Users should not expose "rag/llm/rpc_server.py" to the'
-                    " internet."
-                ),
-                description=ragflow_rce._VULN_DESCRIPTION,
-            ),
+            vulnerability=self.detector.GetAdvisories()[0],
         ),
         detection_reports.detection_reports[0],
     )

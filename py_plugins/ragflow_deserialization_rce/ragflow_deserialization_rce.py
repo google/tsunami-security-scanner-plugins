@@ -83,6 +83,28 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
         )
     )
 
+  def GetAdvisories(self) -> list[vulnerability_pb2.Vulnerability]:
+    """Returns the advisories for this plugin."""
+    return [
+        vulnerability_pb2.Vulnerability(
+            main_id=vulnerability_pb2.VulnerabilityId(
+                publisher="TSUNAMI_COMMUNITY", value="RagFlowRceDetector"
+            ),
+            related_id=[
+                vulnerability_pb2.VulnerabilityId(
+                    publisher="CVE", value="CVE-2024-12433"
+                )
+            ],
+            severity=vulnerability_pb2.Severity.CRITICAL,
+            title="RAGFlow RPC Server Insecure Deserialization RCE",
+            recommendation=(
+                'Users should not expose "rag/llm/rpc_server.py" to the'
+                " internet."
+            ),
+            description=_VULN_DESCRIPTION,
+        ),
+    ]
+
   def Detect(
       self,
       target: tsunami_plugin.TargetInfo,
@@ -197,21 +219,5 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
         network_service=vulnerable_service,
         detection_timestamp=timestamp_pb2.Timestamp().GetCurrentTime(),
         detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
-        vulnerability=vulnerability_pb2.Vulnerability(
-            main_id=vulnerability_pb2.VulnerabilityId(
-                publisher="TSUNAMI_COMMUNITY", value="RagFlowRceDetector"
-            ),
-            related_id=[
-                vulnerability_pb2.VulnerabilityId(
-                    publisher="CVE", value="CVE-2024-12433"
-                )
-            ],
-            severity=vulnerability_pb2.Severity.CRITICAL,
-            title="RAGFlow RPC Server Insecure Deserialization RCE",
-            recommendation=(
-                'Users should not expose "rag/llm/rpc_server.py" to the'
-                " internet."
-            ),
-            description=_VULN_DESCRIPTION,
-        ),
+        vulnerability=self.GetAdvisories()[0],
     )

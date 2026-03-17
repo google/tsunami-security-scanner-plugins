@@ -26,6 +26,7 @@ import com.google.protobuf.ByteString;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.net.http.HttpStatus;
+import com.google.tsunami.proto.CrawlContentType;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
 import com.google.tsunami.proto.HttpHeader;
@@ -54,6 +55,7 @@ public final class CrawlUtilsTest {
                 .setCrawlTarget(CrawlTarget.getDefaultInstance())
                 .setCrawlDepth(1)
                 .setResponseCode(HttpStatus.OK.code())
+                .setCrawlContentType(CrawlContentType.CONTENT_TYPE_RAW)
                 .setContentType(HTML_UTF_8.toString())
                 .setContent(ByteString.copyFromUtf8("body"))
                 .addResponseHeaders(
@@ -76,6 +78,7 @@ public final class CrawlUtilsTest {
                 .setCrawlTarget(CrawlTarget.getDefaultInstance())
                 .setCrawlDepth(1)
                 .setResponseCode(HttpStatus.OK.code())
+                .setCrawlContentType(CrawlContentType.CONTENT_TYPE_RAW)
                 .setContent(ByteString.copyFromUtf8("body"))
                 .build());
   }
@@ -95,6 +98,7 @@ public final class CrawlUtilsTest {
                 .setCrawlTarget(CrawlTarget.getDefaultInstance())
                 .setCrawlDepth(1)
                 .setResponseCode(HttpStatus.OK.code())
+                .setCrawlContentType(CrawlContentType.CONTENT_TYPE_RAW)
                 .setContentType(HTML_UTF_8.toString())
                 .addResponseHeaders(
                     HttpHeader.newBuilder().setKey(CONTENT_TYPE).setValue(HTML_UTF_8.toString()))

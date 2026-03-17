@@ -18,15 +18,17 @@ package com.google.tsunami.plugins.detectors.cves;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forIpAndPort;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.multibindings.OptionalBinder;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
+import com.google.tsunami.common.net.socket.TsunamiSocketFactory;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
@@ -43,7 +45,6 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Arrays;
 import javax.inject.Inject;
-import javax.net.SocketFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,7 +61,7 @@ public final class Cve20220543DetectorTest {
 
   @Inject private Cve20220543Detector detector;
 
-  private final SocketFactory socketFactoryMock = mock(SocketFactory.class);
+  private final TsunamiSocketFactory socketFactoryMock = mock(TsunamiSocketFactory.class);
   private final SecureRandom testSecureRandom =
       new SecureRandom() {
         @Override
@@ -79,9 +80,7 @@ public final class Cve20220543DetectorTest {
             new AbstractModule() {
               @Override
               protected void configure() {
-                OptionalBinder.newOptionalBinder(binder(), SocketFactory.class)
-                    .setBinding()
-                    .toInstance(socketFactoryMock);
+                bind(TsunamiSocketFactory.class).toInstance(socketFactoryMock);
               }
             })
         .injectMembers(this);
@@ -90,7 +89,7 @@ public final class Cve20220543DetectorTest {
   private void getMock(String output) throws IOException {
     Socket socket = mock(Socket.class);
 
-    when(socketFactoryMock.createSocket()).thenReturn(socket);
+    when(socketFactoryMock.createSocket(anyString(), anyInt())).thenReturn(socket);
     when(socket.getOutputStream()).thenReturn(new ByteArrayOutputStream());
     when(socket.getInputStream()).thenReturn(new ByteArrayInputStream(output.getBytes(UTF_8)));
     when(socket.isConnected()).thenReturn(true);

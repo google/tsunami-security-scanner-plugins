@@ -14,9 +14,9 @@
 """Tests for JupyterExposedUiDetector."""
 
 import unittest
+
 from absl.testing import absltest
 import requests_mock
-
 
 from common.data import network_endpoint_utils
 from common.net.http.requests_http_client import RequestsHttpClientBuilder
@@ -29,9 +29,7 @@ import network_pb2
 import network_service_pb2
 import reconnaissance_pb2
 import software_pb2
-import vulnerability_pb2
 from py_plugins.jupyter_exposed_ui import jupyter_exposed_ui_detector
-from py_plugins.jupyter_exposed_ui.jupyter_exposed_ui_detector import _VULN_REMEDIATION
 
 
 _TARGET_URL = 'vuln-target.com'
@@ -81,16 +79,7 @@ class JupyterExposedUiDetectorTest(absltest.TestCase):
             target_info=target_info,
             network_service=network_service,
             detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
-            vulnerability=vulnerability_pb2.Vulnerability(
-                main_id=vulnerability_pb2.VulnerabilityId(
-                    publisher='GOOGLE', value='JUPYTER_NOTEBOOK_EXPOSED_UI'
-                ),
-                severity=vulnerability_pb2.Severity.CRITICAL,
-                title='Jupyter Notebook Exposed Ui',
-                recommendation=_VULN_REMEDIATION,
-                description=('Jupyter Notebook is not password or token'
-                             ' protected'),
-            ),
+            vulnerability=self.detector.GetAdvisories()[0],
         ),
         detection_reports.detection_reports[0],
     )
@@ -125,16 +114,7 @@ class JupyterExposedUiDetectorTest(absltest.TestCase):
             target_info=target_info,
             network_service=network_service,
             detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
-            vulnerability=vulnerability_pb2.Vulnerability(
-                main_id=vulnerability_pb2.VulnerabilityId(
-                    publisher='GOOGLE', value='JUPYTER_NOTEBOOK_EXPOSED_UI'
-                ),
-                severity=vulnerability_pb2.Severity.CRITICAL,
-                title='Jupyter Notebook Exposed Ui',
-                recommendation=_VULN_REMEDIATION,
-                description=('Jupyter Notebook is not password or token'
-                             ' protected'),
-            ),
+            vulnerability=self.detector.GetAdvisories()[0],
         ),
         detection_reports.detection_reports[0],
     )

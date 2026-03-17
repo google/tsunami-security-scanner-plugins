@@ -140,7 +140,7 @@ public final class ApacheSparksExposedApiVulnDetector implements VulnDetector {
                           .addHeader("Content-Type", "application/json")
                           .addHeader("User-Agent", "TSUNAMI_SCANNER")
                           .build())
-                  .setRequestBody(ByteString.copyFrom(finished_payload, "utf-8"))
+                  .setRequestBody(ByteString.copyFromUtf8(finished_payload))
                   .build(),
               networkService);
       if (response.status() == HttpStatus.OK && response.bodyString().isPresent()) {

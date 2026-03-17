@@ -26,12 +26,12 @@ import com.google.inject.util.Modules;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.net.http.HttpClientModule;
+import com.google.tsunami.common.net.socket.TsunamiSocketFactory;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.plugins.detectors.rce.cve202333246.Annotations.OobSleepDuration;
-import com.google.tsunami.plugins.detectors.rce.cve202333246.Annotations.SocketFactoryInstance;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -46,7 +46,6 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import javax.inject.Inject;
-import javax.net.SocketFactory;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.After;
 import org.junit.Before;
@@ -75,8 +74,7 @@ public class RocketMqCve202333246DetectorTest {
   private final int sleepDuration = 1;
 
   @Bind(lazy = true)
-  @SocketFactoryInstance
-  private final SocketFactory socketFactoryMock = Mockito.mock(SocketFactory.class);
+  private final TsunamiSocketFactory socketFactoryMock = Mockito.mock(TsunamiSocketFactory.class);
 
   @Before
   public void setUp() throws IOException {

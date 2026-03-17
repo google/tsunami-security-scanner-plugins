@@ -23,6 +23,7 @@ import com.google.protobuf.ByteString;
 import com.google.tsunami.common.net.http.HttpMethod;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.proto.CrawlConfig;
+import com.google.tsunami.proto.CrawlContentType;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
 import com.google.tsunami.proto.HttpHeader;
@@ -62,6 +63,7 @@ final class TestDataBuilder {
                 .setHttpMethod(HttpMethod.GET.toString()))
         .setCrawlDepth(depth)
         .setResponseCode(HttpStatus.OK.code())
+        .setCrawlContentType(CrawlContentType.CONTENT_TYPE_RAW)
         .setContent(ByteString.copyFromUtf8(response))
         .addResponseHeaders(
             HttpHeader.newBuilder()
@@ -78,6 +80,7 @@ final class TestDataBuilder {
                 .setHttpMethod(HttpMethod.GET.toString()))
         .setCrawlDepth(depth)
         .setResponseCode(HttpStatus.FOUND.code())
+        .setCrawlContentType(CrawlContentType.CONTENT_TYPE_RAW)
         .addResponseHeaders(HttpHeader.newBuilder().setKey(CONTENT_LENGTH).setValue("0"))
         .addResponseHeaders(HttpHeader.newBuilder().setKey(LOCATION).setValue("/"))
         .build();

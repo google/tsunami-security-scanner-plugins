@@ -4,6 +4,9 @@ gradle.properties
 .gradle
 local.properties
 out
+gradlew
+gradlew.bat
+gradle/
 
 # IntelliJ IDEA
 .idea

@@ -110,6 +110,17 @@ message HttpAction {
     // By default, we follow redirects so this flag can be used to disable this
     // behavior.
     bool disable_follow_redirects = 1;
+
+    // Whether the HTTP client exceptions should be ignored.
+    //
+    // By default, any HTTP client failure will fail the plugin execution and
+    // checks are not performed. However, in some cases the tested server might
+    // just execute a payload and hang forever and the HTTP client will timeout.
+    //
+    // Ignoring HTTP client exceptions will allow the workflow to proceed with
+    // vulnerability verifications, like checking whether callback servers
+    // received an interaction.
+    bool ignore_http_client_errors = 2;
   }
 
   // The HTTP method to use (e.g. GET, POST, ...).

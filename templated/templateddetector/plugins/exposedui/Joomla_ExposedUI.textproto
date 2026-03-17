@@ -1,0 +1,59 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Joomla_ExposedUI"
+  author: "IAS (ias@tu-braunschweig.de)"
+  version: "0.1"
+  description: "This detector checks whether an unfinished Joomla installation is exposed"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "JOOMLA_INSTALL_EXPOSED_UI"
+  }
+  severity: CRITICAL
+  title: "Joomla Web Installer Exposed Ui"
+  description: "The Joomla installation was not completed and is accessible without restrictions."
+  recommendation: "Ensure Joomla is not externally accessible (firewall) until the installation is complete. Complete the installation process and set a strong password for the initial admin account."
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "is_joomla_install_exposed"
+  http_request: {
+    method: GET
+    uri: "/installation/index.php"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "Joomla! Web Installer" },
+          { body: {} contains: "Enter the name of your Joomla! site" },
+          { body: {} contains: "Warning! JavaScript must be enabled for proper installation of Joomla!" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "is_joomla_install_exposed"
+  ]
+}

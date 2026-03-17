@@ -64,6 +64,24 @@ class Cve202222963Detector(tsunami_plugin.VulnDetector):
         )
     )
 
+  def GetAdvisories(self) -> list[vulnerability_pb2.Vulnerability]:
+    """Returns the advisories for this plugin."""
+    return [
+        vulnerability_pb2.Vulnerability(
+            main_id=vulnerability_pb2.VulnerabilityId(
+                publisher='TSUNAMI_COMMUNITY', value='CVE_2022_22963'
+            ),
+            severity=vulnerability_pb2.Severity.CRITICAL,
+            title=(
+                'Spring Cloud Function SpEL Code Injection RCE (CVE-2022-22963)'
+            ),
+            recommendation=(
+                'Users of affected versions should upgrade to 3.1.7, 3.2.3.'
+            ),
+            description=_VULN_DESCRIPTION,
+        ),
+    ]
+
   def Detect(
       self,
       target: tsunami_plugin.TargetInfo,
@@ -123,9 +141,7 @@ class Cve202222963Detector(tsunami_plugin.VulnDetector):
     request = (
         HttpRequest.post(url)
         .set_headers(
-            HttpHeaders.builder()
-            .add_header(_VULN_HEADER, rce_command)
-            .build()
+            HttpHeaders.builder().add_header(_VULN_HEADER, rce_command).build()
         )
         .set_request_body(bytes('TSUNAMI', 'utf-8'))
         .build()
@@ -163,17 +179,5 @@ class Cve202222963Detector(tsunami_plugin.VulnDetector):
         network_service=vulnerable_service,
         detection_timestamp=timestamp_pb2.Timestamp().GetCurrentTime(),
         detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
-        vulnerability=vulnerability_pb2.Vulnerability(
-            main_id=vulnerability_pb2.VulnerabilityId(
-                publisher='TSUNAMI_COMMUNITY', value='CVE_2022_22963'
-            ),
-            severity=vulnerability_pb2.Severity.CRITICAL,
-            title=(
-                'Spring Cloud Function SpEL Code Injection RCE (CVE-2022-22963)'
-            ),
-            recommendation=(
-                'Users of affected versions should upgrade to 3.1.7, 3.2.3.'
-            ),
-            description=_VULN_DESCRIPTION,
-        ),
+        vulnerability=self.GetAdvisories()[0],
     )

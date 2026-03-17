@@ -22,7 +22,6 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.TRANSFER_ENCODING;
 import static com.google.tsunami.common.net.http.HttpRequest.get;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.collect.ImmutableList;
@@ -175,7 +174,7 @@ public final class JenkinsCliDeserializeRceDetector implements VulnDetector {
                         .addHeader("Connection", "keep-alive")
                         .addHeader("Accept", "*/*")
                         .build())
-                .setRequestBody(ByteString.copyFrom("1\r\n \r\n0\r\n\r\n", UTF_8))
+                .setRequestBody(ByteString.copyFromUtf8("1\r\n \r\n0\r\n\r\n"))
                 .build(),
             networkService);
 
@@ -239,7 +238,7 @@ public final class JenkinsCliDeserializeRceDetector implements VulnDetector {
       HttpResponse response = httpClient.send(get(url).withEmptyHeaders().build(), networkService);
       return response.status() == HttpStatus.OK
           && response.bodyBytes().isPresent()
-          && response.bodyBytes().get().toString("UTF-8").trim().contains(RANDOM_CONTENT);
+          && response.bodyBytes().get().toStringUtf8().trim().contains(RANDOM_CONTENT);
     } catch (IOException ex) {
       logger.atFine().log("Failed to get contents of robots.txt from Jenkins server.");
     }

@@ -1,0 +1,77 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ReactNativeCli_CVE_2025_11953"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/status"
+        status: 200
+        headers: [
+          { name: "x-react-native-project-root" value: "/my/project/root" }
+        ]
+      },
+      {
+        uri: "/open-url"
+        status: 200
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/status"
+        status: 200
+        headers: [
+          { name: "x-react-native-project-root" value: "/my/project/root" }
+        ]
+      },
+      {
+        uri: "/open-url"
+        status: 200
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotReactNative_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/status"
+        status: 200
+      }
+    ]
+  }
+}

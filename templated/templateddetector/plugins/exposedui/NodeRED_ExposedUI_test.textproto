@@ -5,82 +5,34 @@ config: {
   tested_plugin: "NodeRED_ExposedUI"
 }
 
-tests: {
-  name: "whenVulnerable_returnsVuln"
-  expect_vulnerability: true
-
-  mock_http_server: {
-    mock_responses: [
-      {
-        uri: "/red/tours/welcome.js"
-        status: 200
-        body_content:
-          'export default { version: "3.1.0", steps: [{'
-          'titleIcon: "fa fa-map-o", title: { '
-          '"en-US": "Welcome to Node-RED 3.1!", ...'
-      },
-      {
-        uri: "/settings"
-        status: 200
-        body_content:
-          '{"httpNodeRoot":"/","version":"3.1.5","context":{"default":"memory",'
-          '"stores":["memory"]},"codeEditor":{"lib":"monaco","options":{}},'
-          '"markdownEditor":{"mermaid":{"enabled":true}},"libraries":[{"id":'
-          '"local","label":"editor:library.types.local","user":false,"icon":'
-          '"font-awesome/fa-hdd-o"},{"id":"examples","label":'
-          '"editor:library.types.examples","user":false,"icon":'
-          '"font-awesome/fa-life-ring","types":["flows"],"readOnly":true}],'
-          '"flowFilePretty":true,"externalModules":{},"flowEncryptionType":'
-          '"system","diagnostics":{"enabled":true,"ui":true},"runtimeState":'
-          '{"enabled":false,"ui":false},"functionExternalModules":true,'
-          '"functionTimeout":0,"tlsConfigDisableLocalFiles":false,"editorTheme"'
-          ':{"palette":{},"projects":{"enabled":false,"workflow":{"mode":'
-          '"manual"}},"languages":["de","en-US","es-ES","fr","ja","ko","pt-BR",'
-          '"ru","zh-CN","zh-TW"]}}%'
-      }
-    ]
-  }
-}
-
+# TODO: b/445109504 - In the current state of things, it is not possible to
+# unit test the valid condition of that plugin extensively. The templated unit
+# testing system needs to allow for different answers for the same URI.
 
 tests: {
-  name: "whenNotNodeRed_returnsNoVuln"
+  name: "whenNotNodeRedNotFound_returnsNoVuln"
   expect_vulnerability: false
 
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/red/tours/welcome.js"
-        status: 200
-        body_content: "Joomla"
-      },
-      {
-        uri: "/settings"
-        status: 200
-        body_content: "irrelevant"
+        uri: "/flows"
+        status: 404
       }
     ]
   }
 }
 
 tests: {
-  name: "whenNotNodeRedSettings_returnsNoVuln"
+  name: "whenNotNodeRedInvalidResponse_returnsNoVuln"
   expect_vulnerability: false
 
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/red/tours/welcome.js"
-        status: 200
-        body_content:
-          'export default { version: "3.1.0", steps: [{'
-          'titleIcon: "fa fa-map-o", title: { '
-          '"en-US": "Welcome to Node-RED 3.1!", ...'
-      },
-      {
-        uri: "/settings"
-        status: 200
-        body_content: "not node red settings"
+        uri: "/flows"
+        status: 202
+        body_content: "{\"error\": \"invalid response\"}"
       }
     ]
   }

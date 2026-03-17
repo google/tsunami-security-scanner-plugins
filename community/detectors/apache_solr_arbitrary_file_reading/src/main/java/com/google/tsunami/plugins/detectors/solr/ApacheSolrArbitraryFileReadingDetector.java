@@ -192,7 +192,7 @@ public final class ApacheSolrArbitraryFileReadingDetector implements VulnDetecto
       var request =
           post(targetUri)
               .withEmptyHeaders()
-              .setRequestBody(ByteString.copyFrom(payload, "UTF8"))
+              .setRequestBody(ByteString.copyFromUtf8(payload))
               .build();
       var response = httpClient.send(request);
       checkTracesBuilder.add(request, response);
@@ -213,7 +213,7 @@ public final class ApacheSolrArbitraryFileReadingDetector implements VulnDetecto
       var request =
           post(targetUri)
               .withEmptyHeaders()
-              .setRequestBody(ByteString.copyFrom(payload, "UTF8"))
+              .setRequestBody(ByteString.copyFromUtf8(payload))
               .build();
       var response = httpClient.send(request, networkService);
       checkTracesBuilder.add(request, response);

@@ -62,7 +62,7 @@ public final class Cve20244577Detector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "TSUNAMI_COMMUNITY";
-  @VisibleForTesting static final String VULNERABILITY_REPORT_ID = "CVE_2024-4577";
+  @VisibleForTesting static final String VULNERABILITY_REPORT_ID = "CVE-2024-4577";
 
   @VisibleForTesting static final String VULNERABILITY_REPORT_TITLE = "PHP RCE CVE-2024-4577";
 

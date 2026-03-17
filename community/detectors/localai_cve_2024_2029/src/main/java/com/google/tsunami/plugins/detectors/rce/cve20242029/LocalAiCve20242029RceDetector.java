@@ -96,7 +96,7 @@ public final class LocalAiCve20242029RceDetector implements VulnDetector {
             .setMainId(
                 VulnerabilityId.newBuilder()
                     .setPublisher("TSUNAMI_COMMUNITY")
-                    .setValue("CVE_2024_2029"))
+                    .setValue("CVE-2024-2029"))
             .addRelatedId(
                 VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2024-2029"))
             .setSeverity(Severity.CRITICAL)

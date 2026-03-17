@@ -216,7 +216,8 @@ public final class GenericWeakCredentialDetector implements VulnDetector {
   }
 
   private static String buildVulnerabilityId(NetworkService networkService) {
-    return "WEAK_CREDENTIALS_FOR_" + Ascii.toUpperCase(getServiceName(networkService));
+    var name = "WEAK_CREDENTIALS_FOR_" + Ascii.toUpperCase(getServiceName(networkService));
+    return name.replace(' ', '_');
   }
 
   private static String getServiceName(NetworkService networkService) {

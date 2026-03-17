@@ -26,19 +26,17 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Key;
-import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.testing.fieldbinder.Bind;
 import com.google.inject.testing.fieldbinder.BoundFieldModule;
 import com.google.inject.util.Modules;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.net.http.HttpClientModule;
+import com.google.tsunami.common.net.socket.TsunamiSocketFactory;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.plugin.payload.testing.PayloadTestHelper;
 import com.google.tsunami.plugins.detectors.cves.cve202346604.Annotations.OobSleepDuration;
-import com.google.tsunami.plugins.detectors.cves.cve202346604.Cve202346604Detector.SocketFactoryInstance;
 import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
@@ -60,7 +58,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.net.SocketFactory;
 import okhttp3.mockwebserver.MockWebServer;
 import org.apache.activemq.util.MarshallingSupport;
 import org.junit.Before;
@@ -75,7 +72,7 @@ public final class Cve202346604DetectorTest {
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2020-01-01T00:00:00.00Z"));
 
-  private final SocketFactory socketFactoryMock = mock(SocketFactory.class);
+  private final TsunamiSocketFactory socketFactoryMock = mock(TsunamiSocketFactory.class);
   private final SecureRandom testSecureRandom =
       new SecureRandom() {
         @Override
@@ -104,10 +101,7 @@ public final class Cve202346604DetectorTest {
             new AbstractModule() {
               @Override
               protected void configure() {
-                OptionalBinder.newOptionalBinder(
-                        binder(), Key.get(SocketFactory.class, SocketFactoryInstance.class))
-                    .setBinding()
-                    .toInstance(socketFactoryMock);
+                bind(TsunamiSocketFactory.class).toInstance(socketFactoryMock);
               }
             },
             Modules.override(new Cve202346604DetectorBootstrapModule())
@@ -128,10 +122,7 @@ public final class Cve202346604DetectorTest {
             new AbstractModule() {
               @Override
               protected void configure() {
-                OptionalBinder.newOptionalBinder(
-                        binder(), Key.get(SocketFactory.class, SocketFactoryInstance.class))
-                    .setBinding()
-                    .toInstance(socketFactoryMock);
+                bind(TsunamiSocketFactory.class).toInstance(socketFactoryMock);
               }
             },
             new HttpClientModule.Builder().build())

@@ -30,7 +30,8 @@ class ExamplePyVulnDetector(tsunami_plugin.VulnDetector):
   """Example Python vulnerability detector class."""
 
   def __init__(
-      self, http_client: HttpClient, payload_generator: PayloadGenerator):
+      self, http_client: HttpClient, payload_generator: PayloadGenerator
+  ):
     """Constructor for ExamplePyVulnDetector.
 
     The python plugin server supplies the inherited VulnDetector with the
@@ -69,10 +70,31 @@ class ExamplePyVulnDetector(tsunami_plugin.VulnDetector):
         )
     )
 
+  def GetAdvisories(self) -> list[vulnerability_pb2.Vulnerability]:
+    """Returns the advisories for this plugin."""
+    return [
+        vulnerability_pb2.Vulnerability(
+            main_id=vulnerability_pb2.VulnerabilityId(
+                publisher='vulnerability_id_publisher', value='VULNERABILITY_ID'
+            ),
+            severity=vulnerability_pb2.Severity.CRITICAL,
+            title='Vulnerability Title',
+            description='Verbose description of the issue',
+            recommendation='Verbose recommended solution',
+            additional_details=[
+                vulnerability_pb2.AdditionalDetail(
+                    text_data=vulnerability_pb2.TextData(
+                        text='Some additional technical details.'
+                    )
+                )
+            ],
+        ),
+    ]
+
   def Detect(
       self,
       target: tsunami_plugin.TargetInfo,
-      matched_services: list[tsunami_plugin.NetworkService]
+      matched_services: list[tsunami_plugin.NetworkService],
   ) -> tsunami_plugin.DetectionReportList:
     """This is the main entry point of your VulnDetector.
 
@@ -90,15 +112,18 @@ class ExamplePyVulnDetector(tsunami_plugin.VulnDetector):
       VulnDetector.
     """
     logging.info('ExamplePyVulnDetector starts detecting.')
-    return detection_pb2.DetectionReportList(detection_reports=[
-        self._BuildDetectionReport(target, service)
-        for service in matched_services
-        if self.IsServiceVulnerable()
-    ])
+    return detection_pb2.DetectionReportList(
+        detection_reports=[
+            self._BuildDetectionReport(target, service)
+            for service in matched_services
+            if self.IsServiceVulnerable()
+        ]
+    )
 
   def _BuildDetectionReport(
-      self, target: tsunami_plugin.TargetInfo,
-      vulnerable_service: tsunami_plugin.NetworkService
+      self,
+      target: tsunami_plugin.TargetInfo,
+      vulnerable_service: tsunami_plugin.NetworkService,
   ) -> detection_pb2.DetectionReport:
     """This builds the DetectionReport message for a vulnerable network service."""
     return detection_pb2.DetectionReport(
@@ -106,22 +131,7 @@ class ExamplePyVulnDetector(tsunami_plugin.VulnDetector):
         network_service=vulnerable_service,
         detection_timestamp=timestamp_pb2.Timestamp().GetCurrentTime(),
         detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
-        vulnerability=vulnerability_pb2.Vulnerability(
-            main_id=vulnerability_pb2.VulnerabilityId(
-                publisher='vulnerability_id_publisher', value='VULNERABILITY_ID'
-            ),
-            severity=vulnerability_pb2.Severity.CRITICAL,
-            title='Vulnerability Title',
-            description='Verbose description of the issue',
-            recommendation='Verbose recommended solution',
-            additional_details=[
-                vulnerability_pb2.AdditionalDetail(
-                    text_data=vulnerability_pb2.TextData(
-                        text='Some additional technical details.'
-                    )
-                )
-            ],
-        ),
+        vulnerability=self.GetAdvisories()[0],
     )
 
   def IsServiceVulnerable(self) -> bool:

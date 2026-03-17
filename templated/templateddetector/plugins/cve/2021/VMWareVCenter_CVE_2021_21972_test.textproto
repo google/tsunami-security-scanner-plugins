@@ -1,0 +1,36 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "VMWareVCenter_CVE_2021_21972"
+}
+
+tests: {
+  name: "whenVulnerable500_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/ui/vropspluginui/rest/services/uploadova"
+        status: 500
+        body_content: "Something failed in uploadFile method"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/ui/vropspluginui/rest/services/uploadova"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}

@@ -14,7 +14,9 @@
 """Tests for example_py_vuln_detector."""
 
 import unittest.mock as umock
+
 from absl.testing import absltest
+
 from google.protobuf import timestamp_pb2
 import tsunami_plugin
 from common.net.http.requests_http_client import RequestsHttpClientBuilder
@@ -25,7 +27,6 @@ from plugin.tcs_client import TcsClient
 import detection_pb2
 import network_service_pb2
 import reconnaissance_pb2
-import vulnerability_pb2
 from py_plugins.examples import example_py_vuln_detector
 
 
@@ -81,23 +82,7 @@ class ExamplePyVulnDetectorTest(absltest.TestCase):
             network_service=service,
             detection_timestamp=timestamp_pb2.Timestamp().GetCurrentTime(),
             detection_status=detection_pb2.DetectionStatus.VULNERABILITY_VERIFIED,
-            vulnerability=vulnerability_pb2.Vulnerability(
-                main_id=vulnerability_pb2.VulnerabilityId(
-                    publisher='vulnerability_id_publisher',
-                    value='VULNERABILITY_ID',
-                ),
-                severity=vulnerability_pb2.Severity.CRITICAL,
-                title='Vulnerability Title',
-                description='Verbose description of the issue',
-                recommendation='Verbose recommended solution',
-                additional_details=[
-                    vulnerability_pb2.AdditionalDetail(
-                        text_data=vulnerability_pb2.TextData(
-                            text='Some additional technical details.'
-                        )
-                    )
-                ],
-            ),
+            vulnerability=self.detector.GetAdvisories()[0],
         ),
         detection_reports.detection_reports[0],
     )

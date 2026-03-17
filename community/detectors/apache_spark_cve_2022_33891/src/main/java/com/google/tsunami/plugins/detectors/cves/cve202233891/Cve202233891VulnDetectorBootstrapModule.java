@@ -15,10 +15,9 @@
  */
 package com.google.tsunami.plugins.detectors.cves.cve202233891;
 
-import static com.google.tsunami.plugins.detectors.cves.cve202233891.Annotations.OobSleepDuration;
-
 import com.google.inject.Provides;
 import com.google.tsunami.plugin.PluginBootstrapModule;
+import com.google.tsunami.plugins.detectors.cves.cve202233891.Annotations.OobSleepDuration;
 
 /** An CVE-2022-33891 Guice module that bootstraps the {@link Cve202233891VulnDetector}. */
 public class Cve202233891VulnDetectorBootstrapModule extends PluginBootstrapModule {

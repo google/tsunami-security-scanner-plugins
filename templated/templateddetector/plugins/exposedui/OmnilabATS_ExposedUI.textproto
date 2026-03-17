@@ -1,0 +1,113 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "OmnilabATS_ExposedUI"
+  author: "Giacomo Coluccelli <giacomo@doyensec.com>"
+  version: "0.1"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "OMNILAB_ATS_EXPOSED_UI"
+  }
+  title: "Exposed Omnilab Android Test Station instance"
+  description: "OmniLab ATS (Android Test Station) is publicly accessible without authentication. This exposes device management, test execution capabilities, and potentially sensitive configuration data. Attackers can access connected Android devices, execute arbitrary tests, view test results, and manage the testing infrastructure."
+  recommendation:
+    "1. Implement authentication using a reverse proxy (nginx/Apache) with HTTP Basic Auth or OAuth"
+    "2. Restrict network access using firewall rules to trusted IP ranges only"
+    "3. Deploy behind VPN for remote access"
+    "4. Use SSH tunneling for administrative access"
+    "5. Enable TLS/HTTPS with valid certificates"
+  severity: CRITICAL
+}
+
+###########
+# ACTIONS #
+###########
+
+actions {
+    name: "omnilab_ats_exposed_ui_fingerprint"
+    http_request: {
+        method: GET
+        uri: "/"
+        response: {
+            http_status: 200
+            expect_all: {
+                conditions: [
+                    { body {} contains: "Android Test Station" },
+                    { body {} contains: "OmniLab" }
+                ]
+            }
+        }
+    }
+}
+
+actions {
+    name: "omnilab_ats_exposed_ui_create_build"
+    http_request: {
+        method: POST
+        uri: "/_ah/api/mtt/v1/builds"
+        headers: [
+            { name: "Content-Type" value: "application/json" }
+        ]
+        data: "{\"name\":\"Tsunami Build\",\"fingerprint\":\"Tsunami Fingerprint\",\"file_url\":\"\",\"size\":0,\"labels\":[]}"
+        response: {
+            http_status: 200
+            expect_all: {
+                conditions: { body {} contains: "\"id\":"}
+            }
+            extract_all: {
+                patterns: { from_body: {} regexp: "\"id\": \"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\"" variable_name: "BUILD_ID" }
+            }
+        }
+    }
+    cleanup_actions: "omnilab_ats_exposed_ui_delete_build"
+}
+
+actions {
+    name: "omnilab_ats_exposed_ui_delete_build"
+    http_request: {
+        method: DELETE
+        uri: "/_ah/api/mtt/v1/builds?build_ids={{ BUILD_ID }}"
+        response: {
+            http_status: 204
+        }
+    }
+}
+
+actions {
+    name: "omnilab_ats_exposed_ui_verify_build_creation"
+    http_request: {
+        method: GET
+        uri: "/_ah/api/mtt/v1/builds/{{ BUILD_ID }}"
+        response: {
+            http_status: 200
+            expect_all: {
+                conditions: [
+                    { body {} contains: "\"fingerprint\": \"Tsunami Fingerprint\"" },
+                    { body {} contains: "\"id\": \"{{ BUILD_ID }}\"" },
+                    { body {} contains: "\"name\": \"Tsunami Build\"" }
+                ]
+            }
+        }
+    }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "omnilab_ats_exposed_ui_fingerprint",
+    "omnilab_ats_exposed_ui_create_build",
+    "omnilab_ats_exposed_ui_verify_build_creation"
+  ]
+}

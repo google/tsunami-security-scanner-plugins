@@ -25,6 +25,7 @@ import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkEndpointUtils;
+import com.google.tsunami.common.net.socket.TsunamiSocketFactory;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -58,7 +59,6 @@ import java.time.Instant;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Qualifier;
-import javax.net.SocketFactory;
 import org.apache.activemq.util.MarshallingSupport;
 
 /** A {@link VulnDetector} that detects the CVE-2023-46604 vulnerability. */
@@ -85,7 +85,7 @@ public final class Cve202346604Detector implements VulnDetector {
       ImmutableList.of("5.15.16", "5.16.7", "5.17.6", "5.18.3");
 
   private final Clock utcClock;
-  private final SocketFactory socketFactory;
+  private final TsunamiSocketFactory socketFactory;
   private final PayloadGenerator payloadGenerator;
   private final int oobSleepDuration;
 
@@ -96,7 +96,7 @@ public final class Cve202346604Detector implements VulnDetector {
   @Inject
   Cve202346604Detector(
       @UtcClock Clock utcClock,
-      @SocketFactoryInstance SocketFactory socketFactory,
+      TsunamiSocketFactory socketFactory,
       PayloadGenerator payloadGenerator,
       @OobSleepDuration int oobSleepDuration) {
     this.utcClock = checkNotNull(utcClock);
