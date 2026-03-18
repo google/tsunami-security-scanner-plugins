@@ -1,0 +1,113 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "N8N_ExposedRestApi"
+  author: "yuradoc (yuradoc.research@gmail.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "N8N_EXPOSED_REST_API"
+  }
+  title: "Exposed n8n REST API"
+  description:
+    "The n8n automation platform instance is configured in a way that allows "
+    "unauthenticated access to its REST API. This allows attackers to enumerate, "
+    "modify, and execute workflows, including those containing built-in command "
+    "execution nodes, which may lead to remote code execution. This condition is "
+    "typically caused by misconfiguration, such as missing authentication or "
+    "improperly secured reverse proxy setups."
+  recommendation:
+    "Ensure authentication is properly enforced for the n8n instance and that it "
+    "is not exposed to untrusted networks. When using reverse proxies or external "
+    "authentication (e.g., SSO), verify that all REST endpoints are protected. "
+    "Refer to https://docs.n8n.io/hosting/securing/overview/ for guidance."
+  severity: CRITICAL
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "n8n_retrieve_auth_cookie"
+  http_request: {
+    method: GET
+    uri: "/rest/login"
+    response: {
+      extract_any: {
+        patterns: [
+          {
+            from_header: { name: "Set-Cookie" }
+            regexp: "(n8n-auth=[^;]+)"
+            variable_name: "n8n_auth_token"
+          },
+          {
+            from_body: {}
+            regexp: "()"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "n8n_fingerprint"
+  http_request: {
+    method: GET
+    uri: "/"
+    headers: [
+      { name: "Cookie" value: "{{ n8n_auth_token }}" }
+    ]
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "n8n.io - Workflow Automation" },
+          { body: {} contains: "n8n Editor-UI" },
+          { body: {} contains: "n8n:config:" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "n8n_retrieve_existing_flows"
+  http_request: {
+    method: GET
+    uri: "/rest/workflows"
+    headers: [
+      { name: "Cookie" value: "{{ n8n_auth_token }}" }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: '"data":[' }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "n8n_retrieve_auth_cookie",
+    "n8n_fingerprint",
+    "n8n_retrieve_existing_flows"
+  ]
+}
