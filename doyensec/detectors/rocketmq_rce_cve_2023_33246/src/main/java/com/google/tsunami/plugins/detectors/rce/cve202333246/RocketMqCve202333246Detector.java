@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.net.socket.TsunamiSocketFactory;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -29,7 +30,6 @@ import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.plugins.detectors.rce.cve202333246.Annotations.OobSleepDuration;
-import com.google.tsunami.plugins.detectors.rce.cve202333246.Annotations.SocketFactoryInstance;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -64,14 +64,14 @@ public final class RocketMqCve202333246Detector implements VulnDetector {
       "{\"code\":%d,\"flag\":0,\"language\":\"JAVA\",\"opaque\":0,\"serializeTypeCurrentRPC\":\"JSON\",\"version\":395}";
   private final Clock utcClock;
   private final PayloadGenerator payloadGenerator;
-  private final SocketFactory socketFactory;
+  private final TsunamiSocketFactory socketFactory;
   private final int oobSleepDuration;
 
   @Inject
   RocketMqCve202333246Detector(
       @UtcClock Clock utcClock,
       PayloadGenerator payloadGenerator,
-      @SocketFactoryInstance SocketFactory socketFactory,
+      TsunamiSocketFactory socketFactory,
       @OobSleepDuration int oobSleepDuration) {
     this.utcClock = checkNotNull(utcClock);
     this.payloadGenerator = checkNotNull(payloadGenerator);
@@ -152,7 +152,6 @@ public final class RocketMqCve202333246Detector implements VulnDetector {
     var servicePort = service.getNetworkEndpoint().getPort().getPortNumber();
 
     try (var socket = socketFactory.createSocket(serviceIp, servicePort)) {
-      socket.setSoTimeout(2000);
       socket.getOutputStream().write(payload);
 
       byte[] response = new byte[4096];

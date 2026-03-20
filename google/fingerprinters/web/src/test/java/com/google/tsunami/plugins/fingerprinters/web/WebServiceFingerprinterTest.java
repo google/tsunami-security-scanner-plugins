@@ -391,7 +391,289 @@ public final class WebServiceFingerprinterTest {
         };
     mockWebServer.setDispatcher(dispatcher);
     mockWebServer.start();
-    mockWebServer.url("/");
+  }
+
+  @Test
+  public void fingerprint_whenMcpInitializeSucceeds_detectsMcpServer() throws Exception {
+    fakeCrawler.setCrawlResults(ImmutableSet.of());
+    startMockMcpWebServer(
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            if (request.getPath().equals("/mcp") && request.getMethod().equals("POST")) {
+              String body = request.getBody().readUtf8();
+              if (body.contains("initialize")) {
+                return new MockResponse()
+                    .setResponseCode(200)
+                    .setBody(
+                        "{\"jsonrpc\":\"2.0\",\"id\":\"tsunami-mcp-scan\",\"result\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"serverInfo\":{\"name\":\"TestMCP\"}}}");
+              }
+            }
+            return new MockResponse().setResponseCode(404);
+          }
+        });
+    NetworkEndpoint endpoint =
+        forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort());
+    NetworkService networkService =
+        NetworkService.newBuilder().setNetworkEndpoint(endpoint).setServiceName("http").build();
+
+    FingerprintingReport fingerprintingReport =
+        fingerprinter.fingerprint(TargetInfo.getDefaultInstance(), networkService);
+
+    assertThat(fingerprintingReport)
+        .comparingExpectedFieldsOnly()
+        .isEqualTo(
+            FingerprintingReport.newBuilder()
+                .addNetworkServices(
+                    networkService.toBuilder()
+                        .setServiceName("MCP Server")
+                        .setServiceContext(
+                            ServiceContext.newBuilder()
+                                .setWebServiceContext(
+                                    WebServiceContext.newBuilder()
+                                        .setApplicationRoot(
+                                            String.format(
+                                                "http://%s/",
+                                                NetworkEndpointUtils.toUriAuthority(endpoint)))
+                                        .setSoftware(Software.newBuilder().setName("MCP Server")))))
+                .build());
+  }
+
+  @Test
+  public void fingerprint_whenMcpInitAndSseFailPrematureSucceeds_detectsMcpServer()
+      throws Exception {
+    fakeCrawler.setCrawlResults(ImmutableSet.of());
+    startMockMcpWebServer(
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            if (request.getMethod().equals("POST")) {
+              String body = request.getBody().readUtf8();
+              if (body.contains("initialize")) {
+                return new MockResponse().setResponseCode(500);
+              }
+              if (body.contains("tools/list")) {
+                return new MockResponse()
+                    .setResponseCode(200)
+                    .setBody(
+                        "{\"jsonrpc\":\"2.0\",\"id\":\"tsunami-mcp-scan\",\"error\":{\"code\":-32000,\"message\":\"Server"
+                            + " not initialized\"}}");
+              }
+            }
+            return new MockResponse().setResponseCode(404);
+          }
+        });
+    NetworkEndpoint endpoint =
+        forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort());
+    NetworkService networkService =
+        NetworkService.newBuilder().setNetworkEndpoint(endpoint).setServiceName("http").build();
+
+    FingerprintingReport fingerprintingReport =
+        fingerprinter.fingerprint(TargetInfo.getDefaultInstance(), networkService);
+
+    assertThat(fingerprintingReport)
+        .comparingExpectedFieldsOnly()
+        .isEqualTo(
+            FingerprintingReport.newBuilder()
+                .addNetworkServices(
+                    networkService.toBuilder()
+                        .setServiceName("MCP Server")
+                        .setServiceContext(
+                            ServiceContext.newBuilder()
+                                .setWebServiceContext(
+                                    WebServiceContext.newBuilder()
+                                        .setApplicationRoot(
+                                            String.format(
+                                                "http://%s/",
+                                                NetworkEndpointUtils.toUriAuthority(endpoint)))
+                                        .setSoftware(Software.newBuilder().setName("MCP Server")))))
+                .build());
+  }
+
+  @Test
+  public void fingerprint_whenMcpInitializeInvalidBody_doesNotDetectMcpServer() throws Exception {
+    fakeCrawler.setCrawlResults(ImmutableSet.of());
+    startMockMcpWebServer(
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            if (request.getPath().equals("/mcp") && request.getMethod().equals("POST")) {
+              return new MockResponse().setResponseCode(200).setBody("{\"invalid\":\"json\"}");
+            }
+            return new MockResponse().setResponseCode(404);
+          }
+        });
+    NetworkEndpoint endpoint =
+        forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort());
+    NetworkService networkService =
+        NetworkService.newBuilder().setNetworkEndpoint(endpoint).setServiceName("http").build();
+
+    FingerprintingReport fingerprintingReport =
+        fingerprinter.fingerprint(TargetInfo.getDefaultInstance(), networkService);
+
+    assertThat(fingerprintingReport)
+        .isEqualTo(
+            FingerprintingReport.newBuilder()
+                .addNetworkServices(
+                    networkService.toBuilder()
+                        .setServiceContext(
+                            ServiceContext.newBuilder()
+                                .setWebServiceContext(WebServiceContext.getDefaultInstance()))
+                        .build())
+                .build());
+  }
+
+  @Test
+  public void fingerprint_whenMcpInitializeMissingResultKeys_doesNotDetectMcpServer()
+      throws Exception {
+    fakeCrawler.setCrawlResults(ImmutableSet.of());
+    startMockMcpWebServer(
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            if (request.getPath().equals("/mcp") && request.getMethod().equals("POST")) {
+              String body = request.getBody().readUtf8();
+              if (body.contains("initialize")) {
+                return new MockResponse()
+                    .setResponseCode(200)
+                    .setBody("{\"jsonrpc\":\"2.0\",\"id\":\"tsunami-mcp-scan\",\"result\":{}}");
+              }
+            }
+            return new MockResponse().setResponseCode(404);
+          }
+        });
+    NetworkEndpoint endpoint =
+        forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort());
+    NetworkService networkService =
+        NetworkService.newBuilder().setNetworkEndpoint(endpoint).setServiceName("http").build();
+
+    FingerprintingReport fingerprintingReport =
+        fingerprinter.fingerprint(TargetInfo.getDefaultInstance(), networkService);
+
+    assertThat(fingerprintingReport)
+        .isEqualTo(
+            FingerprintingReport.newBuilder()
+                .addNetworkServices(
+                    networkService.toBuilder()
+                        .setServiceContext(
+                            ServiceContext.newBuilder()
+                                .setWebServiceContext(WebServiceContext.getDefaultInstance()))
+                        .build())
+                .build());
+  }
+
+  @Test
+  public void fingerprint_whenMcpPrematureInvalidError_doesNotDetectMcpServer() throws Exception {
+    fakeCrawler.setCrawlResults(ImmutableSet.of());
+    startMockMcpWebServer(
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            if (request.getMethod().equals("POST")) {
+              String body = request.getBody().readUtf8();
+              if (body.contains("initialize")) {
+                return new MockResponse().setResponseCode(500);
+              }
+              if (body.contains("tools/list")) {
+                return new MockResponse().setResponseCode(200).setBody("Just a random error");
+              }
+            }
+            return new MockResponse().setResponseCode(404);
+          }
+        });
+    NetworkEndpoint endpoint =
+        forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort());
+    NetworkService networkService =
+        NetworkService.newBuilder().setNetworkEndpoint(endpoint).setServiceName("http").build();
+
+    FingerprintingReport fingerprintingReport =
+        fingerprinter.fingerprint(TargetInfo.getDefaultInstance(), networkService);
+
+    assertThat(fingerprintingReport)
+        .isEqualTo(
+            FingerprintingReport.newBuilder()
+                .addNetworkServices(
+                    networkService.toBuilder()
+                        .setServiceContext(
+                            ServiceContext.newBuilder()
+                                .setWebServiceContext(WebServiceContext.getDefaultInstance()))
+                        .build())
+                .build());
+  }
+
+  @Test
+  public void fingerprint_whenNotMcpServer_doesNotDetectMcpServer() throws Exception {
+    fakeCrawler.setCrawlResults(ImmutableSet.of());
+    startMockMcpWebServer(
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            return new MockResponse().setResponseCode(404);
+          }
+        });
+    NetworkEndpoint endpoint =
+        forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort());
+    NetworkService networkService =
+        NetworkService.newBuilder().setNetworkEndpoint(endpoint).setServiceName("http").build();
+
+    FingerprintingReport fingerprintingReport =
+        fingerprinter.fingerprint(TargetInfo.getDefaultInstance(), networkService);
+
+    assertThat(fingerprintingReport)
+        .isEqualTo(
+            FingerprintingReport.newBuilder()
+                .addNetworkServices(
+                    networkService.toBuilder()
+                        .setServiceContext(
+                            ServiceContext.newBuilder()
+                                .setWebServiceContext(WebServiceContext.getDefaultInstance()))
+                        .build())
+                .build());
+  }
+
+  @Test
+  public void fingerprint_whenMcpReturnsNotAcceptable_doesNotDetectMcpServer() throws Exception {
+    fakeCrawler.setCrawlResults(ImmutableSet.of());
+
+    // Strict MCP servers (like FastMCP) might return a 406 Not Acceptable status code if
+    // valid Accept headers are not supplied. Since checking for generic 406 responses is very
+    // prone to false positives across the web, we intentionally do NOT fingerprint servers
+    // based on 406 errors, even if they return a JSON-RPC formatted error message.
+    startMockMcpWebServer(
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            return new MockResponse()
+                .setResponseCode(406)
+                .setBody(
+                    "{\"jsonrpc\":\"2.0\",\"id\":\"tsunami-mcp-scan\",\"error\":{\"code\":-32600,\"message\":\"Not"
+                        + " Acceptable: Client must accept both application/json and"
+                        + " text/event-stream\"}}");
+          }
+        });
+    NetworkEndpoint endpoint =
+        forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort());
+    NetworkService networkService =
+        NetworkService.newBuilder().setNetworkEndpoint(endpoint).setServiceName("http").build();
+
+    FingerprintingReport fingerprintingReport =
+        fingerprinter.fingerprint(TargetInfo.getDefaultInstance(), networkService);
+
+    assertThat(fingerprintingReport)
+        .isEqualTo(
+            FingerprintingReport.newBuilder()
+                .addNetworkServices(
+                    networkService.toBuilder()
+                        .setServiceContext(
+                            ServiceContext.newBuilder()
+                                .setWebServiceContext(WebServiceContext.getDefaultInstance()))
+                        .build())
+                .build());
+  }
+
+  private void startMockMcpWebServer(Dispatcher dispatcher) throws IOException {
+    mockWebServer.setDispatcher(dispatcher);
+    mockWebServer.start();
   }
 
   private static NetworkService addServiceContext(
