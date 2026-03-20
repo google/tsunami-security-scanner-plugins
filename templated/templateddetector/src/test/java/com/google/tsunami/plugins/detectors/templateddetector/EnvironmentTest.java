@@ -75,7 +75,42 @@ public final class EnvironmentTest {
     assertThat(env.get("T_NS_IP")).isEqualTo("127.0.0.1");
     assertThat(env.get("T_CBS_URI"))
         .isEqualTo("http://1.2.3.4:1234/2f2f44946531433a8eec636344578b3e6a321a52ff328315f446dfe0");
+    assertThat(env.get("T_CBS_DNS")).isNull();
     assertThat(env.get("T_CBS_ADDRESS")).isEqualTo("1.2.3.4");
+    assertThat(env.get("T_CBS_PORT")).isEqualTo("1234");
+    assertThat(env.get("T_CBS_SECRET")).isEqualTo("ffffffffffffffff");
+  }
+
+  @Test
+  public void initializeWithDnsCallback_setsEnvironment() {
+    TcsClient tcsClient = new TcsClient("cb.tsunami", 1234, "http://polling/", httpClient);
+
+    NetworkService networkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                NetworkEndpoint.newBuilder()
+                    .setIpAddress(IpAddress.newBuilder().setAddress("127.0.0.1"))
+                    .setHostname(Hostname.newBuilder().setName("hostname"))
+                    .setType(NetworkEndpoint.Type.HOSTNAME_PORT)
+                    .setPort(Port.newBuilder().setPortNumber(80)))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .build();
+    Environment env = new Environment(false, utcClock);
+    env.initializeFor(networkService, tcsClient, secretGenerator);
+
+    assertThat(env.get("T_UTL_CURRENT_TIMESTAMP_MS")).isEqualTo("1577836800000");
+    assertThat(env.get("T_NS_BASEURL")).isEqualTo("http://hostname:80/");
+    assertThat(env.get("T_NS_PROTOCOL")).isEqualTo("TCP");
+    assertThat(env.get("T_NS_HOSTNAME")).isEqualTo("hostname");
+    assertThat(env.get("T_NS_PORT")).isEqualTo("80");
+    assertThat(env.get("T_NS_IP")).isEqualTo("127.0.0.1");
+    assertThat(env.get("T_CBS_URI"))
+        .isEqualTo(
+          "http://2f2f44946531433a8eec636344578b3e6a321a52ff328315f446dfe0"
+          + ".cb.tsunami:1234/2f2f44946531433a8eec636344578b3e6a321a52ff328315f446dfe0");
+    assertThat(env.get("T_CBS_DNS"))
+        .isEqualTo("2f2f44946531433a8eec636344578b3e6a321a52ff328315f446dfe0.cb.tsunami");
+    assertThat(env.get("T_CBS_ADDRESS")).isEqualTo("cb.tsunami");
     assertThat(env.get("T_CBS_PORT")).isEqualTo("1234");
     assertThat(env.get("T_CBS_SECRET")).isEqualTo("ffffffffffffffff");
   }
@@ -105,6 +140,7 @@ public final class EnvironmentTest {
     assertThat(env.get("T_NS_IP")).isEqualTo("127.0.0.1");
     assertThat(env.get("T_CBS_SECRET")).isEqualTo("ffffffffffffffff");
     assertThat(env.get("T_CBS_URI")).isNull();
+    assertThat(env.get("T_CBS_DNS")).isNull();
     assertThat(env.get("T_CBS_ADDRESS")).isNull();
     assertThat(env.get("T_CBS_PORT")).isNull();
   }
@@ -134,6 +170,7 @@ public final class EnvironmentTest {
     assertThat(env.get("T_NS_IP")).isEqualTo("127.0.0.1");
     assertThat(env.get("T_CBS_SECRET")).isNull();
     assertThat(env.get("T_CBS_URI")).isNull();
+    assertThat(env.get("T_CBS_DNS")).isNull();
     assertThat(env.get("T_CBS_ADDRESS")).isNull();
     assertThat(env.get("T_CBS_PORT")).isNull();
   }

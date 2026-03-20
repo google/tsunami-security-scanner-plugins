@@ -108,6 +108,8 @@ public final class TemplatedDetector implements VulnDetector {
     switch (workflow.getCondition()) {
       case REQUIRES_CALLBACK_SERVER:
         return tcsClient.isCallbackServerEnabled();
+      case REQUIRES_DNS_CALLBACK_SERVER:
+        return tcsClient.isDnsCallbackServerEnabled();
       default:
         return true;
     }
