@@ -164,7 +164,8 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
     }
     c.send(pickle.dumps(data))
     # response = pickle.loads(c.recv())
-    response = RestrictedUnpickler(io.BytesIO(c.recv())).load()
+    raw_data = c.recv_bytes()
+    response = RestrictedUnpickler(io.BytesIO(raw_data)).load()
     c.close()
     return type(response) is KeyError and str(response) == "'func_name'"
 
