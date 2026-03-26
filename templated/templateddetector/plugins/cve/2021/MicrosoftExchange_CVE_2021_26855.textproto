@@ -83,7 +83,7 @@ actions: {
 workflows: {
   condition: REQUIRES_DNS_CALLBACK_SERVER
   variables: [
-    { name: "PAYLOAD", value: "X-AnonResource=true; X-AnonResource-Backend=tsunami]@{{ T_CBS_DNS }}/#~1" },
+    { name: "PAYLOAD", value: "X-AnonResource=true; X-AnonResource-Backend=tsunami]@{{ T_CBS_DNS }}/#~1" }
   ],
   actions: [
     "fingerprint_exchange",
