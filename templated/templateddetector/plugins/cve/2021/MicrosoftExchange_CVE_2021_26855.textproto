@@ -28,7 +28,7 @@ finding: {
 }
 
 ###########
-# ACTIONS #
+# ACTIONS #l
 ###########
 
 actions: {
@@ -74,7 +74,6 @@ actions: {
   name: "check_callback_server_logs"
   callback_server: { action_type: CHECK }
 }
-
 
 #############
 # WORKFLOWS #
