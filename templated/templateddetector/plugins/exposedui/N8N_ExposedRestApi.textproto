@@ -19,23 +19,45 @@ finding: {
   }
   title: "Exposed n8n REST API"
   description:
-    "The n8n automation platform instance is configured in a way that allows "
-    "unauthenticated access to its REST API. This allows attackers to enumerate, "
-    "modify, and execute workflows, including those containing built-in command "
-    "execution nodes, which may lead to remote code execution. This condition is "
-    "typically caused by misconfiguration, such as missing authentication or "
-    "improperly secured reverse proxy setups."
+    "The n8n automation platform instance exposes its REST API without proper "
+    "authentication, allowing unauthenticated access to workflow management "
+    "functionality. This may enable attackers to enumerate, modify, and execute "
+    "workflows, including those containing built-in command execution nodes, "
+    "potentially leading to remote code execution. Exposure conditions vary "
+    "across n8n versions. Early releases without user management did not "
+    "consistently protect REST endpoints, and available authentication mechanisms "
+    "(e.g., JWT or basic auth) may not fully cover all /rest/* routes. In later "
+    "0.x versions, authentication behavior may be inconsistent—for example, "
+    "instances without an initialized owner account or with ineffective "
+    "configuration flags may allow unauthenticated access to /rest/* endpoints."
   recommendation:
     "Ensure authentication is properly enforced for the n8n instance and that it "
-    "is not exposed to untrusted networks. When using reverse proxies or external "
-    "authentication (e.g., SSO), verify that all REST endpoints are protected. "
-    "Refer to https://docs.n8n.io/hosting/securing/overview/ for guidance."
+    "is not exposed to untrusted networks. Verify that REST API endpoints are "
+    "protected, especially in older or partially initialized deployments. Refer "
+    "to https://docs.n8n.io/hosting/securing/overview/ for guidance."
   severity: CRITICAL
 }
 
 ###########
 # ACTIONS #
 ###########
+
+actions: {
+  name: "n8n_vuln_fingerprint"
+  http_request: {
+    method: GET
+    uri: "/rest/settings"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: '"urlBaseWebhook"' },
+          { body: {} contains: '"versionCli":"0.' }
+        ]
+      }
+    }
+  }
+}
 
 actions: {
   name: "n8n_retrieve_auth_cookie"
@@ -54,27 +76,6 @@ actions: {
             from_body: {}
             regexp: "()"
           }
-        ]
-      }
-    }
-  }
-}
-
-actions: {
-  name: "n8n_fingerprint"
-  http_request: {
-    method: GET
-    uri: "/"
-    headers: [
-      { name: "Cookie" value: "{{ n8n_auth_token }}" }
-    ]
-    response: {
-      http_status: 200
-      expect_any: {
-        conditions: [
-          { body: {} contains: "n8n.io - Workflow Automation" },
-          { body: {} contains: "n8n Editor-UI" },
-          { body: {} contains: "n8n:config:" }
         ]
       }
     }
@@ -106,8 +107,8 @@ actions: {
 
 workflows: {
   actions: [
+    "n8n_vuln_fingerprint",
     "n8n_retrieve_auth_cookie",
-    "n8n_fingerprint",
     "n8n_retrieve_existing_flows"
   ]
 }

@@ -6,149 +6,108 @@ config: {
 }
 
 tests: {
-  name: "whenVulnerable_returnsTrue"
+  name: "whenVulnerable_noOwner_returnsTrue"
   expect_vulnerability: true
 
   mock_http_server: {
     mock_responses: [
       {
+        uri: "/rest/settings"
+        status: 200
+        body_content: '{"data":{"urlBaseWebhook":"http://target:5678/","versionCli":"0.237.0",...}}'
+      },
+      {
         uri: "/rest/login"
         status: 200
         headers: [
-          { name: "Set-Cookie" value: "n8n-auth=some_auth_token" }
+          { name: "Set-Cookie" value: "n8n-auth=jwt_token" }
         ]
-        body_content: '{"data":{...}}'
-      },
-      {
-        uri: "/"
-        status: 200
-        condition: {
-          headers: [
-            { name: "Cookie" value: "n8n-auth=some_auth_token" }
-          ]
-        }
-        body_content: '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" />...<meta name="n8n:config:rest-endpoint" content="cmVzdA==">...<title>n8n.io - Workflow Automation</title>...</head><body><noscript>...n8n Editor-UI...</noscript>...</body></html>'
       },
       {
         uri: "/rest/workflows"
         status: 200
         condition: {
           headers: [
-            { name: "Cookie" value: "n8n-auth=some_auth_token" }
+            { name: "Cookie" value: "n8n-auth=jwt_token" }
           ]
         }
-        body_content: '{"count":1,"data":[{"updatedAt":"2026-03-18T17:42:51.630Z","createdAt":"2026-03-18T17:42:51.630Z","id":"Q2cpznBmI6NCfeBF","name":"My workflow","description":null,"active":true,"isArchived":false...]}]}'
+        body_content: '{"data":[{"id":"Q2cpznBmI6NCfeBF","name":"Vulnerable Workflow",...},...]}'
       }
     ]
   }
 }
 
 tests: {
-  name: "whenVulnerable_restLoginNotFoundAndWorkflowsExposed_returnsTrue"
+  name: "whenVulnerable_noUserManagement_returnsTrue"
   expect_vulnerability: true
 
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/rest/login"
-        status: 404
-        body_content: "Not Found"
+        uri: "/rest/settings"
+        status: 200
+        body_content: '{"data":{"urlBaseWebhook":"http://target:5678/","versionCli":"0.54.0",...}}'
       },
       {
-        uri: "/"
-        status: 200
-        body_content: '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" />...<meta name="n8n:config:rest-endpoint" content="cmVzdA==">...<title>n8n.io - Workflow Automation</title>...</head><body><noscript>...n8n Editor-UI...</noscript>...</body></html>'
+        uri: "/rest/login"
+        status: 404
       },
       {
         uri: "/rest/workflows"
         status: 200
-        body_content: '{"count":1,"data":[{"updatedAt":"2026-03-18T17:42:51.630Z","createdAt":"2026-03-18T17:42:51.630Z","id":"Q2cpznBmI6NCfeBF","name":"My workflow","description":null,"active":true,"isArchived":false...]}]}'
+        body_content: '{"data":[{"id":"1","name":"Legacy Workflow",...},...]}'
       }
     ]
   }
 }
 
 tests: {
-  name: "whenNotVulnerable_restWorkflowsProtected_returnsFalse"
+  name: "whenNotVulnerable_restProtected_returnsFalse"
   expect_vulnerability: false
 
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/rest/login"
+        uri: "/rest/settings"
         status: 200
-        headers: [
-          { name: "Set-Cookie" value: "n8n-auth=some_auth_token" }
-        ]
-        body_content: '{"data":{...}}'
+        body_content: '{"data":{"urlBaseWebhook":"http://target:5678/","versionCli":"0.237.0",...}}'
       },
       {
-        uri: "/"
-        status: 200
-        condition: {
-          headers: [
-            { name: "Cookie" value: "n8n-auth=some_auth_token" }
-          ]
-        }
-        body_content: '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" />...<meta name="n8n:config:rest-endpoint" content="cmVzdA==">...<title>n8n.io - Workflow Automation</title>...</head><body><noscript>...n8n Editor-UI...</noscript>...</body></html>'
+        uri: "/rest/login"
+        status: 401
       },
       {
         uri: "/rest/workflows"
         status: 401
-        condition: {
-          headers: [
-            { name: "Cookie" value: "n8n-auth=some_auth_token" }
-          ]
-        }
-        body_content: '{"status":"error","message":"Unauthorized"}'
       }
     ]
   }
 }
 
 tests: {
-  name: "whenNotVulnerable_restLoginNotFoundAndWorkflowsProtected_returnsFalse"
+  name: "whenNotVulnerable_n8nModern_returnsFalse"
   expect_vulnerability: false
 
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/rest/login"
+        uri: "/rest/settings"
+        status: 200
+        body_content: '{"data":{"instanceId":"...","versionCli":"1.123.21"}}'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotN8n_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/rest/settings"
         status: 404
-        body_content: "Not Found"
-      },
-      {
-        uri: "/"
-        status: 200
-        body_content: '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" />...<meta name="n8n:config:rest-endpoint" content="cmVzdA==">...<title>n8n.io - Workflow Automation</title>...</head><body><noscript>...n8n Editor-UI...</noscript>...</body></html>'
-      },
-      {
-        uri: "/rest/workflows"
-        status: 401
-        body_content: '{"status":"error","message":"Unauthorized"}'
-      }
-    ]
-  }
-}
-
-tests: {
-  name: "whenNotN8N_returnsFalse"
-  expect_vulnerability: false
-
-  mock_http_server: {
-    mock_responses: [
-      {
-        uri: "/rest/login"
-        status: 200
-        headers: [
-          { name: "Set-Cookie" value: "n8n-auth=some_auth_token" }
-        ]
-        body_content: '{"data":{...}}'
-      },
-      {
-        uri: "/"
-        status: 200
-        body_content: '<html><body>Wrong body content</body></html>'
       }
     ]
   }
