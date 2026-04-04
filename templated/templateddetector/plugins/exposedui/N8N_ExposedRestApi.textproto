@@ -85,6 +85,7 @@ actions: {
   }
 }
 
+# Gets workflows, sending the previous cookie if it was available.
 actions: {
   name: "n8n_retrieve_existing_flows"
   http_request: {
