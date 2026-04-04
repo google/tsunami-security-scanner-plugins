@@ -61,6 +61,7 @@ actions: {
   }
 }
 
+# Gets the cookie if available, still passes this step if not available.
 actions: {
   name: "n8n_retrieve_auth_cookie"
   http_request: {
