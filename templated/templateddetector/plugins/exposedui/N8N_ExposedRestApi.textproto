@@ -31,10 +31,12 @@ finding: {
     "instances without an initialized owner account or with ineffective "
     "configuration flags may allow unauthenticated access to /rest/* endpoints."
   recommendation:
-    "Ensure authentication is properly enforced for the n8n instance and that it "
-    "is not exposed to untrusted networks. Verify that REST API endpoints are "
-    "protected, especially in older or partially initialized deployments. Refer "
-    "to https://docs.n8n.io/hosting/securing/overview/ for guidance."
+    "Upgrade the n8n instance to a recent supported version where authentication "
+    "is consistently enforced by default. Older 0.x versions may not reliably "
+    "protect REST API endpoints. Additionally, ensure authentication is properly "
+    "configured and that the instance is not exposed to untrusted networks. Verify "
+    "that all REST API endpoints are protected, especially in partially initialized "
+    "deployments. Refer to https://docs.n8n.io/hosting/securing/overview/ for guidance."
   severity: CRITICAL
 }
 
