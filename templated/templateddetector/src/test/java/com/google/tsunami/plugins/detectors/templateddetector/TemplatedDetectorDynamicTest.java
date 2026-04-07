@@ -86,6 +86,7 @@ public final class TemplatedDetectorDynamicTest {
   @Before
   public void setupMockServers() throws IOException {
     environment = new Environment(false, fakeUtcClock);
+    environment.set("T_TST_DISABLE_SLEEP", "true");
     mockWebServer = new MockWebServer();
     mockCallbackServer = new MockWebServer();
     targetInfoBuilder = TargetInfo.newBuilder();
@@ -143,7 +144,9 @@ public final class TemplatedDetectorDynamicTest {
 
     payloadSecretGenerator = injector.getInstance(PayloadSecretGenerator.class);
     tcsClient = injector.getInstance(TcsClient.class);
-    return bootstrap.getDetectors();
+    var detectors = bootstrap.getDetectors();
+    detectors.values().forEach(d -> d.setEnvForTesting(environment));
+    return detectors;
   }
 
   private final void initMockCallbackServer(TemplatedPluginTests.Test testCase) {
