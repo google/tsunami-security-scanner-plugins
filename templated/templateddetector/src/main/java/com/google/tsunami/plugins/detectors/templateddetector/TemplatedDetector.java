@@ -3,6 +3,7 @@ package com.google.tsunami.plugins.detectors.templateddetector;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.protobuf.util.Timestamps;
@@ -47,10 +48,16 @@ public final class TemplatedDetector implements VulnDetector {
   private TcsClient tcsClient = null;
   private Clock utcClock = null;
   private PayloadSecretGenerator secretGenerator = null;
+  private Environment envForTesting = null;
 
   public TemplatedDetector(TemplatedPlugin proto) {
     this.proto = proto;
     this.actionsCache = new HashMap<>();
+  }
+
+  @VisibleForTesting
+  public void setEnvForTesting(Environment env) {
+    this.envForTesting = env;
   }
 
   public String getName() {
@@ -145,8 +152,11 @@ public final class TemplatedDetector implements VulnDetector {
   // note: expect action names to have been validated already
   private final boolean runWorkflowForService(NetworkService service, PluginWorkflow workflow) {
     // We prepare a new environment for that workflow.
-    Environment environment = new Environment(this.proto.getConfig().getDebug(), this.utcClock);
-    environment.initializeFor(service, this.tcsClient, this.secretGenerator);
+    Environment environment = this.envForTesting;
+    if (environment == null) {
+      environment = new Environment(this.proto.getConfig().getDebug(), this.utcClock);
+      environment.initializeFor(service, this.tcsClient, this.secretGenerator);
+    }
 
     for (var parameter : workflow.getVariablesList()) {
       var value = environment.substitute(parameter.getValue());
