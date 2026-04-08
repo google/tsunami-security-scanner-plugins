@@ -164,10 +164,9 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
     }
     c.send(pickle.dumps(data))
     # response = pickle.loads(c.recv())
-    raw_data = c.recv_bytes()
-    response = RestrictedUnpickler(io.BytesIO(raw_data)).load()
+    data_string = str(c.recv_bytes())
     c.close()
-    return type(response) is KeyError and str(response) == "'func_name'"
+    return "KeyError" in data_string and "func_name" in data_string
 
   def _IsServiceVulnerable(
       self, network_service: tsunami_plugin.NetworkService
