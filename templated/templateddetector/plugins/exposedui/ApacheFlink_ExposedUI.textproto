@@ -106,11 +106,6 @@ actions: {
   }
 }
 
-
-
-
-
-
 #############
 # WORKFLOWS #
 #############
@@ -120,8 +115,4 @@ workflows: {
     "fingerprint_flink",
     "upload_jar"
   ]
-}
-
-config: {
-  debug: true
 }
