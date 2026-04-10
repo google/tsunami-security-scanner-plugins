@@ -106,8 +106,7 @@ public final class EnvironmentTest {
     assertThat(env.get("T_NS_IP")).isEqualTo("127.0.0.1");
     assertThat(env.get("T_CBS_URI"))
         .isEqualTo(
-            "http://2f2f44946531433a8eec636344578b3e6a321a52ff328315f446dfe0"
-                + ".cb.tsunami:1234/2f2f44946531433a8eec636344578b3e6a321a52ff328315f446dfe0");
+            "http://cb.tsunami:1234/2f2f44946531433a8eec636344578b3e6a321a52ff328315f446dfe0");
     assertThat(env.get("T_CBS_DNS"))
         .isEqualTo("2f2f44946531433a8eec636344578b3e6a321a52ff328315f446dfe0.cb.tsunami");
     assertThat(env.get("T_CBS_ADDRESS")).isEqualTo("cb.tsunami");
