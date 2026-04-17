@@ -20,6 +20,10 @@ finding: {
     publisher: "GOOGLE"
     value: "CVE-2023-26360"
   }
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2023-26360"
+  }
   title: "Adobe ColdFusion Unauthenticated Arbitrary Read and Remote Code Execution"
   description: 
     "Adobe ColdFusion versions 2018 Update 15 (and earlier) and 2021 Update 5 (and"
@@ -43,7 +47,7 @@ actions: {
   name: "trigger_vuln"
   http_request: {
     method: POST
-    uri: "{{ VULN_PATH }}"
+    uri: "/{{ VULN_PATH }}"
     headers: [
       {
         name: "Content-Type" value: "application/x-www-form-urlencoded"
@@ -76,7 +80,7 @@ workflows: {
     # password.properties will contain this
     { name: "VULN_RES_BODY" value: "password="},
 
-    { name: "VULN_PATH" value: "/CFIDE/wizards/common/utils.cfc?method=wizardHash&inPassword=foo&_cfclient=true&returnFormat=wddx"},
+    { name: "VULN_PATH" value: "CFIDE/wizards/common/utils.cfc?method=wizardHash&inPassword=foo&_cfclient=true&returnFormat=wddx"},
 
     # Large request body to try a lot of potential paths for the password.properties file to be
     { 
@@ -149,8 +153,4 @@ workflows: {
   actions: [
     "trigger_vuln"
   ]
-}
-
-config: {
-  debug: true
 }
