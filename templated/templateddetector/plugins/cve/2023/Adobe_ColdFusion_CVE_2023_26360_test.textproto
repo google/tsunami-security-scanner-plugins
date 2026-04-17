@@ -1,0 +1,31 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Adobe_ColdFusion_CVE_2023_26360"
+}
+
+tests: {
+  name: "whenVulnLinuxPath1_returnsVuln"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/CFIDE/wizards/common/utils.cfc?method=wizardHash&inPassword=foo&_cfclient=true&returnFormat=wddx"
+        status: 200
+        body_content: 
+          "...\n"
+          "</var></struct></data></wddxPacket>#Thu Apr 16 12:34:40 GMT 2026\n"
+          "password=NOTAREALPASSWORD...\n"
+          "rdspassword="
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "anything"
+      }
+    ]
+  }
+}
+
