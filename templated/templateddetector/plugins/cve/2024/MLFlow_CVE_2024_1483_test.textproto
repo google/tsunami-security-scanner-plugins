@@ -1,0 +1,82 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "MLFlow_CVE_2024_1483"
+  disabled: false
+}
+
+tests: {
+  name: "whenMLFlowVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '<title>MLflow</title>'
+      },
+      {
+          uri: "/ajax-api/2.0/mlflow/experiments/create"
+              status: 200
+              body_content: '{"experiment_id": "tsunami-experiment"}'
+      },
+      {
+          uri: "/api/2.0/mlflow/runs/create"
+              status: 200
+              body_content: '{"run_id":"tsunami-run"}'
+      },
+      {
+          uri: "/ajax-api/2.0/mlflow/registered-models/create"
+              status: 200
+              body_content: '{}'
+      },
+      {
+          uri: "/ajax-api/2.0/mlflow/model-versions/create"
+              status: 200
+              body_content: '{}'
+      },
+      {
+          uri: "/model-versions/get-artifact?path=passwd&name=tsunami_scanner_{{ T_UTL_CURRENT_TIMESTAMP_MS }}&version=1"
+              status: 200
+              body_content: '...root:x:0:0...'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenMLFlowNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '<title>MLflow</title>'
+      },
+      {
+          uri: "TSUNAMI_MAGIC_ANY_URI"
+              status: 403
+              body_content: 'Forbidden'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotMLFlow_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Login to your Drupal account"
+      }
+    ]
+  }
+}
