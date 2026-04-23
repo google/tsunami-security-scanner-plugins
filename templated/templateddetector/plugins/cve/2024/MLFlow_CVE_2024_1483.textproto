@@ -20,7 +20,7 @@ finding: {
     value: "MLFlow_CVE_2024_1483"
   }
   severity: HIGH
-  title: "ApachePinot is vulnerable to Authentication Bypass"
+  title: "CVE-2024-1483 MLFlow Path Traversal"
   description: "A path traversal vulnerability exists in mlflow/mlflow version < 2.12.1, allowing attackers to access arbitrary files on the server"
   recommendation: "Upgrade MLflow version to 2.12.1 and above"
   related_id: {
