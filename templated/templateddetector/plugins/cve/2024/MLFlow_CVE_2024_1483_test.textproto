@@ -25,7 +25,7 @@ tests: {
       {
           uri: "/api/2.0/mlflow/runs/create"
               status: 200
-              body_content: '{"run_id":"tsunami-run"}'
+              body_content: '{"run_id": "tsunami-run"}'
       },
       {
           uri: "/ajax-api/2.0/mlflow/registered-models/create"

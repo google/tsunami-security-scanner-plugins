@@ -91,7 +91,7 @@ actions: {
         patterns: [
           {
             from_body: { }
-            regexp: '"run_id":"([^"]+)"'
+            regexp: '"run_id": "([^"]+)"'
             variable_name: "RUN_ID"
           }
         ]
@@ -167,3 +167,4 @@ workflows: {
     "get_artifact"
   ]
 }
+
