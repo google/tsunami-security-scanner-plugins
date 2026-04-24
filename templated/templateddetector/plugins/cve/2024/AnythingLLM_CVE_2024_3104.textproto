@@ -19,7 +19,7 @@ finding: {
     publisher: "GOOGLE"
     value: "AnythingLLM_CVE_2024_3104"
   }
-  severity: HIGH
+  severity: CRITICAL
   title: "CVE-2024-3104 anything-llm RCE"
   description: 
     "A remote code execution vulnerability exists in mintplex-labs/anything-llm due"
