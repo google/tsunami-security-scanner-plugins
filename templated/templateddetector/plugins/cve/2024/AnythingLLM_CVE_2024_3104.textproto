@@ -122,8 +122,6 @@ actions: {
   callback_server: { action_type: CHECK }
 }
 
-actions: {}
-
 #############
 # WORKFLOWS #
 #############
@@ -138,9 +136,5 @@ workflows: {
     "sleep",
     "check_callback_server_logs"
   ]
-}
-
-config: {
-  debug: true
 }
 
