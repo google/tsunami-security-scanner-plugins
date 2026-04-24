@@ -1,0 +1,136 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "AnythingLLM_CVE_2024_3104"
+  disabled: false
+}
+
+tests: {
+  name: "whenAnythingLLMVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '... <title>AnythingLLM | Your personal LLM trained on anything</title> ...'
+      },
+      {
+        uri: "/api/system/update-env"
+        status: 200
+        body_content: 
+          "{\"error\":false}"
+      },
+      {
+        uri: "/api/env-dump"
+        status: 200
+        body_content: 
+          "OK"
+      },
+      {
+        uri: "/api/migrate"
+        status: 200
+        body_content: 
+          "OK"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenAnythingLLMNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '... <title>AnythingLLM | Your personal LLM trained on anything</title> ...'
+      },
+      {
+        uri: "/api/system/update-env"
+        status: 403
+        body_content: 
+          "{\"error\":true}"
+      },
+      {
+        uri: "/api/env-dump"
+        status: 403
+        body_content: 
+          "Forbidden"
+      },
+      {
+        uri: "/api/migrate"
+        status: 403
+        body_content: 
+          "Forbidden"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '... <title>AnythingLLM | Your personal LLM trained on anything</title> ...'
+      },
+      {
+        uri: "/api/system/update-env"
+        status: 200
+        body_content: 
+          "{\"error\":false}"
+      },
+      {
+        uri: "/api/env-dump"
+        status: 200
+        body_content: 
+          "OK"
+      },
+      {
+        uri: "/api/migrate"
+        status: 200
+        body_content: 
+          "OK"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotAnythingLLM_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Login to your Drupal account"
+      }
+    ]
+  }
+}
