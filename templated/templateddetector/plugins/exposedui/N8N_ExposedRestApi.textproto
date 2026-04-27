@@ -1,0 +1,118 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "N8N_ExposedRestApi"
+  author: "yuradoc (yuradoc.research@gmail.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "N8N_EXPOSED_REST_API"
+  }
+  title: "Exposed n8n REST API"
+  description:
+    "The n8n automation platform instance exposes its REST API without proper "
+    "authentication, allowing unauthenticated access to workflow management "
+    "functionality. This may enable attackers to enumerate, modify, and execute "
+    "workflows, including those containing built-in command execution nodes, "
+    "potentially leading to remote code execution. Exposure conditions vary "
+    "across n8n versions. Early releases without user management did not "
+    "consistently protect REST endpoints, and available authentication mechanisms "
+    "(e.g., JWT or basic auth) may not fully cover all /rest/* routes. In later "
+    "0.x versions, authentication behavior may be inconsistent—for example, "
+    "instances without an initialized owner account or with ineffective "
+    "configuration flags may allow unauthenticated access to /rest/* endpoints."
+  recommendation:
+    "Upgrade the n8n instance to a recent supported version where authentication "
+    "is consistently enforced by default. Older 0.x versions may not reliably "
+    "protect REST API endpoints. Additionally, ensure authentication is properly "
+    "configured and that the instance is not exposed to untrusted networks. Verify "
+    "that all REST API endpoints are protected, especially in partially initialized "
+    "deployments. Refer to https://docs.n8n.io/hosting/securing/overview/ for guidance."
+  severity: CRITICAL
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "n8n_vuln_fingerprint"
+  http_request: {
+    method: GET
+    uri: "/rest/settings"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: '"urlBaseWebhook"' },
+          { body: {} contains: '"versionCli":"0.' }
+        ]
+      }
+    }
+  }
+}
+
+# Gets the cookie if available, still passes this step if not available.
+actions: {
+  name: "n8n_retrieve_auth_cookie"
+  http_request: {
+    method: GET
+    uri: "/rest/login"
+    response: {
+      extract_any: {
+        patterns: [
+          {
+            from_header: { name: "Set-Cookie" }
+            regexp: "(n8n-auth=[^;]+)"
+            variable_name: "n8n_auth_token"
+          },
+          {
+            from_body: {}
+            regexp: "()"
+          }
+        ]
+      }
+    }
+  }
+}
+
+# Gets workflows, sending the previous cookie if it was available.
+actions: {
+  name: "n8n_retrieve_existing_flows"
+  http_request: {
+    method: GET
+    uri: "/rest/workflows"
+    headers: [
+      { name: "Cookie" value: "{{ n8n_auth_token }}" }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: '"data":[' }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "n8n_vuln_fingerprint",
+    "n8n_retrieve_auth_cookie",
+    "n8n_retrieve_existing_flows"
+  ]
+}
