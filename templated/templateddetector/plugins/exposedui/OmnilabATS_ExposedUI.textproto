@@ -20,11 +20,15 @@ finding: {
   title: "Exposed Omnilab Android Test Station instance"
   description: "OmniLab ATS (Android Test Station) is publicly accessible without authentication. This exposes device management, test execution capabilities, and potentially sensitive configuration data. Attackers can access connected Android devices, execute arbitrary tests, view test results, and manage the testing infrastructure."
   recommendation:
-    "1. Implement authentication using a reverse proxy (nginx/Apache) with HTTP Basic Auth or OAuth"
-    "2. Restrict network access using firewall rules to trusted IP ranges only"
-    "3. Deploy behind VPN for remote access"
-    "4. Use SSH tunneling for administrative access"
-    "5. Enable TLS/HTTPS with valid certificates"
+    "If you only need access to OmniLab ATS from the same host it is running on, "
+    "just use the `--bind 127.0.0.1` command line flag to only expose the "
+    "software on localhost. If that's not possible and you need to access the "
+    "software from another host, you have a few more options: \n\n"
+    "1. Restrict network access using firewall rules to trusted IP ranges only. \n"
+    "2. Deploy behind VPN for remote access. \n"
+    "3. Use SSH tunneling for administrative access. \n"
+    "4. Implement authentication using a reverse proxy (nginx/Apache) with HTTP Basic Auth or OAuth. \n"
+    "5. Enable TLS/HTTPS with client certificates."
   severity: CRITICAL
 }
 
