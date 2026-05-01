@@ -50,7 +50,7 @@ tests: {
 }
 
 tests: {
-  name: "whenNotMLFlow_returnsFalse"
+  name: "whenNotAgentScope_returnsFalse"
   expect_vulnerability: false
 
   mock_http_server: {
