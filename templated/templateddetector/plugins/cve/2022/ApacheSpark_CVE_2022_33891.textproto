@@ -87,5 +87,3 @@ workflows: {
     "check_callback_server_logs"
   ]
 }
-
-config: { debug: true }
