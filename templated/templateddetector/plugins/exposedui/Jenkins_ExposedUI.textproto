@@ -1,0 +1,74 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Jenkins_ExposedUI"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version,"
+    " Tsunami Team (tsunami-dev@google.com) for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "UNAUTHENTICATED_JENKINS_NEW_ITEM_CONSOLE"
+  }
+  severity: CRITICAL
+  title: "Unauthenticated Jenkins New Item Console"
+  description: 
+    "Unauthenticated Jenkins instance allows anonymous users to create arbitrary"
+    " projects, which usually leads to code downloading from the internet and"
+    " remote code executions."
+  recommendation:
+    "If it is necessary to keep running this "
+    "instance of Jenkins, DO NOT expose it externally, in favor of using SSH tunnels "
+    "to access it. In addition, set up authentication on this Jenkins instance. "
+    "See https://jenkins.io/doc/book/system-administration/security/."
+}
+
+###########
+# ACTIONS #
+###########
+
+# This action isn't very strong, probably a little bit prone to false positives,
+# but it's what the original plugin did
+
+# <p>This detector checks unauthenticated Jenkins instance by sending a probe ping to <code>
+# /view/all/newJob</code> endpoint as an anonymous user. An authenticated Jenkins instance will
+# direct this probe to <code>/login</code> page. An unauthenticated Jenkins instance will show the
+# <code>createItem</code> form, which allows the anonymous user to create arbitrary jobs which
+# leads to remote code executions.
+
+actions: {
+  name: "check_jenkins_unauth"
+  http_request: {
+    method: GET
+    uri: "/view/all/newJob"
+    response: {
+      http_status: 200
+      expect_all {
+        conditions: [
+          { body: {} contains: 'jenkins' },
+          { body: {} contains: 'New Item' },
+          { body: {} contains: '<form method="post" action="createItem" name="createItem"' }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "check_jenkins_unauth"
+  ]
+}
