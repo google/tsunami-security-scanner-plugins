@@ -109,6 +109,7 @@ actions: {
 #############
 
 workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
   variables: [
     { name: "X_REAL_IP" value: "127.0.0.1" },
     { name: "DEFAULT_API_KEY" value: "edd1c9f034335f136f87ad84b625c8f1" },
@@ -123,5 +124,3 @@ workflows: {
     "check_callback_server_logs"
   ]
 }
-
-config: { debug: True }
