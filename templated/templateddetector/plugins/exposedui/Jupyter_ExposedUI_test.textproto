@@ -1,0 +1,57 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Jupyter_ExposedUI"
+}
+
+tests: {
+  name: "whenOldVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/terminals/1"
+        status: 200
+        body_content: 
+          "<title>Jupyter Notebook</title>"
+          " ... "
+          "<div id=\"terminado-container\" class=\"container\"></div>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNewVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/terminals/1"
+        status: 200
+        body_content: 
+          "<title>Jupyter Notebook - Terminal</title>"
+          " ... "
+          "<script id=\"jupyter-config-data\" type=\"application/json\">"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotJupyter_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "... Jupyter is great ..."
+      }
+    ]
+  }
+}

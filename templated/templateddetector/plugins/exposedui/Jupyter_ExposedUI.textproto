@@ -1,0 +1,83 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Jupyter_ExposedUI"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version, "
+    "Tsunami Team (tsunami-dev@google.com) for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "JUPYTER_EXPOSED_UI"
+  }
+  title: "Apache APISIX with default Admin token Detector"
+  description: 
+    "Jupyter Notebook is not password or token protected"
+  recommendation:
+    "If it is necessary to keep running this "
+    "instance of Jupyter, DO NOT expose it externally, in favor of using SSH tunnels to "
+    "access it. In addition, the service should only listen on localhost (127.0.0.1), and "
+    "consider restrict the access to the Jupyter Notebook using an authentication method. "
+    "See https://jupyter-notebook.readthedocs.io/en/stable/security.html"
+  severity: CRITICAL
+}
+
+###########
+# ACTIONS #
+###########
+
+# might not be ideal but it's what the original plugin does
+
+actions: {
+  name: "fingerprint_jupyter"
+  http_request: {
+    method: GET
+    uri: "/terminals/1"
+    response: {
+      http_status: 200
+      expect_any: {
+          conditions: [
+          { body: {} contains: "jupyter-config-data" },
+          { body: {} contains: "terminado-container" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "fingerprint_jupyter_2"
+  http_request: {
+    method: GET
+    uri: "/terminals/1"
+    response: {
+      http_status: 200
+      expect_any: {
+          conditions: [
+          { body: {} contains: "Jupyter" },
+          { body: {} contains: "jupyter" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_jupyter",
+    "fingerprint_jupyter_2"
+  ]
+}
