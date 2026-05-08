@@ -1,0 +1,80 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Flowise_ExposedUI"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version, "
+    "yuradoc (yuradoc.research@gmail.com)"
+  version: "0.1"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "FLOWISE_EXPOSED_UI"
+  }
+  title: "Flowise Exposed UI"
+  description: "Flowise UI instance is exposed without proper authentication."
+  recommendation:
+    "Please disable public access to your Flowise instance. You can enable authentication"
+    " for your instance by following the instructions here:"
+    " https://docs.flowiseai.com/configuration/authorization/app-level"
+  severity: HIGH
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_flowise"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: { body {} contains: 'Flowise' }
+      }
+    }
+  }
+}
+
+# original Java plugin only checked if response here wasn't 200.
+
+actions: {
+  name: "check_apikey"
+  http_request: {
+    method: GET
+    uri: "/api/v1/apikey"
+    headers: [
+      { name: "x-request-from" value: "internal" }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body {} contains: '"apiKey":' },
+          { body {} contains: '"apiSecret":' }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_flowise",
+    "check_apikey"
+  ]
+}
