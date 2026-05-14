@@ -1,0 +1,72 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "NodeRed_CVE_2021_3223"
+}
+
+tests: {
+  name: "whenVuln_returnsVuln"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '... Welcome to the Node-RED Dashboard ...'
+      },
+      {
+        uri: "/ui_base/js/..%2f"
+        status: 200
+        body_content: '... Welcome to the Node-RED Dashboard ...'
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: '{"status":200}'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVuln_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '... Welcome to the Node-RED Dashboard ...'
+      },
+      {
+        uri: "/ui_base/js/..%2f"
+        status: 404
+        body_content: '... File Not Found ...'
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: '{"status":200}'
+      }
+    ]
+  }
+}
+
+
+tests: {
+  name: "whenRandomServer_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri:  "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "... Hello world ..."
+      }
+    ]
+  }
+}
