@@ -1,0 +1,77 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Ollama_ExposedUI"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version, "
+    "timoles for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "OLLAMA_EXPOSED_UI"
+  }
+  title: "Exposed Ollama API Server"
+  description: 
+    "An Ollama API server is exposed to the network. This was confirmed by"
+    " investigating the API response for typical response artifacts. "
+    " An attacker can abuse an exposed API server to, for example,"
+    " download or modify existing LLM models, or misuse resources by"
+    " using the LLM chat functionality."
+  recommendation:
+    "Don't expose the Ollama Rest API to unauthorized users. According to the official"
+    " documentation access to the API server must be restricted through a reverse proxy"
+    " which implements necessary authentication checks."
+  severity: HIGH
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_webroot"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: { body {} contains: "Ollama is running" }
+      }
+    }
+  }
+}
+
+actions: {
+  name: "fingerprint_api"
+  http_request: {
+    method: GET
+    uri: "/api/ps"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: { body {} contains: "{\"models\":" }
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_webroot",
+    "fingerprint_api"
+  ]
+}
