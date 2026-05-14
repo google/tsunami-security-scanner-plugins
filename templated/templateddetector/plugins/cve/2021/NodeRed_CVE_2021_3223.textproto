@@ -33,18 +33,20 @@ finding: {
 # ACTIONS #
 ###########
 
-# simple step, same as the original Java detector
+# one step to check for /etc/passwd, changed from original detector 
+# because the original detector did not work correctly.
 
 actions: {
   name: "check_traversal"
   http_request: {
     method: GET
-    uri: "/ui_base/js/..%2f"
+    uri: "/ui_base/js/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd"
     response: {
       http_status: 200
-      expect_all: {
+      expect_any: {
         conditions: [
-          { body: {} contains: "Welcome to the Node-RED Dashboard" }
+          { body: {} contains: "root:x:0:0" },
+          { body: {} contains: "root:*:0:0" }
         ]
       }
     }

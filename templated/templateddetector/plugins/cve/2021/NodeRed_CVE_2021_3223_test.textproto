@@ -17,9 +17,11 @@ tests: {
         body_content: '... Welcome to the Node-RED Dashboard ...'
       },
       {
-        uri: "/ui_base/js/..%2f"
+        uri: "/ui_base/js/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd"
         status: 200
-        body_content: '... Welcome to the Node-RED Dashboard ...'
+        body_content: 
+          "root:x:0:0:root:/root:/bin/ash\n"
+          "bin:x:1:1:bin:/bin:/sbin/nologin"
       },
       {
         uri: "TSUNAMI_MAGIC_ANY_URI"
@@ -42,9 +44,9 @@ tests: {
         body_content: '... Welcome to the Node-RED Dashboard ...'
       },
       {
-        uri: "/ui_base/js/..%2f"
+        uri: "/ui_base/js/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd"
         status: 404
-        body_content: '... File Not Found ...'
+        body_content: 'Not Found'
       },
       {
         uri: "TSUNAMI_MAGIC_ANY_URI"
