@@ -15,6 +15,10 @@ info: {
 }
 
 finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CONSUL_EXPOSEDUI"
+  }
   severity: CRITICAL
   title: "Consul -enable-script-checks remote command execution"
   description: 
