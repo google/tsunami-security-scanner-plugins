@@ -76,6 +76,7 @@ actions: {
 
 workflows: {
   actions: [
+    "fingerprint_nodered",
     "check_traversal"
   ]
 }
