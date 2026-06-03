@@ -55,7 +55,6 @@ actions: {
       expect_all {
         conditions: [
           { body: {} contains: 'jenkins' },
-          { body: {} contains: 'New Item' },
           { body: {} contains: '<form method="post" action="createItem" name="createItem"' }
         ]
       }
