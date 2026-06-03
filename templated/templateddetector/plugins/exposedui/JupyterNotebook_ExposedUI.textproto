@@ -7,7 +7,7 @@
 
 info: {
   type: VULN_DETECTION
-  name: "Jupyter_ExposedUI"
+  name: "JupyterNotebook_ExposedUI"
   author: 
     "Robert Dick (robert@doyensec.com) for the Templated version, "
     "Tsunami Team (tsunami-dev@google.com) for the original Java version"
@@ -17,9 +17,9 @@ info: {
 finding: {
   main_id: {
     publisher: "GOOGLE"
-    value: "JUPYTER_EXPOSED_UI"
+    value: "JUPYTER_NOTEBOOK_EXPOSED_UI"
   }
-  title: "Apache APISIX with default Admin token Detector"
+  title: "Jupyter Notebook Exposed UI"
   description: 
     "Jupyter Notebook is not password or token protected"
   recommendation:
@@ -42,6 +42,9 @@ actions: {
   http_request: {
     method: GET
     uri: "/terminals/1"
+    client_options: {
+      disable_follow_redirects: true
+    }
     response: {
       http_status: 200
       expect_any: {
@@ -59,6 +62,9 @@ actions: {
   http_request: {
     method: GET
     uri: "/terminals/1"
+    client_options: {
+      disable_follow_redirects: true
+    }
     response: {
       http_status: 200
       expect_any: {

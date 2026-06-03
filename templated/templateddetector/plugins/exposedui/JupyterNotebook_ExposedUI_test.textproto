@@ -2,7 +2,7 @@
 # proto-message: TemplatedPluginTests
 
 config: {
-  tested_plugin: "Jupyter_ExposedUI"
+  tested_plugin: "JupyterNotebook_ExposedUI"
 }
 
 tests: {
