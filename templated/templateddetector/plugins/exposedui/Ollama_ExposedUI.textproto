@@ -16,8 +16,8 @@ info: {
 
 finding: {
   main_id: {
-    publisher: "GOOGLE"
-    value: "OLLAMA_EXPOSED_UI"
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "OLLAMA_API_SERVER_EXPOSED"
   }
   title: "Exposed Ollama API Server"
   description: 
