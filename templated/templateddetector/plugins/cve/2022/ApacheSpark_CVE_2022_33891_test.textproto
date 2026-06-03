@@ -68,7 +68,7 @@ tests: {
 }
 
 tests: {
-  name: "whenNotJenkins_returnsFalse"
+  name: "whenRandomServer_returnsFalse"
   expect_vulnerability: false
 
   mock_http_server: {
