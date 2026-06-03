@@ -39,6 +39,22 @@ finding: {
 ###########
 
 actions: {
+  name: "fingerprint_agentscope"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all {
+        conditions: [
+          { body: {} contains: '<title>AgentScope Studio</title>' }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
   name: "read_etc_passwd"
   http_request: {
     method: GET
@@ -48,6 +64,7 @@ actions: {
       expect_all {
         conditions: [
           { body: {} contains: 'root:' },
+          { body: {} contains: ':0:0:' },
           { header: { name: "Content-Disposition" } contains: "filename=passwd"}
         ]
       }
@@ -61,6 +78,7 @@ actions: {
 
 workflows: {
   actions: [
+    "fingerprint_agentscope",
     "read_etc_passwd"
   ]
 }

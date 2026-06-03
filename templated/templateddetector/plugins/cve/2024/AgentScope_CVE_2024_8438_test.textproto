@@ -15,7 +15,7 @@ tests: {
       {
         uri: "/"
         status: 200
-        body_content: '... AgentScope ...'
+        body_content: '... <title>AgentScope Studio</title> ...'
       },
       {
         uri: "/api/file?path=/etc/passwd"
@@ -38,7 +38,7 @@ tests: {
       {
         uri: "/"
         status: 200
-        body_content: '... AgentScope ...'
+        body_content: '... <title>AgentScope Studio</title> ...'
       },
       {
         uri: "TSUNAMI_MAGIC_ANY_URI"
