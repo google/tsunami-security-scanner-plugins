@@ -37,6 +37,23 @@ finding: {
 # because the original detector did not work correctly.
 
 actions: {
+  name: "fingerprint_nodered"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "<title>Node-RED</title>" }
+        ]
+      }
+    }
+  }
+}
+
+
+actions: {
   name: "check_traversal"
   http_request: {
     method: GET

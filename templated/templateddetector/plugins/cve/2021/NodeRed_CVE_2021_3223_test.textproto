@@ -12,6 +12,12 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
+        uri: "/"
+        status: 200
+        body_content: 
+          "... <title>Node-RED</title> ..."
+      },
+      {
         uri: "/ui_base/js/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd"
         status: 200
         body_content: 
@@ -36,7 +42,7 @@ tests: {
       {
         uri: "/"
         status: 200
-        body_content: '... Welcome to the Node-RED Dashboard ...'
+        body_content: '... <title>Node-RED</title> ...'
       },
       {
         uri: "/ui_base/js/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd"
