@@ -16,7 +16,7 @@ info: {
 
 finding: {
   main_id: {
-    publisher: "GOOGLE"
+    publisher: "TSUNAMI_COMMUNITY"
     value: "CVE-2024-36401"
   }
   title: "Geoserver RCE (CVE-2024-36401)"
