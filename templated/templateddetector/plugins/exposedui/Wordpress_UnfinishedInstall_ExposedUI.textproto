@@ -27,7 +27,6 @@ finding: {
   recommendation: "Do not leave this installation page in place. Either finish the installation or remove Wordpress."
 }
 
-config: {}
 
 ###########
 # ACTIONS #
