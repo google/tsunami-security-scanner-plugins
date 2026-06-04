@@ -44,11 +44,12 @@ actions: {
       { name: "uptrain-access-token" value: "default_key" }
     ]
     response: {
+      http_status: 422
       expect_all: {
         conditions: [
           { 
             body {} 
-            contains: '"loc":["query","project_id"]'
+            contains: '"detail":[{"type":"missing","loc":["query","project_id"],"msg":"Field required","input":null}]'
           }
         ]
       }

@@ -18,7 +18,7 @@ tests: {
     mock_responses: [
       {
         uri: "/api/public/project_runs"
-        status: 200
+        status: 422
         body_content: 
           '{"detail":[{"type":"missing","loc":["query","project_id"],"msg":"Field required","input":null}]}'
       },
@@ -45,7 +45,7 @@ tests: {
     mock_responses: [
       {
         uri: "/api/public/project_runs"
-        status: 200
+        status: 422
         body_content: 
           "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"query\","
             "\"project_id\"],\"msg\":\"Field required\",\"input\":n"
