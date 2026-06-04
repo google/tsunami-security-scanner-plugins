@@ -59,4 +59,4 @@ This directory contains plugins contributed by community members.
 
 #### Exposed UI / API
 
-*   [Ollama Exposed API Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/ollama_exposed_api)
+*   [Ollama Exposed API Detector, now updated to Templated format](https://github.com/google/tsunami-security-scanner-plugins/tree/master/templated/templateddetector/plugins/exposedui/Ollama_ExposedUI.textproto)
