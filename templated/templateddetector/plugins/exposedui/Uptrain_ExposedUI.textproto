@@ -85,6 +85,9 @@ actions: {
       "Content-Disposition: form-data; name=\"metadata\"\r\n\r\n"
       "{\"gpt-3.5-turbo\":{\"openai_api_key\":\"asdf\"}}\r\n"
       "------WebKitFormBoundarysFz2W1h9iMH4IFs9--\r\n"
+    response: {
+      http_status: 500
+    }
   }
 }
 

@@ -23,6 +23,12 @@ tests: {
           '{"detail":[{"type":"missing","loc":["query","project_id"],"msg":"Field required","input":null}]}'
       },
       {
+        uri: "/api/public/create_project"
+        status: 500
+        body_content: 
+          '... Internal Server Error ...'
+      },
+      {
         uri: "TSUNAMI_MAGIC_ANY_URI"
         status: 200
         body_content: 
@@ -50,6 +56,12 @@ tests: {
           "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"query\","
             "\"project_id\"],\"msg\":\"Field required\",\"input\":n"
             "ull}]}"
+      },
+      {
+        uri: "/api/public/create_project"
+        status: 500
+        body_content: 
+          '... Internal Server Error ...'
       },
       {
         uri: "TSUNAMI_MAGIC_ANY_URI"
