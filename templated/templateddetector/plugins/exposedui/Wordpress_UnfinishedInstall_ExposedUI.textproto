@@ -17,7 +17,7 @@ info: {
 finding: {
   main_id: {
     publisher: "GOOGLE"
-    value: "Wordpress_UnfinishedInstall_ExposedUI"
+    value: "UNFINISHED_WORD_PRESS_INSTALLATION"
   }
   severity: CRITICAL
   title: "Unfinished WordPress Installation"
