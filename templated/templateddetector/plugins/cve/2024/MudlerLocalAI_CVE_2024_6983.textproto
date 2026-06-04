@@ -158,6 +158,7 @@ actions: {
 #############
 
 workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
   variables: [
     { name: "CONFIG_FILE_URL" value: "https://raw.githubusercontent.com/google/tsunami-security-scanner-plugins/master/payloads/mudler_localai_rce/model.yaml" }
   ]
