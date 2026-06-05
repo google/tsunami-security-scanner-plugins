@@ -51,7 +51,7 @@ This directory contains plugins contributed by community members.
 
 #### XML External Entity (XXE) Injection
 
-*   [CVE-2019-9670 Synacor Zimbra Collaboration Suite XXE](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/zimbra_cve_2019_9670)
+*   [CVE-2019-9670 Synacor Zimbra Collaboration Suite XXE, now updated to Templated format](https://github.com/google/tsunami-security-scanner-plugins/tree/master/templated/templateddetector/plugins/cve/2019/Zimbra_CVE_2019_9670.textproto)
 
 #### Arbitrary File Read
 
