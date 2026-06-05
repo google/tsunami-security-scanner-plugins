@@ -87,7 +87,7 @@ actions: {
 
 actions: {
   name: "sleep"
-  utility: { sleep: { duration_ms: 1000 } }
+  utility: { sleep: { duration_ms: 5000 } }
 }
 
 actions: {
