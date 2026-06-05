@@ -26,6 +26,10 @@ finding: {
     " endpoints without authorization"
   recommendation:
     "Upgrade to Apache OFBiz patched version 18.12.13."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-32113"
+  }
 }
 
 ###########
