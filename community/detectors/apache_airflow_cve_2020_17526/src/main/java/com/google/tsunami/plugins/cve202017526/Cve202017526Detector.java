@@ -50,11 +50,13 @@ import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.HttpCookie;
 import java.net.URLEncoder;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -200,6 +202,38 @@ public final class Cve202017526Detector implements VulnDetector {
     }
   }
 
+  private String toTimestamp(long l) {
+    if (l < 0) {
+      throw new IllegalArgumentException("Timestamp must be non-negative");
+    }
+    if (l == 0) {
+      return "";
+    }
+    byte[] bytes = BigInteger.valueOf(l).toByteArray();
+    // Flask uses the base64 library to sign session cookies, which encodes timestamps
+    // by taking the Unix epoch seconds, converting it to the minimal number of bytes
+    // in big-endian order, and then encoding those bytes using URL-safe Base64.
+    //
+    // The equivalent of Python's `int_to_bytes` in Java is tricky. `BigInteger.toByteArray()`
+    // produces a two's-complement representation in big-endian order. For positive numbers,
+    // this representation must have a 0 sign bit. If a positive number's minimal byte
+    // representation would start with a byte >= 0x80 (i.e., MSB is 1), `toByteArray()`
+    // prepends an extra 0x00 byte to ensure the number is interpreted as positive.
+    //
+    // For example, timestamp 2147483648 (0x80000000) is encoded by base64 using 4 bytes
+    // `\x80\x00\x00\x00`, but `BigInteger.toByteArray()` returns 5 bytes: `\x00\x80\x00\x00\x00`.
+    //
+    // Since base64 does not expect this leading 0x00, we must remove it when present
+    // to ensure compatibility. The condition `bytes[0] == 0 && bytes.length > 1` detects
+    // and removes this extra byte.
+    if (bytes[0] == 0 && bytes.length > 1) {
+      byte[] tmp = new byte[bytes.length - 1];
+      System.arraycopy(bytes, 1, tmp, 0, bytes.length - 1);
+      bytes = tmp;
+    }
+    return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+  }
+
   private Map<String, String> getFreshCsrfTokenAndSessionCookie(NetworkService networkService)
       throws IOException {
     String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
@@ -208,7 +242,7 @@ public final class Cve202017526Detector implements VulnDetector {
     FlaskSessionSigner newToken =
         new FlaskSessionSigner(
             "{\"_fresh\":true,\"user_id\":1,\"_permanent\":true}",
-            "Zzx63w",
+            toTimestamp(utcClock.instant().getEpochSecond()),
             "temporary_key",
             "cookie-session");
 
