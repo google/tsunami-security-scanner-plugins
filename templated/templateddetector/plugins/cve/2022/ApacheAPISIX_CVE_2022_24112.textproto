@@ -115,7 +115,7 @@ actions: {
 
 actions: {
   name: "sleep"
-  utility: { sleep: { duration_ms: 1000 } }
+  utility: { sleep: { duration_ms: 6000 } }
 }
 actions: {
   name: "check_callback_server_logs"
@@ -191,7 +191,7 @@ actions: {
 
 actions: {
   name: "sleep_longer"
-  utility: { sleep: { duration_ms: 2000 } }
+  utility: { sleep: { duration_ms: 10000 } }
 }
 
 # check if our first route is true
@@ -202,7 +202,7 @@ actions: {
     method: GET
     uri: "/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}_1"
     response: {
-      http_status: 200
+      http_status: 503
     }
   }
 }

@@ -71,12 +71,12 @@ tests: {
       },
       {
         uri: "/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}_1"
-        status: 200
+        status: 503
         body_content: ''
       },
       {
         uri: "/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}_2"
-        status: 200
+        status: 503
         body_content: ''
       }
     ]
@@ -96,7 +96,7 @@ tests: {
       },
       {
         uri: "/tsunami_rce/{{ T_UTL_CURRENT_TIMESTAMP_MS }}_1"
-        status: 200
+        status: 503
         body_content: ''
       },
       {
