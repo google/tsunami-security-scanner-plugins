@@ -16,7 +16,7 @@ info: {
 
 finding: {
   main_id: {
-    publisher: "GOOGLE"
+    publisher: "TSUNAMI_COMMUNITY"
     value: "AgentScope_CVE_2024_8438"
   }
   severity: HIGH
