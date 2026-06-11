@@ -16,7 +16,7 @@ info: {
 
 finding: {
   main_id: {
-    publisher: "GOOGLE"
+    publisher: "TSUNAMI_COMMUNITY"
     value: "CVE-2022-24112"
   }
   title: "Apache APISIX RCE (CVE-2022-24112)"
