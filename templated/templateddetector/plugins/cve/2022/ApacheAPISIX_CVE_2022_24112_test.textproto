@@ -17,6 +17,14 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
+        uri: "/"
+        status: 200
+        body_content: ''
+        headers: [
+          { name: "Server" value: "APISIX" }
+        ]
+      },
+      {
         uri: "/apisix/batch-requests"
         status: 200
         body_content: '{"status":201}'
@@ -42,6 +50,14 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
+        uri: "/"
+        status: 200
+        body_content: ''
+        headers: [
+          { name: "Server" value: "APISIX" }
+        ]
+      },
+      {
         uri: "/apisix/batch-requests"
         status: 200
         body_content: '{"status":201}'
@@ -64,6 +80,14 @@ tests: {
 
   mock_http_server: {
     mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: ''
+        headers: [
+          { name: "Server" value: "APISIX" }
+        ]
+      },
       {
         uri: "/apisix/batch-requests"
         status: 200
@@ -89,6 +113,14 @@ tests: {
 
   mock_http_server: {
     mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: ''
+        headers: [
+          { name: "Server" value: "APISIX" }
+        ]
+      },
       {
         uri: "/apisix/batch-requests"
         status: 200

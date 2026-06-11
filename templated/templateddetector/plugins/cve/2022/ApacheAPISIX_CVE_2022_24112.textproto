@@ -38,6 +38,28 @@ finding: {
 # ACTIONS #
 ###########
 
+
+# Fingerprint APISIX. 
+# Using multiple cases in case it gets normalized or is different in different versions.
+
+actions: {
+  name: "fingerprint_apisix"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      expect_any: {
+        conditions: [
+          { header: { name: "Server" } contains: "APISIX" },
+          { header: { name: "Server" } contains: "ApiSix" },
+          { header: { name: "Server" } contains: "apisix" },
+          { header: { name: "Server" } contains: "Apisix" }
+        ]
+      }
+    }
+  }
+}
+
 actions: {
   name: "register_route"
   http_request: {
@@ -294,6 +316,7 @@ workflows: {
     { name: "PIPE_REQ_FILTER_FUNC" value: "function(vars) os.execute('{{ PAYLOAD }}'); return true end" }
   ]
   actions: [
+    "fingerprint_apisix",
     "register_route",
     "sleep",
     "execute_route",
@@ -312,6 +335,7 @@ workflows: {
     { name: "PIPE_REQ_FILTER_FUNC_2" value: "function(vars) return false end" }
   ]
   actions: [
+    "fingerprint_apisix",
     "register_route_1",
     "register_route_2",
     "sleep_longer",
