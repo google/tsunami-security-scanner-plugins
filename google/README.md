@@ -21,7 +21,7 @@ This directory contains all Tsunami plugins published by Google.
 *   [Ncrack Weak Credential Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/credentials/ncrack)
 
 #### Exposed Sensitive UI/API
-*   [Exposed Elasticsearch API Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/elasticsearch)
+*   [Exposed Elasticsearch API Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/templated/templateddetector/plugins/exposedui/Elasticsearch_ExposedUI.textproto)
 *   [Exposed Hadoop Yarn ResourceManager API Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/hadoop/yarn)
 *   [Exposed Jenkins UI Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/jenkins)
 *   [Exposed Jupyter Notebook Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/jupyter)
