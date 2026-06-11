@@ -319,5 +319,3 @@ workflows: {
     "execute_route_2"
   ]
 }
-
-config: { debug: true }
