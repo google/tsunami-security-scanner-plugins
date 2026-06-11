@@ -31,6 +31,7 @@ tests: {
         headers: [
           { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
         ]
+        body_content: "... Saved successfully ..."
       },
       {
         uri: "/app?service=page/PrinterList"
@@ -94,6 +95,7 @@ tests: {
         headers: [
           { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
         ]
+        body_content: "... Saved successfully ..."
       },
       {
         uri: "/app?service=page/PrinterList"
@@ -147,6 +149,136 @@ tests: {
         uri:  "TSUNAMI_MAGIC_ANY_URI"
         status: 200
         body_content: "... Hello world ..."
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      }
+    ]
+  }
+}
+
+# non-callback tests
+
+tests: {
+  name: "whenReflectiveVuln_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/app?service=page/SetupCompleted"
+        status: 200
+        body_content: "... Configuration Wizard : Setup Complete ..."
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+        body_content: "... Saved successfully ..."
+      },
+      {
+        uri: "/app?service=page/PrinterList"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app?service=direct/1/PrinterList/selectPrinter&sp=l1001"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app?service=direct/1/PrinterDetails/printerOptionsTab.tab&sp=4"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenReflectiveNotVuln_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/app?service=page/SetupCompleted"
+        status: 200
+        body_content: "... Configuration Wizard : Setup Complete ..."
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+        body_content: "... Error ..."
+      },
+      {
+        uri: "/app?service=page/PrinterList"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app?service=direct/1/PrinterList/selectPrinter&sp=l1001"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app?service=direct/1/PrinterDetails/printerOptionsTab.tab&sp=4"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: '{"status":200}'
         headers: [
           { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
         ]
