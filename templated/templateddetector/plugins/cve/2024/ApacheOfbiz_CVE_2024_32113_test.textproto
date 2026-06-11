@@ -17,13 +17,13 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/webtools/control/forgotPassword/foo/../ProgramExport"
+        uri: "/webtools/control/main"
         status: 200
         body_content: 
-          '...'
+          '... <title>OFBiz: Web Tools: Web Tools Main Page</title> ...'
       },
       {
-        uri: "/"
+        uri: "/webtools/control/forgotPassword/foo/../ProgramExport"
         status: 200
         body_content: 
           '...'
@@ -45,16 +45,62 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
+        uri: "/webtools/control/main"
+        status: 200
+        body_content: 
+          '... <title>OFBiz: Web Tools: Web Tools Main Page</title> ...'
+      },
+      {
         uri: "/webtools/control/forgotPassword/foo/../ProgramExport"
         status: 200
         body_content: 
           '...'
-      },
+      }
+    ]
+  }
+}
+
+# non-callback tests
+
+tests: {
+  name: "whenReflectiveVulnerable_returnsVuln"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
       {
-        uri: "/"
+        uri: "/webtools/control/main"
         status: 200
         body_content: 
-          '...'
+          '... <title>OFBiz: Web Tools: Web Tools Main Page</title> ...'
+      },
+      {
+        uri: "/webtools/control/forgotPassword/foo/../ProgramExport"
+        status: 200
+        body_content: 
+          '... 1f21f020c9 ...'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenReflectiveNotVulnerable_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/webtools/control/main"
+        status: 200
+        body_content: 
+          '... <title>OFBiz: Web Tools: Web Tools Main Page</title> ...'
+      },
+      {
+        uri: "/webtools/control/forgotPassword/foo/../ProgramExport"
+        status: 200
+        body_content: 
+          '... 133713371337 ...'
       }
     ]
   }
