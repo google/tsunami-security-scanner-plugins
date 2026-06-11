@@ -11,13 +11,13 @@ info: {
   author: 
     "Robert Dick (robert@doyensec.com) for the Templated version, "
     "yuradoc (yuradoc.research@gmail.com)"
-  version: "0.1"
+  version: "2.0"
 }
 
 finding: {
   main_id: {
-    publisher: "GOOGLE"
-    value: "FLOWISE_EXPOSED_UI"
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "FLOWISE_UI_EXPOSED"
   }
   title: "Flowise Exposed UI"
   description: "Flowise UI instance is exposed without proper authentication."
