@@ -16,7 +16,7 @@ info: {
 
 finding: {
   main_id: {
-    publisher: "GOOGLE"
+    publisher: "TSUNAMI_COMMUNITY"
     value: "Slurm_ExposedUI"
   }
   severity: CRITICAL
