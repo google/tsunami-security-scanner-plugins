@@ -26,7 +26,7 @@ tests: {
         uri: "/"
         status: 200
         body_content: 
-          '...'
+          '... consul-ui ...'
       }
     ]
   }
@@ -54,7 +54,75 @@ tests: {
         uri: "/"
         status: 200
         body_content: 
+          '... consul-ui ...'
+      }
+    ]
+  }
+}
+
+# non-callback tests
+
+tests: {
+  name: "whenReflectiveVulnerable_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/v1/agent/service/register?replace-existing-checks=true"
+        status: 200
+        body_content: 
           '...'
+      },
+      {
+        uri: "/v1/health/service/TSUNAMI_RCE_TEST"
+        status: 200
+        body_content: 
+          "... 1f21f020c9 ..."
+      },
+      {
+        uri: "/"
+        status: 200
+        body_content: 
+          '... consul-ui ...'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenReflectiveNotVulnerable_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/v1/agent/service/register?replace-existing-checks=true"
+        status: 200
+        body_content: 
+          '...'
+      },
+      {
+        uri: "/v1/health/service/TSUNAMI_RCE_TEST"
+        status: 200
+        body_content: 
+          "... 133713371337 ..."
+      },
+      {
+        uri: "/"
+        status: 200
+        body_content: 
+          '... consul-ui ...'
       }
     ]
   }
