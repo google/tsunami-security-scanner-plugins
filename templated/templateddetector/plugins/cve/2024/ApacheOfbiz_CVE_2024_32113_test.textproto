@@ -5,6 +5,11 @@ config: {
   tested_plugin: "ApacheOfbiz_CVE_2024_32113"
 }
 
+# Note: even though the request includes path traversal characters,
+# the tests seem to normalize the path in the request. Therefore, 
+# we have to make listeners on the normalized path instead of the 
+# one containing path traversal characters.
+
 tests: {
   name: "whenOobVulnerable_returnsVuln"
   expect_vulnerability: true
@@ -23,7 +28,7 @@ tests: {
           '... <title>OFBiz: Web Tools: Web Tools Main Page</title> ...'
       },
       {
-        uri: "/webtools/control/forgotPassword/foo/../ProgramExport"
+        uri: "/webtools/control/forgotPassword/ProgramExport"
         status: 200
         body_content: 
           '...'
@@ -51,7 +56,7 @@ tests: {
           '... <title>OFBiz: Web Tools: Web Tools Main Page</title> ...'
       },
       {
-        uri: "/webtools/control/forgotPassword/foo/../ProgramExport"
+        uri: "/webtools/control/forgotPassword/ProgramExport"
         status: 200
         body_content: 
           '...'
@@ -75,7 +80,7 @@ tests: {
           '... <title>OFBiz: Web Tools: Web Tools Main Page</title> ...'
       },
       {
-        uri: "/webtools/control/forgotPassword/foo/../ProgramExport"
+        uri: "/webtools/control/forgotPassword/ProgramExport"
         status: 200
         body_content: 
           '... 1f21f020c9 ...'
@@ -97,7 +102,7 @@ tests: {
           '... <title>OFBiz: Web Tools: Web Tools Main Page</title> ...'
       },
       {
-        uri: "/webtools/control/forgotPassword/foo/../ProgramExport"
+        uri: "/webtools/control/forgotPassword/ProgramExport"
         status: 200
         body_content: 
           '... 133713371337 ...'
