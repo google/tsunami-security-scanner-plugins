@@ -27,7 +27,6 @@ tests: {
       {
         uri: "/app"
         status: 200
-        body_content: '{"status":200}'
         headers: [
           { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
         ]
@@ -91,7 +90,6 @@ tests: {
       {
         uri: "/app"
         status: 200
-        body_content: '{"status":200}'
         headers: [
           { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
         ]
@@ -163,10 +161,6 @@ tests: {
   name: "whenReflectiveVuln_returnsVuln"
   expect_vulnerability: true
 
-  mock_callback_server: {
-    enabled: false
-    has_interaction: false
-  }
 
   mock_http_server: {
     mock_responses: [
@@ -181,7 +175,6 @@ tests: {
       {
         uri: "/app"
         status: 200
-        body_content: '{"status":200}'
         headers: [
           { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
         ]
@@ -224,13 +217,8 @@ tests: {
 }
 
 tests: {
-  name: "whenReflectiveNotVuln_returnsVuln"
-  expect_vulnerability: true
-
-  mock_callback_server: {
-    enabled: false
-    has_interaction: false
-  }
+  name: "whenReflectiveNotVuln_returnsNotVuln"
+  expect_vulnerability: false
 
   mock_http_server: {
     mock_responses: [
@@ -245,11 +233,10 @@ tests: {
       {
         uri: "/app"
         status: 200
-        body_content: '{"status":200}'
         headers: [
           { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
         ]
-        body_content: "... Error ..."
+        body_content: '{"status":200}'
       },
       {
         uri: "/app?service=page/PrinterList"
