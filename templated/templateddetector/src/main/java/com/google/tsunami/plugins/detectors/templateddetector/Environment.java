@@ -46,6 +46,9 @@ public final class Environment {
         this.set("T_CBS_URI", tcsClient.getCallbackUri(secret));
         this.set("T_CBS_ADDRESS", tcsClient.getCallbackAddress());
         this.set("T_CBS_PORT", String.valueOf(tcsClient.getCallbackPort()));
+        if (tcsClient.isDnsCallback()) {
+          this.set("T_CBS_DNS", tcsClient.getCallbackDns(secret));
+        }
       }
     }
 
