@@ -1,0 +1,95 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+
+# TODO
+
+info: {
+  type: VULN_DETECTION
+  name: "Joomla_CVE_2023_23752"
+  author: "Am0o0"
+  version: "2.0"
+  description: "This detector checks whether an unfinished Joomla installation is exposed"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE_2023_23752"
+  }
+  severity: CRITICAL
+  title: "Joomla Unauthorized Access to Webservice Endpoints"
+  description: 
+    "CVE-2023-23752: An improper access check allows unauthorized access to"
+    " webservice endpoints. attacker can get the host address "
+    "and username and password of the configured joomla database."
+  recommendation: "Upgrade Joomla to 4.2.8 and above versions."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2023-23752"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+# this fingerprinting step is light, but the original didn't have a fingerprinting step at all.
+# kept only "joomla" in case the title changes by version. joomla is used in multiple places in the HTML.
+
+actions: {
+  name: "fingerprint_joomla"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "joomla" }
+        ]
+      }
+    }
+  }
+}
+
+# even though we can't parse JSON, we can still check the types of each entry with '"', '[', and '{'
+
+actions: {
+  name: "check_exposure"
+  http_request: {
+    method: GET
+    uri: "/api/index.php/v1/config/application?public=true"
+    headers: [
+      { name: "Accept" value: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8" }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"password\":\"" },
+          { body: {} contains: "\"user\":\"" },
+          { body: {} contains: "\"data\":[" },
+          { body: {} contains: "\"attributes\":{" }
+        ]
+      }
+    }
+  }
+}
+
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_joomla",
+    "check_exposure"
+  ]
+}
