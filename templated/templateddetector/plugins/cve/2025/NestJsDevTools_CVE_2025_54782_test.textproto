@@ -1,0 +1,79 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "NestJsDevTools_CVE_2025_54782"
+}
+
+# --- TEST 1: VULNERABLE ENVIRONMENT ---
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "NestJS DevTools Tsunami Training Lab"
+      },
+      {
+        uri: "/inspector/graph/interact"
+        status: 200
+        body_content: "{\"status\":\"ok\",\"marker\":\"TSUNAMI_TEST\",\"message\":\"Code executed inside sandbox\"}"
+      }
+    ]
+  }
+}
+
+# --- TEST 2: SECURE/PATCHED ENVIRONMENT ---
+tests: {
+  name: "whenPatchedOrNoCallback_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "NestJS DevTools Tsunami Training Lab"
+      },
+      {
+        uri: "/inspector/graph/interact"
+        status: 200
+        body_content: "{\"status\":\"error\",\"message\":\"VM Context sandbox escape blocked or evaluated string failed to escape\"}"
+      }
+    ]
+  }
+}
+
+# --- TEST 3: UNRELATED ENDPOINT (NON-NESTJS SERVICE) ---
+tests: {
+  name: "whenNotNestJsDevTools_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Apache Default Welcome Page"
+      }
+    ]
+  }
+}

