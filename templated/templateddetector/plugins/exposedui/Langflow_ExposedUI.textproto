@@ -33,7 +33,6 @@ finding: {
     "also ensure that Langflow is updated. "
 }
 
-config: { debug: true }
 
 ###########
 # ACTIONS #
