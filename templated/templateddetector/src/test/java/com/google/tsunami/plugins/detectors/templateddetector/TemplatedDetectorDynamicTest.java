@@ -16,7 +16,6 @@
 package com.google.tsunami.plugins.detectors.templateddetector;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
@@ -184,41 +183,44 @@ public final class TemplatedDetectorDynamicTest {
   }
 
   private final void prepareMockServer(ImmutableList<MockHttpServer.MockResponse> mockResponses) {
-    var responseMap =
-        mockResponses.stream()
-            .collect(
-                toImmutableMap(
-                    r -> {
-                      var uri = this.environment.substitute(r.getUri());
-                      if (!uri.startsWith("/")) {
-                        return "/" + uri;
-                      }
-                      return uri;
-                    },
-                    r -> r));
-
     Dispatcher dispatcher =
         new Dispatcher() {
           @Override
           public MockResponse dispatch(RecordedRequest request) throws InterruptedException {
-            if (responseMap.containsKey(request.getPath())) {
-              return dispatchResponse(request, responseMap.get(request.getPath()));
+            String requestPathWithQuery = request.getPath();
+            String requestPathWithoutQuery = request.getRequestUrl().encodedPath();
+
+            for (MockHttpServer.MockResponse response : mockResponses) {
+              String expectedUri = environment.substitute(response.getUri());
+              if (!expectedUri.startsWith("/") && !expectedUri.startsWith("TSUNAMI_MAGIC")) {
+                expectedUri = "/" + expectedUri;
+              }
+              if ((expectedUri.equals(requestPathWithQuery)
+                      || expectedUri.equals(requestPathWithoutQuery))
+                  && matchesConditions(request, response)) {
+                return createResponse(response);
+              }
             }
 
             // Magic that matches any URI.
-            if (responseMap.containsKey("TSUNAMI_MAGIC_ANY_URI")) {
-              return dispatchResponse(request, responseMap.get("TSUNAMI_MAGIC_ANY_URI"));
+            for (MockHttpServer.MockResponse response : mockResponses) {
+              if (response.getUri().equals("TSUNAMI_MAGIC_ANY_URI")
+                  && matchesConditions(request, response)) {
+                return createResponse(response);
+              }
             }
 
             // Magic that makes the server behave as an echo server.
-            if (responseMap.containsKey("TSUNAMI_MAGIC_ECHO_SERVER")) {
-              var content =
-                  request.toString()
-                      + "\n"
-                      + request.getHeaders().toString()
-                      + "\n"
-                      + request.getUtf8Body();
-              return new MockResponse().setBody(content);
+            for (MockHttpServer.MockResponse response : mockResponses) {
+              if (response.getUri().equals("TSUNAMI_MAGIC_ECHO_SERVER")) {
+                var content =
+                    request.toString()
+                        + "\n"
+                        + request.getHeaders().toString()
+                        + "\n"
+                        + request.getUtf8Body();
+                return new MockResponse().setBody(content);
+              }
             }
 
             logger.atInfo().log("MockHTTP: No response for request to '%s'", request.getPath());
@@ -229,34 +231,52 @@ public final class TemplatedDetectorDynamicTest {
     mockWebServer.setDispatcher(dispatcher);
   }
 
-  private final MockResponse dispatchResponse(
+  private final boolean matchesConditions(
       RecordedRequest request, MockHttpServer.MockResponse response) {
-    // ensure the headers condition are met.
-    if (response.getCondition().getHeadersCount() > 0) {
-      for (var h : response.getCondition().getHeadersList()) {
-        var expectedHeader = environment.substitute(h.getValue());
-        var seenHeader = request.getHeader(h.getName());
-        if (seenHeader == null || !expectedHeader.equals(seenHeader)) {
-          logger.atInfo().log(
-              "Header '%s', got:'%s' want:'%s', returning 404",
-              h.getName(), seenHeader, expectedHeader);
-          return new MockResponse().setResponseCode(404);
-        }
+    var cond = response.getCondition();
+
+    for (var h : cond.getHeadersList()) {
+      var expectedHeader = environment.substitute(h.getValue());
+      var seenHeader = request.getHeader(h.getName());
+      if (seenHeader == null || !expectedHeader.equals(seenHeader)) {
+        logger.atInfo().log(
+            "Header '%s', got:'%s' want:'%s', returning false",
+            h.getName(), seenHeader, expectedHeader);
+        return false;
+      }
+    }
+
+    for (var p : cond.getGetParameterList()) {
+      var expectedValue = environment.substitute(p.getValue());
+      var seenValue = request.getRequestUrl().queryParameter(p.getName());
+      if (seenValue == null || !expectedValue.equals(seenValue)) {
+        logger.atInfo().log(
+            "Query param '%s', got:'%s' want:'%s', returning false",
+            p.getName(), seenValue, expectedValue);
+        return false;
+      }
+    }
+
+    // ensure request type is met.
+    if (cond.getRequestType() != MockHttpServer.HttpMethod.UNKNOWN) {
+      var expectedType = cond.getRequestType().name();
+      var seenType = request.getMethod();
+      if (!expectedType.equals(seenType)) {
+        logger.atInfo().log("Method got:'%s' want:'%s', returning false", seenType, expectedType);
+        return false;
       }
     }
 
     // ensure the body content condition are met.
-    if (response.getCondition().getBodyContentCount() > 0) {
-      for (var b : response.getCondition().getBodyContentList()) {
-        if (!request.getUtf8Body().contains(environment.substitute(b))) {
-          logger.atInfo().log(
-              "Body content did not match content condition with '%s', returning 404", b);
-          return new MockResponse().setResponseCode(404);
-        }
+    for (var b : cond.getBodyContentList()) {
+      if (!request.getUtf8Body().contains(environment.substitute(b))) {
+        logger.atInfo().log(
+            "Body content did not match content condition with '%s', returning false", b);
+        return false;
       }
     }
 
-    return createResponse(response);
+    return true;
   }
 
   private final MockResponse createResponse(MockHttpServer.MockResponse testResponse) {
