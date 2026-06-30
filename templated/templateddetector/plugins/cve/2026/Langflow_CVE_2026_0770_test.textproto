@@ -1,0 +1,75 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Langflow_CVE_2026_0770"
+}
+
+#######
+# TESTS #
+#######
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      # 1. Fingerprint Langflow
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <title>Langflow</title>\n  </head>\n  <body><div id=\"root\"></div></body>\n</html>"
+      },
+      # 2. Detect Code Execution Response (Unauthenticated)
+      {
+        uri: "/api/v1/validate/code"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"imports\":{\"errors\":[]},\"function\":{\"errors\":[\"b'root:x:0:0:root:/root:/bin/bash\\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\\nuser:x:1000:0::/app/data:/bin/sh\\n'\"]}}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      # 1. Fingerprint Langflow
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html>\n<html><head><title>Langflow</title></head></html>"
+      },
+      # 2. Code Validation endpoint handles input safely or returns clean response
+      {
+        uri: "/api/v1/validate/code"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"imports\":{\"errors\":[]},\"function\":{\"errors\":[]}}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotLangflow_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
