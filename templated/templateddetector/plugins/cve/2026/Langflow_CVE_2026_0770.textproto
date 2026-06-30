@@ -3,7 +3,7 @@
 
 ################
 # PLUGIN INFO #
-###############
+################
 
 info: {
   type: VULN_DETECTION

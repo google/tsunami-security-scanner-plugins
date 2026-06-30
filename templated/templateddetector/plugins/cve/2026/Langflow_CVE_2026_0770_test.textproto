@@ -7,7 +7,7 @@ config: {
 
 ########
 # TESTS #
-########
+#########
 
 tests: {
   name: "whenVulnerable_returnsTrue"
