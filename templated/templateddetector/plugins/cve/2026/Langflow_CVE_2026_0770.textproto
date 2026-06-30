@@ -1,9 +1,9 @@
 # proto-file: proto/templated_plugin.proto
 # proto-message: TemplatedPlugin
 
-################
+###############
 # PLUGIN INFO #
-################
+###############
 
 info: {
   type: VULN_DETECTION
