@@ -5,9 +5,9 @@ config: {
   tested_plugin: "Langflow_CVE_2026_0770"
 }
 
-#######
+########
 # TESTS #
-#######
+########
 
 tests: {
   name: "whenVulnerable_returnsTrue"
