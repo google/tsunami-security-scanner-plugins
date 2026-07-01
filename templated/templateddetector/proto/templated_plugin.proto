@@ -75,6 +75,36 @@ message PluginConfig {
   bool debug = 2;
 }
 
+message Credential {
+  // The login to use for the authentication (i.e. username or email)
+  string login = 1;
+
+  // The password to use for the authentication.
+  string password = 2;
+}
+
+// Generic information the service being targeted by the plugin. This is mostly
+// used to guide our weak credentials brute-forcers.
+message ServiceInformation {
+  enum AuthenticationType {
+    AUTHENTICATION_TYPE_UNKNOWN = 0;
+    AUTHENTICATION_TYPE_USERNAME_PASSWORD = 1;
+    AUTHENTICATION_TYPE_PASSWORD_ONLY = 2;
+  }
+
+  // What type of authentication does the service use? (e.g. username and
+  // password, password only, etc.)
+  optional AuthenticationType authentication_type = 1;
+
+  // A list of default known credentials for that service, if available.
+  repeated Credential default_credentials = 2;
+
+  // A list of known common credentials for that service, if available. These
+  // are not defaults but are known to often be configured from online
+  // playbooks, forums, etc...
+  repeated Credential common_credentials = 3;
+}
+
 message TemplatedPlugin {
   // Plugin metadata, such as its name, author and description.
   tsunami.proto.PluginInfo info = 1;
@@ -90,4 +120,7 @@ message TemplatedPlugin {
 
   // Workflows that the plugin can run.
   repeated PluginWorkflow workflows = 5;
+
+  // Information about the service that this plugin targets.
+  ServiceInformation service_information = 6;
 }
