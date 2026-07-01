@@ -1,0 +1,75 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "NodeRed_CVE_2021_3223"
+}
+
+tests: {
+  name: "whenVuln_returnsVuln"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: 
+          "... <title>Node-RED</title> ..."
+      },
+      {
+        uri: "/ui_base/js/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd"
+        status: 200
+        body_content: 
+          "root:x:0:0:root:/root:/bin/ash\n"
+          "bin:x:1:1:bin:/bin:/sbin/nologin"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: '{"status":200}'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVuln_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '... <title>Node-RED</title> ...'
+      },
+      {
+        uri: "/ui_base/js/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd"
+        status: 404
+        body_content: 'Not Found'
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: '{"status":200}'
+      }
+    ]
+  }
+}
+
+
+tests: {
+  name: "whenRandomServer_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri:  "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "... Hello world ..."
+      }
+    ]
+  }
+}
