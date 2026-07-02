@@ -110,12 +110,11 @@ actions: {
       }
     }
   }
+  cleanup_actions: ["delete_session"]
 }
 
-# normally we would do this as a cleanup step, but the later steps depend on this session being deleted already.
-
 actions: {
-  name: "delete_first_session"
+  name: "delete_session"
   http_request: {
     method: DELETE
     uri: "/wd/hub/session/{{ SESSIONID1 }}"
@@ -137,108 +136,13 @@ actions: {
   callback_server: { action_type: CHECK }
 }
 
-# the remaining steps are only used in the reflective rce workflow
-
-# first we have to create a valid session, 
-# since the first session is expected to have crashed
-
-actions: {
-  name: "create_reflective_rce_session"
-  http_request: {
-    method: POST
-    uri: "/wd/hub/session"
-    headers: [
-      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
-      { name: "Content-Type" value: "application/json"}
-    ]
-    data: 
-      '{'
-      '  "capabilities": {'
-      '    "firstMatch": ['
-      '      {}'
-      '    ],'
-      '    "alwaysMatch": {'
-      '      "browserName": "chrome",'
-      '      "pageLoadStrategy": "normal",'
-      '      "platformName": "linux",'
-      '      "cloud:options": {'
-      '        "build": "RCE",'
-      '        "name": "RCE"'
-      '      },'
-      '      "goog:chromeOptions": {'
-      '        "extensions": []'
-      '      }'
-      '    }'
-      '  }'
-      '}'
-    response: {
-      http_status: 200
-      extract_all: {
-        patterns: [
-          {
-            from_body: {}
-            regexp: '"sessionId": "([^"]+)"'
-            variable_name: "SESSIONID2"
-          }
-        ]
-      }
-    }
-  }
-  cleanup_actions: ["delete_second_session"]
-}
-
-# navigate to the created file
-
-actions: {
-  name: "navigate_to_reflective_rce_output"
-  http_request: {
-    method: POST
-    uri: "/wd/hub/session/{{ SESSIONID2 }}/url"
-    headers: [
-      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
-      { name: "Content-Type" value: "application/json"}
-    ]
-    data: 
-      '{"url": "file:///tmp/tsunami_tmp.txt"}'
-  }
-}
-
-actions: {
-  name: "check_reflective_rce_output"
-  http_request: {
-    method: GET
-    uri: "/wd/hub/session/{{ SESSIONID2 }}/source"
-    headers: [
-      { name: "User-Agent" value: "TSUNAMI_SCANNER"}
-    ]
-    response: {
-      http_status: 200
-      expect_all: {
-        conditions: [
-          { body: {} contains: "{{ OUTPUT }}" }
-        ]
-      }
-    }
-  }
-}
-
-actions: {
-  name: "delete_second_session"
-  http_request: {
-    method: DELETE
-    uri: "/wd/hub/session/{{ SESSIONID2 }}"
-    headers: [
-      { name: "User-Agent" value: "TSUNAMI_SCANNER"}
-    ]
-  }
-}
-
-config: { debug: true }
-
 
 #############
 # WORKFLOWS #
 #############
+
+# This is only out of band detection, had errors implementing the reflective version correctly
+# that were taking a while to debug.
 
 workflows: {
   condition: REQUIRES_CALLBACK_SERVER
@@ -250,26 +154,6 @@ workflows: {
     "execute_payload",
     "sleep",
     "check_callback_server_logs"
-  ]
-}
-
-# reflective payload changed some from the original. original used curl error output.
-# this way seems more reliable and simpler
-
-workflows: {
-  variables: [
-    { name: "PAYLOAD" value: "curl --trace /tmp/tsunami_tmp.txt tsunami-selenium-rce-executed" },
-    { name: "OUTPUT" value: "tsunami-selenium-rce-executed" }
-  ]
-  actions: [
-    "fingerprint_selenium_grid",
-    "execute_payload",
-    "sleep",
-    "delete_first_session",
-    "sleep",
-    "create_reflective_rce_session",
-    "navigate_to_reflective_rce_output",
-    "check_reflective_rce_output"
   ]
 }
 
