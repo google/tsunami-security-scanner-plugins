@@ -63,6 +63,50 @@ func (x PluginWorkflow_Condition) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
+type ServiceInformation_AuthenticationType int32
+
+const (
+	ServiceInformation_AUTHENTICATION_TYPE_UNKNOWN           ServiceInformation_AuthenticationType = 0
+	ServiceInformation_AUTHENTICATION_TYPE_USERNAME_PASSWORD ServiceInformation_AuthenticationType = 1
+	ServiceInformation_AUTHENTICATION_TYPE_PASSWORD_ONLY     ServiceInformation_AuthenticationType = 2
+)
+
+// Enum value maps for ServiceInformation_AuthenticationType.
+var (
+	ServiceInformation_AuthenticationType_name = map[int32]string{
+		0: "AUTHENTICATION_TYPE_UNKNOWN",
+		1: "AUTHENTICATION_TYPE_USERNAME_PASSWORD",
+		2: "AUTHENTICATION_TYPE_PASSWORD_ONLY",
+	}
+	ServiceInformation_AuthenticationType_value = map[string]int32{
+		"AUTHENTICATION_TYPE_UNKNOWN":           0,
+		"AUTHENTICATION_TYPE_USERNAME_PASSWORD": 1,
+		"AUTHENTICATION_TYPE_PASSWORD_ONLY":     2,
+	}
+)
+
+func (x ServiceInformation_AuthenticationType) Enum() *ServiceInformation_AuthenticationType {
+	p := new(ServiceInformation_AuthenticationType)
+	*p = x
+	return p
+}
+
+func (x ServiceInformation_AuthenticationType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ServiceInformation_AuthenticationType) Descriptor() protoreflect.EnumDescriptor {
+	return file_templated_plugin_proto_enumTypes[1].Descriptor()
+}
+
+func (ServiceInformation_AuthenticationType) Type() protoreflect.EnumType {
+	return &file_templated_plugin_proto_enumTypes[1]
+}
+
+func (x ServiceInformation_AuthenticationType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // An action is a single unit of work that the plugin can perform. For example
 // sending an HTTP request. Each returns a boolean indicating whether the
 // action was successful and the last running action defines whether the
@@ -492,20 +536,211 @@ func (b0 PluginConfig_builder) Build() *PluginConfig {
 	return m0
 }
 
+type Credential struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Login    string                 `protobuf:"bytes,1,opt,name=login,proto3"`
+	xxx_hidden_Password string                 `protobuf:"bytes,2,opt,name=password,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *Credential) Reset() {
+	*x = Credential{}
+	mi := &file_templated_plugin_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Credential) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Credential) ProtoMessage() {}
+
+func (x *Credential) ProtoReflect() protoreflect.Message {
+	mi := &file_templated_plugin_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *Credential) GetLogin() string {
+	if x != nil {
+		return x.xxx_hidden_Login
+	}
+	return ""
+}
+
+func (x *Credential) GetPassword() string {
+	if x != nil {
+		return x.xxx_hidden_Password
+	}
+	return ""
+}
+
+func (x *Credential) SetLogin(v string) {
+	x.xxx_hidden_Login = v
+}
+
+func (x *Credential) SetPassword(v string) {
+	x.xxx_hidden_Password = v
+}
+
+type Credential_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The login to use for the authentication (i.e. username or email)
+	Login string
+	// The password to use for the authentication.
+	Password string
+}
+
+func (b0 Credential_builder) Build() *Credential {
+	m0 := &Credential{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Login = b.Login
+	x.xxx_hidden_Password = b.Password
+	return m0
+}
+
+// Generic information the service being targeted by the plugin. This is mostly
+// used to guide our weak credentials brute-forcers.
+type ServiceInformation struct {
+	state                         protoimpl.MessageState                `protogen:"opaque.v1"`
+	xxx_hidden_AuthenticationType ServiceInformation_AuthenticationType `protobuf:"varint,1,opt,name=authentication_type,json=authenticationType,proto3,enum=tsunami_templated_detector.ServiceInformation_AuthenticationType,oneof"`
+	xxx_hidden_DefaultCredentials *[]*Credential                        `protobuf:"bytes,2,rep,name=default_credentials,json=defaultCredentials,proto3"`
+	xxx_hidden_CommonCredentials  *[]*Credential                        `protobuf:"bytes,3,rep,name=common_credentials,json=commonCredentials,proto3"`
+	XXX_raceDetectHookData        protoimpl.RaceDetectHookData
+	XXX_presence                  [1]uint32
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
+}
+
+func (x *ServiceInformation) Reset() {
+	*x = ServiceInformation{}
+	mi := &file_templated_plugin_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ServiceInformation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ServiceInformation) ProtoMessage() {}
+
+func (x *ServiceInformation) ProtoReflect() protoreflect.Message {
+	mi := &file_templated_plugin_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ServiceInformation) GetAuthenticationType() ServiceInformation_AuthenticationType {
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 0) {
+			return x.xxx_hidden_AuthenticationType
+		}
+	}
+	return ServiceInformation_AUTHENTICATION_TYPE_UNKNOWN
+}
+
+func (x *ServiceInformation) GetDefaultCredentials() []*Credential {
+	if x != nil {
+		if x.xxx_hidden_DefaultCredentials != nil {
+			return *x.xxx_hidden_DefaultCredentials
+		}
+	}
+	return nil
+}
+
+func (x *ServiceInformation) GetCommonCredentials() []*Credential {
+	if x != nil {
+		if x.xxx_hidden_CommonCredentials != nil {
+			return *x.xxx_hidden_CommonCredentials
+		}
+	}
+	return nil
+}
+
+func (x *ServiceInformation) SetAuthenticationType(v ServiceInformation_AuthenticationType) {
+	x.xxx_hidden_AuthenticationType = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
+}
+
+func (x *ServiceInformation) SetDefaultCredentials(v []*Credential) {
+	x.xxx_hidden_DefaultCredentials = &v
+}
+
+func (x *ServiceInformation) SetCommonCredentials(v []*Credential) {
+	x.xxx_hidden_CommonCredentials = &v
+}
+
+func (x *ServiceInformation) HasAuthenticationType() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *ServiceInformation) ClearAuthenticationType() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_AuthenticationType = ServiceInformation_AUTHENTICATION_TYPE_UNKNOWN
+}
+
+type ServiceInformation_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// What type of authentication does the service use? (e.g. username and
+	// password, password only, etc.)
+	AuthenticationType *ServiceInformation_AuthenticationType
+	// A list of default known credentials for that service, if available.
+	DefaultCredentials []*Credential
+	// A list of known common credentials for that service, if available. These
+	// are not defaults but are known to often be configured from online
+	// playbooks, forums, etc...
+	CommonCredentials []*Credential
+}
+
+func (b0 ServiceInformation_builder) Build() *ServiceInformation {
+	m0 := &ServiceInformation{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.AuthenticationType != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 3)
+		x.xxx_hidden_AuthenticationType = *b.AuthenticationType
+	}
+	x.xxx_hidden_DefaultCredentials = &b.DefaultCredentials
+	x.xxx_hidden_CommonCredentials = &b.CommonCredentials
+	return m0
+}
+
 type TemplatedPlugin struct {
-	state                protoimpl.MessageState                     `protogen:"opaque.v1"`
-	xxx_hidden_Info      *plugin_representation_go_proto.PluginInfo `protobuf:"bytes,1,opt,name=info,proto3"`
-	xxx_hidden_Finding   *vulnerability_go_proto.Vulnerability      `protobuf:"bytes,2,opt,name=finding,proto3"`
-	xxx_hidden_Config    *PluginConfig                              `protobuf:"bytes,3,opt,name=config,proto3"`
-	xxx_hidden_Actions   *[]*PluginAction                           `protobuf:"bytes,4,rep,name=actions,proto3"`
-	xxx_hidden_Workflows *[]*PluginWorkflow                         `protobuf:"bytes,5,rep,name=workflows,proto3"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	state                         protoimpl.MessageState                     `protogen:"opaque.v1"`
+	xxx_hidden_Info               *plugin_representation_go_proto.PluginInfo `protobuf:"bytes,1,opt,name=info,proto3"`
+	xxx_hidden_Finding            *vulnerability_go_proto.Vulnerability      `protobuf:"bytes,2,opt,name=finding,proto3"`
+	xxx_hidden_Config             *PluginConfig                              `protobuf:"bytes,3,opt,name=config,proto3"`
+	xxx_hidden_Actions            *[]*PluginAction                           `protobuf:"bytes,4,rep,name=actions,proto3"`
+	xxx_hidden_Workflows          *[]*PluginWorkflow                         `protobuf:"bytes,5,rep,name=workflows,proto3"`
+	xxx_hidden_ServiceInformation *ServiceInformation                        `protobuf:"bytes,6,opt,name=service_information,json=serviceInformation,proto3"`
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
 }
 
 func (x *TemplatedPlugin) Reset() {
 	*x = TemplatedPlugin{}
-	mi := &file_templated_plugin_proto_msgTypes[3]
+	mi := &file_templated_plugin_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -517,7 +752,7 @@ func (x *TemplatedPlugin) String() string {
 func (*TemplatedPlugin) ProtoMessage() {}
 
 func (x *TemplatedPlugin) ProtoReflect() protoreflect.Message {
-	mi := &file_templated_plugin_proto_msgTypes[3]
+	mi := &file_templated_plugin_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -567,6 +802,13 @@ func (x *TemplatedPlugin) GetWorkflows() []*PluginWorkflow {
 	return nil
 }
 
+func (x *TemplatedPlugin) GetServiceInformation() *ServiceInformation {
+	if x != nil {
+		return x.xxx_hidden_ServiceInformation
+	}
+	return nil
+}
+
 func (x *TemplatedPlugin) SetInfo(v *plugin_representation_go_proto.PluginInfo) {
 	x.xxx_hidden_Info = v
 }
@@ -585,6 +827,10 @@ func (x *TemplatedPlugin) SetActions(v []*PluginAction) {
 
 func (x *TemplatedPlugin) SetWorkflows(v []*PluginWorkflow) {
 	x.xxx_hidden_Workflows = &v
+}
+
+func (x *TemplatedPlugin) SetServiceInformation(v *ServiceInformation) {
+	x.xxx_hidden_ServiceInformation = v
 }
 
 func (x *TemplatedPlugin) HasInfo() bool {
@@ -608,6 +854,13 @@ func (x *TemplatedPlugin) HasConfig() bool {
 	return x.xxx_hidden_Config != nil
 }
 
+func (x *TemplatedPlugin) HasServiceInformation() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_ServiceInformation != nil
+}
+
 func (x *TemplatedPlugin) ClearInfo() {
 	x.xxx_hidden_Info = nil
 }
@@ -618,6 +871,10 @@ func (x *TemplatedPlugin) ClearFinding() {
 
 func (x *TemplatedPlugin) ClearConfig() {
 	x.xxx_hidden_Config = nil
+}
+
+func (x *TemplatedPlugin) ClearServiceInformation() {
+	x.xxx_hidden_ServiceInformation = nil
 }
 
 type TemplatedPlugin_builder struct {
@@ -633,6 +890,8 @@ type TemplatedPlugin_builder struct {
 	Actions []*PluginAction
 	// Workflows that the plugin can run.
 	Workflows []*PluginWorkflow
+	// Information about the service that this plugin targets.
+	ServiceInformation *ServiceInformation
 }
 
 func (b0 TemplatedPlugin_builder) Build() *TemplatedPlugin {
@@ -644,6 +903,7 @@ func (b0 TemplatedPlugin_builder) Build() *TemplatedPlugin {
 	x.xxx_hidden_Config = b.Config
 	x.xxx_hidden_Actions = &b.Actions
 	x.xxx_hidden_Workflows = &b.Workflows
+	x.xxx_hidden_ServiceInformation = b.ServiceInformation
 	return m0
 }
 
@@ -657,7 +917,7 @@ type PluginWorkflow_Variable struct {
 
 func (x *PluginWorkflow_Variable) Reset() {
 	*x = PluginWorkflow_Variable{}
-	mi := &file_templated_plugin_proto_msgTypes[4]
+	mi := &file_templated_plugin_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -669,7 +929,7 @@ func (x *PluginWorkflow_Variable) String() string {
 func (*PluginWorkflow_Variable) ProtoMessage() {}
 
 func (x *PluginWorkflow_Variable) ProtoReflect() protoreflect.Message {
-	mi := &file_templated_plugin_proto_msgTypes[4]
+	mi := &file_templated_plugin_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -743,46 +1003,67 @@ const file_templated_plugin_proto_rawDesc = "" +
 	"\x18REQUIRES_CALLBACK_SERVER\x10\x01\"@\n" +
 	"\fPluginConfig\x12\x1a\n" +
 	"\bdisabled\x18\x01 \x01(\bR\bdisabled\x12\x14\n" +
-	"\x05debug\x18\x02 \x01(\bR\x05debug\"\xc8\x02\n" +
+	"\x05debug\x18\x02 \x01(\bR\x05debug\">\n" +
+	"\n" +
+	"Credential\x12\x14\n" +
+	"\x05login\x18\x01 \x01(\tR\x05login\x12\x1a\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"\xdf\x03\n" +
+	"\x12ServiceInformation\x12w\n" +
+	"\x13authentication_type\x18\x01 \x01(\x0e2A.tsunami_templated_detector.ServiceInformation.AuthenticationTypeH\x00R\x12authenticationType\x88\x01\x01\x12W\n" +
+	"\x13default_credentials\x18\x02 \x03(\v2&.tsunami_templated_detector.CredentialR\x12defaultCredentials\x12U\n" +
+	"\x12common_credentials\x18\x03 \x03(\v2&.tsunami_templated_detector.CredentialR\x11commonCredentials\"\x87\x01\n" +
+	"\x12AuthenticationType\x12\x1f\n" +
+	"\x1bAUTHENTICATION_TYPE_UNKNOWN\x10\x00\x12)\n" +
+	"%AUTHENTICATION_TYPE_USERNAME_PASSWORD\x10\x01\x12%\n" +
+	"!AUTHENTICATION_TYPE_PASSWORD_ONLY\x10\x02B\x16\n" +
+	"\x14_authentication_type\"\xa9\x03\n" +
 	"\x0fTemplatedPlugin\x12-\n" +
 	"\x04info\x18\x01 \x01(\v2\x19.tsunami.proto.PluginInfoR\x04info\x126\n" +
 	"\afinding\x18\x02 \x01(\v2\x1c.tsunami.proto.VulnerabilityR\afinding\x12@\n" +
 	"\x06config\x18\x03 \x01(\v2(.tsunami_templated_detector.PluginConfigR\x06config\x12B\n" +
 	"\aactions\x18\x04 \x03(\v2(.tsunami_templated_detector.PluginActionR\aactions\x12H\n" +
-	"\tworkflows\x18\x05 \x03(\v2*.tsunami_templated_detector.PluginWorkflowR\tworkflowsB\x9c\x01\n" +
+	"\tworkflows\x18\x05 \x03(\v2*.tsunami_templated_detector.PluginWorkflowR\tworkflows\x12_\n" +
+	"\x13service_information\x18\x06 \x01(\v2..tsunami_templated_detector.ServiceInformationR\x12serviceInformationB\x9c\x01\n" +
 	"(com.google.tsunami.templatedplugin.protoP\x01Zngithub.com/google/tsunami-security-scanner-plugins/templated/templateddetector/proto/templated_plugin_go_protob\x06proto3"
 
-var file_templated_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_templated_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_templated_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_templated_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_templated_plugin_proto_goTypes = []any{
 	(PluginWorkflow_Condition)(0),                     // 0: tsunami_templated_detector.PluginWorkflow.Condition
-	(*PluginAction)(nil),                              // 1: tsunami_templated_detector.PluginAction
-	(*PluginWorkflow)(nil),                            // 2: tsunami_templated_detector.PluginWorkflow
-	(*PluginConfig)(nil),                              // 3: tsunami_templated_detector.PluginConfig
-	(*TemplatedPlugin)(nil),                           // 4: tsunami_templated_detector.TemplatedPlugin
-	(*PluginWorkflow_Variable)(nil),                   // 5: tsunami_templated_detector.PluginWorkflow.Variable
-	(*HttpAction)(nil),                                // 6: tsunami_templated_detector.HttpAction
-	(*CallbackServerAction)(nil),                      // 7: tsunami_templated_detector.CallbackServerAction
-	(*UtilityAction)(nil),                             // 8: tsunami_templated_detector.UtilityAction
-	(*plugin_representation_go_proto.PluginInfo)(nil), // 9: tsunami.proto.PluginInfo
-	(*vulnerability_go_proto.Vulnerability)(nil),      // 10: tsunami.proto.Vulnerability
+	(ServiceInformation_AuthenticationType)(0),        // 1: tsunami_templated_detector.ServiceInformation.AuthenticationType
+	(*PluginAction)(nil),                              // 2: tsunami_templated_detector.PluginAction
+	(*PluginWorkflow)(nil),                            // 3: tsunami_templated_detector.PluginWorkflow
+	(*PluginConfig)(nil),                              // 4: tsunami_templated_detector.PluginConfig
+	(*Credential)(nil),                                // 5: tsunami_templated_detector.Credential
+	(*ServiceInformation)(nil),                        // 6: tsunami_templated_detector.ServiceInformation
+	(*TemplatedPlugin)(nil),                           // 7: tsunami_templated_detector.TemplatedPlugin
+	(*PluginWorkflow_Variable)(nil),                   // 8: tsunami_templated_detector.PluginWorkflow.Variable
+	(*HttpAction)(nil),                                // 9: tsunami_templated_detector.HttpAction
+	(*CallbackServerAction)(nil),                      // 10: tsunami_templated_detector.CallbackServerAction
+	(*UtilityAction)(nil),                             // 11: tsunami_templated_detector.UtilityAction
+	(*plugin_representation_go_proto.PluginInfo)(nil), // 12: tsunami.proto.PluginInfo
+	(*vulnerability_go_proto.Vulnerability)(nil),      // 13: tsunami.proto.Vulnerability
 }
 var file_templated_plugin_proto_depIdxs = []int32{
-	6,  // 0: tsunami_templated_detector.PluginAction.http_request:type_name -> tsunami_templated_detector.HttpAction
-	7,  // 1: tsunami_templated_detector.PluginAction.callback_server:type_name -> tsunami_templated_detector.CallbackServerAction
-	8,  // 2: tsunami_templated_detector.PluginAction.utility:type_name -> tsunami_templated_detector.UtilityAction
+	9,  // 0: tsunami_templated_detector.PluginAction.http_request:type_name -> tsunami_templated_detector.HttpAction
+	10, // 1: tsunami_templated_detector.PluginAction.callback_server:type_name -> tsunami_templated_detector.CallbackServerAction
+	11, // 2: tsunami_templated_detector.PluginAction.utility:type_name -> tsunami_templated_detector.UtilityAction
 	0,  // 3: tsunami_templated_detector.PluginWorkflow.condition:type_name -> tsunami_templated_detector.PluginWorkflow.Condition
-	5,  // 4: tsunami_templated_detector.PluginWorkflow.variables:type_name -> tsunami_templated_detector.PluginWorkflow.Variable
-	9,  // 5: tsunami_templated_detector.TemplatedPlugin.info:type_name -> tsunami.proto.PluginInfo
-	10, // 6: tsunami_templated_detector.TemplatedPlugin.finding:type_name -> tsunami.proto.Vulnerability
-	3,  // 7: tsunami_templated_detector.TemplatedPlugin.config:type_name -> tsunami_templated_detector.PluginConfig
-	1,  // 8: tsunami_templated_detector.TemplatedPlugin.actions:type_name -> tsunami_templated_detector.PluginAction
-	2,  // 9: tsunami_templated_detector.TemplatedPlugin.workflows:type_name -> tsunami_templated_detector.PluginWorkflow
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	8,  // 4: tsunami_templated_detector.PluginWorkflow.variables:type_name -> tsunami_templated_detector.PluginWorkflow.Variable
+	1,  // 5: tsunami_templated_detector.ServiceInformation.authentication_type:type_name -> tsunami_templated_detector.ServiceInformation.AuthenticationType
+	5,  // 6: tsunami_templated_detector.ServiceInformation.default_credentials:type_name -> tsunami_templated_detector.Credential
+	5,  // 7: tsunami_templated_detector.ServiceInformation.common_credentials:type_name -> tsunami_templated_detector.Credential
+	12, // 8: tsunami_templated_detector.TemplatedPlugin.info:type_name -> tsunami.proto.PluginInfo
+	13, // 9: tsunami_templated_detector.TemplatedPlugin.finding:type_name -> tsunami.proto.Vulnerability
+	4,  // 10: tsunami_templated_detector.TemplatedPlugin.config:type_name -> tsunami_templated_detector.PluginConfig
+	2,  // 11: tsunami_templated_detector.TemplatedPlugin.actions:type_name -> tsunami_templated_detector.PluginAction
+	3,  // 12: tsunami_templated_detector.TemplatedPlugin.workflows:type_name -> tsunami_templated_detector.PluginWorkflow
+	6,  // 13: tsunami_templated_detector.TemplatedPlugin.service_information:type_name -> tsunami_templated_detector.ServiceInformation
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_templated_plugin_proto_init() }
@@ -798,13 +1079,14 @@ func file_templated_plugin_proto_init() {
 		(*pluginAction_CallbackServer)(nil),
 		(*pluginAction_Utility)(nil),
 	}
+	file_templated_plugin_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_templated_plugin_proto_rawDesc), len(file_templated_plugin_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   5,
+			NumEnums:      2,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
