@@ -12,16 +12,13 @@ config: {
 tests: {
   name: "whenVulnerable_returnsTrue"
   expect_vulnerability: true
-
   mock_http_server: {
     mock_responses: [
-      # 1. Fingerprint Langflow
       {
         uri: "/"
         status: 200
         body_content: "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <title>Langflow</title>\n  </head>\n  <body><div id=\"root\"></div></body>\n</html>"
       },
-      # 2. Detect Code Execution Response (Unauthenticated)
       {
         uri: "/api/v1/validate/code"
         status: 200
@@ -37,16 +34,13 @@ tests: {
 tests: {
   name: "whenNotVulnerable_returnsFalse"
   expect_vulnerability: false
-
   mock_http_server: {
     mock_responses: [
-      # 1. Fingerprint Langflow
       {
         uri: "/"
         status: 200
         body_content: "<!doctype html>\n<html><head><title>Langflow</title></head></html>"
       },
-      # 2. Code Validation endpoint handles input safely or returns clean response
       {
         uri: "/api/v1/validate/code"
         status: 200
@@ -62,7 +56,6 @@ tests: {
 tests: {
   name: "whenNotLangflow_returnsFalse"
   expect_vulnerability: false
-
   mock_http_server: {
     mock_responses: [
       {
