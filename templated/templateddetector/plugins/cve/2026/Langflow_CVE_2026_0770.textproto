@@ -8,7 +8,7 @@
 info: {
   type: VULN_DETECTION
   name: "Langflow_CVE_2026_0770"
-  author: "asdfghij"
+  author: "mahajansanjay"
   version: "1.0"
 }
 
@@ -21,11 +21,11 @@ finding: {
 
   severity: CRITICAL 
 
-  title: "Langflow exec_globals Remote Code Execution Vulnerability"
+  title: "Langflow < 1.6.0 - exec_globals Remote Code Execution Vulnerability"
 
   description: "Langflow contains an unauthenticated remote code execution vulnerability caused by improper handling of the exec_globals parameter in the validate endpoint. The flaw results from the inclusion of functionality from an untrusted control sphere (CWE-829). A remote attacker can exploit this vulnerability to execute arbitrary code in the context of root."
  
-  recommendation: "Upgrade Langflow to a patched version immediately. Do not expose Langflow instances directly to the internet and restrict access to validation endpoints."
+  recommendation: "Upgrade Langflow version 1.6.0 or later. Do not expose Langflow instances directly to the internet and restrict access to validation endpoints."
  
   related_id: {
     publisher: "CVE"
