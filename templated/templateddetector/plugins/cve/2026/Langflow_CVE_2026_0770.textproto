@@ -17,7 +17,7 @@ finding: {
     publisher: "GOOGLE"
     value: "CVE-2026-0770"
   }
-  severity: CRITICAL 
+  severity: CRITICAL
   title: "Langflow < 1.6.0 - exec_globals Remote Code Execution Vulnerability"
   description: "Langflow contains an unauthenticated remote code execution vulnerability caused by improper handling of the exec_globals parameter in the validate endpoint. The flaw results from the inclusion of functionality from an untrusted control sphere (CWE-829). A remote attacker can exploit this vulnerability to execute arbitrary code in the context of root."
   recommendation: "Upgrade Langflow version 1.6.0 or later. Do not expose Langflow instances directly to the internet and restrict access to validation endpoints."
@@ -47,8 +47,8 @@ actions: {
       }
     }
   }
-}    
-  
+}
+
 actions: {
   name: "detect_exec_globals_rce"
   http_request: {
