@@ -19,15 +19,15 @@ finding: {
   }
   severity: CRITICAL
   title: "Authentication bypass in Nginx UI MCP endpoint"
-  description: "Nginx UI versions 2.3.5 and earlier expose the /mcp_message endpoint without authentication when the IP allowlist is empty. A remote unauthenticated attacker can invoke privileged Model Context Protocol (MCP) operations."
-  recommendation: "Upgrade Nginx UI to a patched version. If upgrading is not possible, disable MCP or restrict access using authentication and an IP allowlist. Do not expose Nginx UI directly to the Internet."
+  description: "Nginx UI versions 2.3.3 and earlier expose the /mcp_message endpoint without authentication when the IP allowlist is empty. A remote unauthenticated attacker can invoke privileged Model Context Protocol (MCP) operations."
+  recommendation: "Upgrade Nginx UI version 2.3.4 or later. If upgrading is not possible, disable MCP or restrict access using authentication and an IP allowlist. Do not expose Nginx UI directly to the Internet."
   related_id: {
     publisher: "CVE"
     value: "CVE-2026-33032"
   }
 }
 
-config: {debug: true}
+config: {}
 
 ###########
 # ACTIONS #
