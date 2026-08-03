@@ -1,0 +1,93 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "DrupalCore_CVE_2026_9082"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/vnd.api+json" }
+        ]
+        body_content: "<title>Welcome! | Drupal Lab</title>"
+      },
+      {
+        uri: "/user/login?_format=json&check=1"
+        status: 500
+        headers: [
+          { name: "Content-Type" value: "text/plain; charset=UTF-8" }
+        ]
+        body_content: "The website encountered an unexpected error. Try again later."
+      },
+      {
+        uri: "/user/login?_format=json&check=2"
+        status: 400
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"message\":\"Sorry, unrecognized username or password.\"}"
+      } 
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/vnd.api+json" }
+        ]
+        body_content: "<title>Welcome! | Drupal Lab</title>"
+      },
+      {
+        uri: "/user/login?_format=json&check=1"
+        status: 400
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"message\":\"Sorry, unrecognized username or password.\"}"
+      },
+      {
+        uri: "/user/login?_format=json&check=2"
+        status: 400
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"message\":\"Sorry, unrecognized username or password.\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotDrupal_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/jsonapi"
+        status: 404
+        headers: [
+          { name: "Content-Type" value: "text/html" }
+        ]
+        body_content: "<html><body>404 Not Found</body></html>"
+      }
+    ]
+  }
+}
