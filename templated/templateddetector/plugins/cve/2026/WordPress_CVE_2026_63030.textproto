@@ -12,7 +12,7 @@ info: {
 finding: {
   main_id: {
     publisher: "GOOGLE"
-    value: "WORDPRESS_REST_API_BATCH_SQL_INJECTION"
+    value: "CVE-2026-63030"
   }
   severity: CRITICAL
   title: "WordPress Core REST API Batch Endpoint SQL Injection (CVE-2026-63030 / wp2shell)"
