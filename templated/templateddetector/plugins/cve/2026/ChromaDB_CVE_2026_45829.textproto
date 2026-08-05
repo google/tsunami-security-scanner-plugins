@@ -1,0 +1,84 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ChromaDB_CVE_2026_45829"
+  author: "dyeddala"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-45829"
+  }
+  severity: CRITICAL
+  title: "ChromaDB - Pre-Authentication Code Injection"
+  description: "A pre-authentication code injection vulnerability in ChromaDB allows unauthenticated attackers to execute arbitrary code via the /api/v2/tenants/{tenant}/databases/{db}/collections endpoint by setting trust_remote_code to true with a malicious model repository."
+  recommendation: "Upgrade ChromaDB to a patched version, restrict access to the API endpoints, and ensure trust_remote_code cannot be enabled by unauthenticated clients."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-45829"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_ChromaDB"
+  http_request: {
+    method: GET
+    uri: "/api/v1/heartbeat"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "nanosecond heartbeat" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "chromadb_code_injection_check"
+  http_request: {
+    method: POST
+    uri: "/api/v2/tenants/default_tenant/databases/default_database/collections"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{\"name\":\"tsunami_check_collection\",\"metadata\":{\"trust_remote_code\":true,\"embedding_function\":\"safe-test-model\"}}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"id\":" },
+          { body: {} contains: "\"name\":" },
+          { body: {} contains: "\"trust_remote_code\":true" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: "fingerprint_ChromaDB"
+  actions: "chromadb_code_injection_check"
+}
