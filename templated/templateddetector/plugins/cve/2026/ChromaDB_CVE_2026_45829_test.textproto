@@ -1,0 +1,74 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ChromaDB_CVE_2026_45829"
+}
+
+#########
+# TESTS #
+#########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/v1/heartbeat"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"nanosecond heartbeat\": 1700000000000000000}"
+      },
+      {
+        uri: "/api/v2/tenants/default_tenant/databases/default_database/collections"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"id\":\"12345-abcde\",\"name\":\"tsunami_check_collection\",\"metadata\":{\"trust_remote_code\":true,\"embedding_function\":\"safe-test-model\"}}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/v1/heartbeat"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"nanosecond heartbeat\": 1700000000000000000}"
+      },
+      {
+        uri: "/api/v2/tenants/default_tenant/databases/default_database/collections"
+        status: 400
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"error\":\"ValueError\",\"message\":\"Setting trust_remote_code to true is disabled for unauthenticated requests.\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotChromaDB_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
