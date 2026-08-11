@@ -8,7 +8,7 @@
 info: {
   type: VULN_DETECTION
   name: "Litellm_SQL_Injection_CVE_2026_42208"
-  author: "mangeshw"
+  author: "mangeshwalsane2-hash"
   version: "1.0"
 }
 
@@ -40,6 +40,12 @@ actions: {
     uri: "/health/readiness"
     response: {
       http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "litellm_version" },
+          { body: {} contains: "db" }
+        ]
+      }
     }
   }
 }
@@ -62,7 +68,6 @@ actions: {
     }
   }
 }
-
 
 #############
 # WORKFLOWS #

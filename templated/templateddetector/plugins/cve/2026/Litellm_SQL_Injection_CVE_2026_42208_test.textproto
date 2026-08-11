@@ -14,7 +14,7 @@ tests: {
       {
         uri: "/health/readiness"
         status: 200
-        body_content: "ok"
+        body_content: "{\"status\":\"connected\",\"db\":\"connected\",\"litellm_version\":\"1.82.0\"}"
       },
       {
         uri: "/v1/models"
@@ -37,7 +37,7 @@ tests: {
       {
         uri: "/health/readiness"
         status: 200
-        body_content: "ok"
+        body_content: "{\"status\":\"connected\",\"db\":\"connected\",\"litellm_version\":\"1.83.7\"}"
       },
       {
         uri: "/v1/models"
@@ -58,7 +58,12 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
-        uri: "TSUNAMI_MAGIC_ANY_URI"
+        uri: "/health/readiness"
+        status: 404
+        body_content: "Not Found"
+      },
+      {
+        uri: "/v1/models"
         status: 404
         body_content: "Not Found"
       }
