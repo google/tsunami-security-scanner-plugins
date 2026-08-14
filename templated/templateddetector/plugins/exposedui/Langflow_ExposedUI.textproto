@@ -55,7 +55,6 @@ actions: {
 
 # OOB version. The original plugin also had reflective, but response is not returned unless OOB.
 # Removed reflective version to prevent false positives.
-# Also changed payload to use requests.get(...) instead of subprocess RCE.
 
 actions: {
   name: "execute_payload_oob"
