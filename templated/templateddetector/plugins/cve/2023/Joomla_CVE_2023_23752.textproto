@@ -37,7 +37,6 @@ finding: {
 # ACTIONS #
 ###########
 
-# this fingerprinting step is light, but the original didn't have a fingerprinting step at all.
 # kept only "joomla" in case the title changes by version. joomla is used in multiple places in the HTML.
 
 actions: {
