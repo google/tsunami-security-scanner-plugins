@@ -25,7 +25,7 @@ finding: {
   description: 
     "CVE-2023-23752: An improper access check allows unauthorized access to"
     " webservice endpoints. attacker can get the host address "
-    "and username and password of the configured joomla database."
+    "and username and password of the configured Joomla database."
   recommendation: "Upgrade Joomla to 4.2.8 and above versions."
   related_id: {
     publisher: "CVE"
