@@ -71,7 +71,6 @@ actions: {
 # WORKFLOWS #
 #############
 
-# also tried to implement a reflective version but it didn't work. 
 
 workflows: {
   condition: REQUIRES_CALLBACK_SERVER
