@@ -25,7 +25,7 @@ finding: {
     "D-Tale is vulnerable to a Remote Code Execution vulnerability, which was fixed"
     " in version 3.16.1, due to Global State Override mechanism."
     " Specifically, this vulnerability leverages the ability to manipulate"
-    " global  application settings to activate the enable_custom_filters"
+    " global application settings to activate the enable_custom_filters"
     " feature, typically restricted to trusted environments. Once enabled,"
     " the /test-filter endpoint of the Custom Filters functionality can be"
     " exploited to execute arbitrary system commands."
