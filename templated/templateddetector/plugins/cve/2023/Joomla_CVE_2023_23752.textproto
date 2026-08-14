@@ -6,7 +6,6 @@
 ###############
 
 
-# TODO
 
 info: {
   type: VULN_DETECTION
