@@ -14,7 +14,6 @@ info: {
   version: "2.0"
 }
 
-# finding ID changed from Java version to be more consistent with the rest of them.
 
 finding: {
   main_id: {
