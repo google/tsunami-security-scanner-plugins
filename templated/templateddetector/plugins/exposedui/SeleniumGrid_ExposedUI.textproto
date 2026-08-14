@@ -140,8 +140,6 @@ actions: {
 # WORKFLOWS #
 #############
 
-# This is only out of band detection, had errors implementing the reflective version correctly
-# that were taking a while to debug.
 
 workflows: {
   condition: REQUIRES_CALLBACK_SERVER
