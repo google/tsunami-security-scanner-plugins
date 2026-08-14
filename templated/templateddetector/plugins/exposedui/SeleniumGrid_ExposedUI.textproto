@@ -39,9 +39,6 @@ finding: {
 # ACTIONS #
 ###########
 
-# in the original java detector, it loops until the API is ready. 
-# We shouldn't do that in our plugins, and instead set up the testbed properly to account for it.
-# Changed it to a fingerprint step and added multiple capitalizations just in case it varies.
 
 actions: {
   name: "fingerprint_selenium_grid"
