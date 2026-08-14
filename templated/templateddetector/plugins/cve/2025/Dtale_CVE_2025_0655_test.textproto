@@ -77,7 +77,7 @@ tests: {
         body_content: '{"data_id":"112233","success":true}'
       },
       {
-        uri: "/dtale/update-settings/112233?settings=%7B%22enable_custom_filters%22%3Atrue%7D",
+        uri: "/dtale/update-settings/112233?settings=%7B%22enable_custom_filters%22%3Atrue%7D"
         status: 200
         body_content: "{\"success\":true}"
       },
