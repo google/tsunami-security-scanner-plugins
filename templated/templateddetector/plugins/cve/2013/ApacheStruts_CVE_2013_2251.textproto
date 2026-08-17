@@ -65,7 +65,6 @@ workflows: {
     { name: "RESULT" value: "tsunami1787569" }
   ]
   actions: [
-    "fingerprint_struts2",
     "probe_s2_016_ognl"
   ]
 }
