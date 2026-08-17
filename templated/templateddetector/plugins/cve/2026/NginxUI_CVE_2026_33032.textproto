@@ -59,7 +59,7 @@ actions: {
       { name: "Accept" value: "application/json" },
       { name: "Content-Type" value: "application/json" }
     ]
-    data: "{\"jsonrpc\":\"2.0\",\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"{{string}}\",\"version\":\"1.0\"}},\"id\":1}"
+    data: "{\"jsonrpc\":\"2.0\",\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"{{ T_UTL_CURRENT_TIMESTAMP_MS }}\",\"version\":\"1.0\"}},\"id\":1}"
     response: {
       http_status: 400
       expect_all: {
