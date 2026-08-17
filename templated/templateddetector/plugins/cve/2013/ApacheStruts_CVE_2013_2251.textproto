@@ -33,22 +33,7 @@ config: {}
 # ACTIONS #
 ###########
 
-actions: {
-  name: "fingerprint_struts2"
-  http_request: {
-    method: GET
-    uri: "/"
-    response: {
-      http_status: 200
-      expect_any: {
-        conditions: [
-          { body: {} contains: "S2-016 Demo" },
-          { body: {} contains: "struts.apache.org" }
-        ]
-      }
-    }
-  }
-}
+# No fingerprint step since fingerprinting struts doesn't appear very easy or reliable.
 
 actions: {
   name: "probe_s2_016_ognl"
