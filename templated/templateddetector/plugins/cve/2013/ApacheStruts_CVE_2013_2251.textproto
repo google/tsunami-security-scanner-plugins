@@ -20,7 +20,7 @@ finding: {
   severity: CRITICAL
   title: "Apache Struts2 S2-016 DefaultActionMapper OGNL Injection"
   description: "The redirect and redirectAction prefixes allow unauthenticated remote attackers to execute arbitrary OGNL expressions via manipulated URL parameters, leading to system command execution."
-  recommendation: "Upgrade to Apache Struts 2.3.15.1 or later. Alternatively, implement WAF rules to drop requests containing action:, redirect:, or redirectAction: prefixes combined with OGNL syntax."
+  recommendation: "Upgrade to Apache Struts 2.3.15.1 or later. Note that 2.3.15.1 is still an old version with known vulnerabilities, so updating to the latest version is recommended."
   related_id: {
     publisher: "CVE"
     value: "CVE-2013-2251"
