@@ -78,9 +78,6 @@ actions: {
 #############
 
 workflows: {
-  variables: [
-    { name: "string" value: "{{to_lower(rand_text_alpha(5))}}" }
-  ]
   actions: [
     "fingerprint_nginx_ui",
     "probe_mcp_message"
