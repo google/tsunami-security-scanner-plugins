@@ -40,9 +40,10 @@ actions: {
     uri: "/"
     response: {
       http_status: 200
-      expect_all: {
+      expect_any: {
         conditions: [
-          { body: {} contains: "<title>Welcome! | Drupal Lab</title>" }
+          { body: {} contains: "Drupal" },
+          { body: {} contains: "drupal" }
         ]
       }
     }
