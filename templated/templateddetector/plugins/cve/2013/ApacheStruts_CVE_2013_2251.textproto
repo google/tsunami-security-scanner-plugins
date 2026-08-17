@@ -61,7 +61,8 @@ actions: {
 
 workflows: {
   variables: [
-    { name: "tsunami_token" value: "Tsunami-Struts-S2-016-Exploited-{{to_lower(rand_text_alpha(6))}}" }
+    { name: "PAYLOAD" value: "%27tsunami%27%2b%281337*1337%29" },
+    { name: "RESULT" value: "tsunami1787569" }
   ]
   actions: [
     "fingerprint_struts2",
