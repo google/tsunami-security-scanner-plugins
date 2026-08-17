@@ -53,7 +53,10 @@ tests: {
         headers: [
           { name: "Content-Type" value: "application/vnd.api+json" }
         ]
-        body_content: "<title>Welcome! | Drupal Lab</title>"
+        body_content: 
+          "<title>Welcome! | Drupal Lab</title>"
+          "..."
+          "Powered by    <a href=\"https://www.drupal.org\">Drupal</a>"
       },
       {
         uri: "/user/login?_format=json&check=1"
