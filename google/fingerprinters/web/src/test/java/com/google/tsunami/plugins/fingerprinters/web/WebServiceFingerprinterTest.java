@@ -361,11 +361,13 @@ public final class WebServiceFingerprinterTest {
                             ServiceContext.newBuilder()
                                 .setWebServiceContext(
                                     WebServiceContext.newBuilder()
-                                            .setApplicationRoot("/")
+                                        .setApplicationRoot("/")
                                         .setSoftware(
                                             Software.newBuilder()
                                                 .setName(SOFTWARE_IDENTITY_4.getSoftware())))))
                 .build());
+    assertThat(fingerprintingReport.getNetworkServices(0).getNetworkEndpoint())
+        .isEqualTo(endpoint);
   }
 
   private void startMockMlflowWebServer() throws IOException {
@@ -429,6 +431,8 @@ public final class WebServiceFingerprinterTest {
                                         .setApplicationRoot("/")
                                         .setSoftware(Software.newBuilder().setName("MCP Server")))))
                 .build());
+    assertThat(fingerprintingReport.getNetworkServices(0).getNetworkEndpoint())
+        .isEqualTo(endpoint);
   }
 
   @Test
@@ -476,6 +480,8 @@ public final class WebServiceFingerprinterTest {
                                         .setApplicationRoot("/")
                                         .setSoftware(Software.newBuilder().setName("MCP Server")))))
                 .build());
+    assertThat(fingerprintingReport.getNetworkServices(0).getNetworkEndpoint())
+        .isEqualTo(endpoint);
   }
 
   @Test
