@@ -44,9 +44,27 @@ actions: {
     method: GET
     uri: "/api/v1/version"
     response: {
+      http_status: 200
       expect_all: {
         conditions: [
           { body: {} contains: "\"package\":\"Langflow\"" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_auth"
+  http_request: {
+    method: GET
+    uri: "/api/v1/users/whoami"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"is_superuser\"" },
+          { body: {} contains: "\"username\"" }
         ]
       }
     }
@@ -96,6 +114,7 @@ workflows: {
   condition: REQUIRES_CALLBACK_SERVER
   actions: [
     "fingerprint_langflow",
+    "check_auth",
     "execute_payload_oob",
     "sleep",
     "check_callback_server_logs"
