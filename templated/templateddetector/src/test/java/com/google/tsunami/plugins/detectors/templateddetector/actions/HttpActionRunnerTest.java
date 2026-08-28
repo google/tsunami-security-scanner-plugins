@@ -236,6 +236,29 @@ public final class HttpActionRunnerTest {
   }
 
   @Test
+  public void absoluteUri_doesNotPrefixServiceRoot() throws InterruptedException {
+    PluginAction action =
+        PluginAction.newBuilder()
+            .setName("action")
+            .setHttpRequest(
+                HttpAction.newBuilder()
+                    .setMethod(HttpAction.HttpMethod.GET)
+                    .addUri(
+                        String.format(
+                            "http://%s:%d/absolute",
+                            this.mockWebServer.getHostName(), this.mockWebServer.getPort())))
+            .build();
+
+    this.mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+    var result = runner.run(this.service, action, this.environment);
+    RecordedRequest request = this.mockWebServer.takeRequest();
+
+    assertThat(result).isTrue();
+    assertThat(request.getPath()).isEqualTo("/absolute");
+    assertThat(this.mockWebServer.getRequestCount()).isEqualTo(1);
+  }
+
+  @Test
   public void followRedirectsDisabled_matchesTheRedirectPage() throws InterruptedException {
     HttpAction.HttpResponse httpResponse =
         HttpAction.HttpResponse.newBuilder()
