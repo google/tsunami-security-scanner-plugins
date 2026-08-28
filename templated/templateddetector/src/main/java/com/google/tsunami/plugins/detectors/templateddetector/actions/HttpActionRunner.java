@@ -54,18 +54,12 @@ public final class HttpActionRunner implements ActionRunner {
 
   private boolean run(
       NetworkService service, PluginAction action, Environment environment, String uri) {
-    // Substitute variables first so absolute URLs can be detected after expansion.
+    // Remove leading slash if present as it will be added later and substitute variables.
     uri = environment.substitute(uri);
+    uri = uri.startsWith("/") ? uri.substring(1) : uri;
 
     HttpAction httpAction = action.getHttpRequest();
-    String targetUrl;
-    if (uri.startsWith("http://") || uri.startsWith("https://")) {
-      targetUrl = uri;
-    } else {
-      // Remove leading slash if present as it will be added by the service root URL.
-      uri = uri.startsWith("/") ? uri.substring(1) : uri;
-      targetUrl = NetworkServiceUtils.buildWebApplicationRootUrl(service) + uri;
-    }
+    String targetUrl = NetworkServiceUtils.buildWebApplicationRootUrl(service) + uri;
 
     if (httpAction.getMethod() == HttpAction.HttpMethod.METHOD_UNSPECIFIED) {
       throw new IllegalArgumentException(
