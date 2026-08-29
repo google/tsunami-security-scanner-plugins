@@ -17,10 +17,30 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/api/platform/pg-meta/default/query?key="
+        uri: "/api/platform/pg-meta/default/query"
         status: 200
         body_content: '[{"filename":"' '[]'
         condition: {
+          request_type: POST
+          get_parameter: [
+            { name: "key" value: "" }
+          ]
+          body_content: "CREATE TABLE filelist"
+          headers: [
+            { name: "Content-Type" value: "application/json" }
+          ]
+        }
+      },
+      {
+        uri: "/api/platform/pg-meta/default/query"
+        status: 200
+        body_content: '[]'
+        condition: {
+          request_type: POST
+          get_parameter: [
+            { name: "key" value: "" }
+          ]
+          body_content: "drop table filelist"
           headers: [
             { name: "Content-Type" value: "application/json" }
           ]
@@ -47,10 +67,29 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/api/platform/pg-meta/default/query?key="
+        uri: "/api/platform/pg-meta/default/query"
         status: 200
         body_content: '[{"filename":"' '[]'
         condition: {
+          request_type: POST
+          get_parameter: [
+            { name: "key" value: "" }
+          ]
+          body_content: "CREATE TABLE filelist"
+          headers: [
+            { name: "Content-Type" value: "application/json" }
+          ]
+        }
+      },
+      {
+        uri: "/api/platform/pg-meta/default/query"
+        status: 200
+        body_content: '[]'
+        condition: {
+          request_type: POST
+          get_parameter: [
+            { name: "key" value: "" }
+          ]
           headers: [
             { name: "Content-Type" value: "application/json" }
           ]

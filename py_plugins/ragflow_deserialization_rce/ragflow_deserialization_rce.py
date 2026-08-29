@@ -1,6 +1,6 @@
 """A Tsunami plugin for detecting CVE-2024-12433."""
 
-import io
+
 from multiprocessing.connection import Client
 # Copyright 2025 Google LLC
 #
@@ -37,25 +37,6 @@ _VULN_DESCRIPTION = (
     " the RPC server. This can lead to remote code execution."
 )
 _SLEEP_TIME_SEC = 20
-
-
-class RestrictedUnpickler(pickle.Unpickler):
-
-  def find_class(self, module, name):
-    # Only allow safe classes from specific modules
-    allowed = {
-        "builtins": {"KeyError"},
-        "collections": {"OrderedDict"},
-        # Add other safe modules and classes as needed
-    }
-
-    if module in allowed and name in allowed[module]:
-      if module == "builtins":
-        return getattr(__import__(module), name)
-      return getattr(__import__(module), name)
-
-    # Forbid everything else
-    raise pickle.UnpicklingError(f"Global '{module}.{name}' is forbidden")
 
 
 class RagFlowRceDetector(tsunami_plugin.VulnDetector):
@@ -164,9 +145,9 @@ class RagFlowRceDetector(tsunami_plugin.VulnDetector):
     }
     c.send(pickle.dumps(data))
     # response = pickle.loads(c.recv())
-    response = RestrictedUnpickler(io.BytesIO(c.recv())).load()
+    data_string = str(c.recv_bytes())
     c.close()
-    return type(response) is KeyError and str(response) == "'func_name'"
+    return "KeyError" in data_string and "func_name" in data_string
 
   def _IsServiceVulnerable(
       self, network_service: tsunami_plugin.NetworkService

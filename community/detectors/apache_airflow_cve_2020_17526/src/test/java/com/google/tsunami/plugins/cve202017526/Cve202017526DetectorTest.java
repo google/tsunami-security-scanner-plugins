@@ -39,6 +39,7 @@ import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.TargetInfo;
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
@@ -118,6 +119,8 @@ public final class Cve202017526DetectorTest {
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
 
     Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
+    // The cookie timestamp is generated from fakeUtcClock, which is 2020-01-01T00:00:00.00Z
+    // (1577836800). Itsdangerous encodes this as 'XgvhAA'.
     assertThat(detectionReports.getDetectionReportsList())
         .comparingExpectedFieldsOnly()
         .containsExactly(
@@ -176,6 +179,55 @@ public final class Cve202017526DetectorTest {
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
 
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_whenTimeAdvanced_usesNewTimestampInCookie()
+      throws IOException, InterruptedException {
+    startMockWebServer();
+    createInjector();
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
+    var unused = fakeUtcClock.advance(Duration.ofSeconds(1));
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
+            .addSupportedHttpMethods("POST")
+            .build();
+    TargetInfo targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
+            .build();
+
+    var unused2 = detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    RecordedRequest request = mockTargetService.takeRequest();
+    Truth.assertThat(request.getPath()).isEqualTo("/admin/");
+    // After advancing the clock by 1 second, the timestamp becomes 1577836801, which
+    // base64ncodes as 'XgvhAQ'.
+    Truth.assertThat(request.getHeader("Cookie")).contains(".XgvhAQ.");
+  }
+
+  @Test
+  public void toTimestamp_coversAllBranches() throws Exception {
+    createInjector();
+    java.lang.reflect.Method toTimestampMethod =
+        Cve202017526Detector.class.getDeclaredMethod("toTimestamp", long.class);
+    toTimestampMethod.setAccessible(true);
+
+    // Test l == 0
+    Truth.assertThat(toTimestampMethod.invoke(detector, 0L)).isEqualTo("");
+
+    // Test l > 0 with leading zero byte (e.g., 2147483648L)
+    Truth.assertThat(toTimestampMethod.invoke(detector, 2147483648L)).isEqualTo("gAAAAA");
+
+    // Test l < 0
+    try {
+      toTimestampMethod.invoke(detector, -1L);
+      Truth.assertWithMessage("Expected InvocationTargetException").fail();
+    } catch (java.lang.reflect.InvocationTargetException e) {
+      Truth.assertThat(e.getCause()).isInstanceOf(IllegalArgumentException.class);
+    }
   }
 
   private void startMockWebServer() throws IOException {

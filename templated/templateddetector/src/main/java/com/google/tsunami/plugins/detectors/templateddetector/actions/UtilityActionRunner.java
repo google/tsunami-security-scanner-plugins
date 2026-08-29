@@ -20,14 +20,20 @@ public final class UtilityActionRunner implements ActionRunner {
 
     switch (actionType) {
       case SLEEP:
-        return performActionSleep(utility);
+        return performActionSleep(utility, environment);
       default:
         logger.atSevere().log("Unknown utility type: %s", actionType);
         return false;
     }
   }
 
-  private boolean performActionSleep(UtilityAction action) {
+  private boolean performActionSleep(UtilityAction action, Environment environment) {
+    String disableSleep = environment.get("T_TST_DISABLE_SLEEP");
+    if (disableSleep != null && disableSleep.equals("true")) {
+      logger.atInfo().log("Skipping sleep action as requested by environment.");
+      return true;
+    }
+
     var sleepAction = action.getSleep();
     var duration = sleepAction.getDurationMs();
 

@@ -1,0 +1,114 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "N8N_ExposedRestApi"
+}
+
+tests: {
+  name: "whenVulnerable_noOwner_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/rest/settings"
+        status: 200
+        body_content: '{"data":{"urlBaseWebhook":"http://target:5678/","versionCli":"0.237.0",...}}'
+      },
+      {
+        uri: "/rest/login"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "n8n-auth=jwt_token" }
+        ]
+      },
+      {
+        uri: "/rest/workflows"
+        status: 200
+        condition: {
+          headers: [
+            { name: "Cookie" value: "n8n-auth=jwt_token" }
+          ]
+        }
+        body_content: '{"data":[{"id":"Q2cpznBmI6NCfeBF","name":"Vulnerable Workflow",...},...]}'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerable_noUserManagement_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/rest/settings"
+        status: 200
+        body_content: '{"data":{"urlBaseWebhook":"http://target:5678/","versionCli":"0.54.0",...}}'
+      },
+      {
+        uri: "/rest/login"
+        status: 404
+      },
+      {
+        uri: "/rest/workflows"
+        status: 200
+        body_content: '{"data":[{"id":"1","name":"Legacy Workflow",...},...]}'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_restProtected_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/rest/settings"
+        status: 200
+        body_content: '{"data":{"urlBaseWebhook":"http://target:5678/","versionCli":"0.237.0",...}}'
+      },
+      {
+        uri: "/rest/login"
+        status: 401
+      },
+      {
+        uri: "/rest/workflows"
+        status: 401
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_n8nModern_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/rest/settings"
+        status: 200
+        body_content: '{"data":{"instanceId":"...","versionCli":"1.123.21"}}'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotN8n_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/rest/settings"
+        status: 404
+      }
+    ]
+  }
+}

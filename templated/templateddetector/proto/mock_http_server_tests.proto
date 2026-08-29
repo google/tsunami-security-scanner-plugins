@@ -13,6 +13,24 @@ message MockHttpServer {
     string value = 2;
   }
 
+  message HttpParameter {
+    string name = 1;
+    string value = 2;
+  }
+
+  enum HttpMethod {
+    UNKNOWN = 0;
+    GET = 1;
+    POST = 2;
+    PUT = 3;
+    DELETE = 4;
+    HEAD = 5;
+  }
+
+  message Data {
+    string content = 1;
+  }
+
   message HttpCondition {
     // A list of headers and their expected values that must be present in the
     // request.
@@ -20,6 +38,12 @@ message MockHttpServer {
 
     // A list strings that must be present in the request's body.
     repeated string body_content = 2;
+
+    // A list of GET parameters and their expected values that must be present.
+    repeated HttpParameter get_parameter = 3;
+
+    // The expected HTTP request type (method).
+    HttpMethod request_type = 4;
   }
 
   message MockResponse {

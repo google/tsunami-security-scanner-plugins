@@ -20,6 +20,59 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type MockHttpServer_HttpMethod int32
+
+const (
+	MockHttpServer_UNKNOWN MockHttpServer_HttpMethod = 0
+	MockHttpServer_GET     MockHttpServer_HttpMethod = 1
+	MockHttpServer_POST    MockHttpServer_HttpMethod = 2
+	MockHttpServer_PUT     MockHttpServer_HttpMethod = 3
+	MockHttpServer_DELETE  MockHttpServer_HttpMethod = 4
+	MockHttpServer_HEAD    MockHttpServer_HttpMethod = 5
+)
+
+// Enum value maps for MockHttpServer_HttpMethod.
+var (
+	MockHttpServer_HttpMethod_name = map[int32]string{
+		0: "UNKNOWN",
+		1: "GET",
+		2: "POST",
+		3: "PUT",
+		4: "DELETE",
+		5: "HEAD",
+	}
+	MockHttpServer_HttpMethod_value = map[string]int32{
+		"UNKNOWN": 0,
+		"GET":     1,
+		"POST":    2,
+		"PUT":     3,
+		"DELETE":  4,
+		"HEAD":    5,
+	}
+)
+
+func (x MockHttpServer_HttpMethod) Enum() *MockHttpServer_HttpMethod {
+	p := new(MockHttpServer_HttpMethod)
+	*p = x
+	return p
+}
+
+func (x MockHttpServer_HttpMethod) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MockHttpServer_HttpMethod) Descriptor() protoreflect.EnumDescriptor {
+	return file_mock_http_server_tests_proto_enumTypes[0].Descriptor()
+}
+
+func (MockHttpServer_HttpMethod) Type() protoreflect.EnumType {
+	return &file_mock_http_server_tests_proto_enumTypes[0]
+}
+
+func (x MockHttpServer_HttpMethod) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // MockHttpServer mocks an HTTP server.
 type MockHttpServer struct {
 	state                    protoimpl.MessageState          `protogen:"opaque.v1"`
@@ -155,17 +208,147 @@ func (b0 MockHttpServer_HttpHeader_builder) Build() *MockHttpServer_HttpHeader {
 	return m0
 }
 
+type MockHttpServer_HttpParameter struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Name  string                 `protobuf:"bytes,1,opt,name=name,proto3"`
+	xxx_hidden_Value string                 `protobuf:"bytes,2,opt,name=value,proto3"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *MockHttpServer_HttpParameter) Reset() {
+	*x = MockHttpServer_HttpParameter{}
+	mi := &file_mock_http_server_tests_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MockHttpServer_HttpParameter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MockHttpServer_HttpParameter) ProtoMessage() {}
+
+func (x *MockHttpServer_HttpParameter) ProtoReflect() protoreflect.Message {
+	mi := &file_mock_http_server_tests_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *MockHttpServer_HttpParameter) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *MockHttpServer_HttpParameter) GetValue() string {
+	if x != nil {
+		return x.xxx_hidden_Value
+	}
+	return ""
+}
+
+func (x *MockHttpServer_HttpParameter) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *MockHttpServer_HttpParameter) SetValue(v string) {
+	x.xxx_hidden_Value = v
+}
+
+type MockHttpServer_HttpParameter_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Name  string
+	Value string
+}
+
+func (b0 MockHttpServer_HttpParameter_builder) Build() *MockHttpServer_HttpParameter {
+	m0 := &MockHttpServer_HttpParameter{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Value = b.Value
+	return m0
+}
+
+type MockHttpServer_Data struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Content string                 `protobuf:"bytes,1,opt,name=content,proto3"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *MockHttpServer_Data) Reset() {
+	*x = MockHttpServer_Data{}
+	mi := &file_mock_http_server_tests_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MockHttpServer_Data) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MockHttpServer_Data) ProtoMessage() {}
+
+func (x *MockHttpServer_Data) ProtoReflect() protoreflect.Message {
+	mi := &file_mock_http_server_tests_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *MockHttpServer_Data) GetContent() string {
+	if x != nil {
+		return x.xxx_hidden_Content
+	}
+	return ""
+}
+
+func (x *MockHttpServer_Data) SetContent(v string) {
+	x.xxx_hidden_Content = v
+}
+
+type MockHttpServer_Data_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Content string
+}
+
+func (b0 MockHttpServer_Data_builder) Build() *MockHttpServer_Data {
+	m0 := &MockHttpServer_Data{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Content = b.Content
+	return m0
+}
+
 type MockHttpServer_HttpCondition struct {
-	state                  protoimpl.MessageState        `protogen:"opaque.v1"`
-	xxx_hidden_Headers     *[]*MockHttpServer_HttpHeader `protobuf:"bytes,1,rep,name=headers,proto3"`
-	xxx_hidden_BodyContent []string                      `protobuf:"bytes,2,rep,name=body_content,json=bodyContent,proto3"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                   protoimpl.MessageState           `protogen:"opaque.v1"`
+	xxx_hidden_Headers      *[]*MockHttpServer_HttpHeader    `protobuf:"bytes,1,rep,name=headers,proto3"`
+	xxx_hidden_BodyContent  []string                         `protobuf:"bytes,2,rep,name=body_content,json=bodyContent,proto3"`
+	xxx_hidden_GetParameter *[]*MockHttpServer_HttpParameter `protobuf:"bytes,3,rep,name=get_parameter,json=getParameter,proto3"`
+	xxx_hidden_RequestType  MockHttpServer_HttpMethod        `protobuf:"varint,4,opt,name=request_type,json=requestType,proto3,enum=tsunami_templated_detector_tests.MockHttpServer_HttpMethod"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *MockHttpServer_HttpCondition) Reset() {
 	*x = MockHttpServer_HttpCondition{}
-	mi := &file_mock_http_server_tests_proto_msgTypes[2]
+	mi := &file_mock_http_server_tests_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -177,7 +360,7 @@ func (x *MockHttpServer_HttpCondition) String() string {
 func (*MockHttpServer_HttpCondition) ProtoMessage() {}
 
 func (x *MockHttpServer_HttpCondition) ProtoReflect() protoreflect.Message {
-	mi := &file_mock_http_server_tests_proto_msgTypes[2]
+	mi := &file_mock_http_server_tests_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -204,12 +387,36 @@ func (x *MockHttpServer_HttpCondition) GetBodyContent() []string {
 	return nil
 }
 
+func (x *MockHttpServer_HttpCondition) GetGetParameter() []*MockHttpServer_HttpParameter {
+	if x != nil {
+		if x.xxx_hidden_GetParameter != nil {
+			return *x.xxx_hidden_GetParameter
+		}
+	}
+	return nil
+}
+
+func (x *MockHttpServer_HttpCondition) GetRequestType() MockHttpServer_HttpMethod {
+	if x != nil {
+		return x.xxx_hidden_RequestType
+	}
+	return MockHttpServer_UNKNOWN
+}
+
 func (x *MockHttpServer_HttpCondition) SetHeaders(v []*MockHttpServer_HttpHeader) {
 	x.xxx_hidden_Headers = &v
 }
 
 func (x *MockHttpServer_HttpCondition) SetBodyContent(v []string) {
 	x.xxx_hidden_BodyContent = v
+}
+
+func (x *MockHttpServer_HttpCondition) SetGetParameter(v []*MockHttpServer_HttpParameter) {
+	x.xxx_hidden_GetParameter = &v
+}
+
+func (x *MockHttpServer_HttpCondition) SetRequestType(v MockHttpServer_HttpMethod) {
+	x.xxx_hidden_RequestType = v
 }
 
 type MockHttpServer_HttpCondition_builder struct {
@@ -220,6 +427,10 @@ type MockHttpServer_HttpCondition_builder struct {
 	Headers []*MockHttpServer_HttpHeader
 	// A list strings that must be present in the request's body.
 	BodyContent []string
+	// A list of GET parameters and their expected values that must be present.
+	GetParameter []*MockHttpServer_HttpParameter
+	// The expected HTTP request type (method).
+	RequestType MockHttpServer_HttpMethod
 }
 
 func (b0 MockHttpServer_HttpCondition_builder) Build() *MockHttpServer_HttpCondition {
@@ -228,6 +439,8 @@ func (b0 MockHttpServer_HttpCondition_builder) Build() *MockHttpServer_HttpCondi
 	_, _ = b, x
 	x.xxx_hidden_Headers = &b.Headers
 	x.xxx_hidden_BodyContent = b.BodyContent
+	x.xxx_hidden_GetParameter = &b.GetParameter
+	x.xxx_hidden_RequestType = b.RequestType
 	return m0
 }
 
@@ -244,7 +457,7 @@ type MockHttpServer_MockResponse struct {
 
 func (x *MockHttpServer_MockResponse) Reset() {
 	*x = MockHttpServer_MockResponse{}
-	mi := &file_mock_http_server_tests_proto_msgTypes[3]
+	mi := &file_mock_http_server_tests_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -256,7 +469,7 @@ func (x *MockHttpServer_MockResponse) String() string {
 func (*MockHttpServer_MockResponse) ProtoMessage() {}
 
 func (x *MockHttpServer_MockResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mock_http_server_tests_proto_msgTypes[3]
+	mi := &file_mock_http_server_tests_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -371,41 +584,63 @@ var File_mock_http_server_tests_proto protoreflect.FileDescriptor
 
 const file_mock_http_server_tests_proto_rawDesc = "" +
 	"\n" +
-	"\x1cmock_http_server_tests.proto\x12 tsunami_templated_detector_tests\"\xcd\x04\n" +
+	"\x1cmock_http_server_tests.proto\x12 tsunami_templated_detector_tests\"\xbc\a\n" +
 	"\x0eMockHttpServer\x12d\n" +
 	"\x0emock_responses\x18\x01 \x03(\v2=.tsunami_templated_detector_tests.MockHttpServer.MockResponseR\rmockResponses\x1a6\n" +
 	"\n" +
 	"HttpHeader\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\x1a\x89\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\x1a9\n" +
+	"\rHttpParameter\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\x1a \n" +
+	"\x04Data\x12\x18\n" +
+	"\acontent\x18\x01 \x01(\tR\acontent\x1a\xce\x02\n" +
 	"\rHttpCondition\x12U\n" +
 	"\aheaders\x18\x01 \x03(\v2;.tsunami_templated_detector_tests.MockHttpServer.HttpHeaderR\aheaders\x12!\n" +
-	"\fbody_content\x18\x02 \x03(\tR\vbodyContent\x1a\x90\x02\n" +
+	"\fbody_content\x18\x02 \x03(\tR\vbodyContent\x12c\n" +
+	"\rget_parameter\x18\x03 \x03(\v2>.tsunami_templated_detector_tests.MockHttpServer.HttpParameterR\fgetParameter\x12^\n" +
+	"\frequest_type\x18\x04 \x01(\x0e2;.tsunami_templated_detector_tests.MockHttpServer.HttpMethodR\vrequestType\x1a\x90\x02\n" +
 	"\fMockResponse\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\x05R\x06status\x12\x10\n" +
 	"\x03uri\x18\x02 \x01(\tR\x03uri\x12U\n" +
 	"\aheaders\x18\x03 \x03(\v2;.tsunami_templated_detector_tests.MockHttpServer.HttpHeaderR\aheaders\x12!\n" +
 	"\fbody_content\x18\x04 \x01(\tR\vbodyContent\x12\\\n" +
-	"\tcondition\x18\x05 \x01(\v2>.tsunami_templated_detector_tests.MockHttpServer.HttpConditionR\tconditionB\xa2\x01\n" +
+	"\tcondition\x18\x05 \x01(\v2>.tsunami_templated_detector_tests.MockHttpServer.HttpConditionR\tcondition\"K\n" +
+	"\n" +
+	"HttpMethod\x12\v\n" +
+	"\aUNKNOWN\x10\x00\x12\a\n" +
+	"\x03GET\x10\x01\x12\b\n" +
+	"\x04POST\x10\x02\x12\a\n" +
+	"\x03PUT\x10\x03\x12\n" +
+	"\n" +
+	"\x06DELETE\x10\x04\x12\b\n" +
+	"\x04HEAD\x10\x05B\xa2\x01\n" +
 	".com.google.tsunami.templatedplugin.proto.testsP\x01Zngithub.com/google/tsunami-security-scanner-plugins/templated/templateddetector/proto/templated_plugin_go_protob\x06proto3"
 
-var file_mock_http_server_tests_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_mock_http_server_tests_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_mock_http_server_tests_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_mock_http_server_tests_proto_goTypes = []any{
-	(*MockHttpServer)(nil),               // 0: tsunami_templated_detector_tests.MockHttpServer
-	(*MockHttpServer_HttpHeader)(nil),    // 1: tsunami_templated_detector_tests.MockHttpServer.HttpHeader
-	(*MockHttpServer_HttpCondition)(nil), // 2: tsunami_templated_detector_tests.MockHttpServer.HttpCondition
-	(*MockHttpServer_MockResponse)(nil),  // 3: tsunami_templated_detector_tests.MockHttpServer.MockResponse
+	(MockHttpServer_HttpMethod)(0),       // 0: tsunami_templated_detector_tests.MockHttpServer.HttpMethod
+	(*MockHttpServer)(nil),               // 1: tsunami_templated_detector_tests.MockHttpServer
+	(*MockHttpServer_HttpHeader)(nil),    // 2: tsunami_templated_detector_tests.MockHttpServer.HttpHeader
+	(*MockHttpServer_HttpParameter)(nil), // 3: tsunami_templated_detector_tests.MockHttpServer.HttpParameter
+	(*MockHttpServer_Data)(nil),          // 4: tsunami_templated_detector_tests.MockHttpServer.Data
+	(*MockHttpServer_HttpCondition)(nil), // 5: tsunami_templated_detector_tests.MockHttpServer.HttpCondition
+	(*MockHttpServer_MockResponse)(nil),  // 6: tsunami_templated_detector_tests.MockHttpServer.MockResponse
 }
 var file_mock_http_server_tests_proto_depIdxs = []int32{
-	3, // 0: tsunami_templated_detector_tests.MockHttpServer.mock_responses:type_name -> tsunami_templated_detector_tests.MockHttpServer.MockResponse
-	1, // 1: tsunami_templated_detector_tests.MockHttpServer.HttpCondition.headers:type_name -> tsunami_templated_detector_tests.MockHttpServer.HttpHeader
-	1, // 2: tsunami_templated_detector_tests.MockHttpServer.MockResponse.headers:type_name -> tsunami_templated_detector_tests.MockHttpServer.HttpHeader
-	2, // 3: tsunami_templated_detector_tests.MockHttpServer.MockResponse.condition:type_name -> tsunami_templated_detector_tests.MockHttpServer.HttpCondition
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	6, // 0: tsunami_templated_detector_tests.MockHttpServer.mock_responses:type_name -> tsunami_templated_detector_tests.MockHttpServer.MockResponse
+	2, // 1: tsunami_templated_detector_tests.MockHttpServer.HttpCondition.headers:type_name -> tsunami_templated_detector_tests.MockHttpServer.HttpHeader
+	3, // 2: tsunami_templated_detector_tests.MockHttpServer.HttpCondition.get_parameter:type_name -> tsunami_templated_detector_tests.MockHttpServer.HttpParameter
+	0, // 3: tsunami_templated_detector_tests.MockHttpServer.HttpCondition.request_type:type_name -> tsunami_templated_detector_tests.MockHttpServer.HttpMethod
+	2, // 4: tsunami_templated_detector_tests.MockHttpServer.MockResponse.headers:type_name -> tsunami_templated_detector_tests.MockHttpServer.HttpHeader
+	5, // 5: tsunami_templated_detector_tests.MockHttpServer.MockResponse.condition:type_name -> tsunami_templated_detector_tests.MockHttpServer.HttpCondition
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_mock_http_server_tests_proto_init() }
@@ -418,13 +653,14 @@ func file_mock_http_server_tests_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_mock_http_server_tests_proto_rawDesc), len(file_mock_http_server_tests_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   4,
+			NumEnums:      1,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_mock_http_server_tests_proto_goTypes,
 		DependencyIndexes: file_mock_http_server_tests_proto_depIdxs,
+		EnumInfos:         file_mock_http_server_tests_proto_enumTypes,
 		MessageInfos:      file_mock_http_server_tests_proto_msgTypes,
 	}.Build()
 	File_mock_http_server_tests_proto = out.File

@@ -5,9 +5,6 @@ config: {
   tested_plugin: "NodeRED_ExposedUI"
 }
 
-# TODO: b/445109504 - In the current state of things, it is not possible to
-# unit test the valid condition of that plugin extensively. The templated unit
-# testing system needs to allow for different answers for the same URI.
 
 tests: {
   name: "whenNotNodeRedNotFound_returnsNoVuln"
@@ -33,6 +30,31 @@ tests: {
         uri: "/flows"
         status: 202
         body_content: "{\"error\": \"invalid response\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerable_returnsVuln"
+  expect_vulnerability: true
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/flows"
+        condition: { request_type: GET }
+        status: 200
+        body_content: "[{\"id\":\"f6f2187d.f17ca8\",\"wires\":[[]]}]"
+      },
+      {
+        uri: "/flows"
+        condition: { request_type: POST }
+        status: 200
+        body_content: "{\"rev\":\"12345\"}"
       }
     ]
   }
