@@ -15,7 +15,6 @@
  */
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.flowise;
 
-// TODO rm - just for tests
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 import static org.mockito.ArgumentMatchers.any;
@@ -214,7 +213,7 @@ public class FlowiseCredentialTesterTest {
       }
 
       // Default response
-      writeToLog("!! Default response");
+      writeToLog("(unexpected) Default response");
       return new MockResponse().setResponseCode(HttpStatus.OK.code());
     }
   }
