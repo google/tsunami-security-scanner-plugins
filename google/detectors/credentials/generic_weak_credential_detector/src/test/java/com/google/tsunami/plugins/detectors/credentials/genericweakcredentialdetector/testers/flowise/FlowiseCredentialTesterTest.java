@@ -16,10 +16,6 @@
 package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.flowise;
 
 // TODO rm - just for tests
-import java.io.FileWriter;
-import java.io.PrintWriter;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,12 +36,14 @@ import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.ServiceContext;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.WebServiceContext;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.Connection;
-import java.util.function.Consumer;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import javax.inject.Inject;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
@@ -59,8 +57,6 @@ import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
-
-
 
 /** Tests for {@link FlowiseCredentialTester}. */
 @RunWith(JUnit4.class)
@@ -81,19 +77,20 @@ public class FlowiseCredentialTesterTest {
   private static final ServiceContext.Builder flowiseServiceContext =
       ServiceContext.newBuilder()
           .setWebServiceContext(
-              WebServiceContext.newBuilder()
-                  .setSoftware(Software.newBuilder().setName("flowise")));
-  
+              WebServiceContext.newBuilder().setSoftware(Software.newBuilder().setName("flowise")));
+
   private static final String FLOWISE_LOG_FILE = null; // "/tmp/tsunamiFlowise.log";
-  
+
   @Before
   public void setup() {
     mockWebServer = new MockWebServer();
     Guice.createInjector(new HttpClientModule.Builder().build()).injectMembers(this);
   }
-  
-  public void detect_global(ImmutableList<TestCredential> checkCreds, Consumer<IterableSubject> assertCondition) throws Exception {
-	startMockWebServer();
+
+  public void detect_global(
+      ImmutableList<TestCredential> checkCreds, Consumer<IterableSubject> assertCondition)
+      throws Exception {
+    startMockWebServer();
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
             .setNetworkEndpoint(
@@ -102,36 +99,28 @@ public class FlowiseCredentialTesterTest {
             .setServiceContext(flowiseServiceContext)
             .setSoftware(Software.newBuilder().setName("http"))
             .build();
-	
+
     assertCondition.accept(
-		assertThat(tester.testValidCredentials(targetNetworkService, checkCreds))
-	);
-        
+        assertThat(tester.testValidCredentials(targetNetworkService, checkCreds)));
+
     mockWebServer.shutdown();
   }
 
   @Test
   public void detect_weakCredential_returnsWeakCredentials() throws Exception {
-	detect_global(
-		ImmutableList.of( WEAK_CRED_1 ),
-		x -> x.containsExactly( WEAK_CRED_1 )
-	);
+    detect_global(ImmutableList.of(WEAK_CRED_1), x -> x.containsExactly(WEAK_CRED_1));
   }
 
   @Test
   public void detect_weakCredential_returnsAllWeakCredentials() throws Exception {
-	detect_global(
-		ImmutableList.of( WEAK_CRED_1, WEAK_CRED_2 ),
-		x -> x.containsExactly( WEAK_CRED_1, WEAK_CRED_2 )
-	);
+    detect_global(
+        ImmutableList.of(WEAK_CRED_1, WEAK_CRED_2),
+        x -> x.containsExactly(WEAK_CRED_1, WEAK_CRED_2));
   }
 
   @Test
   public void detect_strongCredential_returnsNoCredentials() throws Exception {
-	detect_global(
-		ImmutableList.of( STRONG_CRED_1, STRONG_CRED_2 ),
-		x -> x.isEmpty()
-	);
+    detect_global(ImmutableList.of(STRONG_CRED_1, STRONG_CRED_2), x -> x.isEmpty());
   }
 
   @Test
@@ -159,70 +148,77 @@ public class FlowiseCredentialTesterTest {
   }
 
   private static final class FlowiseCredentialTesterDispatcher extends Dispatcher {
-	private Set<TestCredential> appRegisteredCredentials = new HashSet<>();
-	
+    private Set<TestCredential> appRegisteredCredentials = new HashSet<>();
+
     public FlowiseCredentialTesterDispatcher() {
-		// Adding credentials to the list of valid users
-		this.appRegisteredCredentials.add(FlowiseCredentialTesterTest.WEAK_CRED_1);
-		this.appRegisteredCredentials.add(FlowiseCredentialTesterTest.WEAK_CRED_2);
+      // Adding credentials to the list of valid users
+      this.appRegisteredCredentials.add(FlowiseCredentialTesterTest.WEAK_CRED_1);
+      this.appRegisteredCredentials.add(FlowiseCredentialTesterTest.WEAK_CRED_2);
     }
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
-		// Authentication API
-		if (recordedRequest.getPath().equals("/api/v1/auth/login")) {
-			// Expecting JSON-formatted body
-			String reqBody = recordedRequest.getBody().readUtf8();
-			try {
-				JsonObject reqJson = JsonParser.parseString(reqBody).getAsJsonObject();
-				
-				// Only processing if expected parameters are set
-				if (reqJson.has("email") && reqJson.has("password")) {
-			
-					String reqEmail = reqJson.get("email").getAsString();
-					String reqPassword = reqJson.get("password").getAsString();
-					
-					writeToLog("Received AUTH request: [email=" +reqEmail+ " password=" +reqPassword + "]");
-					
-					for (TestCredential cred: this.appRegisteredCredentials) {
-						// Existing account
-						if (reqEmail.equals(cred.username())) {
-							// Valid password
-							if (reqPassword.equals(cred.password().orElse(""))) {
-								writeToLog("Response = OK");
-								return new MockResponse()
-									.setResponseCode(HttpStatus.OK.code())
-									.setBody("{\"id\":\"5b658172-fab9-478c-b6a3-bcf19a4ec1b3\",\"email\":\"admin@localhost.lan\",\"name\":\"Admin\",\"roleId\":\"6ec75515-d825-14ff-84a6-92e55c3f8991\",\"activeOrganizationId\":\"4ba1ad86-6cbb-4679-a86c-8b011dfc5e10\",\"activeOrganizationSubscriptionId\":null,\"activeOrganizationCustomerId\":null,\"activeOrganizationProductId\":\"\",\"isOrganizationAdmin\":true,\"activeWorkspaceId\":\"bf8816b0-9c49-4095-a646-0f26076c351e\",\"activeWorkspace\":\"Default Workspace\",\"assignedWorkspaces\":[{\"id\":\"bf8816b0-9c49-4095-a646-0f26076c351e\",\"name\":\"Default Workspace\",\"role\":\"owner\",\"organizationId\":\"4ba1ad86-6cbb-4679-a86c-8b011dfc5e10\"}],\"permissions\":[\"organization\",\"workspace\"],\"features\":{},\"isSSO\":false}");
-							}
-							// Wrong password
-							else {
-								writeToLog("Response = 401");
-								return new MockResponse()
-									.setResponseCode(HttpStatus.UNAUTHORIZED.code())
-									.setBody("{\"statusCode\":401,\"success\":false,\"message\":\"Incorrect Email or Password\",\"stack\":{}}");
-							}
-						}
-					}
-					
-					// Invalid account
-					writeToLog("Response = 404");
-					return new MockResponse()
-						.setResponseCode(HttpStatus.NOT_FOUND.code())
-						.setBody("{\"statusCode\":404,\"success\":false,\"message\":\"User Not Found\",\"stack\":{}}");
-				}
-				
-			} catch (JsonSyntaxException e) {
-				return new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
-			}
-		}
-		
-		// Default response
-		writeToLog("!! Default response");
-		return new MockResponse()
-            .setResponseCode(HttpStatus.OK.code());
+      // Authentication API
+      if (recordedRequest.getPath().equals("/api/v1/auth/login")) {
+        // Expecting JSON-formatted body
+        String reqBody = recordedRequest.getBody().readUtf8();
+        try {
+          JsonObject reqJson = JsonParser.parseString(reqBody).getAsJsonObject();
+
+          // Only processing if expected parameters are set
+          if (reqJson.has("email") && reqJson.has("password")) {
+
+            String reqEmail = reqJson.get("email").getAsString();
+            String reqPassword = reqJson.get("password").getAsString();
+
+            writeToLog(
+                "Received AUTH request: [email=" + reqEmail + " password=" + reqPassword + "]");
+
+            for (TestCredential cred : this.appRegisteredCredentials) {
+              // Existing account
+              if (reqEmail.equals(cred.username())) {
+                // Valid password
+                if (reqPassword.equals(cred.password().orElse(""))) {
+                  writeToLog("Response = OK");
+                  return new MockResponse()
+                      .setResponseCode(HttpStatus.OK.code())
+                      .setBody(
+                          "{\"id\":\"5b658172-fab9-478c-b6a3-bcf19a4ec1b3\",\"email\":\"admin@localhost.lan\",\"name\":\"Admin\",\"roleId\":\"6ec75515-d825-14ff-84a6-92e55c3f8991\",\"activeOrganizationId\":\"4ba1ad86-6cbb-4679-a86c-8b011dfc5e10\",\"activeOrganizationSubscriptionId\":null,\"activeOrganizationCustomerId\":null,\"activeOrganizationProductId\":\"\",\"isOrganizationAdmin\":true,\"activeWorkspaceId\":\"bf8816b0-9c49-4095-a646-0f26076c351e\",\"activeWorkspace\":\"Default"
+                              + " Workspace\",\"assignedWorkspaces\":[{\"id\":\"bf8816b0-9c49-4095-a646-0f26076c351e\",\"name\":\"Default"
+                              + " Workspace\",\"role\":\"owner\",\"organizationId\":\"4ba1ad86-6cbb-4679-a86c-8b011dfc5e10\"}],\"permissions\":[\"organization\",\"workspace\"],\"features\":{},\"isSSO\":false}");
+                }
+                // Wrong password
+                else {
+                  writeToLog("Response = 401");
+                  return new MockResponse()
+                      .setResponseCode(HttpStatus.UNAUTHORIZED.code())
+                      .setBody(
+                          "{\"statusCode\":401,\"success\":false,\"message\":\"Incorrect Email or"
+                              + " Password\",\"stack\":{}}");
+                }
+              }
+            }
+
+            // Invalid account
+            writeToLog("Response = 404");
+            return new MockResponse()
+                .setResponseCode(HttpStatus.NOT_FOUND.code())
+                .setBody(
+                    "{\"statusCode\":404,\"success\":false,\"message\":\"User Not"
+                        + " Found\",\"stack\":{}}");
+          }
+
+        } catch (JsonSyntaxException e) {
+          return new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+        }
+      }
+
+      // Default response
+      writeToLog("!! Default response");
+      return new MockResponse().setResponseCode(HttpStatus.OK.code());
     }
   }
-  
+
   private static boolean writeToLog(String str) {
     if (FLOWISE_LOG_FILE != null) {
       try (PrintWriter writer = new PrintWriter(new FileWriter(FLOWISE_LOG_FILE, true))) {
