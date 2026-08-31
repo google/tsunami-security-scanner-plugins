@@ -28,7 +28,7 @@ This directory contains all Tsunami plugins published by Google.
 *   [Exposed Kubernetes APIDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/kubernetes)
 *   [Exposed PHPUnit Vulnerable eval-stdin.php Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/phpunit)
 *   [Exposed Spring Boot Actuator Endpoint Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/spring)
-*   [Exposed WordPress Installation Page Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/wordpress)
+*   [Exposed WordPress Installation Page Detector, now updated to Templated format](https://github.com/google/tsunami-security-scanner-plugins/tree/master/templated/templateddetector/plugins/exposedui/Wordpress_UnfinishedInstall_ExposedUI.textproto)
 
 #### Remote Code Execution (RCE)
 *   [PHP RCE (CVE-2012-1823) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/rce/cve20121823)
