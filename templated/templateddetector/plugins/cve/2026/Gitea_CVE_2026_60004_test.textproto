@@ -1,0 +1,255 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Gitea_CVE_2026_60004"
+}
+
+tests: {
+  name: "whenVulnerableReflective_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "i_like_gitea=6b0a8bccdd71a9fa; Path=/; HttpOnly; SameSite=Lax" }
+        ]
+        body_content: "<title>Gitea:...</title>"
+      },
+      {
+        uri: "/user/sign_up"
+        status: 303
+        headers: [
+          { name: "Set-Cookie" value: "i_like_gitea=6b0a8bccdd71a9fa; Path=/; HttpOnly; SameSite=Lax" },
+          { name: "Location" value: "/" }
+        ]
+        body_content: ""
+      },
+      {
+        uri: "/user/settings/account/delete"
+        status: 200
+        body_content: "<title>Gitea:...</title>"
+      },
+      {
+        uri: "/user/settings/applications"
+        status: 303
+        headers: [
+          { name: "Set-Cookie" value: "gitea_flash=info%3Dac6367be20fd8d30747c967d00ed48edeb6137d8%26success%3DYour%2Bnew%2Btoken%2Bhas%2Bbeen%2Bgenerated.%2BCopy%2Bit%2Bnow%2Bas%2Bit%2Bwill%2Bnot%2Bbe%2Bshown%2Bagain.; Path=/; HttpOnly; SameSite=Lax" },
+          { name: "Location" value: "/user/settings/applications" }
+        ]
+        body_content: ""
+      },
+      {
+        uri: "/api/v1/user/repos"
+        status: 201
+        body_content: "..."
+      },
+      {
+        uri: "/api/v1/repos/tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}/tsunami-test-{{ T_UTL_CURRENT_TIMESTAMP_MS }}/diffpatch"
+        status: 201
+        body_content: "..."
+      },
+      {
+        uri: "/api/v1/repos/tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}/tsunami-test-{{ T_UTL_CURRENT_TIMESTAMP_MS }}/raw/README.md"
+        status: 200
+        body_content: "... 1f21f020c9 ..."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerableReflective_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "i_like_gitea=6b0a8bccdd71a9fa; Path=/; HttpOnly; SameSite=Lax" }
+        ]
+        body_content: "<title>Gitea:...</title>"
+      },
+      {
+        uri: "/user/sign_up"
+        status: 303
+        headers: [
+          { name: "Set-Cookie" value: "i_like_gitea=6b0a8bccdd71a9fa; Path=/; HttpOnly; SameSite=Lax" },
+          { name: "Location" value: "/" }
+        ]
+        body_content: ""
+      },
+      {
+        uri: "/user/settings/account/delete"
+        status: 200
+        body_content: "<title>Gitea:...</title>"
+      },
+      {
+        uri: "/user/settings/applications"
+        status: 303
+        headers: [
+          { name: "Set-Cookie" value: "gitea_flash=info%3Dac6367be20fd8d30747c967d00ed48edeb6137d8%26success%3DYour%2Bnew%2Btoken%2Bhas%2Bbeen%2Bgenerated.%2BCopy%2Bit%2Bnow%2Bas%2Bit%2Bwill%2Bnot%2Bbe%2Bshown%2Bagain.; Path=/; HttpOnly; SameSite=Lax" },
+          { name: "Location" value: "/user/settings/applications" }
+        ]
+        body_content: ""
+      },
+      {
+        uri: "/api/v1/user/repos"
+        status: 201
+        body_content: "..."
+      },
+      {
+        uri: "/api/v1/repos/tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}/tsunami-test-{{ T_UTL_CURRENT_TIMESTAMP_MS }}/diffpatch"
+        status: 201
+        body_content: "..."
+      },
+      {
+        uri: "/api/v1/repos/tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}/tsunami-test-{{ T_UTL_CURRENT_TIMESTAMP_MS }}/raw/README.md"
+        status: 200
+        body_content: "..."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerableOob_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "i_like_gitea=6b0a8bccdd71a9fa; Path=/; HttpOnly; SameSite=Lax" }
+        ]
+        body_content: "<title>Gitea:...</title>"
+      },
+      {
+        uri: "/user/sign_up"
+        status: 303
+        headers: [
+          { name: "Set-Cookie" value: "i_like_gitea=6b0a8bccdd71a9fa; Path=/; HttpOnly; SameSite=Lax" },
+          { name: "Location" value: "/" }
+        ]
+        body_content: ""
+      },
+      {
+        uri: "/user/settings/account/delete"
+        status: 200
+        body_content: "<title>Gitea:...</title>"
+      },
+      {
+        uri: "/user/settings/applications"
+        status: 303
+        headers: [
+          { name: "Set-Cookie" value: "gitea_flash=info%3Dac6367be20fd8d30747c967d00ed48edeb6137d8%26success%3DYour%2Bnew%2Btoken%2Bhas%2Bbeen%2Bgenerated.%2BCopy%2Bit%2Bnow%2Bas%2Bit%2Bwill%2Bnot%2Bbe%2Bshown%2Bagain.; Path=/; HttpOnly; SameSite=Lax" },
+          { name: "Location" value: "/user/settings/applications" }
+        ]
+        body_content: ""
+      },
+      {
+        uri: "/api/v1/user/repos"
+        status: 201
+        body_content: "..."
+      },
+      {
+        uri: "/api/v1/repos/tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}/tsunami-test-{{ T_UTL_CURRENT_TIMESTAMP_MS }}/diffpatch"
+        status: 201
+        body_content: "..."
+      },
+      {
+        uri: "/api/v1/repos/tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}/tsunami-test-{{ T_UTL_CURRENT_TIMESTAMP_MS }}/raw/README.md"
+        status: 200
+        body_content: "..."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerableOob_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "i_like_gitea=6b0a8bccdd71a9fa; Path=/; HttpOnly; SameSite=Lax" }
+        ]
+        body_content: "<title>Gitea:...</title>"
+      },
+      {
+        uri: "/user/sign_up"
+        status: 303
+        headers: [
+          { name: "Set-Cookie" value: "i_like_gitea=6b0a8bccdd71a9fa; Path=/; HttpOnly; SameSite=Lax" },
+          { name: "Location" value: "/" }
+        ]
+        body_content: ""
+      },
+      {
+        uri: "/user/settings/account/delete"
+        status: 200
+        body_content: "<title>Gitea:...</title>"
+      },
+      {
+        uri: "/user/settings/applications"
+        status: 303
+        headers: [
+          { name: "Set-Cookie" value: "gitea_flash=info%3Dac6367be20fd8d30747c967d00ed48edeb6137d8%26success%3DYour%2Bnew%2Btoken%2Bhas%2Bbeen%2Bgenerated.%2BCopy%2Bit%2Bnow%2Bas%2Bit%2Bwill%2Bnot%2Bbe%2Bshown%2Bagain.; Path=/; HttpOnly; SameSite=Lax" },
+          { name: "Location" value: "/user/settings/applications" }
+        ]
+        body_content: ""
+      },
+      {
+        uri: "/api/v1/user/repos"
+        status: 201
+        body_content: "..."
+      },
+      {
+        uri: "/api/v1/repos/tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}/tsunami-test-{{ T_UTL_CURRENT_TIMESTAMP_MS }}/diffpatch"
+        status: 201
+        body_content: "..."
+      },
+      {
+        uri: "/api/v1/repos/tsunami{{ T_UTL_CURRENT_TIMESTAMP_MS }}/tsunami-test-{{ T_UTL_CURRENT_TIMESTAMP_MS }}/raw/README.md"
+        status: 200
+        body_content: "..."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRandomServer_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
