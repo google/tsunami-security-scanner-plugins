@@ -1,0 +1,96 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "SpringDataCommons_SpEL_Injection_CVE_2018_1273"
+}
+
+tests: {
+  name: "whenVulnerableOob_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/users"
+        status: 200
+        body_content: "<!DOCTYPE html><html><body><form action=\"/users?page=&amp;size=5\"><input name=\"username\" /></form></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerableOob_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/users"
+        status: 200
+        body_content: "<!DOCTYPE html><html><body><form action=\"/users?page=&amp;size=5\"><input name=\"username\" /></form></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerableReflective_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/users"
+        status: 200
+        body_content: "<!DOCTYPE html><html><body><form action=\"/users?page=&amp;size=5\"><input name=\"username\" /></form>InvocationTargetException</body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerableReflective_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/users"
+        status: 200
+        body_content: "<!DOCTYPE html><html><body><form action=\"/users?page=&amp;size=5\"><input name=\"username\" /></form>Safe output</body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotSpringApp_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
