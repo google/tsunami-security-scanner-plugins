@@ -1,0 +1,77 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ApacheNiFiApi_ExposedUI"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version,"
+    " Pankhuri Saxena (pankhurisaxena@google.com) for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "APACHE_NIFI_API_EXPOSED_UI"
+  }
+  severity: CRITICAL
+  title: "Apache NiFi API Exposed UI"
+  description: 
+    "Apache NiFi API is not password or token protected."
+  recommendation:
+    "Do not expose Apache NiFi API externally. Add authentication or bind it to"
+    " local network."
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_nifi"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all {
+        conditions: [
+          { body: {} contains: '<title>NiFi</title>' }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_api_unauth"
+  http_request: {
+    method: GET
+    uri: "/nifi-api/access/config"
+    response: {
+      http_status: 200
+      expect_all {
+        conditions: [
+          { body: {} contains: '"supportsLogin":false' }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_nifi",
+    "check_api_unauth"
+  ]
+}
+
