@@ -43,6 +43,7 @@ This directory contains all Tsunami plugins published by Google.
 *   [Apache Solr VelocityResponseWriter RCE (CVE-2019-17558) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/rce/solr_cve201917558)
 *   [Tomcat Ghostcat (CVE-2020-1938) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/rce/tomcat/ghostcat)
 *   [vBulletin Pre-Auth RCE (CVE-2019-16759) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/rce/vbulletin/cve201916759)
+*   [Apache OFBiz RCE (CVE-2024-32113) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/templated/templateddetector/plugins/cve/2024/ApacheOfbiz_CVE_2024_32113.textproto)
 
 ## Planned Detectors
 
