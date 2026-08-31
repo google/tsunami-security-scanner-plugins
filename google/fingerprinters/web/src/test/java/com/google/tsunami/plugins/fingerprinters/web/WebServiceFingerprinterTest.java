@@ -357,11 +357,15 @@ public final class WebServiceFingerprinterTest {
             FingerprintingReport.newBuilder()
                 .addNetworkServices(
                     networkService.toBuilder()
+                        .setServiceName(SOFTWARE_IDENTITY_4.getSoftware())
                         .setServiceContext(
                             ServiceContext.newBuilder()
                                 .setWebServiceContext(
                                     WebServiceContext.newBuilder()
-                                        .setApplicationRoot("/")
+                                        .setApplicationRoot(
+                                            String.format(
+                                                "http://%s/",
+                                                NetworkEndpointUtils.toUriAuthority(endpoint)))
                                         .setSoftware(
                                             Software.newBuilder()
                                                 .setName(SOFTWARE_IDENTITY_4.getSoftware())))))
@@ -424,11 +428,15 @@ public final class WebServiceFingerprinterTest {
             FingerprintingReport.newBuilder()
                 .addNetworkServices(
                     networkService.toBuilder()
+                        .setServiceName("MCP Server")
                         .setServiceContext(
                             ServiceContext.newBuilder()
                                 .setWebServiceContext(
                                     WebServiceContext.newBuilder()
-                                        .setApplicationRoot("/")
+                                        .setApplicationRoot(
+                                            String.format(
+                                                "http://%s/",
+                                                NetworkEndpointUtils.toUriAuthority(endpoint)))
                                         .setSoftware(Software.newBuilder().setName("MCP Server")))))
                 .build());
     assertThat(fingerprintingReport.getNetworkServices(0).getNetworkEndpoint())
@@ -473,11 +481,15 @@ public final class WebServiceFingerprinterTest {
             FingerprintingReport.newBuilder()
                 .addNetworkServices(
                     networkService.toBuilder()
+                        .setServiceName("MCP Server")
                         .setServiceContext(
                             ServiceContext.newBuilder()
                                 .setWebServiceContext(
                                     WebServiceContext.newBuilder()
-                                        .setApplicationRoot("/")
+                                        .setApplicationRoot(
+                                            String.format(
+                                                "http://%s/",
+                                                NetworkEndpointUtils.toUriAuthority(endpoint)))
                                         .setSoftware(Software.newBuilder().setName("MCP Server")))))
                 .build());
     assertThat(fingerprintingReport.getNetworkServices(0).getNetworkEndpoint())

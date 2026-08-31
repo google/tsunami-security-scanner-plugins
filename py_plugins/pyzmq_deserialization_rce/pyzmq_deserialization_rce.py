@@ -144,7 +144,7 @@ class PyZmqRceDetector(tsunami_plugin.VulnDetector):
         )
 
     try:
-      context = zmq.Context()
+      context = zmq.Context()  # pyrefly: ignore[missing-attribute]
       socket = context.socket(zmq.REQ)
       socket.connect(
           f'tcp://{network_service.network_endpoint.ip_address.address}:{network_service.network_endpoint.port.port_number}'

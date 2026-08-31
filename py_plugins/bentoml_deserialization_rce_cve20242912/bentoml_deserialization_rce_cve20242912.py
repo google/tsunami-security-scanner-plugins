@@ -157,9 +157,9 @@ class Cve20242912Detector(tsunami_plugin.VulnDetector):
     request = HttpRequest.get(url).with_empty_headers().build()
     try:
       response = self.http_client.send(request, network_service)
-      for path_name in response.body_json()['paths']:
-        for http_method in response.body_json()['paths'][path_name]:
-          for tags in response.body_json()['paths'][path_name][http_method][
+      for path_name in response.body_json()['paths']:  # pyrefly: ignore[unsupported-operation]
+        for http_method in response.body_json()['paths'][path_name]:  # pyrefly: ignore[unsupported-operation]
+          for tags in response.body_json()['paths'][path_name][http_method][  # pyrefly: ignore[unsupported-operation]
               'tags'
           ]:
             if tags == 'Service APIs':
