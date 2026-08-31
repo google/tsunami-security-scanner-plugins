@@ -1,0 +1,82 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "LiteLLM_CVE_2024_6587"
+}
+
+#########
+# TESTS #
+#########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/health/liveliness"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "\"I'm alive!\""
+      },
+      {
+        uri: "/chat/completions"
+        status: 500
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"error\":{\"message\":\"litellm.APIError: APIError: OpenAIException - Invalid response object Traceback (most recent call last):\\n  File \\\"/usr/local/lib/python3.11/site-packages/litellm/utils.py\\\", line 6077, in convert_to_model_response_object\\n    assert response_object[\\\"choices\\\"] is not None\\nAssertionError\\n\\nreceived_args={'response_object': {'headers': {'host': 'attacker-listener:8080', 'authorization': 'Bearer sk-super-secret-production-key-12345', 'content-type': 'application/json'}}}\"}}"
+      },
+      {
+        uri: "/models"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"object\":\"list\",\"data\":[{\"id\":\"gpt-3.5-turbo\",\"object\":\"model\",\"owned_by\":\"openai\"}]}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/health/liveliness"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "\"I'm alive!\""
+      },
+      {
+        uri: "/chat/completions"
+        status: 401
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"error\":{\"message\":\"Authentication Error, BadRequest: api_base is not allowed in request body\",\"type\":\"auth_error\",\"param\":\"None\",\"code\":\"401\"}}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotLiteLLM_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "<!doctype html>\n<html><head><title>Welcome to Nginx</title></head></html>"
+      }
+    ]
+  }
+}
