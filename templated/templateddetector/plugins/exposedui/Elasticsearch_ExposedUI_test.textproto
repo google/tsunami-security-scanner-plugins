@@ -1,0 +1,53 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Elasticsearch_ExposedUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: 
+          '{\n'
+          '  "name" : "es01",\n'
+          '  "cluster_name" : "docker-cluster",\n'
+          '  "cluster_uuid" : "Pee3wQ9qQLendzHZ_2Ng5A",\n'
+          '  "version" : {\n'
+          '    "number" : "9.3.4",\n'
+          '    "build_flavor" : "default",\n'
+          '    "build_type" : "docker",\n'
+          '    "build_hash" : "69a3e6c50ebb57a1fdbf3f235be9f11061ac7d86",\n'
+          '    "build_date" : "2026-04-22T22:10:58.242616321Z",\n'
+          '    "build_snapshot" : false,\n'
+          '    "lucene_version" : "10.3.2",\n'
+          '    "minimum_wire_compatibility_version" : "8.19.0",\n'
+          '    "minimum_index_compatibility_version" : "8.0.0"\n'
+          '  },\n'
+          '  "tagline" : "You Know, for Search"\n'
+          '}'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotElasticsearch_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
