@@ -1,0 +1,93 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "LiteLLM_ExposedRestApi"
+}
+
+tests: {
+  name: "whenVulnerable_modelsExposed_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/health/readiness"
+        status: 200
+        body_content: "{\"status\":\"connected\",\"db\":\"connected\",\"litellm_version\":\"1.40.0\"}"
+      },
+      {
+        uri: "/v1/models"
+        status: 200
+        body_content: "{\"object\":\"list\",\"data\":[{\"id\":\"gpt-4o\",\"object\":\"model\",\"created\":1677610602,\"owned_by\":\"openai\"}]}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_authRequired_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/health/readiness"
+        status: 200
+        body_content: "{\"status\":\"connected\",\"db\":\"connected\",\"litellm_version\":\"1.40.0\"}"
+      },
+      {
+        uri: "/v1/models"
+        status: 401
+        body_content: "{\"error\":{\"message\":\"Authentication Error, Provide a valid API Key\",\"type\":\"auth_error\",\"param\":null,\"code\":\"401\"}}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_models404_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/health/readiness"
+        status: 200
+        body_content: "{\"status\":\"connected\"}"
+      },
+      {
+        uri: "/v1/models"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotLitellm_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/health/readiness"
+        status: 404
+        body_content: "Not Found"
+      },
+      {
+        uri: "/v1/models"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
+
