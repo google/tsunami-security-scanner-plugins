@@ -58,6 +58,7 @@ import com.google.tsunami.proto.Version.VersionType;
 import com.google.tsunami.proto.VersionSet;
 import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Optional;
@@ -188,17 +189,28 @@ public final class WebServiceFingerprinter implements ServiceFingerprinter {
         .addAllNetworkServices(
             detectedSoftware.stream()
                 .map(
-                    software ->
-                        addWebServiceContext(
-                            // Overwrite service name
-                            networkService.toBuilder()
-                                .setServiceName(software.softwareIdentity().getSoftware())
-                                .build(),
-                            Optional.of(software),
-                            Optional.empty(),
-                            crawlResults))
+            software ->
+              addWebServiceContext(
+                networkService,
+                Optional.of(
+                  DetectedSoftware.builder()
+                    .setSoftwareIdentity(software.softwareIdentity())
+                    .setRootPath(getApplicationRootPath(startingUrl))
+                    .setContentHashes(software.contentHashes())
+                    .build()),
+                Optional.empty(),
+                crawlResults))
                 .collect(toImmutableList()))
         .build();
+  }
+
+  private static String getApplicationRootPath(String startingUrl) {
+    try {
+      String path = URI.create(startingUrl).getPath();
+      return (path == null || path.isEmpty()) ? "/" : path;
+    } catch (IllegalArgumentException e) {
+      return "/";
+    }
   }
 
   private ImmutableMap<DetectedSoftware, DetectedVersion> detectSoftwareVersions(
