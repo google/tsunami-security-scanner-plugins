@@ -1,0 +1,67 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Flowise_ExposedUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsVuln"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '... Flowise ...'
+      },
+      {
+        uri: "/api/v1/apikey"
+        status: 200
+        body_content:
+          '[{"keyName":"DefaultKey","apiKey":"_not_a_real_secret__not_a_real_secret_"'
+          ',"apiSecret":"_not_a_real_secret__not_a_real_secret__not_a_real_secret_'
+          '_not_a_real_secret__not_a_real_secret__not_a_real_secret__not_a_real_secret_"'
+          ',"createdAt":"08-May-26","id":"d4085acd579159393200089ce83dcf7f","chatFlows":[]}]'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenAuthReqd_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '... Flowise ...'
+      },
+      {
+        uri: "/api/v1/apikey"
+        status: 401
+        body_content:
+          'Unauthorized'
+      }
+    ]
+  }
+}
+
+
+tests: {
+  name: "whenRandomServer_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri:  "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "... Hello world ..."
+      }
+    ]
+  }
+}
