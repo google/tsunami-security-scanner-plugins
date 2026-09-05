@@ -48,6 +48,7 @@ This directory contains plugins contributed by community members.
 *   [Uptrain Exposed API VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/uptrain_exposed_api)
 *   [CVE-2025-0655 D-Tale Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/dtale_cve_2025_0655)
 *   [Flowise Exposed UI Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/flowise_exposed_ui)
+*   [Papercut NG/MF Authentication Bypass and RCE, now updated to Templated format](https://github.com/google/tsunami-security-scanner-plugins/tree/master/templated/templateddetector/plugins/cve/2023/PapercutNgMf_CVE_2023_27350.textproto)
 
 #### XML External Entity (XXE) Injection
 
