@@ -1,0 +1,106 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "JFrog_Artifactory_Token_Exposure_CVE_2026_42018"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/artifactory/api/system/ping"
+        status: 200
+        body_content: "OK"
+      },
+      {
+        uri: "/artifactory/ui/auth/current"
+        status: 200
+        body_content: "{\"name\":\"anonymous\",\"anonAccessEnabled\":false}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      },
+      {
+        uri: "/access/api/v1/aws/token/"
+        status: 200
+        body_content: "{\"access_token\":\"eyJ2ZXIiOiIy...\",\"expires_in\":3600,\"scope\":\"applied-permissions/user\",\"token_type\":\"Bearer\",\"description\":\"Generated access token for Aws assumed role token exchange\",\"username\":\"anonymous\"}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatched_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/artifactory/api/system/ping"
+        status: 200
+        body_content: "OK"
+      },
+      {
+        uri: "/artifactory/ui/auth/current"
+        status: 200
+        body_content: "{\"name\":\"anonymous\",\"anonAccessEnabled\":false}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      },
+      {
+        uri: "/access/api/v1/aws/token/"
+        status: 401
+        body_content: "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"HTTP 401 Unauthorized\",\"detail\":\"Aws request has failed\"}]}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenAnonymousAllowed_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/artifactory/api/system/ping"
+        status: 200
+        body_content: "OK"
+      },
+      {
+        uri: "/artifactory/ui/auth/current"
+        status: 200
+        body_content: "{\"name\":\"anonymous\",\"anonAccessEnabled\":true}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotArtifactory_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
