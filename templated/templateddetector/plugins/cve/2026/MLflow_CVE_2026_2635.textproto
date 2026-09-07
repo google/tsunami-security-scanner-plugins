@@ -1,0 +1,82 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "MLflow_CVE_2026_2635"
+  author: "sanjaymahajan14"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-2635"
+  }
+  severity: CRITICAL
+  title: "MLflow Hard-coded Default Credentials Authentication Bypass"
+  description: "A critical authentication bypass vulnerability exists in MLflow due to hard-coded default credentials in basic_auth.ini. Unauthenticated remote attackers can leverage these default credentials to gain administrative access to MLflow instances, access sensitive models/data, and potentially execute arbitrary code."
+  recommendation: "Update basic_auth.ini to change default credentials, disable default authentication mechanisms, or upgrade MLflow to a patched version 2.11.0 (or the latest available stable release)."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-2635"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_mlflow"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 401
+      expect_any: {
+        conditions: [
+          { body: {} contains: "mlflow" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "probe_default_basic_auth"
+  http_request: {
+    method: GET
+    uri: "/api/2.0/mlflow/users/get?username=admin"
+    headers: [
+      # Basic authorization header with default 'admin:password' credentials
+      { name: "Authorization" value: "Basic YWRtaW46cGFzc3dvcmQ=" }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"is_admin\":true" },
+          { body: {} contains: "\"username\":\"admin\"" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_mlflow",
+    "probe_default_basic_auth"
+  ]
+}
