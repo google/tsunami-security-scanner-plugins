@@ -16,6 +16,13 @@ repositories {
 
 def coreRepoBranch = System.getenv("GITBRANCH_TSUNAMI_CORE") ?: "stable"
 
+configurations.all {
+    resolutionStrategy.dependencySubstitution {
+        substitute module('com.squareup.okhttp3:okhttp') using module('com.squareup.okhttp3:okhttp-jvm:5.5.0')
+        substitute module('com.squareup.okhttp3:mockwebserver') using module('com.squareup.okhttp3:mockwebserver3:5.5.0')
+    }
+}
+
 dependencies {
     implementation("com.google.tsunami:tsunami-common") {
       version { branch = "${coreRepoBranch}" }
@@ -34,4 +41,11 @@ dependencies {
     testImplementation "com.squareup.okhttp3:mockwebserver3:5.5.0"
     testImplementation "com.google.truth.extensions:truth-java8-extension:1.4.4"
     testImplementation "com.google.truth.extensions:truth-proto-extension:1.4.4"
+}
+
+tasks.named('test') {
+    classpath = files(
+        classpath.filter { it.name.contains('mockwebserver') || it.name.contains('okhttp') || it.name.contains('okio') || it.name.contains('kotlin') },
+        classpath.filter { !it.name.contains('mockwebserver') && !it.name.contains('okhttp') && !it.name.contains('okio') && !it.name.contains('kotlin') }
+    )
 }
