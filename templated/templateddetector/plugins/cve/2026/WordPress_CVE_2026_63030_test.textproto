@@ -1,0 +1,76 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "WordPress_CVE_2026_63030"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/?rest_route=/"
+        status: 200
+        body_content: "{\"name\":\"Example Site\",\"description\":\"Just another WordPress site\",\"namespaces\":[\"oembed\\/1.0\",\"wp\\/v2\",\"batch\\/v1\"],\"routes\":{}}"
+      },
+      {
+        uri: "/?rest_route=/batch/v1"
+        status: 207
+        body_content: "{\"responses\":[{\"body\":\"\",\"status\":200,\"headers\":{}},{\"body\":{\"responses\":[{\"body\":\"\",\"status\":200,\"headers\":{}},{\"body\":{\"id\":0,\"date\":\"2020-01-01T00:00:00\",\"title\":{\"raw\":\"||34333434373237383937||\",\"rendered\":\"||34333434373237383937||\"},\"status\":\"publish\",\"type\":\"post\"},\"status\":404,\"headers\":{}},{\"body\":[],\"status\":200,\"headers\":{}}]},\"status\":200,\"headers\":{}},{\"body\":\"\",\"status\":200,\"headers\":{}}]}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedWordPress_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/?rest_route=/"
+        status: 200
+        body_content: "{\"name\":\"Example Site\",\"description\":\"Just another WordPress site\",\"namespaces\":[\"oembed\\/1.0\",\"wp\\/v2\",\"batch\\/v1\"],\"routes\":{}}"
+      },
+      {
+        uri: "/?rest_route=/batch/v1"
+        status: 207
+        body_content: "{\"responses\":[{\"body\":\"\",\"status\":200,\"headers\":{}},{\"body\":{\"responses\":[{\"body\":\"\",\"status\":200,\"headers\":{}},{\"body\":{\"code\":\"rest_post_invalid_id\",\"message\":\"Invalid post ID.\",\"data\":{\"status\":404}},\"status\":404,\"headers\":{}},{\"body\":[],\"status\":200,\"headers\":{}}]},\"status\":200,\"headers\":{}},{\"body\":\"\",\"status\":200,\"headers\":{}}]}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotWordPress_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/?rest_route=/"
+        status: 404
+        body_content: "<html><body><h1>404 Not Found</h1></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenBatchApiUnavailable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/?rest_route=/"
+        status: 200
+        body_content: "{\"name\":\"Example Site\",\"description\":\"Just another WordPress site\",\"namespaces\":[\"oembed\\/1.0\",\"wp\\/v2\"],\"routes\":{}}"
+      }
+    ]
+  }
+}
