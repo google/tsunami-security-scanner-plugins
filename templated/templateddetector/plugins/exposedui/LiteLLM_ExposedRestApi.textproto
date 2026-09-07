@@ -1,0 +1,88 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "LiteLLM_ExposedRestApi"
+  author: "sanjaymahajan14"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "LITELLM_EXPOSED_REST_API"
+  }
+  title: "Exposed LiteLLM REST API and Model Endpoints"
+  description:
+    "The LiteLLM proxy instance exposes its REST API and model endpoints without "
+    "proper authentication, allowing unauthenticated access to configured AI models, "
+    "internal model routing parameters, and inference capabilities. An unauthenticated "
+    "attacker can query model metadata, potentially send arbitrary inference requests, "
+    "consume downstream LLM API credits (denial of wallet), and discover internal routing "
+    "configurations."
+  recommendation:
+    "Configure authentication on the LiteLLM proxy by setting the LITELLM_MASTER_KEY "
+    "environment variable or configuring master keys in config.yaml. Ensure all /v1/models, "
+    "/models, /model/info, and inference endpoints require a valid Bearer token, and avoid "
+    "exposing the proxy directly to untrusted networks without an authentication layer. "
+    "See https://docs.litellm.ai/docs/proxy/reliability#master-key for details."
+  severity: CRITICAL
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_litellm"
+  http_request: {
+    method: GET
+    uri: "/health/readiness"
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "litellm_version" },
+          { body: {} contains: "status" },
+          { body: {} contains: "healthy" },
+          { body: {} contains: "db" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "get_unauth_models"
+  http_request: {
+    method: GET
+    uri: "/v1/models"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: '"object"' },
+          { body: {} contains: '"list"' },
+          { body: {} contains: '"data"' }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_litellm",
+    "get_unauth_models"
+  ]
+}
+
