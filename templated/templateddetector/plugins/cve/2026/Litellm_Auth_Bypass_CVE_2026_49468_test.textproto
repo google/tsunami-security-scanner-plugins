@@ -1,0 +1,67 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Litellm_Auth_Bypass_CVE_2026_49468"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/health/readiness"
+        status: 200
+        body_content: "{\"status\":\"ok\"}"
+      },
+      {
+        uri: "/key/generate"
+        status: 200
+        body_content: "{\"key\":\"sk-wP0uPRhJaJtgJGTU0O_nQg\",\"models\":[\"*\"]}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/health/readiness"
+        status: 200
+        body_content: "{\"status\":\"ok\"}"
+      },
+      {
+        uri: "/key/generate"
+        status: 401
+        body_content: "{\"error\":{\"message\":\"Authentication Error, No api key passed in.\",\"type\":\"auth_error\"}}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotLitellm_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
