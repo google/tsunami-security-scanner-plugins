@@ -24,7 +24,7 @@ This directory contains all Tsunami plugins published by Google.
 *   [Exposed Elasticsearch API Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/elasticsearch)
 *   [Exposed Hadoop Yarn ResourceManager API Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/hadoop/yarn)
 *   [Exposed Jenkins UI Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/jenkins)
-*   [Exposed Jupyter Notebook Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/jupyter)
+*   [Exposed Jupyter Notebook Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/templated/templateddetector/plugins/exposedui/JupyterNotebook_ExposedUI.textproto)
 *   [Exposed Kubernetes APIDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/kubernetes)
 *   [Exposed PHPUnit Vulnerable eval-stdin.php Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/phpunit)
 *   [Exposed Spring Boot Actuator Endpoint Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/spring)
