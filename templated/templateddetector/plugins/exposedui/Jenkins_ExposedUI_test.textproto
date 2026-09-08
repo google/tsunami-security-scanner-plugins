@@ -1,0 +1,74 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Jenkins_ExposedUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/view/all/newJob"
+        status: 200
+        body_content: 
+          '...\n'
+          '<template data-empty-name="This field cannot be empty, please enter a valid name"'
+          ' id="i18n"></template><div id="add-item-panel" style="display: none;"><div class='
+          '"jenkins-app-bar "><div class="jenkins-app-bar__content"><h1>\n'
+          'New Item\n'
+          '</h1></div><div class="jenkins-app-bar__controls"></div></div><form method="post"'
+          ' action="createItem" name="createItem" id="createItem"><div class="header">\n'
+          '...\n'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenJenkinsAuthRequired_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/view/all/newJob"
+        status: 200
+        body_content: 
+          "<html><head><meta http-equiv='refresh' content='1;url=/login?from=%2Fview%2Fall%2FnewJob'/>"
+          "<script id='redirect' data-redirect-url='/login?from=%2Fview%2Fall%2FnewJob'"
+          " src='/static/a4c7db15/scripts/redirect.js'></script></head>"
+          "<body style='background-color:white; color:white;'>\n"
+          "Authentication required\n"
+          "<!--\n"
+          "You are authenticated as: anonymous\n"
+          "Groups that you are in:\n"
+          "  anonymous\n"
+          "Permission you need to have (but didn't): hudson.model.Hudson.Read\n"
+          " ... which is implied by: hudson.security.Permission.GenericRead\n"
+          " ... which is implied by: hudson.model.Hudson.Administer\n"
+          "-->\n"
+          "\n"
+          "</body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotJenkins_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
