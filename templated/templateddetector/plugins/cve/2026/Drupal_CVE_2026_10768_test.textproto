@@ -1,0 +1,77 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Drupal_CVE_2026_10768"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/index.php?q=/core/misc/drupal.js"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/javascript" }
+        ]
+        body_content: "window.Drupal = { behavior: {} };"
+      },
+      {
+        uri: "/index.php?q=/admin/config/workflow/workflows"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html" }
+        ]
+        body_content: "<html><body><h1>Workflows</h1><a href=\"/admin/config/workflow/workflows/add\">Add workflow</a></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/index.php?q=/core/misc/drupal.js"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/javascript" }
+        ]
+        body_content: "window.Drupal = { behavior: {} };"
+      },
+      {
+        uri: "/index.php?q=/admin/config/workflow/workflows"
+        status: 403
+        headers: [
+          { name: "Content-Type" value: "text/html" }
+        ]
+        body_content: "<html><body><h1>403 Access Denied</h1></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotDrupal_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/index.php?q=/core/misc/drupal.js"
+        status: 404
+        headers: [
+          { name: "Content-Type" value: "text/html" }
+        ]
+        body_content: "<html><body>404 Not Found</body></html>"
+      }
+    ]
+  }
+}
