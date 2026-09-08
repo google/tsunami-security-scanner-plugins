@@ -43,11 +43,11 @@ This directory contains all Tsunami plugins published by Google.
 *   [Apache Solr VelocityResponseWriter RCE (CVE-2019-17558) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/rce/solr_cve201917558)
 *   [Tomcat Ghostcat (CVE-2020-1938) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/rce/tomcat/ghostcat)
 *   [vBulletin Pre-Auth RCE (CVE-2019-16759) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/rce/vbulletin/cve201916759)
+*   [Consul Exposed UI Detector, now updated to Templated format](https://github.com/google/tsunami-security-scanner-plugins/tree/master/templated/templateddetector/plugins/exposedui/Consul_ExposedUI.textproto)
 
 ## Planned Detectors
 
 *  Exposed unauthenticated [Adminer](https://www.adminer.org/) server.
-*  Exposed [Hashicorp Consul](https://www.consul.io/) API with enabled script checks.
 *  Exposed [Docker](https://www.docker.com/) daemon API.
 *  Exposed unauthenticated [Drupal](https://www.drupal.org/) installation page.
 *  Exposed unauthenticated [GoCD](https://www.gocd.org/) server.
