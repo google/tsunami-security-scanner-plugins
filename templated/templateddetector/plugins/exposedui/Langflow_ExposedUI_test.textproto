@@ -1,0 +1,86 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Langflow_ExposedUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/v1/version"
+        status: 200
+        body_content: '{"version":"1.10.1","main_version":"1.10.1","package":"Langflow"}'
+      },
+      {
+        uri: "/api/v1/users/whoami"
+        status: 200
+        body_content: 
+        '{"id":"ae76c1d9-6b48-4287-8463-65115fb65d14","username":"langflow","profile_ima'
+        'ge":null,"store_api_key":null,"is_active":true,"is_superuser":true,"create_at":'
+        '"2026-08-26T15:57:26.294302","updated_at":"2026-08-26T16:07:17.672016","last_lo'
+        'gin_at":"2026-08-26T16:07:17.670531","optins":{"github_starred":false,"dialog_d'
+        'ismissed":false,"discord_clicked":false}}'
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: ' ... '
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/v1/version"
+        status: 200
+        body_content: '{"version":"1.10.1","main_version":"1.10.1","package":"Langflow"}'
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 403
+        body_content: ' ... '
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRandomServer_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Login to your Drupal account"
+      }
+    ]
+  }
+}
