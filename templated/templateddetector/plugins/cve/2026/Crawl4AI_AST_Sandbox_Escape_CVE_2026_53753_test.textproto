@@ -1,0 +1,137 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Crawl4AI_AST_Sandbox_Escape_CVE_2026_53753"
+}
+
+tests: {
+  name: "whenVulnerableReflective_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/crawl"
+        status: 200
+        body_content:
+          '{'
+          '    "success": true,'
+          '    "results": ['
+          '        {'
+          '            "url": "raw://<html><body><div id=\"x\">content</div></body></html>",'
+          '            "success": true,'
+          '            "cleaned_html": "<html><body><div id=\"x\">content</div></body></html>",'
+          '            "extracted_content": "[\n    {\n        \"out\": [\n            '
+          '"uid=999(appuser) gid=999(appuser) groups=999(appuser)\n"\n        ]\n    }\n]"'
+          '        }'
+          '    ]'
+          '}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerableReflective_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/crawl"
+        status: 200
+        body_content:
+          '{'
+          '    "success": true,'
+          '    "results": ['
+          '        {'
+          '            "url": "raw://<html><body><div id=\"x\">content</div></body></html>",'
+          '            "cleaned_html": "<html><body><div id=\"x\">content</div></body></html>"'
+          '        }'
+          '    ]'
+          '}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerableOob_returnsTrue"
+  expect_vulnerability: true
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/crawl"
+        status: 200
+        body_content:
+          '{'
+          '    "success": true,'
+          '    "results": ['
+          '        {'
+          '            "url": "raw://<html><body><div id=\"x\">content</div></body></html>",'
+          '            "success": true,'
+          '            "cleaned_html": "<html><body><div id=\"x\">content</div></body></html>",'
+          '            "extracted_content": "[\n    {\n        \"out\": []\n    }\n]"'
+          '        }'
+          '    ]'
+          '}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerableOob_returnsFalse"
+  expect_vulnerability: false
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/crawl"
+        status: 200
+        body_content:
+          '{'
+          '    "success": true,'
+          '    "results": ['
+          '        {'
+          '            "url": "raw://<html><body><div id=\"x\">content</div></body></html>",'
+          '            "cleaned_html": "<html><body><div id=\"x\">content</div></body></html>"'
+          '        }'
+          '    ]'
+          '}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotCrawl4AI_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
