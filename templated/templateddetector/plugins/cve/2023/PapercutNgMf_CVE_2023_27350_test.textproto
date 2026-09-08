@@ -1,0 +1,275 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "PapercutNgMf_CVE_2023_27350"
+}
+
+tests: {
+  name: "whenVuln_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/app?service=page/SetupCompleted"
+        status: 200
+        body_content: "... Configuration Wizard : Setup Complete ..."
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+        body_content: "... Saved successfully ..."
+      },
+      {
+        uri: "/app?service=page/PrinterList"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app?service=direct/1/PrinterList/selectPrinter&sp=l1001"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app?service=direct/1/PrinterDetails/printerOptionsTab.tab&sp=4"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/app?service=page/SetupCompleted"
+        status: 200
+        body_content: "... Configuration Wizard : Setup Complete ..."
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+        body_content: "... Saved successfully ..."
+      },
+      {
+        uri: "/app?service=page/PrinterList"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app?service=direct/1/PrinterList/selectPrinter&sp=l1001"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app?service=direct/1/PrinterDetails/printerOptionsTab.tab&sp=4"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      }
+    ]
+  }
+}
+
+
+tests: {
+  name: "whenRandomServer_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri:  "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "... Hello world ..."
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      }
+    ]
+  }
+}
+
+# non-callback tests
+
+tests: {
+  name: "whenReflectiveVuln_returnsVuln"
+  expect_vulnerability: true
+
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/app?service=page/SetupCompleted"
+        status: 200
+        body_content: "... Configuration Wizard : Setup Complete ..."
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+        body_content: "... Saved successfully ..."
+      },
+      {
+        uri: "/app?service=page/PrinterList"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app?service=direct/1/PrinterList/selectPrinter&sp=l1001"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app?service=direct/1/PrinterDetails/printerOptionsTab.tab&sp=4"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenReflectiveNotVuln_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/app?service=page/SetupCompleted"
+        status: 200
+        body_content: "... Configuration Wizard : Setup Complete ..."
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+        body_content: '{"status":200}'
+      },
+      {
+        uri: "/app?service=page/PrinterList"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app?service=direct/1/PrinterList/selectPrinter&sp=l1001"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "/app?service=direct/1/PrinterDetails/printerOptionsTab.tab&sp=4"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: '{"status":200}'
+        headers: [
+          { name: "Set-Cookie" value: "JSESSIONID=tsunamicookie;" }
+        ]
+      }
+    ]
+  }
+}
