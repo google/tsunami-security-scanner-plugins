@@ -1,0 +1,56 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Wordpress_UnfinishedInstall_ExposedUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/wp-admin/install.php?step=1"
+        status: 200
+        body_content: 
+          "<p id=\"logo\">WordPress</p>\n\n<form id=\"setup\""
+          " method=\"post\" action=\"?step=1\"><label class='"
+          "screen-reader-text' for='language'>Select a defaul"
+          "t language</label> ..."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVuln_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: '... Wordpress ... Login'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRandomServer_returnsFalse"
+  expect_vulnerability: false
+
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
