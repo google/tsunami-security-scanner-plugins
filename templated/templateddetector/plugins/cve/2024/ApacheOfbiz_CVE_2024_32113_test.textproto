@@ -1,0 +1,129 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ApacheOfbiz_CVE_2024_32113"
+}
+
+# Note: even though the request includes path traversal characters,
+# the tests seem to normalize the path in the request. Therefore, 
+# we have to make listeners on the normalized path instead of the 
+# one containing path traversal characters.
+
+tests: {
+  name: "whenOobVulnerable_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/webtools/control/main"
+        status: 200
+        body_content: 
+          '... <title>OFBiz: Web Tools: Web Tools Main Page</title> ...'
+      },
+      {
+        uri: "/webtools/control/forgotPassword/ProgramExport"
+        status: 200
+        body_content: 
+          '...'
+      }
+    ]
+  }
+}
+
+
+tests: {
+  name: "whenOobNotVulnerable_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/webtools/control/main"
+        status: 200
+        body_content: 
+          '... <title>OFBiz: Web Tools: Web Tools Main Page</title> ...'
+      },
+      {
+        uri: "/webtools/control/forgotPassword/ProgramExport"
+        status: 200
+        body_content: 
+          '...'
+      }
+    ]
+  }
+}
+
+# non-callback tests
+
+tests: {
+  name: "whenReflectiveVulnerable_returnsVuln"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/webtools/control/main"
+        status: 200
+        body_content: 
+          '... <title>OFBiz: Web Tools: Web Tools Main Page</title> ...'
+      },
+      {
+        uri: "/webtools/control/forgotPassword/ProgramExport"
+        status: 200
+        body_content: 
+          '... 1f21f020c9 ...'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenReflectiveNotVulnerable_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/webtools/control/main"
+        status: 200
+        body_content: 
+          '... <title>OFBiz: Web Tools: Web Tools Main Page</title> ...'
+      },
+      {
+        uri: "/webtools/control/forgotPassword/ProgramExport"
+        status: 200
+        body_content: 
+          '... 133713371337 ...'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRandomServer_returnsFalse"
+  expect_vulnerability: false
+
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
+
