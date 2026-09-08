@@ -1,0 +1,72 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "JFrogArtifactory_CVE_2026_69107"
+  author: "sanjaymahajan14"
+  version: "1.0"
+  description: "Detects CVE-2026-69107: unauthorized artifact access in JFrog Artifactory due to missing authorization."
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-69107"
+  }
+  severity: MEDIUM
+  title: "JFrog Artifactory Potential Unauthorized Artifact Access (CVE-2026-69107)"
+  description: "An unauthenticated user may access restricted artifacts in JFrog Artifactory under specific conditions due to missing authorization checks (CWE-862)."
+  recommendation: "Upgrade JFrog Artifactory to a fixed release: 7.104.16, 7.111.14, 7.117.21, 7.125.14, 7.133.21, 7.146.8 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-69107"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "check_artifactory_version"
+  http_request: {
+    method: GET
+    uri: "/artifactory/api/system/ping"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "OK" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            variable_name: "vulnerable_version"
+            from_header: {
+              name: "X-Jfrog-Version"
+            }
+            regexp: "Artifactory/(7\\.(?:[0-9]{1,2}|10[0-3])\\.[0-9]+\\b|7\\.104\\.(?:[0-9]|1[0-5])\\b|7\\.111\\.(?:[0-9]|1[0-3])\\b|7\\.117\\.(?:[0-9]|1[0-9]|20)\\b|7\\.125\\.(?:[0-9]|1[0-3])\\b|7\\.133\\.(?:[0-9]|1[0-9]|20)\\b|7\\.146\\.[0-7]\\b)"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "check_artifactory_version"
+  ]
+}

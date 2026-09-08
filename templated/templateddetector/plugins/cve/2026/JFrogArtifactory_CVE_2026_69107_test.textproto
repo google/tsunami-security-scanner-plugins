@@ -1,0 +1,97 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "JFrogArtifactory_CVE_2026_69107"
+}
+
+tests: {
+  name: "whenVulnerableVersion711112_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/artifactory/api/system/ping"
+        status: 200
+        body_content: "OK"
+        headers: [
+          { name: "X-Jfrog-Version" value: "Artifactory/7.111.12 81112900" },
+          { name: "Content-Type" value: "text/plain" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedVersion711114_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/artifactory/api/system/ping"
+        status: 200
+        body_content: "OK"
+        headers: [
+          { name: "X-Jfrog-Version" value: "Artifactory/7.111.14 81114900" },
+          { name: "Content-Type" value: "text/plain" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerableVersion710415_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/artifactory/api/system/ping"
+        status: 200
+        body_content: "OK"
+        headers: [
+          { name: "X-Jfrog-Version" value: "Artifactory/7.104.15 81041500" },
+          { name: "Content-Type" value: "text/plain" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedVersion710416_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/artifactory/api/system/ping"
+        status: 200
+        body_content: "OK"
+        headers: [
+          { name: "X-Jfrog-Version" value: "Artifactory/7.104.16 81041600" },
+          { name: "Content-Type" value: "text/plain" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNonArtifactory_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/artifactory/api/system/ping"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
