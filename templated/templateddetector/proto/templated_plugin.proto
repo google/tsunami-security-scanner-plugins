@@ -44,6 +44,7 @@ message PluginWorkflow {
   enum Condition {
     CONDITION_UNSPECIFIED = 0;
     REQUIRES_CALLBACK_SERVER = 1;
+    REQUIRES_DNS_CALLBACK_SERVER = 2;
   }
 
   message Variable {

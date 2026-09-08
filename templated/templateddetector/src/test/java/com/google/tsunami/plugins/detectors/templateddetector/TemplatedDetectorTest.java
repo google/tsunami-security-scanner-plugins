@@ -163,6 +163,10 @@ public final class TemplatedDetectorTest {
                 PluginWorkflow.newBuilder()
                     .addActions("action_returns_true")
                     .setCondition(PluginWorkflow.Condition.REQUIRES_CALLBACK_SERVER))
+            .addWorkflows(
+                PluginWorkflow.newBuilder()
+                    .addActions("action_returns_true")
+                    .setCondition(PluginWorkflow.Condition.REQUIRES_DNS_CALLBACK_SERVER))
             .build();
     var detector = setupDetector(proto);
 
