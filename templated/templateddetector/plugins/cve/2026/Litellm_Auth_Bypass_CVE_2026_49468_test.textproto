@@ -12,9 +12,9 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/health/readiness"
+        uri: "/"
         status: 200
-        body_content: "{\"status\":\"ok\"}"
+        body_content: "... <title>LiteLLM API - Swagger UI</title> ..."
       },
       {
         uri: "/key/generate"
@@ -35,9 +35,9 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/health/readiness"
+        uri: "/"
         status: 200
-        body_content: "{\"status\":\"ok\"}"
+        body_content: "... <title>LiteLLM API - Swagger UI</title> ..."
       },
       {
         uri: "/key/generate"

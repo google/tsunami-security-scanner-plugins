@@ -37,9 +37,14 @@ actions: {
   name: "fingerprint_litellm"
   http_request: {
     method: GET
-    uri: "/health/readiness"
+    uri: "/"
     response: {
       http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<title>LiteLLM" }
+        ]
+      }
     }
   }
 }
