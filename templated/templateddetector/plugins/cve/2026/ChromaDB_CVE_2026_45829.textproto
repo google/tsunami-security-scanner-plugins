@@ -18,7 +18,7 @@ finding: {
     value: "CVE-2026-45829"
   }
   severity: CRITICAL
-  title: "ChromaDB - Pre-Authentication Code Injection"
+  title: "ChromaDB - Pre-Authentication Code Injection (CVE-2026-45829)"
   description: "A pre-authentication code injection vulnerability in ChromaDB allows unauthenticated attackers to execute arbitrary code via the /api/v2/tenants/{tenant}/databases/{db}/collections endpoint by setting trust_remote_code to true with a malicious model repository."
   recommendation: "Since there is no patched version available at the time of the plugin being written, the only solution is to block access to the ChromaDB instance or stop using it."
   related_id: {
