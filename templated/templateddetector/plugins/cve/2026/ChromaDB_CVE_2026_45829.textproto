@@ -67,10 +67,20 @@ actions: {
         conditions: [
           { body: {} contains: "\"id\":" },
           { body: {} contains: "\"name\":" },
-          { body: {} contains: "\"trust_remote_code\":true" }
+          { body: {} contains: "\"trust_remote_code\":true" },
+          { body: {} contains: "\"sparse_vector\":" }
         ]
       }
     }
+  }
+  cleanup_actions: ["remove_collection"]
+}
+
+actions: {
+  name: "remove_collection"
+  http_request: {
+    method: DELETE
+    uri: "/api/v2/tenants/default_tenant/databases/default_database/collections/tsunami_check_{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
   }
 }
 
