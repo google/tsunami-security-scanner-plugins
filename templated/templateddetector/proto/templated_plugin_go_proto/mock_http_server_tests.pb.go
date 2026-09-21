@@ -29,6 +29,7 @@ const (
 	MockHttpServer_PUT     MockHttpServer_HttpMethod = 3
 	MockHttpServer_DELETE  MockHttpServer_HttpMethod = 4
 	MockHttpServer_HEAD    MockHttpServer_HttpMethod = 5
+	MockHttpServer_OPTIONS MockHttpServer_HttpMethod = 6
 )
 
 // Enum value maps for MockHttpServer_HttpMethod.
@@ -40,6 +41,7 @@ var (
 		3: "PUT",
 		4: "DELETE",
 		5: "HEAD",
+		6: "OPTIONS",
 	}
 	MockHttpServer_HttpMethod_value = map[string]int32{
 		"UNKNOWN": 0,
@@ -48,6 +50,7 @@ var (
 		"PUT":     3,
 		"DELETE":  4,
 		"HEAD":    5,
+		"OPTIONS": 6,
 	}
 )
 
