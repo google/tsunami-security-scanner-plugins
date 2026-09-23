@@ -1,0 +1,132 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Langflow_CVE_2025_34291"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html><html><head><title>Langflow</title></head><body>Langflow</body></html>"
+      },
+      {
+        uri: "/api/v1/refresh"
+        status: 200
+        headers: [
+          {
+            name: "Access-Control-Allow-Origin"
+            value: "https://scanme.sh"
+          },
+          {
+            name: "Access-Control-Allow-Credentials"
+            value: "true"
+          }
+        ]
+        body_content: ""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenCorsIsNotPermissive_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html><html><head><title>Langflow</title></head><body>Langflow</body></html>"
+      },
+      {
+        uri: "/api/v1/refresh"
+        status: 200
+        headers: [
+          {
+            name: "Access-Control-Allow-Origin"
+            value: "https://trusted.example.com"
+          },
+          {
+            name: "Access-Control-Allow-Credentials"
+            value: "true"
+          }
+        ]
+        body_content: ""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenCredentialsAreNotAllowed_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html><html><head><title>Langflow</title></head><body>Langflow</body></html>"
+      },
+      {
+        uri: "/api/v1/refresh"
+        status: 200
+        headers: [
+          {
+            name: "Access-Control-Allow-Origin"
+            value: "https://scanme.sh"
+          }
+        ]
+        body_content: ""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenCorsResponseIsNot200_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<title>Langflow</title>"
+      },
+      {
+        uri: "/api/v1/refresh"
+        status: 403
+        headers: [
+          {
+            name: "Access-Control-Allow-Origin"
+            value: "https://scanme.sh"
+          },
+          {
+            name: "Access-Control-Allow-Credentials"
+            value: "true"
+          }
+        ]
+        body_content: ""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotLangflow_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
