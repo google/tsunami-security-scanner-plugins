@@ -65,6 +65,7 @@ public class FlowiseCredentialTesterTest {
   @Mock private Connection mockConnection;
   @Inject private FlowiseCredentialTester tester;
   private MockWebServer mockWebServer;
+  private MockWebServer nonFlowiseMockWebServer;
   public static final TestCredential WEAK_CRED_1 =
       TestCredential.create("admin@localhost.lan", Optional.of("Password1!"));
   public static final TestCredential WEAK_CRED_2 =
@@ -83,7 +84,44 @@ public class FlowiseCredentialTesterTest {
   @Before
   public void setup() {
     mockWebServer = new MockWebServer();
+    nonFlowiseMockWebServer = new MockWebServer();
     Guice.createInjector(new HttpClientModule.Builder().build()).injectMembers(this);
+  }
+
+  @Test
+  public void detect_flowiseService_accepted() throws Exception {
+    startMockWebServer();
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setServiceName("http")
+            .setServiceContext(flowiseServiceContext)
+            .setSoftware(Software.newBuilder().setName("http"))
+            .build();
+
+    assertThat(tester.canAccept(targetNetworkService)).isTrue();
+
+    mockWebServer.shutdown();
+  }
+  
+  @Test
+  public void detect_nonFlowiseService_notAccepted() throws Exception {
+    startNonFlowiseMockWebServer();
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(forHostnameAndPort(nonFlowiseMockWebServer.getHostName(), nonFlowiseMockWebServer.getPort()))
+            .setServiceName("http")
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(
+                        WebServiceContext.newBuilder()
+                            .setSoftware(Software.newBuilder().setName("notFlowise"))))
+            .build();
+
+    assertThat(tester.canAccept(targetNetworkService)).isFalse();
+    
+    nonFlowiseMockWebServer.shutdown();
   }
 
   public void detect_global(
@@ -122,25 +160,6 @@ public class FlowiseCredentialTesterTest {
     detect_global(ImmutableList.of(STRONG_CRED_1, STRONG_CRED_2), x -> x.isEmpty());
   }
 
-  @Test
-  public void detect_nonFlowiseService_skips() throws Exception {
-    when(mockConnectionProvider.getConnection(any(), any(), any())).thenReturn(mockConnection);
-    NetworkService targetNetworkService =
-        NetworkService.newBuilder()
-            .setNetworkEndpoint(forHostnameAndPort("example.com", 8080))
-            .setServiceName("http")
-            .setServiceContext(
-                ServiceContext.newBuilder()
-                    .setWebServiceContext(
-                        WebServiceContext.newBuilder()
-                            .setSoftware(Software.newBuilder().setName("notFlowise"))))
-            .build();
-
-    assertThat(tester.testValidCredentials(targetNetworkService, ImmutableList.of(WEAK_CRED_1)))
-        .isEmpty();
-    verifyNoInteractions(mockConnectionProvider);
-  }
-
   private void startMockWebServer() throws IOException {
     mockWebServer.setDispatcher(new FlowiseCredentialTesterDispatcher());
     mockWebServer.start();
@@ -157,8 +176,32 @@ public class FlowiseCredentialTesterTest {
 
     @Override
     public MockResponse dispatch(RecordedRequest recordedRequest) {
+      // Authentication page
+      if (recordedRequest.getPath().equals("/sign-up")) {
+        return new MockResponse()
+                      .setResponseCode(HttpStatus.OK.code())
+                      .setBody(
+                          "<!DOCTYPE html>"
+                        + "<html lang=\"en\">"
+                        + "    <head>"
+                        + "        <title>Flowise - Build AI Agents, Visually</title>"
+                        + "        <link rel=\"icon\" href=\"favicon.ico\" />"
+                        + "    </head>"
+                        + "    <body>"
+                        + "        <noscript>You need to enable JavaScript to run this app.</noscript>"
+                        + "        <div id=\"root\"></div>"
+                        + "        <div id=\"portal\"></div>"
+                        + "        <script>"
+                        + "            if (global === undefined) {"
+                        + "                var global = window"
+                        + "            }"
+                        + "        </script>"
+                        + "    </body>"
+                        + "</html>");
+      }
+      
       // Authentication API
-      if (recordedRequest.getPath().equals("/api/v1/auth/login")) {
+      else if (recordedRequest.getPath().equals("/api/v1/auth/login")) {
         // Expecting JSON-formatted body
         String reqBody = recordedRequest.getBody().readUtf8();
         try {
@@ -214,7 +257,33 @@ public class FlowiseCredentialTesterTest {
 
       // Default response
       writeToLog("(unexpected) Default response");
-      return new MockResponse().setResponseCode(HttpStatus.OK.code());
+      return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+    }
+  }
+  
+  private void startNonFlowiseMockWebServer() throws IOException {
+    nonFlowiseMockWebServer.setDispatcher(new EmptyAppTesterDispatcher());
+    nonFlowiseMockWebServer.start();
+  }
+
+  private static final class EmptyAppTesterDispatcher extends Dispatcher {
+    private Set<TestCredential> appRegisteredCredentials = new HashSet<>();
+
+    @Override
+    public MockResponse dispatch(RecordedRequest recordedRequest) {
+      // Authentication page
+      if (recordedRequest.getPath().equals("/")) {
+        return new MockResponse()
+                      .setResponseCode(HttpStatus.OK.code())
+                      .setBody(
+                          "This is just an empty app for testing");
+      }
+      else {
+        return new MockResponse()
+                      .setResponseCode(HttpStatus.NOT_FOUND.code())
+                      .setBody(
+                          "Not Found");
+      }
     }
   }
 
