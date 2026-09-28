@@ -60,7 +60,7 @@ actions: {
         conditions: [
           {
             body: {}
-            contains: "Content by owner"
+            contains: "<title>Content by owner"
           }
         ]
       }
