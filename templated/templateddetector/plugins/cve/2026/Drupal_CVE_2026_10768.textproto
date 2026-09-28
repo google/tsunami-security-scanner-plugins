@@ -19,7 +19,7 @@ finding: {
   }
   severity: HIGH
   title: "Drupal LocalGov Workflows - Missing Authorization (Forceful Browsing)"
-  description: "Missing Authorization vulnerability in Drupal LocalGov Workflows allows Forceful Browsing without required permissions. This issue affects LocalGov Workflows versions prior to 1.6.0."
+  description: "Missing Authorization vulnerability in Drupal LocalGov Workflows allows Forceful Browsing without required permissions. This issue affects LocalGov Workflows versions prior to 1.6.0. Note: In this CVE, \"Forceful Browsing\" just means missing authentication for a URL, specifically a Service Contacts page. "
   recommendation: "Update the Drupal LocalGov Workflows module to version 1.6.0 or later."
   related_id: {
     publisher: "CVE"
