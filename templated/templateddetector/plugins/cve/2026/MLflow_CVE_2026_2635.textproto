@@ -19,7 +19,7 @@ finding: {
   }
   severity: CRITICAL
   title: "MLflow Hard-coded Default Credentials Authentication Bypass"
-  description: "A critical authentication bypass vulnerability exists in MLflow due to hard-coded default credentials in basic_auth.ini. Unauthenticated remote attackers can leverage these default credentials to gain administrative access to MLflow instances, access sensitive models/data, and potentially execute arbitrary code."
+  description: "A critical authentication bypass vulnerability exists in MLflow due to hard-coded default credentials in basic_auth.ini. Unauthenticated remote attackers can leverage these default credentials to gain administrative access to MLflow instances, access sensitive models/data, and potentially execute arbitrary code. This plugin only checking for the admin:password combination, while a separate admin:password1234 is used later."
   recommendation: "Update basic_auth.ini to change default credentials, disable default authentication mechanisms, or upgrade MLflow to a patched version 2.11.0 (or the latest available stable release)."
   related_id: {
     publisher: "CVE"
