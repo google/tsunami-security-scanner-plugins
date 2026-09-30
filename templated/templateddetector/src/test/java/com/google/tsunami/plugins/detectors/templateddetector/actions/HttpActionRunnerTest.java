@@ -82,6 +82,59 @@ public final class HttpActionRunnerTest {
   }
 
   @Test
+  public void validOptionsRequest_returnsTrue() throws InterruptedException {
+    PluginAction action =
+        PluginAction.newBuilder()
+            .setName("action")
+            .setHttpRequest(
+                HttpAction.newBuilder().setMethod(HttpAction.HttpMethod.OPTIONS).addUri("/"))
+            .build();
+
+    this.mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
+    assertThat(runner.run(this.service, action, this.environment)).isTrue();
+    assertThat(this.mockWebServer.getRequestCount()).isEqualTo(1);
+    RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
+    assertThat(recordedRequest.getMethod()).isEqualTo("OPTIONS");
+  }
+
+  @Test
+  public void validOptionsRequest_withExpectationsAndHeaders_returnsTrue()
+      throws InterruptedException {
+    PluginAction action =
+        PluginAction.newBuilder()
+            .setName("action")
+            .setHttpRequest(
+                HttpAction.newBuilder()
+                    .setMethod(HttpAction.HttpMethod.OPTIONS)
+                    .addUri("/api/v1/resource")
+                    .addHeaders(
+                        HttpAction.HttpHeader.newBuilder()
+                            .setName("Origin")
+                            .setValue("http://example.com"))
+                    .setResponse(
+                        HttpAction.HttpResponse.newBuilder()
+                            .setHttpStatus(200)
+                            .setExpectAll(
+                                HttpAction.HttpResponse.ExpectAll.newBuilder()
+                                    .addConditions(
+                                        HttpAction.HttpResponse.Expectation.newBuilder()
+                                            .setHeader(
+                                                HttpAction.HttpResponse.Header.newBuilder()
+                                                    .setName("Allow"))
+                                            .setContains("GET, POST, OPTIONS")))))
+            .build();
+
+    this.mockWebServer.enqueue(
+        new MockResponse().setResponseCode(200).addHeader("Allow", "GET, POST, OPTIONS, HEAD"));
+
+    assertThat(runner.run(this.service, action, this.environment)).isTrue();
+    RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
+    assertThat(recordedRequest.getMethod()).isEqualTo("OPTIONS");
+    assertThat(recordedRequest.getHeader("Origin")).isEqualTo("http://example.com");
+  }
+
+  @Test
   public void notHttpAction_throwsIllegalArgumentException() {
     PluginAction action = PluginAction.newBuilder().setName("action").build();
 

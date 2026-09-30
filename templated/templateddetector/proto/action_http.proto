@@ -15,6 +15,7 @@ message HttpAction {
     PUT = 3;
     DELETE = 4;
     HEAD = 5;
+    OPTIONS = 6;
   }
 
   message HttpHeader {

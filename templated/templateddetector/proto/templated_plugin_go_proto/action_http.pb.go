@@ -29,6 +29,7 @@ const (
 	HttpAction_PUT                HttpAction_HttpMethod = 3
 	HttpAction_DELETE             HttpAction_HttpMethod = 4
 	HttpAction_HEAD               HttpAction_HttpMethod = 5
+	HttpAction_OPTIONS            HttpAction_HttpMethod = 6
 )
 
 // Enum value maps for HttpAction_HttpMethod.
@@ -40,6 +41,7 @@ var (
 		3: "PUT",
 		4: "DELETE",
 		5: "HEAD",
+		6: "OPTIONS",
 	}
 	HttpAction_HttpMethod_value = map[string]int32{
 		"METHOD_UNSPECIFIED": 0,
@@ -48,6 +50,7 @@ var (
 		"PUT":                3,
 		"DELETE":             4,
 		"HEAD":               5,
+		"OPTIONS":            6,
 	}
 )
 
