@@ -1,0 +1,81 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Apache_Tika_CVE_2025_66516"
+}
+
+# --- TEST 1: VULNERABLE TIKA (EXPANDS XFA ENTITY) ---
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/version"
+        status: 200
+        body_content: "Apache Tika 3.2.1"
+        headers: [
+          { name: "Content-Type" value: "text/plain" }
+        ]
+      },
+      {
+        uri: "/tika"
+        status: 200
+        body_content:
+          '<?xml version="1.1" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml">'
+          '<head><meta name="X-TIKA:Parsed-By" content="org.apache.tika.parser.pdf.PDFParser"/></head>'
+          '<body><div class="page"><p/></div><div class="xfa_content"><p>{{ T_CBS_SECRET }}</p></div></body></html>'
+        headers: [
+          { name: "Content-Type" value: "text/xml" }
+        ]
+      }
+    ]
+  }
+}
+
+# --- TEST 2: PATCHED TIKA (DOCTYPE REJECTED / NO XFA ENTITY EXPANSION) ---
+tests: {
+  name: "whenPatched_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/version"
+        status: 200
+        body_content: "Apache Tika 3.2.2"
+        headers: [
+          { name: "Content-Type" value: "text/plain" }
+        ]
+      },
+      {
+        uri: "/tika"
+        status: 422
+        body_content:
+          '<?xml version="1.1" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml">'
+          '<head><meta name="X-TIKA:Parsed-By" content="org.apache.tika.parser.pdf.PDFParser"/></head>'
+          '<body><div class="page"><p/></div></body></html>'
+        headers: [
+          { name: "Content-Type" value: "text/xml" }
+        ]
+      }
+    ]
+  }
+}
+
+# --- TEST 3: NON-TIKA SERVICE ---
+tests: {
+  name: "whenNotApacheTika_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
+
+
