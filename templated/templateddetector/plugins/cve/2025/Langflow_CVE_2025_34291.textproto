@@ -1,0 +1,99 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Langflow_CVE_2025_34291"
+  author: "sanjaymahajan14"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2025-34291"
+  }
+  severity: CRITICAL
+  title: "Langflow CORS Misconfiguration (CVE-2025-34291)"
+  description: "Langflow is vulnerable to a CORS misconfiguration that allows an arbitrary origin to make credentialed cross-origin requests to the refresh-token endpoint. This behavior can be abused as part of an account takeover and remote code execution attack chain."
+  recommendation: "Upgrade Langflow to version 1.7.0 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-34291"
+  }
+}
+
+config: {}
+
+#############
+# ACTIONS   #
+#############
+
+actions: {
+  name: "fingerprint_langflow"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      expect_all: {
+        conditions: [
+          {
+            body: {} contains: "Langflow"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_cors"
+  http_request: {
+    method: OPTIONS
+    uri: "/api/v1/refresh"
+    headers: [
+      {
+        name: "Origin"
+        value: "https://scanme.sh"
+      },
+      {
+        name: "Access-Control-Request-Method"
+        value: "POST"
+      },
+      {
+        name: "Access-Control-Request-Headers"
+        value: "content-type"
+      }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            header: { name: "Access-Control-Allow-Origin" }
+            contains: "https://scanme.sh"
+          },
+          {
+            header: { name: "Access-Control-Allow-Credentials" }
+            contains: "true"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOW  #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_langflow",
+    "check_cors"
+  ]
+}
