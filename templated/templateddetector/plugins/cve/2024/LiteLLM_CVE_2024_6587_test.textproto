@@ -1,0 +1,79 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "LiteLLM_CVE_2024_6587"
+}
+
+#########
+# TESTS #
+#########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "... <title>LiteLLM API - Swagger UI</title> ..."
+      },
+      {
+        uri: "/chat/completions"
+        status: 500
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"error\":\"OpenAIException - Connection error.\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatched_blockedWithErrorMessage_returnsFalse"
+  expect_vulnerability: false
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+  mock_http_server: {
+    mock_responses: [
+      # 1. Fingerprint LiteLLM
+      {
+        uri: "/"
+        status: 200
+        body_content: "... <title>LiteLLM API - Swagger UI</title> ..."
+      },
+      # 2. Exploit probe blocked with the patch error message
+      {
+        uri: "/chat/completions"
+        status: 400
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"message\":\"Authentication Error, BadRequest: api_base is not allowed in request body\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotLitellm_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
