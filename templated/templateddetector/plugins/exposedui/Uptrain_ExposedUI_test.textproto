@@ -1,0 +1,90 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Uptrain_ExposedUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/public/project_runs"
+        status: 422
+        body_content: 
+          '{"detail":[{"type":"missing","loc":["query","project_id"],"msg":"Field required","input":null}]}'
+      },
+      {
+        uri: "/api/public/create_project"
+        status: 500
+        body_content: 
+          '... Internal Server Error ...'
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: 
+          "..."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/public/project_runs"
+        status: 422
+        body_content: 
+          "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"query\","
+            "\"project_id\"],\"msg\":\"Field required\",\"input\":n"
+            "ull}]}"
+      },
+      {
+        uri: "/api/public/create_project"
+        status: 500
+        body_content: 
+          '... Internal Server Error ...'
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: 
+          "..."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRandomServer_returnsFalse"
+  expect_vulnerability: false
+
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}

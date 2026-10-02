@@ -45,7 +45,7 @@ This directory contains plugins contributed by community members.
 *   [CVE-2024-2029 LocalAI RCE detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/localai_cve_2024_2029)
 *   [CVE-2024-4577 PHP-CGI RCE detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/php_cve_2024_4577)
 *   [Exposed Argo Workflows Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/argoworkflows_exposed_ui)
-*   [Uptrain Exposed API VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/uptrain_exposed_api)
+*   [Uptrain Exposed API VulnDetector, now updated to Templated format](https://github.com/google/tsunami-security-scanner-plugins/tree/master/templated/templateddetector/plugins/exposedui/Uptrain_ExposedUI.textproto)
 *   [CVE-2025-0655 D-Tale Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/dtale_cve_2025_0655)
 *   [Flowise Exposed UI Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/flowise_exposed_ui)
 
