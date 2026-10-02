@@ -26,7 +26,7 @@ tests: {
           '    "errors": ['
           '        {'
           '            "hook_point": "on_page_context_created",'
-          '            "error": "Failed to compile hook: uid=999(appuser) gid=999(appuser) groups=999(appuser)\n"'
+          '            "error": "Failed to compile hook: 1f21f020c9\n"'
           '        }'
           '    ]'
           '}'

