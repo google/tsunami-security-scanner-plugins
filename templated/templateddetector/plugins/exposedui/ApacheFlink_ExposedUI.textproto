@@ -1,0 +1,118 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ApacheFlink_ExposedUI"
+  author: "Robert Dick (robert@doyensec.com) templated version "
+  "(containing some modifications from the original Java version), "
+  "Tsunami Team (tsunami-dev@google.com) for original Java version. "
+
+  version: "0.2"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "APACHE_FLINK_EXPOSED_UI"
+  }
+  title: "Exposed Apache Flink instance"
+  description: "Apache Flink is not password or token protected."
+  recommendation:
+    "Apache Flink Web UI does not support access control out of the box. Even if the feature to"
+    " upload jobs in the Apached Flink Web UI is disabled, the session cluster could still"
+    " accept job submission requests via REST calls. Per Apache Flink documentation, we"
+    " recommend adding authentication using a REST proxy. See"
+    " https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/security/security-ssl/#external--rest-connectivity"
+    " and https://github.com/ing-bank/flink-deployer#authentication."
+  severity: CRITICAL
+}
+
+###########
+# ACTIONS #
+###########
+
+# Performs fingerprinting for Apache Flink before attempting the JAR upload
+
+actions: {
+  name: "fingerprint_flink"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "Apache Flink Web" },
+          { body: {} contains: "<flink-root" }
+        ]
+      }
+    }
+  }
+}
+
+# The "upload_jar" action uploads a dummy JAR file to verify that the upload doesn't require any authentication
+
+actions: {
+  name: "upload_jar"
+  http_request: {
+    method: POST
+    uri: "/jars/upload"
+    headers: [
+      {
+        name: "Content-Type" value: "multipart/form-data; boundary="
+        "da77a42118180b4af01977b6627ab7ab"
+      }
+    ]
+    data: "--da77a42118180b4af01977b6627ab7ab\r\n"
+    "Content-Disposition: form-data; name=\"jarfile\"; filename=\"tsunami.jar\"\r\n"
+    "Content-Type: application/java-archive\r\n"
+    "\r\n"
+    "tsunami testing jar\r\n"
+    "\r\n"
+    "--da77a42118180b4af01977b6627ab7ab--\r\n"
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"[^\"]*/([^\"]+.jar)\""
+            variable_name: "UPLOADED_FILE_PATH"
+          }
+        ]
+      }
+    }
+  }
+  cleanup_actions: ["delete_jar"]
+}
+
+# The "delete_jar" action deletes the uploaded JAR without running it. The upload is sufficient to show unauthenticated access.
+
+# DELETE	http://localhost:8083/jars/ecb336e5-66d6-440b-9d5b-ea50946c3811_tsunami.jar
+
+actions: {
+  name: "delete_jar"
+  http_request: {
+    method: DELETE
+    uri: "/jars/{{ UPLOADED_FILE_PATH }}"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_flink",
+    "upload_jar"
+  ]
+}

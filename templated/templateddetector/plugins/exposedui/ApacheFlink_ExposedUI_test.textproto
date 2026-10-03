@@ -1,0 +1,74 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ApacheFlink_ExposedUI"
+}
+
+tests: {
+  name: "whenUnauthFlink_returnsVuln"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "... Apache Flink Web ... <flink-root></flink-root>"
+      },
+      {
+        uri: "/jars/upload"
+        status: 200
+        body_content: "{\"filename\":"
+        "\"/tmp/flink-web-73493f68-69aa-49ca-a462-378fde7e3bc4/flink-web-upload/"
+        "ecb336e5-66d6-440b-9d5b-ea50946c3811_myfile.jar\","
+        "\"status\":\"success\"}"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "{}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotApacheFlink_returnsNoVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "not <b>flink</b>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenFailedUpload_returnsNoVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "... Apache Flink Web ... <flink-root></flink-root>"
+      },
+      {
+        uri: "/jars/upload"
+        status: 401
+        body_content: "Requires Authentication"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Anything here..."
+      }
+    ]
+  }
+}
