@@ -90,6 +90,7 @@ message ServiceInformation {
     AUTHENTICATION_TYPE_UNKNOWN = 0;
     AUTHENTICATION_TYPE_USERNAME_PASSWORD = 1;
     AUTHENTICATION_TYPE_PASSWORD_ONLY = 2;
+    AUTHENTICATION_TYPE_EMAIL_PASSWORD = 3;
   }
 
   // What type of authentication does the service use? (e.g. username and
