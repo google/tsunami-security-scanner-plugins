@@ -132,9 +132,6 @@ actions: {
 # WORKFLOWS #
 #############
 workflows: {
-  variables: [
-    { name: "victim" value: "admin" }
-  ]
   actions: [
     "fingerprint_gitea",
     "check_gitea_version",
