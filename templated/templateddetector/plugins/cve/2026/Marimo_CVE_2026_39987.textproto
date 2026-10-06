@@ -1,0 +1,83 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Marimo_CVE_2026_39987"
+  author: "sanjaymahajan14"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-39987"
+  }
+  severity: CRITICAL
+  title: "Marimo < 0.23.0 - Pre-Auth Terminal WebSocket Authentication Bypass RCE"
+  description: "Marimo reactive Python notebook prior to version 0.23.0 is vulnerable to a pre-authentication Remote Code Execution (RCE) vulnerability. The terminal WebSocket endpoint (/terminal/ws) fails to perform authentication validation via validate_auth(), allowing an unauthenticated remote attacker to obtain a full PTY shell and execute arbitrary system commands on the host server."
+  recommendation: "Upgrade marimo to version 0.23.0 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-39987"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_marimo"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "marimo" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_terminal_websocket_auth_bypass"
+  http_request: {
+    method: GET
+    uri: "/terminal/ws"
+    headers: [
+      { name: "Upgrade" value: "websocket" },
+      { name: "Connection" value: "Upgrade" },
+      { name: "Sec-WebSocket-Version" value: "13" },
+      { name: "Sec-WebSocket-Key" value: "dGhlIHNhbXBsZSBub25jZQ==" }
+    ]
+    response: {
+      http_status: 101
+      expect_all: {
+        conditions: [
+          { header: { name: "Upgrade" } contains: "websocket" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_marimo",
+    "check_terminal_websocket_auth_bypass"
+  ]
+}
