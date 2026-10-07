@@ -1,0 +1,112 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "MudlerLocalAI_CVE_2024_6983"
+}
+
+tests: {
+  name: "whenVulnerable_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: 
+          "... LocalAI instance! ..."
+      },
+      {
+        uri: "/v1/files"
+        status: 200
+        body_content: 
+          '{"id":"tsunami"}'
+      },
+      {
+        uri: "/models/apply"
+        status: 200
+        body_content: 
+          '{"uuid":"tsunamitsunami"}'
+      },
+      {
+        uri: "/embeddings"
+        status: 201
+        body_content: 
+          "..."
+      },
+      {
+        uri: "/v1/files/tsunami"
+        status: 200
+        body_content: 
+          "... Deleted ..."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: 
+          "... LocalAI instance! ..."
+      },
+      {
+        uri: "/v1/files"
+        status: 200
+        body_content: 
+          '{"id":"tsunami"}'
+      },
+      {
+        uri: "/models/apply"
+        status: 200
+        body_content: 
+          '{"uuid":"tsunamitsunami"}'
+      },
+      {
+        uri: "/embeddings"
+        status: 201
+        body_content: 
+          "..."
+      },
+      {
+        uri: "/v1/files/tsunami"
+        status: 200
+        body_content: 
+          "... Deleted ..."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRandomServer_returnsFalse"
+  expect_vulnerability: false
+
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}

