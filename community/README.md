@@ -39,7 +39,7 @@ This directory contains plugins contributed by community members.
 *   [CVE-2022-22965 Spring Framework RCE (CVE-2022-22965) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/spring_framework_cve_2022_22965)
 *   [CVE-2022-36804 Bitbucket Server RCE via command injection](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/bitbucket_cve_2022_36804)
 *   [Spring Cloud Function CVE-2022-22963 VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/spring_cloud_function_cve_2022_22963)
-*   [Apache Spark Exposed API VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/rce/apache_spark_exposed_api)
+*   [Apache Spark Exposed API VulnDetector, now updated to Templated format](https://github.com/google/tsunami-security-scanner-plugins/tree/master/templated/templateddetector/plugins/cve/2022/ApacheSpark_CVE_2022_33891_test.textproto)
 *   [CVE-2023-0669 GoAnywhere MFT RCE vulnerability Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/goanywhere_cve_2023_0669)
 *   [AutoGPT Exposed UI VulnDetector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/autogpt_exposed_ui)
 *   [CVE-2024-2029 LocalAI RCE detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/localai_cve_2024_2029)
