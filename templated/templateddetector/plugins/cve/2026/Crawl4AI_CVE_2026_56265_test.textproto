@@ -1,0 +1,130 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Crawl4AI_CVE_2026_56265"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/health"
+        status: 200
+        body_content: '{"status":"ok","timestamp":1791279398.11,"version":"0.8.6"}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      },
+      {
+        uri: "/md"
+        status: 401
+        body_content: '{"detail":"Authentication required. Please provide a valid Bearer token."}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      },
+      {
+        uri: "/crawl"
+        status: 200
+        body_content:
+          '{'
+          '    "success": true,'
+          '    "results": ['
+          '        {'
+          '            "url": "raw://<html><body><div>test</div></body></html>",'
+          '            "success": true,'
+          '            "cleaned_html": "<html><body><div>test</div></body></html>"'
+          '        }'
+          '    ]'
+          '}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerableAuthRejects_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/health"
+        status: 200
+        body_content: '{"status":"ok","timestamp":1791279398.11,"version":"0.8.7"}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      },
+      {
+        uri: "/md"
+        status: 401
+        body_content: '{"detail":"Authentication required. Please provide a valid Bearer token."}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      },
+      {
+        uri: "/crawl"
+        status: 401
+        body_content: '{"detail":"Invalid or expired token: failed to decode JWT"}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerableAuthDisabled_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/health"
+        status: 200
+        body_content: '{"status":"ok","timestamp":1791279398.11,"version":"0.8.6"}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      },
+      {
+        uri: "/md"
+        status: 200
+        body_content: '{"markdown":"test"}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      },
+      {
+        uri: "/crawl"
+        status: 200
+        body_content: '{"success":true}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotCrawl4AI_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
+
