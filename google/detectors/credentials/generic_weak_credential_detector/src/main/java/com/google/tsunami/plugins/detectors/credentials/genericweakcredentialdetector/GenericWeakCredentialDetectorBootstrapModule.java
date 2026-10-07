@@ -42,6 +42,7 @@ import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdet
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.airflow.AirflowCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.argocd.ArgoCdCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.axis2.Axis2CredentialTester;
+import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.flowise.FlowiseCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.grafana.GrafanaCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.hive.HiveCredentialTester;
 import com.google.tsunami.plugins.detectors.credentials.genericweakcredentialdetector.testers.hydra.HydraCredentialTester;
@@ -82,6 +83,7 @@ public final class GenericWeakCredentialDetectorBootstrapModule extends PluginBo
     credentialTesterBinder.addBinding().to(AirbyteCredentialTester.class);
     credentialTesterBinder.addBinding().to(AirflowCredentialTester.class);
     credentialTesterBinder.addBinding().to(ArgoCdCredentialTester.class);
+    credentialTesterBinder.addBinding().to(FlowiseCredentialTester.class);
     credentialTesterBinder.addBinding().to(GrafanaCredentialTester.class);
     credentialTesterBinder.addBinding().to(HiveCredentialTester.class);
     credentialTesterBinder.addBinding().to(HydraCredentialTester.class);
