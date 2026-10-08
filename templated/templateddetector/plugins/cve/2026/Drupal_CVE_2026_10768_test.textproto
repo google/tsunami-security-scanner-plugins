@@ -1,0 +1,77 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Drupal_CVE_2026_10768"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/core/misc/drupal.js"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/javascript" }
+        ]
+        body_content: "window.Drupal = { behaviors: {} };"
+      },
+      {
+        uri: "/admin/content/localgov-service-contact/content-by-owner"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html" }
+        ]
+        body_content: "<html><head><title>Content by owner | Drupal</title></head><body><h1 class=\"title page-title\">Content by owner</h1><div class=\"view-localgov-content-by-owner\"></div></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/core/misc/drupal.js"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/javascript" }
+        ]
+        body_content: "window.Drupal = { behaviors: {} };"
+      },
+      {
+        uri: "/admin/content/localgov-service-contact/content-by-owner"
+        status: 403
+        headers: [
+          { name: "Content-Type" value: "text/html" }
+        ]
+        body_content: "<html><head><title>Access denied | Drupal</title></head><body><h1 class=\"title page-title\">Access denied</h1><p>You are not authorized to access this page.</p></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotDrupal_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/core/misc/drupal.js"
+        status: 404
+        headers: [
+          { name: "Content-Type" value: "text/html" }
+        ]
+        body_content: "<html><body>404 Not Found</body></html>"
+      }
+    ]
+  }
+}
