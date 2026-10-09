@@ -1,0 +1,192 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Apache_Solr_CVE_2026_44825"
+  author: "dyeddala"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-44825"
+  }
+  severity: HIGH
+  title: "Apache Solr 9.4.0-9.10.1 / 10.0.0 - Hardcoded Default Credentials"
+  description: "Apache Solr versions 9.4.0 through 9.10.1 and 10.0.0 contain default Basic Authentication template users (superadmin, admin, search, index) created during 'bin/solr auth enable', allowing remote attackers to gain administrative access via hardcoded credentials."
+  recommendation: "Upgrade Apache Solr to version 9.11.0, 10.1.0, or later. Alternatively, remove the default template users from security.json or update their default passwords."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-44825"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_solr"
+  http_request: {
+    method: GET
+    uri: "/solr/admin/info/system?wt=json"
+    response: {
+      expect_any: {
+        conditions: [
+          { body: {} contains: "solr-spec-version" },
+          { body: {} contains: "lucene" },
+          { body: {} contains: "solrHome" },
+          { header: { name: "www-authenticate" } contains: "Basic" },
+          { header: { name: "www-authenticate" } contains: "solr" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_auth_required"
+  http_request: {
+    method: GET
+    uri: "/solr/admin/cores?action=STATUS&wt=json"
+    response: {
+      http_status: 401
+    }
+  }
+}
+
+actions: {
+  name: "check_default_creds_solr"
+  http_request: {
+    method: GET
+    uri: "/solr/admin/cores?action=STATUS&wt=json"
+    headers: [
+      {
+        name: "Authorization"
+        value: "Basic c29scjpTb2xyUm9ja3M="
+      }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "responseHeader" },
+          { body: {} contains: "status" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_default_creds_admin"
+  http_request: {
+    method: GET
+    uri: "/solr/admin/cores?action=STATUS&wt=json"
+    headers: [
+      {
+        name: "Authorization"
+        value: "Basic YWRtaW46U29sclJvY2tz"
+      }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "responseHeader" },
+          { body: {} contains: "status" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_default_creds_search"
+  http_request: {
+    method: GET
+    uri: "/solr/admin/cores?action=STATUS&wt=json"
+    headers: [
+      {
+        name: "Authorization"
+        value: "Basic c2VhcmNoOlNvbHJSb2Nrcw=="
+      }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "responseHeader" },
+          { body: {} contains: "status" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_default_creds_index"
+  http_request: {
+    method: GET
+    uri: "/solr/admin/cores?action=STATUS&wt=json"
+    headers: [
+      {
+        name: "Authorization"
+        value: "Basic aW5kZXg6U29sclJvY2tz"
+      }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "responseHeader" },
+          { body: {} contains: "status" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_solr",
+    "check_auth_required",
+    "check_default_creds_solr"
+  ]
+}
+
+workflows: {
+  actions: [
+    "fingerprint_solr",
+    "check_auth_required",
+    "check_default_creds_admin"
+  ]
+}
+
+workflows: {
+  actions: [
+    "fingerprint_solr",
+    "check_auth_required",
+    "check_default_creds_search"
+  ]
+}
+
+workflows: {
+  actions: [
+    "fingerprint_solr",
+    "check_auth_required",
+    "check_default_creds_index"
+  ]
+}

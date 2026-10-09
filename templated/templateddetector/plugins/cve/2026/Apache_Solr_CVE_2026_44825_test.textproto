@@ -1,0 +1,70 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Apache_Solr_CVE_2026_44825"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/solr/admin/info/system?wt=json"
+        status: 200
+        body_content: "{\"solr-spec-version\":\"9.10.1\",\"lucene\":{}}"
+      },
+      {
+        uri: "/solr/admin/cores?action=STATUS&wt=json"
+        status: 200
+        body_content: "{\"responseHeader\":{\"status\":0},\"status\":{}}"
+        condition: {
+          headers: [
+            { name: "Authorization" value: "Basic c29scjpTb2xyUm9ja3M=" }
+          ]
+        }
+      },
+      {
+        uri: "/solr/admin/cores?action=STATUS&wt=json"
+        status: 401
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/solr/admin/info/system?wt=json"
+        status: 200
+        body_content: "{\"solr-spec-version\":\"9.11.0\",\"lucene\":{}}"
+      },
+      {
+        uri: "/solr/admin/cores?action=STATUS&wt=json"
+        status: 401
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNonSolr_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
