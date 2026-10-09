@@ -1,0 +1,105 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "RClone_CVE_2026_41176"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/rc/noop"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{}"
+      },
+      {
+        uri: "/config/listremotes"
+        status: 403
+        condition: {
+          body_content: "\"check\":\"initial\""
+        }
+      },
+      {
+        uri: "/options/set"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        condition: {
+          body_content: "\"NoAuth\":true"
+        }
+        body_content: "{}"
+      },
+      {
+        uri: "/config/listremotes"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"remotes\":[]}"
+      },
+      {
+        uri: "/options/set"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/rc/noop"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{}"
+      },
+      {
+        uri: "/config/listremotes"
+        status: 403
+      },
+      {
+        uri: "/options/set"
+        status: 403
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"error\":\"authentication required\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotRclone_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "404 Not Found"
+      }
+    ]
+  }
+}
+
