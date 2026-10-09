@@ -17,7 +17,7 @@ finding: {
     publisher: "GOOGLE"
     value: "CVE-2026-56265"
   }
-  severity: CRITICAL
+  severity: HIGH
   title: "Authentication Bypass via Hardcoded Default Secret Key in Crawl4AI"
   description: "Crawl4AI versions prior to 0.8.7 contain an authentication bypass vulnerability in the Docker API deployment. In auth.py, the JWT verification logic uses a hardcoded fallback signing secret (SECRET_KEY = os.environ.get(\"SECRET_KEY\", \"mysecret\")). When JWT authentication is enabled on the server without explicitly specifying a custom SECRET_KEY, the service defaults to \"mysecret\", allowing unauthenticated remote attackers to forge valid JWT tokens and bypass authentication."
   recommendation: "Upgrade Crawl4AI to version 0.8.7 or higher, and explicitly set a strong random SECRET_KEY environment variable if JWT authentication is enabled."
@@ -37,14 +37,14 @@ actions: {
   name: "fingerprint_crawl4ai"
   http_request: {
     method: GET
-    uri: "/health"
+    uri: "/"
     response: {
       http_status: 200
       expect_all: {
         conditions: [
           {
             body: {}
-            contains: "\"status\""
+            contains: "<title>Crawl4AI"
           }
         ]
       }

@@ -11,12 +11,9 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/health"
+        uri: "/"
         status: 200
-        body_content: '{"status":"ok","timestamp":1791279398.11,"version":"0.8.6"}'
-        headers: [
-          { name: "Content-Type" value: "application/json" }
-        ]
+        body_content: '... <title>Crawl4AI Playground</title> ...'
       },
       {
         uri: "/md"
@@ -54,12 +51,9 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/health"
+        uri: "/"
         status: 200
-        body_content: '{"status":"ok","timestamp":1791279398.11,"version":"0.8.7"}'
-        headers: [
-          { name: "Content-Type" value: "application/json" }
-        ]
+        body_content: '... <title>Crawl4AI Playground</title> ...'
       },
       {
         uri: "/md"
@@ -87,12 +81,9 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/health"
+        uri: "/"
         status: 200
-        body_content: '{"status":"ok","timestamp":1791279398.11,"version":"0.8.6"}'
-        headers: [
-          { name: "Content-Type" value: "application/json" }
-        ]
+        body_content: '... <title>Crawl4AI Playground</title> ...'
       },
       {
         uri: "/md"
