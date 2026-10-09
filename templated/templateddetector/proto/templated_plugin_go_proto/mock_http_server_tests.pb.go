@@ -587,7 +587,7 @@ var File_mock_http_server_tests_proto protoreflect.FileDescriptor
 
 const file_mock_http_server_tests_proto_rawDesc = "" +
 	"\n" +
-	"\x1cmock_http_server_tests.proto\x12 tsunami_templated_detector_tests\"\xbc\a\n" +
+	"\x1cmock_http_server_tests.proto\x12 tsunami_templated_detector_tests\"\xc9\a\n" +
 	"\x0eMockHttpServer\x12d\n" +
 	"\x0emock_responses\x18\x01 \x03(\v2=.tsunami_templated_detector_tests.MockHttpServer.MockResponseR\rmockResponses\x1a6\n" +
 	"\n" +
@@ -609,7 +609,7 @@ const file_mock_http_server_tests_proto_rawDesc = "" +
 	"\x03uri\x18\x02 \x01(\tR\x03uri\x12U\n" +
 	"\aheaders\x18\x03 \x03(\v2;.tsunami_templated_detector_tests.MockHttpServer.HttpHeaderR\aheaders\x12!\n" +
 	"\fbody_content\x18\x04 \x01(\tR\vbodyContent\x12\\\n" +
-	"\tcondition\x18\x05 \x01(\v2>.tsunami_templated_detector_tests.MockHttpServer.HttpConditionR\tcondition\"K\n" +
+	"\tcondition\x18\x05 \x01(\v2>.tsunami_templated_detector_tests.MockHttpServer.HttpConditionR\tcondition\"X\n" +
 	"\n" +
 	"HttpMethod\x12\v\n" +
 	"\aUNKNOWN\x10\x00\x12\a\n" +
@@ -618,7 +618,8 @@ const file_mock_http_server_tests_proto_rawDesc = "" +
 	"\x03PUT\x10\x03\x12\n" +
 	"\n" +
 	"\x06DELETE\x10\x04\x12\b\n" +
-	"\x04HEAD\x10\x05B\xa2\x01\n" +
+	"\x04HEAD\x10\x05\x12\v\n" +
+	"\aOPTIONS\x10\x06B\xa2\x01\n" +
 	".com.google.tsunami.templatedplugin.proto.testsP\x01Zngithub.com/google/tsunami-security-scanner-plugins/templated/templateddetector/proto/templated_plugin_go_protob\x06proto3"
 
 var file_mock_http_server_tests_proto_enumTypes = make([]protoimpl.EnumInfo, 1)

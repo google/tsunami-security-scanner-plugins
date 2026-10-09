@@ -1460,7 +1460,7 @@ var File_action_http_proto protoreflect.FileDescriptor
 
 const file_action_http_proto_rawDesc = "" +
 	"\n" +
-	"\x11action_http.proto\x12\x1atsunami_templated_detector\"\xab\x10\n" +
+	"\x11action_http.proto\x12\x1atsunami_templated_detector\"\xb8\x10\n" +
 	"\n" +
 	"HttpAction\x12I\n" +
 	"\x06method\x18\x01 \x01(\x0e21.tsunami_templated_detector.HttpAction.HttpMethodR\x06method\x12\x10\n" +
@@ -1517,7 +1517,7 @@ const file_action_http_proto_rawDesc = "" +
 	"\vextractions\x1a\x88\x01\n" +
 	"\x11HttpClientOptions\x128\n" +
 	"\x18disable_follow_redirects\x18\x01 \x01(\bR\x16disableFollowRedirects\x129\n" +
-	"\x19ignore_http_client_errors\x18\x02 \x01(\bR\x16ignoreHttpClientErrors\"V\n" +
+	"\x19ignore_http_client_errors\x18\x02 \x01(\bR\x16ignoreHttpClientErrors\"c\n" +
 	"\n" +
 	"HttpMethod\x12\x16\n" +
 	"\x12METHOD_UNSPECIFIED\x10\x00\x12\a\n" +
@@ -1526,7 +1526,8 @@ const file_action_http_proto_rawDesc = "" +
 	"\x03PUT\x10\x03\x12\n" +
 	"\n" +
 	"\x06DELETE\x10\x04\x12\b\n" +
-	"\x04HEAD\x10\x05B\x9c\x01\n" +
+	"\x04HEAD\x10\x05\x12\v\n" +
+	"\aOPTIONS\x10\x06B\x9c\x01\n" +
 	"(com.google.tsunami.templatedplugin.protoP\x01Zngithub.com/google/tsunami-security-scanner-plugins/templated/templateddetector/proto/templated_plugin_go_protob\x06proto3"
 
 var file_action_http_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
