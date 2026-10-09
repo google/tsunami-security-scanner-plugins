@@ -12,17 +12,23 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/"
-        status: 200
-        body_content: "... <title>LiteLLM API - Swagger UI</title> ..."
-      },
-      {
         uri: "/key/generate"
         status: 200
+        condition: {
+          request_type: POST
+        }
         body_content: "{\"key\":\"sk-wP0uPRhJaJtgJGTU0O_nQg\",\"models\":[\"*\"]}"
         headers: [
           { name: "Content-Type" value: "application/json" }
         ]
+      },
+      {
+        uri: "/"
+        status: 200
+        condition: {
+          request_type: GET
+        }
+        body_content: "... <title>LiteLLM API - Swagger UI</title> ..."
       }
     ]
   }
@@ -35,17 +41,23 @@ tests: {
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/"
-        status: 200
-        body_content: "... <title>LiteLLM API - Swagger UI</title> ..."
-      },
-      {
         uri: "/key/generate"
         status: 401
+        condition: {
+          request_type: POST
+        }
         body_content: "{\"error\":{\"message\":\"Authentication Error, No api key passed in.\",\"type\":\"auth_error\"}}"
         headers: [
           { name: "Content-Type" value: "application/json" }
         ]
+      },
+      {
+        uri: "/"
+        status: 200
+        condition: {
+          request_type: GET
+        }
+        body_content: "... <title>LiteLLM API - Swagger UI</title> ..."
       }
     ]
   }
