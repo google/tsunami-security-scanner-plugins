@@ -17,6 +17,14 @@ option go_package = "github.com/google/tsunami-security-scanner-plugins/template
 // action was successful and the last running action defines whether the
 // plugin is considered successful (the vulnerability was found).
 message PluginAction {
+  // Sequential phases that group actions in a workflow. For example,
+  // fingerprinting the service before running vulnerability detection.
+  enum ActionPhase {
+    ACTION_PHASE_UNDEFINED = 0;
+    ACTION_PHASE_FINGERPRINT = 1;
+    ACTION_PHASE_DETECTION = 2;
+  }
+
   // Each action must have a unique name that will be referenced in the
   // workflows. It must be named using the `[a-zA-Z0-9_]` character set.
   string name = 1;
@@ -33,6 +41,10 @@ message PluginAction {
     CallbackServerAction callback_server = 4;
     UtilityAction utility = 5;
   }
+
+  // The phase of the workflow this action belongs to. `ACTION_PHASE_UNDEFINED`
+  // defaults to `ACTION_PHASE_DETECTION`.
+  ActionPhase action_phase = 6;
 }
 
 // A workflow is a sequence of actions taken in linear order. Having different

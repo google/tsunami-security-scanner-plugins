@@ -22,6 +22,52 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Sequential phases that group actions in a workflow. For example,
+// fingerprinting the service before running vulnerability detection.
+type PluginAction_ActionPhase int32
+
+const (
+	PluginAction_ACTION_PHASE_UNDEFINED   PluginAction_ActionPhase = 0
+	PluginAction_ACTION_PHASE_FINGERPRINT PluginAction_ActionPhase = 1
+	PluginAction_ACTION_PHASE_DETECTION   PluginAction_ActionPhase = 2
+)
+
+// Enum value maps for PluginAction_ActionPhase.
+var (
+	PluginAction_ActionPhase_name = map[int32]string{
+		0: "ACTION_PHASE_UNDEFINED",
+		1: "ACTION_PHASE_FINGERPRINT",
+		2: "ACTION_PHASE_DETECTION",
+	}
+	PluginAction_ActionPhase_value = map[string]int32{
+		"ACTION_PHASE_UNDEFINED":   0,
+		"ACTION_PHASE_FINGERPRINT": 1,
+		"ACTION_PHASE_DETECTION":   2,
+	}
+)
+
+func (x PluginAction_ActionPhase) Enum() *PluginAction_ActionPhase {
+	p := new(PluginAction_ActionPhase)
+	*p = x
+	return p
+}
+
+func (x PluginAction_ActionPhase) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PluginAction_ActionPhase) Descriptor() protoreflect.EnumDescriptor {
+	return file_templated_plugin_proto_enumTypes[0].Descriptor()
+}
+
+func (PluginAction_ActionPhase) Type() protoreflect.EnumType {
+	return &file_templated_plugin_proto_enumTypes[0]
+}
+
+func (x PluginAction_ActionPhase) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 type PluginWorkflow_Condition int32
 
 const (
@@ -52,11 +98,11 @@ func (x PluginWorkflow_Condition) String() string {
 }
 
 func (PluginWorkflow_Condition) Descriptor() protoreflect.EnumDescriptor {
-	return file_templated_plugin_proto_enumTypes[0].Descriptor()
+	return file_templated_plugin_proto_enumTypes[1].Descriptor()
 }
 
 func (PluginWorkflow_Condition) Type() protoreflect.EnumType {
-	return &file_templated_plugin_proto_enumTypes[0]
+	return &file_templated_plugin_proto_enumTypes[1]
 }
 
 func (x PluginWorkflow_Condition) Number() protoreflect.EnumNumber {
@@ -99,11 +145,11 @@ func (x ServiceInformation_AuthenticationType) String() string {
 }
 
 func (ServiceInformation_AuthenticationType) Descriptor() protoreflect.EnumDescriptor {
-	return file_templated_plugin_proto_enumTypes[1].Descriptor()
+	return file_templated_plugin_proto_enumTypes[2].Descriptor()
 }
 
 func (ServiceInformation_AuthenticationType) Type() protoreflect.EnumType {
-	return &file_templated_plugin_proto_enumTypes[1]
+	return &file_templated_plugin_proto_enumTypes[2]
 }
 
 func (x ServiceInformation_AuthenticationType) Number() protoreflect.EnumNumber {
@@ -119,6 +165,7 @@ type PluginAction struct {
 	xxx_hidden_Name           string                   `protobuf:"bytes,1,opt,name=name,proto3"`
 	xxx_hidden_CleanupActions []string                 `protobuf:"bytes,2,rep,name=cleanup_actions,json=cleanupActions,proto3"`
 	xxx_hidden_AnyAction      isPluginAction_AnyAction `protobuf_oneof:"any_action"`
+	xxx_hidden_ActionPhase    PluginAction_ActionPhase `protobuf:"varint,6,opt,name=action_phase,json=actionPhase,proto3,enum=tsunami_templated_detector.PluginAction_ActionPhase"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -189,6 +236,13 @@ func (x *PluginAction) GetUtility() *UtilityAction {
 	return nil
 }
 
+func (x *PluginAction) GetActionPhase() PluginAction_ActionPhase {
+	if x != nil {
+		return x.xxx_hidden_ActionPhase
+	}
+	return PluginAction_ACTION_PHASE_UNDEFINED
+}
+
 func (x *PluginAction) SetName(v string) {
 	x.xxx_hidden_Name = v
 }
@@ -219,6 +273,10 @@ func (x *PluginAction) SetUtility(v *UtilityAction) {
 		return
 	}
 	x.xxx_hidden_AnyAction = &pluginAction_Utility{v}
+}
+
+func (x *PluginAction) SetActionPhase(v PluginAction_ActionPhase) {
+	x.xxx_hidden_ActionPhase = v
 }
 
 func (x *PluginAction) HasAnyAction() bool {
@@ -313,6 +371,9 @@ type PluginAction_builder struct {
 	CallbackServer *CallbackServerAction
 	Utility        *UtilityAction
 	// -- end of xxx_hidden_AnyAction
+	// The phase of the workflow this action belongs to. `ACTION_PHASE_UNDEFINED`
+	// defaults to `ACTION_PHASE_DETECTION`.
+	ActionPhase PluginAction_ActionPhase
 }
 
 func (b0 PluginAction_builder) Build() *PluginAction {
@@ -330,6 +391,7 @@ func (b0 PluginAction_builder) Build() *PluginAction {
 	if b.Utility != nil {
 		x.xxx_hidden_AnyAction = &pluginAction_Utility{b.Utility}
 	}
+	x.xxx_hidden_ActionPhase = b.ActionPhase
 	return m0
 }
 
@@ -985,13 +1047,18 @@ var File_templated_plugin_proto protoreflect.FileDescriptor
 
 const file_templated_plugin_proto_rawDesc = "" +
 	"\n" +
-	"\x16templated_plugin.proto\x12\x1atsunami_templated_detector\x1a\x1bplugin_representation.proto\x1a\x13vulnerability.proto\x1a\x11action_http.proto\x1a\x1baction_callbackserver.proto\x1a\x12action_utils.proto\"\xca\x02\n" +
+	"\x16templated_plugin.proto\x12\x1atsunami_templated_detector\x1a\x1bplugin_representation.proto\x1a\x13vulnerability.proto\x1a\x11action_http.proto\x1a\x1baction_callbackserver.proto\x1a\x12action_utils.proto\"\x88\x04\n" +
 	"\fPluginAction\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12'\n" +
 	"\x0fcleanup_actions\x18\x02 \x03(\tR\x0ecleanupActions\x12K\n" +
 	"\fhttp_request\x18\x03 \x01(\v2&.tsunami_templated_detector.HttpActionH\x00R\vhttpRequest\x12[\n" +
 	"\x0fcallback_server\x18\x04 \x01(\v20.tsunami_templated_detector.CallbackServerActionH\x00R\x0ecallbackServer\x12E\n" +
-	"\autility\x18\x05 \x01(\v2).tsunami_templated_detector.UtilityActionH\x00R\autilityB\f\n" +
+	"\autility\x18\x05 \x01(\v2).tsunami_templated_detector.UtilityActionH\x00R\autility\x12W\n" +
+	"\faction_phase\x18\x06 \x01(\x0e24.tsunami_templated_detector.PluginAction.ActionPhaseR\vactionPhase\"c\n" +
+	"\vActionPhase\x12\x1a\n" +
+	"\x16ACTION_PHASE_UNDEFINED\x10\x00\x12\x1c\n" +
+	"\x18ACTION_PHASE_FINGERPRINT\x10\x01\x12\x1a\n" +
+	"\x16ACTION_PHASE_DETECTION\x10\x02B\f\n" +
 	"\n" +
 	"any_action\"\xcd\x02\n" +
 	"\x0ePluginWorkflow\x12R\n" +
@@ -1030,44 +1097,46 @@ const file_templated_plugin_proto_rawDesc = "" +
 	"\x13service_information\x18\x06 \x01(\v2..tsunami_templated_detector.ServiceInformationR\x12serviceInformationB\x9c\x01\n" +
 	"(com.google.tsunami.templatedplugin.protoP\x01Zngithub.com/google/tsunami-security-scanner-plugins/templated/templateddetector/proto/templated_plugin_go_protob\x06proto3"
 
-var file_templated_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_templated_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_templated_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_templated_plugin_proto_goTypes = []any{
-	(PluginWorkflow_Condition)(0),                     // 0: tsunami_templated_detector.PluginWorkflow.Condition
-	(ServiceInformation_AuthenticationType)(0),        // 1: tsunami_templated_detector.ServiceInformation.AuthenticationType
-	(*PluginAction)(nil),                              // 2: tsunami_templated_detector.PluginAction
-	(*PluginWorkflow)(nil),                            // 3: tsunami_templated_detector.PluginWorkflow
-	(*PluginConfig)(nil),                              // 4: tsunami_templated_detector.PluginConfig
-	(*Credential)(nil),                                // 5: tsunami_templated_detector.Credential
-	(*ServiceInformation)(nil),                        // 6: tsunami_templated_detector.ServiceInformation
-	(*TemplatedPlugin)(nil),                           // 7: tsunami_templated_detector.TemplatedPlugin
-	(*PluginWorkflow_Variable)(nil),                   // 8: tsunami_templated_detector.PluginWorkflow.Variable
-	(*HttpAction)(nil),                                // 9: tsunami_templated_detector.HttpAction
-	(*CallbackServerAction)(nil),                      // 10: tsunami_templated_detector.CallbackServerAction
-	(*UtilityAction)(nil),                             // 11: tsunami_templated_detector.UtilityAction
-	(*plugin_representation_go_proto.PluginInfo)(nil), // 12: tsunami.proto.PluginInfo
-	(*vulnerability_go_proto.Vulnerability)(nil),      // 13: tsunami.proto.Vulnerability
+	(PluginAction_ActionPhase)(0),                     // 0: tsunami_templated_detector.PluginAction.ActionPhase
+	(PluginWorkflow_Condition)(0),                     // 1: tsunami_templated_detector.PluginWorkflow.Condition
+	(ServiceInformation_AuthenticationType)(0),        // 2: tsunami_templated_detector.ServiceInformation.AuthenticationType
+	(*PluginAction)(nil),                              // 3: tsunami_templated_detector.PluginAction
+	(*PluginWorkflow)(nil),                            // 4: tsunami_templated_detector.PluginWorkflow
+	(*PluginConfig)(nil),                              // 5: tsunami_templated_detector.PluginConfig
+	(*Credential)(nil),                                // 6: tsunami_templated_detector.Credential
+	(*ServiceInformation)(nil),                        // 7: tsunami_templated_detector.ServiceInformation
+	(*TemplatedPlugin)(nil),                           // 8: tsunami_templated_detector.TemplatedPlugin
+	(*PluginWorkflow_Variable)(nil),                   // 9: tsunami_templated_detector.PluginWorkflow.Variable
+	(*HttpAction)(nil),                                // 10: tsunami_templated_detector.HttpAction
+	(*CallbackServerAction)(nil),                      // 11: tsunami_templated_detector.CallbackServerAction
+	(*UtilityAction)(nil),                             // 12: tsunami_templated_detector.UtilityAction
+	(*plugin_representation_go_proto.PluginInfo)(nil), // 13: tsunami.proto.PluginInfo
+	(*vulnerability_go_proto.Vulnerability)(nil),      // 14: tsunami.proto.Vulnerability
 }
 var file_templated_plugin_proto_depIdxs = []int32{
-	9,  // 0: tsunami_templated_detector.PluginAction.http_request:type_name -> tsunami_templated_detector.HttpAction
-	10, // 1: tsunami_templated_detector.PluginAction.callback_server:type_name -> tsunami_templated_detector.CallbackServerAction
-	11, // 2: tsunami_templated_detector.PluginAction.utility:type_name -> tsunami_templated_detector.UtilityAction
-	0,  // 3: tsunami_templated_detector.PluginWorkflow.condition:type_name -> tsunami_templated_detector.PluginWorkflow.Condition
-	8,  // 4: tsunami_templated_detector.PluginWorkflow.variables:type_name -> tsunami_templated_detector.PluginWorkflow.Variable
-	1,  // 5: tsunami_templated_detector.ServiceInformation.authentication_type:type_name -> tsunami_templated_detector.ServiceInformation.AuthenticationType
-	5,  // 6: tsunami_templated_detector.ServiceInformation.default_credentials:type_name -> tsunami_templated_detector.Credential
-	5,  // 7: tsunami_templated_detector.ServiceInformation.common_credentials:type_name -> tsunami_templated_detector.Credential
-	12, // 8: tsunami_templated_detector.TemplatedPlugin.info:type_name -> tsunami.proto.PluginInfo
-	13, // 9: tsunami_templated_detector.TemplatedPlugin.finding:type_name -> tsunami.proto.Vulnerability
-	4,  // 10: tsunami_templated_detector.TemplatedPlugin.config:type_name -> tsunami_templated_detector.PluginConfig
-	2,  // 11: tsunami_templated_detector.TemplatedPlugin.actions:type_name -> tsunami_templated_detector.PluginAction
-	3,  // 12: tsunami_templated_detector.TemplatedPlugin.workflows:type_name -> tsunami_templated_detector.PluginWorkflow
-	6,  // 13: tsunami_templated_detector.TemplatedPlugin.service_information:type_name -> tsunami_templated_detector.ServiceInformation
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	10, // 0: tsunami_templated_detector.PluginAction.http_request:type_name -> tsunami_templated_detector.HttpAction
+	11, // 1: tsunami_templated_detector.PluginAction.callback_server:type_name -> tsunami_templated_detector.CallbackServerAction
+	12, // 2: tsunami_templated_detector.PluginAction.utility:type_name -> tsunami_templated_detector.UtilityAction
+	0,  // 3: tsunami_templated_detector.PluginAction.action_phase:type_name -> tsunami_templated_detector.PluginAction.ActionPhase
+	1,  // 4: tsunami_templated_detector.PluginWorkflow.condition:type_name -> tsunami_templated_detector.PluginWorkflow.Condition
+	9,  // 5: tsunami_templated_detector.PluginWorkflow.variables:type_name -> tsunami_templated_detector.PluginWorkflow.Variable
+	2,  // 6: tsunami_templated_detector.ServiceInformation.authentication_type:type_name -> tsunami_templated_detector.ServiceInformation.AuthenticationType
+	6,  // 7: tsunami_templated_detector.ServiceInformation.default_credentials:type_name -> tsunami_templated_detector.Credential
+	6,  // 8: tsunami_templated_detector.ServiceInformation.common_credentials:type_name -> tsunami_templated_detector.Credential
+	13, // 9: tsunami_templated_detector.TemplatedPlugin.info:type_name -> tsunami.proto.PluginInfo
+	14, // 10: tsunami_templated_detector.TemplatedPlugin.finding:type_name -> tsunami.proto.Vulnerability
+	5,  // 11: tsunami_templated_detector.TemplatedPlugin.config:type_name -> tsunami_templated_detector.PluginConfig
+	3,  // 12: tsunami_templated_detector.TemplatedPlugin.actions:type_name -> tsunami_templated_detector.PluginAction
+	4,  // 13: tsunami_templated_detector.TemplatedPlugin.workflows:type_name -> tsunami_templated_detector.PluginWorkflow
+	7,  // 14: tsunami_templated_detector.TemplatedPlugin.service_information:type_name -> tsunami_templated_detector.ServiceInformation
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_templated_plugin_proto_init() }
@@ -1089,7 +1158,7 @@ func file_templated_plugin_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_templated_plugin_proto_rawDesc), len(file_templated_plugin_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      3,
 			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
