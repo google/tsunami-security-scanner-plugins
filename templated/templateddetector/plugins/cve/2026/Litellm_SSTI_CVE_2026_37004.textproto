@@ -1,0 +1,85 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Litellm_SSTI_CVE_2026_37004"
+  author: "sanjaymahajan14"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-37004"
+  }
+  severity: CRITICAL
+  title: "LiteLLM <= 1.82.4 Unauthenticated Server-Side Template Injection RCE (CVE-2026-37004)"
+  description: "LiteLLM versions <= 1.82.4 are vulnerable to Server-Side Template Injection (SSTI) in the /prompts/test endpoint due to the use of an unsandboxed jinja2.Environment. An unauthenticated remote attacker can supply crafted input in the dotprompt_content parameter to execute arbitrary OS commands on the host server."
+  recommendation: "Upgrade LiteLLM to version 1.83.7-stable or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-37004"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_litellm"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<title>LiteLLM" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_ssti_prompts_test"
+  http_request: {
+    method: POST
+    uri: "/prompts/test"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{\"dotprompt_content\":\"---\\nmodel: gpt-3.5-turbo\\n---\\n{{ \\\"\\\".__class__ }}\"}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "chatcmpl-" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_litellm",
+    "check_ssti_prompts_test"
+  ]
+}
+
