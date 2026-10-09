@@ -1,0 +1,69 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Litellm_SSTI_CVE_2026_37004"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html>\n<html><head><title>LiteLLM</title></head></html>"
+      },
+      {
+        uri: "/prompts/test"
+        status: 200
+        body_content: "data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\"}\n\ndata: [DONE]\n\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatched_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html>\n<html><head><title>LiteLLM</title></head></html>"
+      },
+      {
+        uri: "/prompts/test"
+        status: 400
+        body_content: "{\"detail\":\"No messages found in rendered prompt\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenUnexpected200WithoutExpectedBody_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html>\n<html><head><title>LiteLLM</title></head></html>"
+      },
+      {
+        uri: "/prompts/test"
+        status: 200
+        body_content: "OK"
+      }
+    ]
+  }
+}
+
+
