@@ -1,0 +1,94 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ChromaDB_CVE_2026_45829"
+  author: "dyeddala"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-45829"
+  }
+  severity: CRITICAL
+  title: "ChromaDB - Pre-Authentication Code Injection (CVE-2026-45829)"
+  description: "A pre-authentication code injection vulnerability in ChromaDB allows unauthenticated attackers to execute arbitrary code via the /api/v2/tenants/{tenant}/databases/{db}/collections endpoint by setting trust_remote_code to true with a malicious model repository."
+  recommendation: "Since there is no patched version available at the time of the plugin being written, the only solution is to block access to the ChromaDB instance or stop using it."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-45829"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_ChromaDB"
+  http_request: {
+    method: GET
+    uri: "/api/v1/heartbeat"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "nanosecond heartbeat" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "chromadb_code_injection_check"
+  http_request: {
+    method: POST
+    uri: "/api/v2/tenants/default_tenant/databases/default_database/collections"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+   data: "{\"name\":\"tsunami_check_{{ T_UTL_CURRENT_TIMESTAMP_MS }}\",\"metadata\":{\"trust_remote_code\":true,\"embedding_function\":\"safe-test-model\"}}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"id\":" },
+          { body: {} contains: "\"name\":" },
+          { body: {} contains: "\"trust_remote_code\":true" },
+          { body: {} contains: "\"sparse_vector\":" }
+        ]
+      }
+    }
+  }
+  cleanup_actions: ["remove_collection"]
+}
+
+actions: {
+  name: "remove_collection"
+  http_request: {
+    method: DELETE
+    uri: "/api/v2/tenants/default_tenant/databases/default_database/collections/tsunami_check_{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: "fingerprint_ChromaDB"
+  actions: "chromadb_code_injection_check"
+}
