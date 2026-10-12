@@ -44,6 +44,9 @@ This directory contains all Tsunami plugins published by Google.
 *   [Tomcat Ghostcat (CVE-2020-1938) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/rce/tomcat/ghostcat)
 *   [vBulletin Pre-Auth RCE (CVE-2019-16759) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/rce/vbulletin/cve201916759)
 
+#### Directory Traversal
+*   [Node-RED-Dashboard directory traversal vulnerability (CVE-2021-3223) Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/templated/templateddetector/plugins/cve/2021/NodeRed_CVE_2021_3223.textproto)
+
 ## Planned Detectors
 
 *  Exposed unauthenticated [Adminer](https://www.adminer.org/) server.
