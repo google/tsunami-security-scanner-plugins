@@ -17,7 +17,7 @@ Read how to [contribute to Tsunami](docs/contributing.md).
 ### Detectors
 #### AI Relevant OSS
 * [Pytorch Serve Expose API Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/exposedui/pytorch_serve)
-* [Ray CVE-2023-48022 Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/rce/ai/cve202348022)
+* [Ray CVE-2023-48022 Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/templated/templateddetector/plugins/cve/2023/Ray_CVE_2023_48022.textproto)
 * [Ray CVE-2023-6019 Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/rce/ai/cve20236019)
 * [H2O CVE-2023-6018 Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/google/detectors/rce/ai/cve20236018)
 * [MLflow CVE-2023-6977 & CVE-2023-1177 & CVE-2023-2780 Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/mlflow_cve_2023_6977)
