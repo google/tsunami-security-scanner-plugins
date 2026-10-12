@@ -1,0 +1,47 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "SpringCloudFunction_CVE_2022_22963"
+}
+
+tests: {
+  name: "whenVulnerableOob_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/functionRouter"
+        status: 200
+        body_content: ""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerableOob_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/functionRouter"
+        status: 200
+        body_content: ""
+      }
+    ]
+  }
+}
+
