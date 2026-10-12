@@ -1,0 +1,133 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Gitea_CVE_2026_20896"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html" }
+        ]
+        body_content: "<html><head><title>Gitea: Git with a cup of tea</title></head></html>"
+      },
+      {
+        uri: "/api/v1/version"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"version\":\"1.26.2\"}"
+      },
+      {
+        uri: "/api/v1/users/search?limit=1"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"ok\":true,\"data\":[{\"id\":1,\"login\":\"admin\",\"username\":\"admin\"}]}"
+      },
+      {
+        uri: "/api/v1/user"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        condition: {
+          headers: [
+            { name: "X-WEBAUTH-USER" value: "admin" }
+          ]
+        }
+        body_content: "{\"id\":1,\"login\":\"admin\",\"username\":\"admin\"}"
+      },
+      {
+        uri: "/api/v1/user"
+        status: 401
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"message\":\"token is required\"}"
+      }
+    ]
+  }
+}
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html" }
+        ]
+        body_content: "<html><head><title>Gitea: Git with a cup of tea</title></head></html>"
+      },
+      {
+        uri: "/api/v1/version"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"version\":\"1.26.3\"}"
+      },
+      {
+        uri: "/api/v1/users/search?limit=1"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"ok\":true,\"data\":[{\"id\":1,\"login\":\"admin\",\"username\":\"admin\"}]}"
+      },
+      {
+        uri: "/api/v1/user"
+        status: 401
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        condition: {
+          headers: [
+            { name: "X-WEBAUTH-USER" value: "admin" }
+          ]
+        }
+        body_content: "{\"message\":\"token is required\"}"
+      },
+      {
+        uri: "/api/v1/user"
+        status: 401
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"message\":\"token is required\"}"
+      }
+    ]
+  }
+}
+tests: {
+  name: "whenNotGitea_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html" }
+        ]
+        body_content: "<html><body>404 Not Found</body></html>"
+      }
+    ]
+  }
+}
