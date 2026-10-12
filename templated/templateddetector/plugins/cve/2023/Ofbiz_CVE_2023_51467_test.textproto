@@ -1,0 +1,81 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Ofbiz_CVE_2023_51467"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/accounting/control/main"
+        status: 200
+        body_content: "Powered by<a href=\"http://ofbiz.apache.org\" target=\"_blank\">Apache OFBiz.</a> Release18"
+      },
+      {
+        uri: "/webtools/control/ProgramExport/?USERNAME=&PASSWORD=&requirePasswordChange=Y"
+        status: 200
+        body_content: "root:x:0:0:root:/root:/bin/bash"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/accounting/control/main"
+        status: 200
+        body_content: "Powered by<a href=\"http://ofbiz.apache.org\" target=\"_blank\">Apache OFBiz.</a> Release18"
+      },
+      {
+        uri: "/webtools/control/ProgramExport/?USERNAME=&PASSWORD=&requirePasswordChange=Y"
+        status: 200
+        body_content: ""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotOfbiz_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/accounting/control/main"
+        status: 200
+        body_content: "<title>Hello World</title>something"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}

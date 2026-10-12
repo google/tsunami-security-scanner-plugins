@@ -1,0 +1,67 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "NodeRED_ExposedUI"
+}
+
+
+tests: {
+  name: "whenNotNodeRedNotFound_returnsNoVuln"
+  expect_vulnerability: false
+  mock_callback_server: {
+    enabled: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/flows"
+        status: 404
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotNodeRedInvalidResponse_returnsNoVuln"
+  expect_vulnerability: false
+  mock_callback_server: {
+    enabled: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/flows"
+        status: 202
+        body_content: "{\"error\": \"invalid response\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerable_returnsVuln"
+  expect_vulnerability: true
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/flows"
+        condition: { request_type: GET }
+        status: 200
+        body_content: "[{\"id\":\"f6f2187d.f17ca8\",\"wires\":[[]]}]"
+      },
+      {
+        uri: "/flows"
+        condition: { request_type: POST }
+        status: 200
+        body_content: "{\"rev\":\"12345\"}"
+      }
+    ]
+  }
+}

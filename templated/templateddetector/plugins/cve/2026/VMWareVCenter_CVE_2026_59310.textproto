@@ -1,0 +1,76 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "VMWareVCenter_CVE_2026_59310"
+  author: "Claudio Criscione (claudioc@google.com)"
+  version: "0.1"
+  description: "Detects -via banner grabbing- CVE-2026-59310, a directory traversal vulnerability in vCenter Syslog Server."
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE_2026_59310"
+  }
+  severity: LOW
+  title: "vCenter Syslog Server Directory Traversal (CVE-2026-59310)"
+  description: "VMware vCenter Syslog Server contains a directory traversal vulnerability that could allow a remote unauthenticated attacker to execute arbitrary code."
+  recommendation: "Apply the updates listed in the 'Fixed Version' column of the 'Response Matrix' at VMSA-2026-0006. See https://brcm.tech/vmsa-2026-0006."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-59310"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "check_vcenter_version"
+  http_request: {
+    method: POST
+    uri: "/sdk"
+    headers: [
+      { name: "Content-Type" value: "text/xml; charset=utf-8" },
+      { name: "SOAPAction" value: "\"urn:vim25/8.0\"" }
+    ]
+    data: "<?xml version=\"1.0\" encoding=\"UTF-8\"?><env:Envelope xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:env=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><env:Body><RetrieveServiceContent xmlns=\"urn:vim25\"><_this type=\"ServiceInstance\">ServiceInstance</_this></RetrieveServiceContent></env:Body></env:Envelope>"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "ServiceContent" },
+          { body: {} contains: "VMware vCenter" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            variable_name: "vulnerable_build"
+            regexp: "(?s)<version>8\\.0[^<]*</version>.*?<build>(\\d{1,7}|1\\d{7}|2[0-4]\\d{6}|25[0-4]\\d{5}|255[0-8]\\d{4}|2559[0-4]\\d{3}|25595[0-6]\\d{2}|2559570[0-7])</build>"
+            from_body: {}
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "check_vcenter_version"
+  ]
+}

@@ -1,0 +1,66 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "DocsGPT_CVE_2025_0868"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/remote"
+        status: 200
+        body_content: "{ \"success\": true,\"task_id\": \"c4473c2f-5baf-4d4a-821b-1260a6cce4ce\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/remote"
+        status: 200
+        body_content: "{ \"success\": true,\"task_id\": \"c4473c2f-5baf-4d4a-821b-1260a6cce4ce\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotDocsGPT_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}

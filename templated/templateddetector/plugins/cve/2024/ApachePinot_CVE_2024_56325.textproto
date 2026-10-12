@@ -1,0 +1,78 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ApachePinot_CVE_2024_56325"
+  author: "Joern w"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "APACHEPINOT_CVE_2024_56325"
+  }
+  severity: HIGH
+  title: "ApachePinot is vulnerable to Authentication Bypass"
+  description: "The instance of ApachePinot is vulnerable Authentication Bypass. This allows to create a new user which can run pinot SQL queries."
+  recommendation: "Update to version 1.4.0 or higher."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-56325"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_pinot"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: '<title>Apache Pinot</title>' },
+          { body: {} contains: "<meta name=\"description\" content=\"Pinot Controller UI\">" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_auth_bypass"
+  http_request: {
+    method: GET
+    uri: "/tables;."
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: '{"tables":[]}' }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_pinot",
+    "check_auth_bypass"
+  ]
+}

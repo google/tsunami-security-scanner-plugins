@@ -1,0 +1,68 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "NginxUI_CVE_2026_33032"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <title>Nginx UI</title>\n  </head>\n  <body><div id=\"app\"></div></body>\n</html>"
+      },
+      {
+        uri: "/mcp_message"
+        status: 400
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32602,\"message\":\"Missing sessionId\"}}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html>\n<html><head><title>Nginx UI</title></head></html>"
+      },
+      {
+        uri: "/mcp_message"
+        status: 403
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"message\":\"Authorization failed\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotNginxUI_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Welcome to Apache HTTP Server"
+      }
+    ]
+  }
+}

@@ -1,0 +1,62 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ApachePinot_CVE_2024_56325"
+  disabled: false
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '<title>Apache Pinot</title> <meta name="description" content="Pinot Controller UI">'
+      },
+      {
+          uri: "/tables;."
+              status: 200
+              body_content: '{"tables":[]}'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '<title>Apache Pinot</title> <metaname="description" content="Pinot Controller UI">'
+      },
+      {
+        uri: "/tables\\;."
+        status: 403
+        body_content: '{"code":401,"error":"HTTP 401 Unauthorized"}'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotApachePinot_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Login to your Drupal account"
+      }
+    ]
+  }
+}

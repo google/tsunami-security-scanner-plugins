@@ -1,0 +1,68 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ApacheStruts_CVE_2013_2251"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!DOCTYPE html>\n<html>\n<head><title>S2-016</title></head>\n<body>\n<h2>S2-016 Demo</h2>\n<p>link: <a href=\"https://struts.apache.org/docs/s2-016.html\">https://struts.apache.org/docs/s2-016.html</a></p>\n</body>\n</html>"
+      },
+      {
+        uri: "/default.action"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html;charset=UTF-8" }
+        ]
+        body_content: "tsunami1787569"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!DOCTYPE html>\n<html>\n<head><title>S2-016</title></head>\n<body>\n<h2>S2-016 Demo</h2>\n<p>link: <a href=\"https://struts.apache.org/docs/s2-016.html\">https://struts.apache.org/docs/s2-016.html</a></p>\n</body>\n</html>"
+      },
+      {
+        uri: "/default.action"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html;charset=UTF-8" }
+        ]
+        body_content: "<!DOCTYPE html>\n<html>\n<body><h2>S2-016 Demo Default Action</h2></body>\n</html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotStruts2_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "<html><body><h1>Welcome to Apache...!</h1></body></html>"
+      }
+    ]
+  }
+}

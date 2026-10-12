@@ -1,0 +1,72 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Litellm_SQL_Injection_CVE_2026_42208"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/health/readiness"
+        status: 200
+        body_content: "{\"status\":\"connected\",\"db\":\"connected\",\"litellm_version\":\"1.82.0\"}"
+      },
+      {
+        uri: "/v1/models"
+        status: 200
+        body_content: "{\"object\":\"list\",\"data\":[]}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/health/readiness"
+        status: 200
+        body_content: "{\"status\":\"connected\",\"db\":\"connected\",\"litellm_version\":\"1.83.7\"}"
+      },
+      {
+        uri: "/v1/models"
+        status: 401
+        body_content: "{\"error\":\"Unauthorized\"}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotLitellm_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/health/readiness"
+        status: 404
+        body_content: "Not Found"
+      },
+      {
+        uri: "/v1/models"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}

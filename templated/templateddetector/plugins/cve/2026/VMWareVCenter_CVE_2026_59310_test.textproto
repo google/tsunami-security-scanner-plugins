@@ -1,0 +1,111 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "VMWareVCenter_CVE_2026_59310"
+}
+
+tests: {
+  name: "whenVulnerableVCenter80_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/sdk"
+        status: 200
+        body_content: "<?xml version=\"1.0\" encoding=\"UTF-8\"?><env:Envelope><env:Body><RetrieveServiceContentResponse><returnval><about><name>VMware vCenter Server</name><version>8.0.2</version><build>24305161</build></about></returnval></RetrieveServiceContentResponse></env:Body></env:Envelope>ServiceContent"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedVCenter80_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/sdk"
+        status: 200
+        body_content: "<?xml version=\"1.0\" encoding=\"UTF-8\"?><env:Envelope><env:Body><RetrieveServiceContentResponse><returnval><about><name>VMware vCenter Server</name><version>8.0.3</version><build>25595708</build></about></returnval></RetrieveServiceContentResponse></env:Body></env:Envelope>ServiceContent"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNonVCenter_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/sdk"
+        status: 200
+        body_content: "<html><body>Welcome to some other product</body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVCenterWithoutBuild_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/sdk"
+        status: 200
+        body_content: "<?xml version=\"1.0\" encoding=\"UTF-8\"?><env:Envelope><env:Body><RetrieveServiceContentResponse><returnval><about><name>VMware vCenter Server</name><version>8.0.3</version></about></returnval></RetrieveServiceContentResponse></env:Body></env:Envelope>ServiceContent"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenBoundaryVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/sdk"
+        status: 200
+        body_content: "<?xml version=\"1.0\" encoding=\"UTF-8\"?><env:Envelope><env:Body><RetrieveServiceContentResponse><returnval><about><name>VMware vCenter Server</name><version>8.0.3</version><build>25595707</build></about></returnval></RetrieveServiceContentResponse></env:Body></env:Envelope>ServiceContent"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenBoundaryPatchedHigher_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/sdk"
+        status: 200
+        body_content: "<?xml version=\"1.0\" encoding=\"UTF-8\"?><env:Envelope><env:Body><RetrieveServiceContentResponse><returnval><about><name>VMware vCenter Server</name><version>8.0.3</version><build>25595709</build></about></returnval></RetrieveServiceContentResponse></env:Body></env:Envelope>ServiceContent"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVersion7_ignored_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/sdk"
+        status: 200
+        body_content: "<?xml version=\"1.0\" encoding=\"UTF-8\"?><env:Envelope><env:Body><RetrieveServiceContentResponse><returnval><about><name>VMware vCenter Server</name><version>7.0.3</version><build>21474836</build></about></returnval></RetrieveServiceContentResponse></env:Body></env:Envelope>ServiceContent"
+      }
+    ]
+  }
+}

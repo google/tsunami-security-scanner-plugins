@@ -1,0 +1,85 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "MLflow_CVE_2026_0545"
+  author: "dyeddala"
+  version: "1.1"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-0545"
+  }
+  severity: CRITICAL
+  title: "MLflow Job API - Authentication Bypass"
+  description: "MLflow contains an authentication bypass vulnerability caused by unprotected FastAPI job endpoints under /ajax-api/3.0/jobs/* when basic-auth is enabled. Unauthenticated network clients can query and inspect jobs without credentials."
+  recommendation: "Update MLflow to version 3.10.0 or later where authentication enforcement is properly applied to FastAPI routes. Note that the security advisory at https://github.com/advisories/GHSA-7qhf-v65m-g5f3 says versions <= 3.10.1 are affected, but the MLflow changelog says basic auth was added to the endpoints in 3.10.0. "
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-0545"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_mlflow"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 401
+      expect_all: {
+        conditions: [
+          { body: {} contains: "mlflow" },
+          { header: { name: "www-authenticate" } contains: "Basic realm=\"mlflow\"" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "search_jobs_unauth_bypass"
+  http_request: {
+    method: POST
+    uri: "/ajax-api/3.0/jobs/search"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{}"
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "{\"jobs\":" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_mlflow",
+    "search_jobs_unauth_bypass"
+  ]
+}

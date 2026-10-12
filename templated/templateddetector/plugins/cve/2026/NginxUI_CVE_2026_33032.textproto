@@ -1,0 +1,85 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "NginxUI_CVE_2026_33032"
+  author: "sanjaymahajan14"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-33032"
+  }
+  severity: CRITICAL
+  title: "Authentication bypass in Nginx UI MCP endpoint"
+  description: "Nginx UI versions 2.3.3 and earlier (the CVE official description says 2.3.5 and earlier, but it does not appear to be true) expose the /mcp_message endpoint without authentication when the IP allowlist is empty. A remote unauthenticated attacker can invoke privileged Model Context Protocol (MCP) operations."
+  recommendation: "Upgrade Nginx UI to version 2.3.4 or later. If upgrading is not possible, disable MCP or restrict access using authentication and an IP allowlist. Note that version 2.3.4 has other known vulnerabilities, so it's recommended to use the latest version. Do not expose Nginx UI directly to the Internet."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-33032"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_nginx_ui"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "Nginx UI" },
+          { body: {} contains: "<title>Nginx UI</title>" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "probe_mcp_message"
+  http_request: {
+    method: POST
+    uri: "/mcp_message"
+    headers: [
+      { name: "Accept" value: "application/json" },
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"jsonrpc\":\"2.0\",\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"{{ T_UTL_CURRENT_TIMESTAMP_MS }}\",\"version\":\"1.0\"}},\"id\":1}"
+    response: {
+      http_status: 400
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"jsonrpc\":\"2.0\"" },
+          { body: {} contains: "\"message\":\"Missing sessionId\"" },
+          { body: {} contains: "\"id\":null" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_nginx_ui",
+    "probe_mcp_message"
+  ]
+}
