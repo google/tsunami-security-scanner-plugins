@@ -42,7 +42,7 @@ actions: {
       http_status: 200
       expect_all: {
         conditions: [
-          { body: {} contains: "marimo" }
+          { body: {} contains: "<title>marimo</title>" }
         ]
       }
     }
