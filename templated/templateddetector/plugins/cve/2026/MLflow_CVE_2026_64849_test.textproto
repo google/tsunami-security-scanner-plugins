@@ -1,0 +1,97 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "MLflow_CVE_2026_64849"
+}
+
+# -------------------------------------------------------------
+# Positive Test: Vulnerable MLflow returns response_body
+# -------------------------------------------------------------
+tests: {
+  name: "whenVulnerableReflective_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html><html lang=\"en\"><head><title>MLflow</title></head><body><div id=\"root\" class=\"mlflow-ui-container\"></div></body></html>"
+      },
+      {
+        uri: "/api/2.0/mlflow/webhooks"
+        status: 200
+        body_content: "{\"webhook\":{\"webhook_id\":\"wh-test-refl-12345\",\"name\":\"tsunami-refl\",\"status\":\"ACTIVE\"}}"
+      },
+      {
+        uri: "/api/2.0/mlflow/webhooks/wh-test-refl-12345/test"
+        status: 200
+        body_content: "{\"result\":{\"success\":false,\"response_status\":404,\"response_body\":\"Not Found\"}}"
+      },
+      {
+        uri: "/api/2.0/mlflow/webhooks/wh-test-refl-12345"
+        status: 200
+        body_content: "{}"
+      }
+    ]
+  }
+}
+
+# -------------------------------------------------------------
+# Negative Test: Patched MLflow blocks with SSRFProtectionError
+# -------------------------------------------------------------
+tests: {
+  name: "whenPatchedReflective_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html><html lang=\"en\"><head><title>MLflow</title></head><body><div id=\"root\" class=\"mlflow-ui-container\"></div></body></html>"
+      },
+      {
+        uri: "/api/2.0/mlflow/webhooks"
+        status: 200
+        body_content: "{\"webhook\":{\"webhook_id\":\"wh-test-refl-12345\",\"name\":\"tsunami-refl\",\"status\":\"ACTIVE\"}}"
+      },
+      {
+        uri: "/api/2.0/mlflow/webhooks/wh-test-refl-12345/test"
+        status: 200
+        body_content: "{\"result\":{\"success\":false,\"error_message\":\"Failed to test webhook: SSRFProtectionError('Webhook connection blocked: 127.0.0.1 is not a public IP address.')\"}}"
+      }
+    ]
+  }
+}
+
+# -------------------------------------------------------------
+# Negative Test: Non-MLflow Target
+# -------------------------------------------------------------
+tests: {
+  name: "whenNotMlflow_returnsFalse"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
