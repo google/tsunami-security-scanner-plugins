@@ -206,8 +206,8 @@ public final class Cve20263059VulnDetector implements VulnDetector {
 
     int zmqPort = hp.getPort() + 1;
     logger.atInfo().log("Probing adjacent ZMQ broker port %s:%d", hp.getHost(), zmqPort);
-    System.setProperty("tsunami.allowInternalConnections", "true");
     try (Socket socket = socketFactory.createSocket(hp.getHost(), zmqPort)) {
+      socket.setSoTimeout(5000);
       OutputStream out = socket.getOutputStream();
       InputStream in = socket.getInputStream();
 
@@ -241,27 +241,25 @@ public final class Cve20263059VulnDetector implements VulnDetector {
 
   @VisibleForTesting
   static boolean isValidUnauthenticatedZmtpGreeting(byte[] response, int bytesRead) {
-    if (bytesRead < 10) {
+    if (bytesRead < 16) {
       return false;
     }
     // Check ZMTP signature framing: starts with 0xFF and byte 9 is 0x7F
     if ((response[0] & 0xFF) != 0xFF || (response[9] & 0xFF) != 0x7F) {
       return false;
     }
-    // If major version byte is received, verify ZMTP v3+
-    if (bytesRead >= 11 && (response[10] & 0xFF) < 3) {
+    // Verify ZMTP v3+
+    if ((response[10] & 0xFF) < 3) {
       return false;
     }
-    // If security mechanism field (bytes 12..15) is received, verify it is "NULL" (unauthenticated)
-    if (bytesRead >= 16) {
-      String mechanism = new String(response, 12, 4, US_ASCII);
-      if (!"NULL".equals(mechanism)) {
-        return false;
-      }
-      // Byte 16 must be 0x00 (null terminator for "NULL" mechanism name) if present
-      if (bytesRead >= 17 && response[16] != 0x00) {
-        return false;
-      }
+    // Verify security mechanism is "NULL" (unauthenticated)
+    String mechanism = new String(response, 12, 4, US_ASCII);
+    if (!"NULL".equals(mechanism)) {
+      return false;
+    }
+    // Byte 16 must be 0x00 (null terminator for "NULL" mechanism name) if present
+    if (bytesRead >= 17 && response[16] != 0x00) {
+      return false;
     }
     return true;
   }
