@@ -79,9 +79,12 @@ actions: {
 #############
 
 workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
   actions: [
     "fingerprint_litellm",
-    "check_ssti_prompts_test"
+    "check_ssti_prompts_test",
+    "sleep",
+    "check_callback_server_logs"
   ]
 }
 
