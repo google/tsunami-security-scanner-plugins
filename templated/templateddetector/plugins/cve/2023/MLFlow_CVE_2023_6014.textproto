@@ -19,7 +19,7 @@ finding: {
     publisher: "TSUNAMI_COMMUNITY"
     value: "CVE_2023_6014"
   }
-  severity: HIGH
+  severity: CRITICAL
   title: "MLFlow Auth Bypass Vulnerability (CVE-2023-6014)"
   description: 
     "On MLflow versions prior to 2.8.0, unauthenticated users are able to arbitrarily create an"
