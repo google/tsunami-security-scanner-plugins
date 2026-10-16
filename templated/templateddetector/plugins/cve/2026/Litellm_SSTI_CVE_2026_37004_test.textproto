@@ -58,6 +58,10 @@ tests: {
 tests: {
   name: "whenUnexpected200WithoutExpectedBody_returnsFalse"
   expect_vulnerability: false
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
   mock_http_server: {
     mock_responses: [
       {
