@@ -22,11 +22,9 @@ import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
-import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
@@ -38,31 +36,31 @@ import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
-import com.google.tsunami.plugin.payload.Payload;
-import com.google.tsunami.plugin.payload.PayloadGenerator;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
-import com.google.tsunami.proto.PayloadGeneratorConfig;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Clock;
-import java.time.Duration;
 import java.util.Optional;
 import javax.inject.Inject;
 
 /**
  * A {@link VulnDetector} that detects PHP2Shell RCE (CVE-2026-109618 / CVE-2026-109619).
  *
- * <p>Note: This detector probes the {@code session.upload_progress} code injection vector
- * (CVE-2026-109619) without sending a destructive out-of-memory (OOM) heap-exhaustion payload
- * (CVE-2026-109618), as triggering {@code zend_bailout()} memory corruption can crash production
- * PHP worker processes.
+ * <p>This detector sends a non-destructive ~300-byte multipart POST with {@code Cookie:
+ * PHPSESSID=tsunami/invalid_sid_<ts>} and {@code PHP_SESSION_UPLOAD_PROGRESS}. Unpatched PHP fails
+ * {@code php_session_initialize()} during {@code PHP Request Startup} (before user PHP code runs)
+ * and unconditionally calls {@code php_session_flush(1)}, emitting both {@code is too long or
+ * contains illegal characters} and {@code Failed to write session data}. Patched PHP returns early
+ * without calling {@code php_session_flush(1)}.
  */
 @ForWebService
 @PluginInfo(
@@ -97,18 +95,19 @@ public final class Php2ShellDetector implements VulnDetector {
   static final ImmutableList<String> CANDIDATE_PATHS =
       ImmutableList.of("", "index.php", "public/index.php", "web/index.php", "wp-login.php");
 
-  private static final Duration OOB_SLEEP_DURATION = Duration.ofSeconds(5);
+  @VisibleForTesting
+  static final String STAGE1_INVALID_SID_WARNING = "is too long or contains illegal characters";
+
+  @VisibleForTesting
+  static final String STAGE1_FAILED_FLUSH_WARNING = "Failed to write session data";
 
   private final Clock utcClock;
   private final HttpClient httpClient;
-  private final PayloadGenerator payloadGenerator;
 
   @Inject
-  Php2ShellDetector(
-      @UtcClock Clock utcClock, HttpClient httpClient, PayloadGenerator payloadGenerator) {
+  Php2ShellDetector(@UtcClock Clock utcClock, HttpClient httpClient) {
     this.utcClock = checkNotNull(utcClock);
     this.httpClient = checkNotNull(httpClient).modify().setFollowRedirects(false).build();
-    this.payloadGenerator = checkNotNull(payloadGenerator);
   }
 
   @Override
@@ -146,28 +145,30 @@ public final class Php2ShellDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    PayloadGeneratorConfig config =
-        PayloadGeneratorConfig.newBuilder()
-            .setInterpretationEnvironment(
-                PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
-            .setExecutionEnvironment(
-                PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
-            .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
-            .build();
-    Payload payload = payloadGenerator.generate(config);
-
     for (String targetUrl : getTargetUrls(networkService)) {
-      Optional<HttpResponse> response = sendExploitRequest(networkService, targetUrl, payload);
-      if (!payload.getPayloadAttributes().getUsesCallbackServer()
-          && response.isPresent()
-          && payload.checkIfExecuted(response.get().bodyBytes())) {
+      if (isTargetUrlVulnerable(networkService, targetUrl)) {
         return true;
       }
     }
+    return false;
+  }
 
-    if (payload.getPayloadAttributes().getUsesCallbackServer()) {
-      Uninterruptibles.sleepUninterruptibly(OOB_SLEEP_DURATION);
-      return payload.checkIfExecuted();
+  private boolean isTargetUrlVulnerable(NetworkService networkService, String targetUrl) {
+    return isStage1InvalidSidFlushVulnerable(networkService, targetUrl);
+  }
+
+  private boolean isStage1InvalidSidFlushVulnerable(
+      NetworkService networkService, String targetUrl) {
+    Optional<HttpResponse> stage1Response = sendStage1InvalidSidProbe(networkService, targetUrl);
+    if (stage1Response.isEmpty()) {
+      return false;
+    }
+
+    String body = stage1Response.get().bodyString().orElse("");
+    if (body.contains(STAGE1_INVALID_SID_WARNING) && body.contains(STAGE1_FAILED_FLUSH_WARNING)) {
+      logger.atInfo().log(
+          "PHP2Shell Stage 1 confirmed unpatched rfc1867 startup session flush on '%s'", targetUrl);
+      return true;
     }
     return false;
   }
@@ -176,17 +177,21 @@ public final class Php2ShellDetector implements VulnDetector {
     for (CrawlResult crawlResult :
         networkService.getServiceContext().getWebServiceContext().getCrawlResultsList()) {
       String crawledUrl = crawlResult.getCrawlTarget().getUrl();
-      String pathWithoutQuery = Splitter.on('?').splitToList(crawledUrl).get(0);
-      if (Ascii.toLowerCase(pathWithoutQuery).endsWith(".php")) {
-        return ImmutableSet.of(crawledUrl);
+      try {
+        URI uri = new URI(crawledUrl);
+        if (uri.getPath() != null && Ascii.toLowerCase(uri.getPath()).endsWith(".php")) {
+          return ImmutableSet.of(crawledUrl);
+        }
+      } catch (URISyntaxException e) {
+        logger.atFine().withCause(e).log("Failed to parse crawled URL '%s'", crawledUrl);
       }
     }
     String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     return CANDIDATE_PATHS.stream().map(subpath -> rootUrl + subpath).collect(toImmutableSet());
   }
 
-  private Optional<HttpResponse> sendExploitRequest(
-      NetworkService networkService, String targetUrl, Payload payload) {
+  private Optional<HttpResponse> sendStage1InvalidSidProbe(
+      NetworkService networkService, String targetUrl) {
     String boundary = "----TsunamiPhp2ShellBoundary" + utcClock.instant().toEpochMilli();
 
     String multipartBody =
@@ -194,7 +199,7 @@ public final class Php2ShellDetector implements VulnDetector {
             + boundary
             + "\r\n"
             + "Content-Disposition: form-data; name=\"PHP_SESSION_UPLOAD_PROGRESS\"\r\n\r\n"
-            + String.format("<?php system('%s'); ?>\r\n", payload.getPayload())
+            + "tsunami\r\n"
             + "--"
             + boundary
             + "\r\n"
@@ -215,14 +220,14 @@ public final class Php2ShellDetector implements VulnDetector {
                           .addHeader("Connection", "keep-alive")
                           .addHeader(
                               "Cookie",
-                              "PHPSESSID=tsunami_sess_" + utcClock.instant().toEpochMilli())
+                              "PHPSESSID=tsunami/invalid_sid_" + utcClock.instant().toEpochMilli())
                           .build())
                   .setRequestBody(ByteString.copyFromUtf8(multipartBody))
                   .build(),
               networkService));
     } catch (IOException e) {
       logger.atFine().withCause(e).log(
-          "HTTP exception while sending PHP2Shell request to '%s'", targetUrl);
+          "HTTP exception while sending PHP2Shell Stage 1 request to '%s'", targetUrl);
       return Optional.empty();
     }
   }

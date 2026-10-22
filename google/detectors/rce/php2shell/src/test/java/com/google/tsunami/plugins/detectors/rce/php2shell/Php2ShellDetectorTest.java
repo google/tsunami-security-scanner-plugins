@@ -15,23 +15,18 @@
  */
 package com.google.tsunami.plugins.detectors.rce.php2shell;
 
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.net.MediaType;
 import com.google.inject.Guice;
-import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.Timestamps;
-import com.google.tsunami.callbackserver.proto.PollingResult;
 import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
-import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
 import com.google.tsunami.proto.DetectionReport;
@@ -46,9 +41,7 @@ import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Arrays;
 import javax.inject.Inject;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -66,47 +59,22 @@ public final class Php2ShellDetectorTest {
 
   @Inject private Php2ShellDetector detector;
 
-  private final SecureRandom testSecureRandom =
-      new SecureRandom() {
-        @Override
-        public void nextBytes(byte[] bytes) {
-          Arrays.fill(bytes, (byte) 0xFF);
-        }
-      };
-
   private MockWebServer mockPhpServer;
-  private MockWebServer mockCallbackServer;
 
   @Before
   public void setUp() throws IOException {
     mockPhpServer = new MockWebServer();
     mockPhpServer.start();
-    mockCallbackServer = new MockWebServer();
-    mockCallbackServer.start();
 
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
-            FakePayloadGeneratorModule.builder()
-                .setCallbackServer(mockCallbackServer)
-                .setSecureRng(testSecureRandom)
-                .build(),
-            new Php2ShellDetectorBootstrapModule())
-        .injectMembers(this);
-  }
-
-  private void createDetectorWithoutCallbackServer() {
-    Guice.createInjector(
-            new FakeUtcClockModule(fakeUtcClock),
-            new HttpClientModule.Builder().build(),
-            FakePayloadGeneratorModule.builder().setSecureRng(testSecureRandom).build(),
             new Php2ShellDetectorBootstrapModule())
         .injectMembers(this);
   }
 
   @After
   public void tearDown() throws Exception {
-    mockCallbackServer.shutdown();
     mockPhpServer.shutdown();
   }
 
@@ -143,38 +111,20 @@ public final class Php2ShellDetectorTest {
   }
 
   @Test
-  public void detect_whenVulnerableWithCallback_reportsVulnerability() throws IOException {
-    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
-      mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
-    }
-
-    PollingResult log = PollingResult.newBuilder().setHasHttpInteraction(true).build();
-    String body = JsonFormat.printer().preservingProtoFieldNames().print(log);
-    mockCallbackServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setHeader(CONTENT_TYPE, MediaType.PLAIN_TEXT_UTF_8.toString())
-            .setBody(body));
-
-    NetworkService service = createNetworkService(mockPhpServer);
-    TargetInfo target =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockPhpServer.getHostName()))
-            .build();
-
-    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
-
-    assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildValidDetectionReport(target, service, fakeUtcClock));
-  }
-
-  @Test
-  public void detect_whenVulnerableWithoutCallback_reportsVulnerability() {
-    createDetectorWithoutCallbackServer();
+  public void detect_whenStage1InvalidSidFlushWarningPresent_reportsVulnerability()
+      throws Exception {
     mockPhpServer.enqueue(
         new MockResponse()
             .setResponseCode(HttpStatus.OK.code())
-            .setBody("TSUNAMI_PAYLOAD_STARTffffffffffffffffTSUNAMI_PAYLOAD_END"));
+            .setBody(
+                "<br />\n"
+                    + "<b>Warning</b>:  PHP Request Startup: Session ID "
+                    + Php2ShellDetector.STAGE1_INVALID_SID_WARNING
+                    + " in <b>Unknown</b> on line <b>0</b><br />\n"
+                    + "<b>Warning</b>:  PHP Request Startup: "
+                    + Php2ShellDetector.STAGE1_FAILED_FLUSH_WARNING
+                    + " (files). in <b>Unknown</b> on line <b>0</b><br />\n"
+                    + "OK\n"));
 
     NetworkService service = createNetworkService(mockPhpServer);
     TargetInfo target =
@@ -186,20 +136,51 @@ public final class Php2ShellDetectorTest {
 
     assertThat(reports.getDetectionReportsList())
         .containsExactly(buildValidDetectionReport(target, service, fakeUtcClock));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(1);
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie"))
+        .contains("PHPSESSID=tsunami/invalid_sid_");
   }
 
   @Test
-  public void detect_whenNotVulnerableWithCallback_reportsEmpty() throws IOException {
-    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
-      mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
-    }
-    PollingResult log = PollingResult.newBuilder().setHasHttpInteraction(false).build();
-    String body = JsonFormat.printer().preservingProtoFieldNames().print(log);
-    mockCallbackServer.enqueue(
+  public void detect_whenLegacyPhp7InvalidSidFlushWarningPresent_reportsVulnerability() {
+    mockPhpServer.enqueue(
         new MockResponse()
             .setResponseCode(HttpStatus.OK.code())
-            .setHeader(CONTENT_TYPE, MediaType.PLAIN_TEXT_UTF_8.toString())
-            .setBody(body));
+            .setBody(
+                "<b>Warning</b>:  Unknown: The session id "
+                    + Php2ShellDetector.STAGE1_INVALID_SID_WARNING
+                    + ", valid characters are a-z, A-Z, 0-9 and '-,' in <b>Unknown</b> on line"
+                    + " <b>0</b><br />\n"
+                    + "<b>Warning</b>:  Unknown: "
+                    + Php2ShellDetector.STAGE1_FAILED_FLUSH_WARNING
+                    + " (files). in <b>Unknown</b> on line <b>0</b><br />\n"));
+
+    NetworkService service = createNetworkService(mockPhpServer);
+    TargetInfo target =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockPhpServer.getHostName()))
+            .build();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildValidDetectionReport(target, service, fakeUtcClock));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void detect_whenPatchedServerEmitsOnlyInvalidSidWarning_reportsEmpty() {
+    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
+      // Patched PHP (8.5.12 / 8.4.27) emits only STAGE1_INVALID_SID_WARNING (no failed flush)
+      mockPhpServer.enqueue(
+          new MockResponse()
+              .setResponseCode(HttpStatus.OK.code())
+              .addHeader("Set-Cookie", "PHPSESSID=50332b68bd1c46bc8ce25ae1d11a54c5; path=/")
+              .setBody(
+                  "<b>Warning</b>:  PHP Request Startup: Session ID "
+                      + Php2ShellDetector.STAGE1_INVALID_SID_WARNING
+                      + " in <b>Unknown</b> on line <b>0</b><br />\n"));
+    }
 
     NetworkService service = createNetworkService(mockPhpServer);
     TargetInfo target =
@@ -213,19 +194,17 @@ public final class Php2ShellDetectorTest {
   }
 
   @Test
-  public void detect_whenRootFailsButIndexPhpVulnerable_reportsVulnerability() throws IOException {
+  public void detect_whenRootFailsButIndexPhpVulnerable_reportsVulnerability() {
+    // Root path (""): returns 405 Method Not Allowed
     mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code()));
-    for (int i = 1; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
-      mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
-    }
-
-    PollingResult callback = PollingResult.newBuilder().setHasHttpInteraction(true).build();
-    String callbackBody = JsonFormat.printer().preservingProtoFieldNames().print(callback);
-    mockCallbackServer.enqueue(
+    // Second candidate path ("index.php"): returns unpatched startup flush warnings
+    mockPhpServer.enqueue(
         new MockResponse()
             .setResponseCode(HttpStatus.OK.code())
-            .setHeader(CONTENT_TYPE, MediaType.PLAIN_TEXT_UTF_8.toString())
-            .setBody(callbackBody));
+            .setBody(
+                Php2ShellDetector.STAGE1_INVALID_SID_WARNING
+                    + "\n"
+                    + Php2ShellDetector.STAGE1_FAILED_FLUSH_WARNING));
 
     NetworkService service = createNetworkService(mockPhpServer);
     TargetInfo target =
@@ -237,18 +216,22 @@ public final class Php2ShellDetectorTest {
 
     assertThat(reports.getDetectionReportsList())
         .containsExactly(buildValidDetectionReport(target, service, fakeUtcClock));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(2);
   }
 
   @Test
-  public void detect_whenCrawledPhpEndpointVulnerable_checksOnlyFirstPhpEndpoint()
-      throws Exception {
-    createDetectorWithoutCallbackServer();
+  public void
+      detect_whenCrawledPhpEndpointWithQueryAndFragmentVulnerable_checksOnlyFirstPhpEndpoint()
+          throws Exception {
     mockPhpServer.enqueue(
         new MockResponse()
             .setResponseCode(HttpStatus.OK.code())
-            .setBody("TSUNAMI_PAYLOAD_STARTffffffffffffffffTSUNAMI_PAYLOAD_END"));
+            .setBody(
+                Php2ShellDetector.STAGE1_INVALID_SID_WARNING
+                    + "\n"
+                    + Php2ShellDetector.STAGE1_FAILED_FLUSH_WARNING));
 
-    String firstPhpUrl = mockPhpServer.url("/custom/upload.php").toString();
+    String firstPhpUrl = mockPhpServer.url("/custom/upload.php?id=1#section").toString();
     String secondPhpUrl = mockPhpServer.url("/custom/other.php").toString();
     NetworkService service =
         createNetworkService(mockPhpServer).toBuilder()
@@ -279,7 +262,7 @@ public final class Php2ShellDetectorTest {
     assertThat(reports.getDetectionReportsList())
         .containsExactly(buildValidDetectionReport(target, service, fakeUtcClock));
     assertThat(mockPhpServer.getRequestCount()).isEqualTo(1);
-    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/custom/upload.php");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/custom/upload.php?id=1");
   }
 
   @Test
@@ -302,8 +285,7 @@ public final class Php2ShellDetectorTest {
   }
 
   @Test
-  public void detect_whenServerReturnsErrorWithoutCallback_reportsEmpty() {
-    createDetectorWithoutCallbackServer();
+  public void detect_whenServerReturnsError_reportsEmpty() {
     for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
       mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
     }
@@ -321,21 +303,12 @@ public final class Php2ShellDetectorTest {
 
   @Test
   public void detect_whenServerReturns302Redirect_doesNotFollowRedirect() throws Exception {
-    mockPhpServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.FOUND.code())
-            .setHeader("Location", "/redirected_location"));
-    for (int i = 1; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
-      mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
+    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
+      mockPhpServer.enqueue(
+          new MockResponse()
+              .setResponseCode(HttpStatus.FOUND.code())
+              .setHeader("Location", "/redirected_location"));
     }
-
-    PollingResult log = PollingResult.newBuilder().setHasHttpInteraction(true).build();
-    String body = JsonFormat.printer().preservingProtoFieldNames().print(log);
-    mockCallbackServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setHeader(CONTENT_TYPE, MediaType.PLAIN_TEXT_UTF_8.toString())
-            .setBody(body));
 
     NetworkService service = createNetworkService(mockPhpServer);
     TargetInfo target =
@@ -345,8 +318,7 @@ public final class Php2ShellDetectorTest {
 
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
-    assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildValidDetectionReport(target, service, fakeUtcClock));
+    assertThat(reports.getDetectionReportsList()).isEmpty();
     assertThat(mockPhpServer.getRequestCount()).isEqualTo(Php2ShellDetector.CANDIDATE_PATHS.size());
     assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/");
   }
