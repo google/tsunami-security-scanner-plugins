@@ -17,10 +17,14 @@ package com.google.tsunami.plugins.detectors.rce.php2shell;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ascii;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.ByteString;
@@ -36,6 +40,7 @@ import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.plugin.payload.Payload;
 import com.google.tsunami.plugin.payload.PayloadGenerator;
+import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
@@ -48,9 +53,17 @@ import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Optional;
 import javax.inject.Inject;
 
-/** A {@link VulnDetector} that detects PHP2Shell RCE (CVE-2026-109618 / CVE-2026-109619). */
+/**
+ * A {@link VulnDetector} that detects PHP2Shell RCE (CVE-2026-109618 / CVE-2026-109619).
+ *
+ * <p>Note: This detector probes the {@code session.upload_progress} code injection vector
+ * (CVE-2026-109619) without sending a destructive out-of-memory (OOM) heap-exhaustion payload
+ * (CVE-2026-109618), as triggering {@code zend_bailout()} memory corruption can crash production
+ * PHP worker processes.
+ */
 @ForWebService
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
@@ -80,9 +93,11 @@ public final class Php2ShellDetector implements VulnDetector {
       "Upgrade PHP runtime to patched versions (8.5.12, 8.4.27, 8.3.36, 8.2.35) or disable"
           + " 'session.upload_progress.enabled = 0' in php.ini.";
 
-  private static final ImmutableList<String> CANDIDATE_PATHS = ImmutableList.of("", "index.php");
+  @VisibleForTesting
+  static final ImmutableList<String> CANDIDATE_PATHS =
+      ImmutableList.of("", "index.php", "public/index.php", "web/index.php", "wp-login.php");
 
-  private static final Duration OOB_SLEEP_DURATION = Duration.ofSeconds(3);
+  private static final Duration OOB_SLEEP_DURATION = Duration.ofSeconds(5);
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -131,11 +146,6 @@ public final class Php2ShellDetector implements VulnDetector {
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
-    return CANDIDATE_PATHS.stream()
-        .anyMatch(subpath -> isEndpointVulnerable(networkService, subpath));
-  }
-
-  private boolean isEndpointVulnerable(NetworkService networkService, String subpath) {
     PayloadGeneratorConfig config =
         PayloadGeneratorConfig.newBuilder()
             .setInterpretationEnvironment(
@@ -144,10 +154,39 @@ public final class Php2ShellDetector implements VulnDetector {
                 PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
             .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.REFLECTIVE_RCE)
             .build();
-
     Payload payload = payloadGenerator.generate(config);
+
+    for (String targetUrl : getTargetUrls(networkService)) {
+      Optional<HttpResponse> response = sendExploitRequest(networkService, targetUrl, payload);
+      if (!payload.getPayloadAttributes().getUsesCallbackServer()
+          && response.isPresent()
+          && payload.checkIfExecuted(response.get().bodyBytes())) {
+        return true;
+      }
+    }
+
+    if (payload.getPayloadAttributes().getUsesCallbackServer()) {
+      Uninterruptibles.sleepUninterruptibly(OOB_SLEEP_DURATION);
+      return payload.checkIfExecuted();
+    }
+    return false;
+  }
+
+  private ImmutableSet<String> getTargetUrls(NetworkService networkService) {
+    for (CrawlResult crawlResult :
+        networkService.getServiceContext().getWebServiceContext().getCrawlResultsList()) {
+      String crawledUrl = crawlResult.getCrawlTarget().getUrl();
+      String pathWithoutQuery = Splitter.on('?').splitToList(crawledUrl).get(0);
+      if (Ascii.toLowerCase(pathWithoutQuery).endsWith(".php")) {
+        return ImmutableSet.of(crawledUrl);
+      }
+    }
     String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    String targetUrl = rootUrl + subpath;
+    return CANDIDATE_PATHS.stream().map(subpath -> rootUrl + subpath).collect(toImmutableSet());
+  }
+
+  private Optional<HttpResponse> sendExploitRequest(
+      NetworkService networkService, String targetUrl, Payload payload) {
     String boundary = "----TsunamiPhp2ShellBoundary" + utcClock.instant().toEpochMilli();
 
     String multipartBody =
@@ -167,7 +206,7 @@ public final class Php2ShellDetector implements VulnDetector {
             + "--\r\n";
 
     try {
-      HttpResponse response =
+      return Optional.of(
           httpClient.send(
               post(targetUrl)
                   .setHeaders(
@@ -180,22 +219,11 @@ public final class Php2ShellDetector implements VulnDetector {
                           .build())
                   .setRequestBody(ByteString.copyFromUtf8(multipartBody))
                   .build(),
-              networkService);
-
-      if (payload.getPayloadAttributes().getUsesCallbackServer()) {
-        Uninterruptibles.sleepUninterruptibly(OOB_SLEEP_DURATION);
-        return payload.checkIfExecuted();
-      } else {
-        return payload.checkIfExecuted(response.bodyBytes());
-      }
+              networkService));
     } catch (IOException e) {
       logger.atFine().withCause(e).log(
           "HTTP exception while sending PHP2Shell request to '%s'", targetUrl);
-      if (payload.getPayloadAttributes().getUsesCallbackServer()) {
-        Uninterruptibles.sleepUninterruptibly(OOB_SLEEP_DURATION);
-        return payload.checkIfExecuted();
-      }
-      return false;
+      return Optional.empty();
     }
   }
 

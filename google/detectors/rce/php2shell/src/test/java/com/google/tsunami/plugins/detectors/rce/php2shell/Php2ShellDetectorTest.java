@@ -32,15 +32,19 @@ import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
+import com.google.tsunami.proto.CrawlResult;
+import com.google.tsunami.proto.CrawlTarget;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.ServiceContext;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
+import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -91,6 +95,15 @@ public final class Php2ShellDetectorTest {
         .injectMembers(this);
   }
 
+  private void createDetectorWithoutCallbackServer() {
+    Guice.createInjector(
+            new FakeUtcClockModule(fakeUtcClock),
+            new HttpClientModule.Builder().build(),
+            FakePayloadGeneratorModule.builder().setSecureRng(testSecureRandom).build(),
+            new Php2ShellDetectorBootstrapModule())
+        .injectMembers(this);
+  }
+
   @After
   public void tearDown() throws Exception {
     mockCallbackServer.shutdown();
@@ -131,7 +144,9 @@ public final class Php2ShellDetectorTest {
 
   @Test
   public void detect_whenVulnerableWithCallback_reportsVulnerability() throws IOException {
-    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
+    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
+      mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
+    }
 
     PollingResult log = PollingResult.newBuilder().setHasHttpInteraction(true).build();
     String body = JsonFormat.printer().preservingProtoFieldNames().print(log);
@@ -154,18 +169,32 @@ public final class Php2ShellDetectorTest {
   }
 
   @Test
-  public void detect_whenNotVulnerableWithCallback_reportsEmpty() throws IOException {
-    // Both root and index.php are queried and neither triggers callback.
-    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
-    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
-
-    PollingResult log = PollingResult.newBuilder().setHasHttpInteraction(false).build();
-    String body = JsonFormat.printer().preservingProtoFieldNames().print(log);
-    mockCallbackServer.enqueue(
+  public void detect_whenVulnerableWithoutCallback_reportsVulnerability() {
+    createDetectorWithoutCallbackServer();
+    mockPhpServer.enqueue(
         new MockResponse()
             .setResponseCode(HttpStatus.OK.code())
-            .setHeader(CONTENT_TYPE, MediaType.PLAIN_TEXT_UTF_8.toString())
-            .setBody(body));
+            .setBody("TSUNAMI_PAYLOAD_STARTffffffffffffffffTSUNAMI_PAYLOAD_END"));
+
+    NetworkService service = createNetworkService(mockPhpServer);
+    TargetInfo target =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockPhpServer.getHostName()))
+            .build();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildValidDetectionReport(target, service, fakeUtcClock));
+  }
+
+  @Test
+  public void detect_whenNotVulnerableWithCallback_reportsEmpty() throws IOException {
+    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
+      mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
+    }
+    PollingResult log = PollingResult.newBuilder().setHasHttpInteraction(false).build();
+    String body = JsonFormat.printer().preservingProtoFieldNames().print(log);
     mockCallbackServer.enqueue(
         new MockResponse()
             .setResponseCode(HttpStatus.OK.code())
@@ -185,17 +214,10 @@ public final class Php2ShellDetectorTest {
 
   @Test
   public void detect_whenRootFailsButIndexPhpVulnerable_reportsVulnerability() throws IOException {
-    // Root path returns 405 Method Not Allowed (static routing), index.php succeeds with callback.
     mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code()));
-    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
-
-    PollingResult noCallback = PollingResult.newBuilder().setHasHttpInteraction(false).build();
-    String noCallbackBody = JsonFormat.printer().preservingProtoFieldNames().print(noCallback);
-    mockCallbackServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setHeader(CONTENT_TYPE, MediaType.PLAIN_TEXT_UTF_8.toString())
-            .setBody(noCallbackBody));
+    for (int i = 1; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
+      mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
+    }
 
     PollingResult callback = PollingResult.newBuilder().setHasHttpInteraction(true).build();
     String callbackBody = JsonFormat.printer().preservingProtoFieldNames().print(callback);
@@ -218,6 +240,49 @@ public final class Php2ShellDetectorTest {
   }
 
   @Test
+  public void detect_whenCrawledPhpEndpointVulnerable_checksOnlyFirstPhpEndpoint()
+      throws Exception {
+    createDetectorWithoutCallbackServer();
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody("TSUNAMI_PAYLOAD_STARTffffffffffffffffTSUNAMI_PAYLOAD_END"));
+
+    String firstPhpUrl = mockPhpServer.url("/custom/upload.php").toString();
+    String secondPhpUrl = mockPhpServer.url("/custom/other.php").toString();
+    NetworkService service =
+        createNetworkService(mockPhpServer).toBuilder()
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(
+                        WebServiceContext.newBuilder()
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(firstPhpUrl)
+                                            .setHttpMethod("GET")))
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(secondPhpUrl)
+                                            .setHttpMethod("GET")))))
+            .build();
+    TargetInfo target =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockPhpServer.getHostName()))
+            .build();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildValidDetectionReport(target, service, fakeUtcClock));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(1);
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/custom/upload.php");
+  }
+
+  @Test
   public void detect_whenNonWebService_reportsEmpty() {
     NetworkService sshService =
         NetworkService.newBuilder()
@@ -237,22 +302,11 @@ public final class Php2ShellDetectorTest {
   }
 
   @Test
-  public void detect_whenServerReturnsErrorWithoutCallback_reportsEmpty() throws IOException {
-    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
-    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
-
-    PollingResult log = PollingResult.newBuilder().setHasHttpInteraction(false).build();
-    String body = JsonFormat.printer().preservingProtoFieldNames().print(log);
-    mockCallbackServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setHeader(CONTENT_TYPE, MediaType.PLAIN_TEXT_UTF_8.toString())
-            .setBody(body));
-    mockCallbackServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.OK.code())
-            .setHeader(CONTENT_TYPE, MediaType.PLAIN_TEXT_UTF_8.toString())
-            .setBody(body));
+  public void detect_whenServerReturnsErrorWithoutCallback_reportsEmpty() {
+    createDetectorWithoutCallbackServer();
+    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
+      mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
+    }
 
     NetworkService service = createNetworkService(mockPhpServer);
     TargetInfo target =
@@ -271,7 +325,9 @@ public final class Php2ShellDetectorTest {
         new MockResponse()
             .setResponseCode(HttpStatus.FOUND.code())
             .setHeader("Location", "/redirected_location"));
-    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
+    for (int i = 1; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
+      mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
+    }
 
     PollingResult log = PollingResult.newBuilder().setHasHttpInteraction(true).build();
     String body = JsonFormat.printer().preservingProtoFieldNames().print(log);
@@ -291,7 +347,7 @@ public final class Php2ShellDetectorTest {
 
     assertThat(reports.getDetectionReportsList())
         .containsExactly(buildValidDetectionReport(target, service, fakeUtcClock));
-    assertThat(mockPhpServer.getRequestCount()).isEqualTo(1);
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(Php2ShellDetector.CANDIDATE_PATHS.size());
     assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/");
   }
 }
