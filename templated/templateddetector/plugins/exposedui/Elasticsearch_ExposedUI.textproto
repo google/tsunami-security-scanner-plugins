@@ -1,0 +1,63 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Elasticsearch_ExposedUI"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version,"
+    " Tsunami Team (tsunami-dev@google.com) for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "ELASTICSEARCH_EXPOSED_UI"
+  }
+  severity: CRITICAL
+  title: "Elasticsearch Exposed UI"
+  description: 
+    "Elasticsearch API endpoint is exposed."
+  recommendation:
+    "Do not expose Elasticsearch externally.\n"
+    "Bind it to localhost, or run it on a host that is not exposed to the"
+    " Internet."
+}
+
+###########
+# ACTIONS #
+###########
+
+# this action isn't very strong, probably a little bit prone to false positives,
+# but it's what the original plugin did
+
+actions: {
+  name: "fingerprint_elasticsearch"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all {
+        conditions: [
+          { body: {} contains: '"tagline" : "You Know, for Search"' }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_elasticsearch"
+  ]
+}
