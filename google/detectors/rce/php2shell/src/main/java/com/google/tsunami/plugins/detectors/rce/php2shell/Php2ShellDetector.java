@@ -17,7 +17,6 @@ package com.google.tsunami.plugins.detectors.rce.php2shell;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -174,20 +173,23 @@ public final class Php2ShellDetector implements VulnDetector {
   }
 
   private ImmutableSet<String> getTargetUrls(NetworkService networkService) {
+    ImmutableSet.Builder<String> targetUrls = ImmutableSet.builder();
     for (CrawlResult crawlResult :
         networkService.getServiceContext().getWebServiceContext().getCrawlResultsList()) {
       String crawledUrl = crawlResult.getCrawlTarget().getUrl();
       try {
         URI uri = new URI(crawledUrl);
         if (uri.getPath() != null && Ascii.toLowerCase(uri.getPath()).endsWith(".php")) {
-          return ImmutableSet.of(crawledUrl);
+          targetUrls.add(crawledUrl);
+          break;
         }
       } catch (URISyntaxException e) {
         logger.atFine().withCause(e).log("Failed to parse crawled URL '%s'", crawledUrl);
       }
     }
     String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    return CANDIDATE_PATHS.stream().map(subpath -> rootUrl + subpath).collect(toImmutableSet());
+    CANDIDATE_PATHS.forEach(subpath -> targetUrls.add(rootUrl + subpath));
+    return targetUrls.build();
   }
 
   private Optional<HttpResponse> sendStage1InvalidSidProbe(

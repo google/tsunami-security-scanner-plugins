@@ -266,6 +266,48 @@ public final class Php2ShellDetectorTest {
   }
 
   @Test
+  public void detect_whenCrawledPhpEndpointFailsButFallbackRootVulnerable_reportsVulnerability()
+      throws Exception {
+    // Crawled .php endpoint returns 404 Not Found
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
+    // Fallback root path ("") from CANDIDATE_PATHS returns unpatched startup flush warnings
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody(
+                Php2ShellDetector.STAGE1_INVALID_SID_WARNING
+                    + "\n"
+                    + Php2ShellDetector.STAGE1_FAILED_FLUSH_WARNING));
+
+    String deadPhpUrl = mockPhpServer.url("/dead/old.php").toString();
+    NetworkService service =
+        createNetworkService(mockPhpServer).toBuilder()
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(
+                        WebServiceContext.newBuilder()
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(deadPhpUrl)
+                                            .setHttpMethod("GET")))))
+            .build();
+    TargetInfo target =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockPhpServer.getHostName()))
+            .build();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildValidDetectionReport(target, service, fakeUtcClock));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(2);
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/dead/old.php");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/");
+  }
+
+  @Test
   public void detect_whenNonWebService_reportsEmpty() {
     NetworkService sshService =
         NetworkService.newBuilder()
