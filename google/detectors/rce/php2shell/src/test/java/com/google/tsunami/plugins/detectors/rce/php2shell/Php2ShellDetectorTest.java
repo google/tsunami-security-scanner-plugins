@@ -170,7 +170,7 @@ public final class Php2ShellDetectorTest {
 
   @Test
   public void detect_whenPatchedServerEmitsOnlyInvalidSidWarning_reportsEmpty() {
-    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
+    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size() * 3; i++) {
       // Patched PHP (8.5.12 / 8.4.27) emits only STAGE1_INVALID_SID_WARNING (no failed flush)
       mockPhpServer.enqueue(
           new MockResponse()
@@ -195,9 +195,12 @@ public final class Php2ShellDetectorTest {
 
   @Test
   public void detect_whenRootFailsButIndexPhpVulnerable_reportsVulnerability() {
-    // Root path (""): returns 405 Method Not Allowed
-    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code()));
-    // Second candidate path ("index.php"): returns unpatched startup flush warnings
+    // Root path (""): Stage 1 + Stage 2 (control + marker) return 405 Method Not Allowed
+    for (int i = 0; i < 3; i++) {
+      mockPhpServer.enqueue(
+          new MockResponse().setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code()));
+    }
+    // Second candidate path ("index.php"): Stage 1 returns unpatched startup flush warnings
     mockPhpServer.enqueue(
         new MockResponse()
             .setResponseCode(HttpStatus.OK.code())
@@ -216,7 +219,7 @@ public final class Php2ShellDetectorTest {
 
     assertThat(reports.getDetectionReportsList())
         .containsExactly(buildValidDetectionReport(target, service, fakeUtcClock));
-    assertThat(mockPhpServer.getRequestCount()).isEqualTo(2);
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(4);
   }
 
   @Test
@@ -268,8 +271,10 @@ public final class Php2ShellDetectorTest {
   @Test
   public void detect_whenCrawledPhpEndpointFailsButFallbackRootVulnerable_reportsVulnerability()
       throws Exception {
-    // Crawled .php endpoint returns 404 Not Found
-    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
+    // Crawled .php endpoint returns 404 Not Found across Stage 1 and Stage 2 (3 requests)
+    for (int i = 0; i < 3; i++) {
+      mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
+    }
     // Fallback root path ("") from CANDIDATE_PATHS returns unpatched startup flush warnings
     mockPhpServer.enqueue(
         new MockResponse()
@@ -302,7 +307,9 @@ public final class Php2ShellDetectorTest {
 
     assertThat(reports.getDetectionReportsList())
         .containsExactly(buildValidDetectionReport(target, service, fakeUtcClock));
-    assertThat(mockPhpServer.getRequestCount()).isEqualTo(2);
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(4);
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/dead/old.php");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/dead/old.php");
     assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/dead/old.php");
     assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/");
   }
@@ -328,7 +335,7 @@ public final class Php2ShellDetectorTest {
 
   @Test
   public void detect_whenServerReturnsError_reportsEmpty() {
-    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
+    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size() * 3; i++) {
       mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
     }
 
@@ -345,7 +352,7 @@ public final class Php2ShellDetectorTest {
 
   @Test
   public void detect_whenServerReturns302Redirect_doesNotFollowRedirect() throws Exception {
-    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
+    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size() * 3; i++) {
       mockPhpServer.enqueue(
           new MockResponse()
               .setResponseCode(HttpStatus.FOUND.code())
@@ -361,7 +368,109 @@ public final class Php2ShellDetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
-    assertThat(mockPhpServer.getRequestCount()).isEqualTo(Php2ShellDetector.CANDIDATE_PATHS.size());
+    assertThat(mockPhpServer.getRequestCount())
+        .isEqualTo(Php2ShellDetector.CANDIDATE_PATHS.size() * 3);
     assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/");
+  }
+
+  @Test
+  public void detect_whenStage2CookieDifferentialAndUnpatchedXPoweredBy_reportsVulnerability()
+      throws Exception {
+    // 1. Stage 1 response: display_startup_errors = Off (no warnings in body), discloses PHP 8.4.26
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .addHeader("X-Powered-By", "PHP/8.4.26")
+            .setBody("OK"));
+    // 2. Stage 2 Control response (no PHP_SESSION_UPLOAD_PROGRESS): 0 PHPSESSID cookies
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .addHeader("X-Powered-By", "PHP/8.4.26")
+            .setBody("OK"));
+    // 3. Stage 2 Marker response (with PHP_SESSION_UPLOAD_PROGRESS): 1 PHPSESSID cookie
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .addHeader("X-Powered-By", "PHP/8.4.26")
+            .addHeader("Set-Cookie", "PHPSESSID=c8d6d79a48f07ede6d274291da7c09f8; path=/")
+            .setBody("OK"));
+
+    NetworkService service = createNetworkService(mockPhpServer);
+    TargetInfo target =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockPhpServer.getHostName()))
+            .build();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildValidDetectionReport(target, service, fakeUtcClock));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie"))
+        .contains("PHPSESSID=tsunami/invalid_sid_");
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).isEqualTo("PHPSESSID=");
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).isEqualTo("PHPSESSID=");
+  }
+
+  @Test
+  public void detect_whenStage2AppCallsSessionStartAndUnpatchedServerHeader_reportsVulnerability() {
+    // 1. Stage 1 response: display_startup_errors = Off, discloses PHP/8.3.35 in Server header
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .addHeader("Server", "Apache/2.4.69 (Debian) PHP/8.3.35")
+            .setBody("OK"));
+    // 2. Stage 2 Control response: app calls session_start() -> 1 Set-Cookie: PHPSESSID
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .addHeader("Server", "Apache/2.4.69 (Debian) PHP/8.3.35")
+            .addHeader("Set-Cookie", "PHPSESSID=c1d6851de26c60f5149d5f925dd5a009; path=/")
+            .setBody("OK"));
+    // 3. Stage 2 Marker response: rfc1867 + session_start() -> 2 Set-Cookie: PHPSESSID headers
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .addHeader("Server", "Apache/2.4.69 (Debian) PHP/8.3.35")
+            .addHeader("Set-Cookie", "PHPSESSID=8b314052b45d1d3f42b917c9bdab037d; path=/")
+            .addHeader("Set-Cookie", "PHPSESSID=3babd42a3fde3431f19f331d80cc6d39; path=/")
+            .setBody("OK"));
+
+    NetworkService service = createNetworkService(mockPhpServer);
+    TargetInfo target =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockPhpServer.getHostName()))
+            .build();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildValidDetectionReport(target, service, fakeUtcClock));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
+  }
+
+  @Test
+  public void detect_whenStage2DisclosesPatchedVersion_reportsEmpty() {
+    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size() * 3; i++) {
+      mockPhpServer.enqueue(
+          new MockResponse()
+              .setResponseCode(HttpStatus.OK.code())
+              .addHeader("X-Powered-By", "PHP/8.4.27")
+              .addHeader("Set-Cookie", "PHPSESSID=c8d6d79a48f07ede6d274291da7c09f8; path=/")
+              .setBody("OK"));
+    }
+
+    NetworkService service = createNetworkService(mockPhpServer);
+    TargetInfo target =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(forHostname(mockPhpServer.getHostName()))
+            .build();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(mockPhpServer.getRequestCount())
+        .isEqualTo(Php2ShellDetector.CANDIDATE_PATHS.size() * 3);
   }
 }
