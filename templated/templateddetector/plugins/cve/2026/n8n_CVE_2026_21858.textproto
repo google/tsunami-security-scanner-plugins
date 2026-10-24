@@ -1,0 +1,86 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "n8n_CVE_2026_21858"
+  author: "dyeddala"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-21858"
+  }
+  severity: CRITICAL
+  title: "n8n - Unauthenticated File Access via Form Workflows (CVE-2026-21858)"
+  description: "n8n is an open source workflow automation platform. Versions starting with 1.65.0 and below 1.121.0 enable an attacker to access files on the underlying server through execution of certain form-based workflows. A vulnerable workflow could grant access to an unauthenticated remote attacker, resulting in exposure of sensitive information stored on the system and may enable further compromise depending on deployment configuration and workflow usage."
+  recommendation: "Update to version 1.121.0 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-21858"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_n8n_root"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "<title>n8n.io" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_n8n_vulnerable_version"
+  http_request: {
+    method: GET
+    uri: "/rest/settings"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"versionCli\"" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"versionCli\":\"(1\\.(?:6[5-9]|[7-9][0-9]|1[01][0-9]|120)\\.[0-9]+)\""
+            variable_name: "vulnerable_version"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_n8n_root",
+    "check_n8n_vulnerable_version"
+  ]
+}
