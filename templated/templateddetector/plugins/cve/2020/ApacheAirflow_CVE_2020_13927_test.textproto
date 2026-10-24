@@ -1,0 +1,64 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ApacheAirflow_CVE_2020_13927"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/admin/"
+        status: 200
+        body_content: "<!DOCTYPE html><html><head><title>Airflow - DAGs</title></head></html>"
+      },
+      {
+        uri: "/api/experimental/test"
+        status: 200
+        body_content: "{\"status\":\"OK\"}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatched_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/admin/"
+        status: 200
+        body_content: "<!DOCTYPE html><html><head><title>Airflow - DAGs</title></head></html>"
+      },
+      {
+        uri: "/api/experimental/test"
+        status: 403
+        body_content: "Forbidden"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotAirflow_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
