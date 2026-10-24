@@ -1,0 +1,81 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Traefik_CVE_2026_48020"
+}
+
+#########
+# TESTS #
+#########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 404
+        body_content: "404 page not found\n"
+      },
+      {
+        uri: "/api%2e%2e/admin"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"status\": \"success\", \"seen_path\": \"/admin\", \"message\": \"Reached endpoint successfully\"}"
+      },
+      {
+        uri: "/api../admin"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"status\": \"success\", \"seen_path\": \"/admin\", \"message\": \"Reached endpoint successfully\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 404
+        body_content: "404 page not found\n"
+      },
+      {
+        uri: "/api%2e%2e/admin"
+        status: 404
+        body_content: "404 page not found\n"
+      },
+      {
+        uri: "/api../admin"
+        status: 404
+        body_content: "404 page not found\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotTraefik_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Server" value: "nginx" }
+        ]
+        body_content: "Welcome to nginx!"
+      }
+    ]
+  }
+}
