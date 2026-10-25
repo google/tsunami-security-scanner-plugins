@@ -147,8 +147,27 @@ public final class FlowiseCredentialTester extends CredentialTester {
   public ImmutableList<TestCredential> testValidCredentials(
       NetworkService networkService, List<TestCredential> credentials) {
     return credentials.stream()
+        // Flowise does not allow empty login/password, no need to test it
+        .filter(cred -> !cred.username().isEmpty() && !cred.password().isEmpty())
+        // Apply mutations to the credential to make it fit Flowise validation
+        .map(cred -> convertCredential(cred))
+        // Check if the credential is valid after mutating
         .filter(cred -> isCredentialValid(networkService, cred))
         .collect(toImmutableList());
+  }
+
+  private TestCredential convertCredential(TestCredential credential) {
+    String email = credential.username();
+    String password = credential.password().orElse("");
+    // Ensuring the email is in a valid format
+    if (FlowiseValdationUtil.isInvalidEmail(email) && FLOWISE_POLICY_FORCE) {
+      email = FlowiseValdationUtil.upgradeToValidEmail(email);
+    }
+    // Ensuring the password respects the policy
+    if (FlowiseValdationUtil.isInvalidPassword(password) && FLOWISE_POLICY_FORCE) {
+      password = FlowiseValdationUtil.upgradeToValidPassword(password);
+    }
+    return TestCredential.create(email, Optional.of(password));
   }
 
   private boolean isCredentialValid(NetworkService networkService, TestCredential credential) {
@@ -157,27 +176,6 @@ public final class FlowiseCredentialTester extends CredentialTester {
 
     String email = credential.username();
     String password = credential.password().orElse("");
-
-    // Flowise does not allow empty login/password, no need to test it
-    if (email.isEmpty() || password.isEmpty()) {
-      return false;
-    }
-    // Ensuring the email is in a valid format
-    if (FlowiseValdationUtil.isInvalidEmail(email)) {
-      email = FlowiseValdationUtil.upgradeToValidEmail(email);
-      if (email.isEmpty() || !FLOWISE_POLICY_FORCE) {
-        return false;
-      }
-    }
-    // Ensuring the password respects the policy
-    if (FlowiseValdationUtil.isInvalidPassword(password)) {
-      password = FlowiseValdationUtil.upgradeToValidPassword(password);
-      if (password.isEmpty() || !FLOWISE_POLICY_FORCE) {
-        return false;
-      }
-    }
-    // Update credential (email or password may have changed)
-    credential = TestCredential.create(email, Optional.of(password));
 
     // ------ CACHE
     // Aborts if the app explicitely stated that the user does not exist (user enumeration)
@@ -250,7 +248,7 @@ public final class FlowiseCredentialTester extends CredentialTester {
         logger.atInfo().log("Found valid Flowise credentials!");
         this.cache_foundCredentials.add(
             credential); // Only one password can be used by an account, no need to test the
-                         // remaining
+        // remaining
         return true;
       }
 

@@ -17,9 +17,6 @@ package com.google.tsunami.plugins.detectors.credentials.genericweakcredentialde
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.IterableSubject;
@@ -104,13 +101,15 @@ public class FlowiseCredentialTesterTest {
 
     mockWebServer.shutdown();
   }
-  
+
   @Test
   public void detect_nonFlowiseService_notAccepted() throws Exception {
     startNonFlowiseMockWebServer();
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
-            .setNetworkEndpoint(forHostnameAndPort(nonFlowiseMockWebServer.getHostName(), nonFlowiseMockWebServer.getPort()))
+            .setNetworkEndpoint(
+                forHostnameAndPort(
+                    nonFlowiseMockWebServer.getHostName(), nonFlowiseMockWebServer.getPort()))
             .setServiceName("http")
             .setServiceContext(
                 ServiceContext.newBuilder()
@@ -120,7 +119,7 @@ public class FlowiseCredentialTesterTest {
             .build();
 
     assertThat(tester.canAccept(targetNetworkService)).isFalse();
-    
+
     nonFlowiseMockWebServer.shutdown();
   }
 
@@ -179,27 +178,27 @@ public class FlowiseCredentialTesterTest {
       // Authentication page
       if (recordedRequest.getPath().equals("/sign-up")) {
         return new MockResponse()
-                      .setResponseCode(HttpStatus.OK.code())
-                      .setBody(
-                          "<!DOCTYPE html>"
-                        + "<html lang=\"en\">"
-                        + "    <head>"
-                        + "        <title>Flowise - Build AI Agents, Visually</title>"
-                        + "        <link rel=\"icon\" href=\"favicon.ico\" />"
-                        + "    </head>"
-                        + "    <body>"
-                        + "        <noscript>You need to enable JavaScript to run this app.</noscript>"
-                        + "        <div id=\"root\"></div>"
-                        + "        <div id=\"portal\"></div>"
-                        + "        <script>"
-                        + "            if (global === undefined) {"
-                        + "                var global = window"
-                        + "            }"
-                        + "        </script>"
-                        + "    </body>"
-                        + "</html>");
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody(
+                "<!DOCTYPE html>"
+                    + "<html lang=\"en\">"
+                    + "    <head>"
+                    + "        <title>Flowise - Build AI Agents, Visually</title>"
+                    + "        <link rel=\"icon\" href=\"favicon.ico\" />"
+                    + "    </head>"
+                    + "    <body>"
+                    + "        <noscript>You need to enable JavaScript to run this app.</noscript>"
+                    + "        <div id=\"root\"></div>"
+                    + "        <div id=\"portal\"></div>"
+                    + "        <script>"
+                    + "            if (global === undefined) {"
+                    + "                var global = window"
+                    + "            }"
+                    + "        </script>"
+                    + "    </body>"
+                    + "</html>");
       }
-      
+
       // Authentication API
       else if (recordedRequest.getPath().equals("/api/v1/auth/login")) {
         // Expecting JSON-formatted body
@@ -260,7 +259,7 @@ public class FlowiseCredentialTesterTest {
       return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
     }
   }
-  
+
   private void startNonFlowiseMockWebServer() throws IOException {
     nonFlowiseMockWebServer.setDispatcher(new EmptyAppTesterDispatcher());
     nonFlowiseMockWebServer.start();
@@ -274,15 +273,10 @@ public class FlowiseCredentialTesterTest {
       // Authentication page
       if (recordedRequest.getPath().equals("/")) {
         return new MockResponse()
-                      .setResponseCode(HttpStatus.OK.code())
-                      .setBody(
-                          "This is just an empty app for testing");
-      }
-      else {
-        return new MockResponse()
-                      .setResponseCode(HttpStatus.NOT_FOUND.code())
-                      .setBody(
-                          "Not Found");
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody("This is just an empty app for testing");
+      } else {
+        return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()).setBody("Not Found");
       }
     }
   }
