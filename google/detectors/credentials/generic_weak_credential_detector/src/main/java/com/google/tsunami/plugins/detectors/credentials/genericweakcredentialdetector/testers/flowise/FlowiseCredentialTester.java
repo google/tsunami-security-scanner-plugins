@@ -177,6 +177,11 @@ public final class FlowiseCredentialTester extends CredentialTester {
     String email = credential.username();
     String password = credential.password().orElse("");
 
+    // Flowise does not allow empty login/password, no need to test it
+    if (email.isEmpty() || password.isEmpty()) {
+      return false;
+    }
+
     // ------ CACHE
     // Aborts if the app explicitely stated that the user does not exist (user enumeration)
     if (this.cache_badUsernames.contains(email)) {
