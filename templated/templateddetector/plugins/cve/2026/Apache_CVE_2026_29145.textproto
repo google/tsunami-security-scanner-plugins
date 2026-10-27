@@ -1,0 +1,85 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Apache_Tomcat_CVE_2026_29145"
+  author: "dyeddala"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-29145"
+  }
+  severity: HIGH
+  title: "Apache Tomcat - CLIENT_CERT Soft Fail Authentication Bypass Version Screening (CVE-2026-29145)"
+  description: "CLIENT_CERT authentication does not fail as expected for some scenarios when soft fail is disabled in Apache Tomcat and Apache Tomcat Native. This issue affects Apache Tomcat versions 11.0.0-M1 through 11.0.18, 10.1.0-M7 through 10.1.52, and 9.0.83 through 9.0.115. This plugin performs version-based triage via HTTP response headers and default error pages."
+  recommendation: "Upgrade Apache Tomcat to version 11.0.20, 10.1.53, or 9.0.116, and Tomcat Native to version 1.3.7 or 2.0.14 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-29145"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_tomcat"
+  http_request: {
+    method: GET
+    uri: ["/", "/tsunami_tomcat_check"]
+    response: {
+      expect_any: {
+        conditions: [
+          { header: { name: "Server" } contains: "Apache Tomcat" },
+          { body: {} contains: "Apache Tomcat" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_tomcat_version"
+  http_request: {
+    method: GET
+    uri: ["/", "/tsunami_tomcat_check"]
+    response: {
+      extract_any: {
+        patterns: [
+          {
+            variable_name: "tomcat_version"
+            regexp: "(?i)Apache Tomcat/(11\\.0\\.(?:0-M(?:[1-9]|[12][0-9])|[0-9]|1[0-8])|10\\.1\\.(?:0-M(?:[7-9]|[12][0-9])|[0-9]|[1-4][0-9]|5[0-2])|9\\.0\\.(?:8[3-9]|9[0-9]|10[0-9]|11[0-5]))(?![0-9.-])"
+            from_header: { name: "Server" }
+          },
+          {
+            variable_name: "tomcat_version"
+            regexp: "(?i)Apache Tomcat/(11\\.0\\.(?:0-M(?:[1-9]|[12][0-9])|[0-9]|1[0-8])|10\\.1\\.(?:0-M(?:[7-9]|[12][0-9])|[0-9]|[1-4][0-9]|5[0-2])|9\\.0\\.(?:8[3-9]|9[0-9]|10[0-9]|11[0-5]))(?![0-9.-])"
+            from_body: {}
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_tomcat",
+    "check_tomcat_version"
+  ]
+}

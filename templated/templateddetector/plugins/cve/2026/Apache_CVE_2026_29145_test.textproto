@@ -1,0 +1,156 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Apache_Tomcat_CVE_2026_29145"
+}
+
+tests: {
+  name: "whenVulnerableTomcat10_in404ErrorPage_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<h1>Tomcat Lab Active</h1>"
+      },
+      {
+        uri: "/tsunami_tomcat_check"
+        status: 404
+        body_content: "<!doctype html><html lang=\"en\"><head><title>HTTP Status 404 – Not Found</title></head><body><h1>HTTP Status 404 – Not Found</h1><hr class=\"line\" /><h3>Apache Tomcat/10.1.50</h3></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerableTomcat10_inHeader_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Server" value: "Apache Tomcat/10.1.52" }
+        ]
+        body_content: "<html><body>It works!</body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerableTomcat9_inBody_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<html><head><title>Apache Tomcat/9.0.115</title></head><body><h3>Apache Tomcat/9.0.115</h3></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerableTomcat11_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Server" value: "Apache Tomcat/11.0.18" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedTomcat10_in404ErrorPage_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<h1>Tomcat Lab Active</h1>"
+      },
+      {
+        uri: "/tsunami_tomcat_check"
+        status: 404
+        body_content: "<!doctype html><html lang=\"en\"><head><title>HTTP Status 404 – Not Found</title></head><body><h1>HTTP Status 404 – Not Found</h1><hr class=\"line\" /><h3>Apache Tomcat/10.1.53</h3></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedTomcat9_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Server" value: "Apache Tomcat/9.0.116" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedTomcat11_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Server" value: "Apache Tomcat/11.0.20" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenOlderUnaffectedTomcat9_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Server" value: "Apache Tomcat/9.0.82" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNonTomcatServer_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "Server" value: "nginx/1.25.0" }
+        ]
+        body_content: "<html><body>Welcome to nginx!</body></html>"
+      }
+    ]
+  }
+}
