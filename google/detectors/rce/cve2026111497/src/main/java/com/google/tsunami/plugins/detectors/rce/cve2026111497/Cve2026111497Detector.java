@@ -49,7 +49,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Clock;
-import java.util.Arrays;
 import java.util.Optional;
 import javax.inject.Inject;
 
@@ -65,12 +64,15 @@ import javax.inject.Inject;
  *       {\r\n \n\t"a":"tsunami_brotli_check_7f9a2b"}}. The canary is split across two uncompressed
  *       metablocks so the contiguous string {@code tsunami_brotli_check_7f9a2b} never appears in
  *       the raw compressed request bytes.
- *   <li><b>Step 2 (Invalid Brotli Control)</b>: Sends a 47-byte invalid Brotli stream ({@code 0xff}
- *       repeated 47 times, matching the exact wire length of Step 1). Verifies that the target
+ *   <li><b>Step 2 (Invalid Brotli Control)</b>: Sends a 47-byte invalid Brotli stream consisting of
+ *       printable 7-bit ASCII valid JSON (<code>{"a":"tsunami_brotli_invalid_control_________"}
+ *       </code>, matching the exact wire length of Step 1) whose opening byte (<code>'{'</code> =
+ *       {@code 0x7b}) immediately fails RFC 7932 Section 9.2 padding validation ({@code
+ *       BROTLI_DECODER_ERROR_FORMAT_PADDING_2}) in any Brotli decoder. Verifies that the target
  *       actively decompresses {@code Content-Encoding: br} and discriminates valid vs. invalid
- *       Brotli (via decompressed canary reflection, decompression error status code differential,
- *       or deterministic decompressed output differential). If the endpoint does not decompress
- *       {@code Content-Encoding: br}, detection aborts immediately without sending the probe.
+ *       Brotli (via decompressed canary reflection or decompression error status code
+ *       differential). If the endpoint does not decompress {@code Content-Encoding: br}, detection
+ *       aborts immediately without sending the probe.
  *   <li><b>Step 3 (CVE-2026-111497 Zero-Side-Effect Probe)</b>: Sends a crafted Brotli stream with
  *       {@code NBLTYPESD == 1} and {@code 16,777,217} commands using static dictionary transform
  *       {@code OmitLast7} (producing 0 output bytes for the first {@code 16,777,216} commands while
@@ -148,10 +150,16 @@ public final class Cve2026111497Detector implements VulnDetector {
                       + "695f636865636b5f376639613262227d03"));
 
   /**
-   * 47-byte invalid Brotli stream ({@code 0xff} repeated 47 times, matching the exact compressed
-   * length of {@link #VALID_BROTLI_CONTROL}) that immediately fails in any Brotli decoder.
+   * 47-byte invalid Brotli stream consisting of printable 7-bit ASCII valid JSON (matching the
+   * exact 47-byte length of {@link #VALID_BROTLI_CONTROL}) whose opening byte (<code>'{'</code> =
+   * {@code 0x7b}: {@code WBITS = 21}, {@code ISLAST = 1}, {@code ISLASTEMPTY = 1}, non-zero padding
+   * bit 6) immediately fails RFC 7932 Section 9.2 padding validation ({@code
+   * BROTLI_DECODER_ERROR_FORMAT_PADDING_2}) in any Brotli decoder while never triggering non-Brotli
+   * UTF-8, ASCII, or JSON syntax errors.
    */
-  @VisibleForTesting static final ByteString INVALID_BROTLI_CONTROL = buildInvalidBrotliControl(47);
+  @VisibleForTesting
+  static final ByteString INVALID_BROTLI_CONTROL =
+      ByteString.copyFromUtf8("{\"a\":\"tsunami_brotli_invalid_control_________\"}");
 
   /**
    * 17-byte header for the CVE-2026-111497 probe: {@code WBITS = 16} + 0-length metadata metablock
@@ -255,9 +263,7 @@ public final class Cve2026111497Detector implements VulnDetector {
                     .setValue(VULNERABILITY_REPORT_ID))
             .addRelatedId(
                 VulnerabilityId.newBuilder().setPublisher("CVE").setValue(VULNERABILITY_REPORT_ID))
-            // TODO(b/352283036): Promote from MINIMAL (informational) to CRITICAL after monitoring
-            // initial rollout findings for 24-48h.
-            .setSeverity(Severity.MINIMAL)
+            .setSeverity(Severity.CRITICAL)
             .setTitle(VULNERABILITY_REPORT_TITLE)
             .setDescription(VULN_DESCRIPTION)
             .setRecommendation(RECOMMENDATION)
@@ -320,24 +326,7 @@ public final class Cve2026111497Detector implements VulnDetector {
 
     boolean statusDifferential = isValidVsInvalidStatusDifferential(validStatus, invalidStatus);
 
-    boolean deterministicBodyDifferential = false;
     if (!canaryReflected && !statusDifferential) {
-      if (validControl.status().isSuccess()
-          && invalidControl.status().isSuccess()
-          && !validBody.isEmpty()
-          && !validBody.equals(invalidBody)) {
-        // Confirm determinism with a second 47-byte valid control before sending the 23 MB probe.
-        Optional<HttpResponse> preCheckOpt =
-            sendBrotliRequest(networkService, targetUrl, VALID_BROTLI_CONTROL);
-        if (preCheckOpt.isPresent()
-            && preCheckOpt.get().status().code() == validStatus
-            && validBody.equals(preCheckOpt.get().bodyString().orElse(""))) {
-          deterministicBodyDifferential = true;
-        }
-      }
-    }
-
-    if (!canaryReflected && !statusDifferential && !deterministicBodyDifferential) {
       return false;
     }
 
@@ -355,14 +344,8 @@ public final class Cve2026111497Detector implements VulnDetector {
       if (!probeResponse.status().isSuccess() || !probeBody.contains(DECOMPRESSED_CANARY)) {
         return false;
       }
-    } else if (statusDifferential) {
-      if (probeStatus != validStatus || probeStatus == invalidStatus) {
-        return false;
-      }
     } else {
-      if (probeStatus != validStatus
-          || !probeBody.equals(validBody)
-          || probeBody.equals(invalidBody)) {
+      if (probeStatus != validStatus || probeStatus == invalidStatus) {
         return false;
       }
     }
@@ -386,16 +369,9 @@ public final class Cve2026111497Detector implements VulnDetector {
           || invalidVerifyBody.contains(DECOMPRESSED_CANARY)) {
         return false;
       }
-    } else if (statusDifferential) {
-      if (validVerify.status().code() != validStatus
-          || invalidVerify.status().code() != invalidStatus) {
-        return false;
-      }
     } else {
       if (validVerify.status().code() != validStatus
-          || invalidVerify.status().code() != invalidStatus
-          || !validVerifyBody.equals(validBody)
-          || !invalidVerifyBody.equals(invalidBody)) {
+          || invalidVerify.status().code() != invalidStatus) {
         return false;
       }
     }
@@ -490,12 +466,6 @@ public final class Cve2026111497Detector implements VulnDetector {
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(getAdvisories().get(0))
         .build();
-  }
-
-  private static ByteString buildInvalidBrotliControl(int length) {
-    byte[] invalid = new byte[length];
-    Arrays.fill(invalid, (byte) 0xff);
-    return ByteString.copyFrom(invalid);
   }
 
   /** Lazy holder for the CVE-2026-111497 probe payload. */

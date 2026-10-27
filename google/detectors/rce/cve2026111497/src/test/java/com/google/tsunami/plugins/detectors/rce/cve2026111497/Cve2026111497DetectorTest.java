@@ -103,7 +103,7 @@ public final class Cve2026111497DetectorTest {
                     VulnerabilityId.newBuilder()
                         .setPublisher("CVE")
                         .setValue(Cve2026111497Detector.VULNERABILITY_REPORT_ID))
-                .setSeverity(Severity.MINIMAL)
+                .setSeverity(Severity.CRITICAL)
                 .setTitle(Cve2026111497Detector.VULNERABILITY_REPORT_TITLE)
                 .setDescription(Cve2026111497Detector.VULN_DESCRIPTION)
                 .setRecommendation(Cve2026111497Detector.RECOMMENDATION))
@@ -232,29 +232,19 @@ public final class Cve2026111497DetectorTest {
 
   @Test
   public void
-      detect_whenVulnerableServerProducesDeterministicDecompressedOutputDifferential_reportsVuln() {
-    // Server catches decompression errors and returns 200 OK with parsed key count (without
-    // reflecting the literal canary string).
-    String decompressedResponse = "{\"parsedKeys\":1,\"decompressedBytes\":40}";
-    String failedDecompressResponse = "{\"parsedKeys\":0,\"decompressedBytes\":0}";
+      detect_whenMultiPodServerAlternates200OkBodiesWithoutCanary_abortsBeforeSending23MbProbe() {
+    // Multi-pod load-balanced services (e.g., GKE hello-app returning pod hostnames in 200 OK
+    // responses while ignoring Content-Encoding: br) must abort after the two 47-byte controls and
+    // never trigger a false positive or send the 23 MB probe.
+    String podAResponse = "Hello, world!\nVersion: 2.0.0\nHostname: deployment-pod-a\n";
+    String podBResponse = "Hello, world!\nVersion: 2.0.0\nHostname: deployment-pod-b\n";
 
-    // Step 1: Valid control
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(decompressedResponse));
-    // Step 2: Invalid control
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(failedDecompressResponse));
-    // Pre-probe determinism check (2nd valid control)
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(decompressedResponse));
-    // Step 3: CVE-2026-111497 probe produces identical decompressed output on unpatched Brotli
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(decompressedResponse));
-    // Step 4: Post-probe verification
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(decompressedResponse));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(failedDecompressResponse));
+    for (int i = 0; i < Cve2026111497Detector.CANDIDATE_PATHS.size(); i++) {
+      mockWebServer.enqueue(
+          new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(podAResponse));
+      mockWebServer.enqueue(
+          new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(podBResponse));
+    }
 
     NetworkService service = createNetworkService(mockWebServer);
     TargetInfo target =
@@ -264,9 +254,9 @@ public final class Cve2026111497DetectorTest {
 
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
-    assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(6);
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(mockWebServer.getRequestCount())
+        .isEqualTo(Cve2026111497Detector.CANDIDATE_PATHS.size() * 2);
   }
 
   @Test
@@ -324,7 +314,7 @@ public final class Cve2026111497DetectorTest {
   @Test
   public void detect_whenServerReturnsDynamicBodyWithNonce_abortsBeforeSending23MbProbe() {
     int counter = 0;
-    for (int i = 0; i < Cve2026111497Detector.CANDIDATE_PATHS.size() * 3; i++) {
+    for (int i = 0; i < Cve2026111497Detector.CANDIDATE_PATHS.size() * 2; i++) {
       counter++;
       mockWebServer.enqueue(
           new MockResponse()
@@ -341,26 +331,21 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
-    // Only 3 small (47-byte) requests per candidate path; the 23 MB probe is never sent!
+    // Only 2 small (47-byte) requests per candidate path; the 23 MB probe is never sent!
     assertThat(mockWebServer.getRequestCount())
-        .isEqualTo(Cve2026111497Detector.CANDIDATE_PATHS.size() * 3);
+        .isEqualTo(Cve2026111497Detector.CANDIDATE_PATHS.size() * 2);
   }
 
   @Test
   public void detect_whenRawEchoServerEchoesCompressedBytesWithoutDecompressing_reportsEmpty() {
     String rawValidHex = Cve2026111497Detector.VALID_BROTLI_CONTROL.toStringUtf8();
     String rawInvalidHex = Cve2026111497Detector.INVALID_BROTLI_CONTROL.toStringUtf8();
-    String rawProbePrefix = "raw_compressed_23mb_stream_not_matching_valid_control";
 
     for (int i = 0; i < Cve2026111497Detector.CANDIDATE_PATHS.size(); i++) {
       mockWebServer.enqueue(
           new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(rawValidHex));
       mockWebServer.enqueue(
           new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(rawInvalidHex));
-      mockWebServer.enqueue(
-          new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(rawValidHex));
-      mockWebServer.enqueue(
-          new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(rawProbePrefix));
     }
 
     NetworkService service = createNetworkService(mockWebServer);
@@ -372,6 +357,8 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(mockWebServer.getRequestCount())
+        .isEqualTo(Cve2026111497Detector.CANDIDATE_PATHS.size() * 2);
   }
 
   @Test
