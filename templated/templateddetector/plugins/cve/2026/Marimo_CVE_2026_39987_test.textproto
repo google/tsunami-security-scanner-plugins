@@ -1,0 +1,66 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Marimo_CVE_2026_39987"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <title>marimo</title>\n  </head>\n  <body><div id=\"root\"></div></body>\n</html>"
+      },
+      {
+        uri: "/terminal/ws"
+        status: 101
+        headers: [
+          { name: "Upgrade" value: "websocket" },
+          { name: "Connection" value: "Upgrade" }
+        ]
+        body_content: ""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenAuthRequired_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html>\n<html><head><title>marimo</title></head></html>"
+      },
+      {
+        uri: "/terminal/ws"
+        status: 403
+        body_content: "Forbidden"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotMarimo_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
