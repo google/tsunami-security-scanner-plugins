@@ -61,21 +61,26 @@ import javax.inject.Inject;
  * <p>Detection uses a zero-side-effect, false-positive-free 4-step differential protocol:
  *
  * <ol>
- *   <li><b>Step 1 (Valid Brotli Control)</b>: Sends a 47-byte valid RFC 7932 Brotli stream ({@code
- *       Content-Encoding: br}, {@code Content-Type: application/json}) that decompresses to {@code
- *       {\r\n \n\t"a":"tsunami_brotli_check_7f9a2b"}}. The canary is split across two uncompressed
- *       metablocks so the contiguous string {@code tsunami_brotli_check_7f9a2b} never appears in
- *       the raw compressed request bytes.
- *   <li><b>Step 2 (Invalid Brotli Control)</b>: Sends a 47-byte invalid Brotli stream consisting of
- *       printable 7-bit ASCII (<code>{tsunami_brotli_invalid_control_______________}</code>,
- *       matching the exact wire length of Step 1) whose opening byte (<code>'{'</code> = {@code
- *       0x7b}) immediately fails RFC 7932 Section 9.2 padding validation ({@code
+ *   <li><b>Step 1 (Valid Brotli Control)</b>: Sends a 191-byte valid RFC 7932 Brotli stream ({@code
+ *       Content-Encoding: br}, {@code Content-Type: application/json}) consisting exclusively of
+ *       7-bit ASCII bytes ({@code < 0x80}, opening byte <code>'P'</code> = {@code 0x50}) that
+ *       decompresses to a 175-byte multi-protocol JSON object (<code>{\r\n
+ *       \n\t"tsunami_brotli_check_7f9a2b":    "tsunami_brotli_check_7f9a2b","query":"{tsunami_brotli_check_7f9a2b}","jsonrpc":"2.0","id":
+ *       1,  "method":"tsunami_brotli_check_7f9a2b"}</code>, with 4 spaces after the first colon and
+ *       2 spaces before {@code "method"} so every uncompressed metablock header byte stays {@code <
+ *       0x80}). Every occurrence of the canary is split across uncompressed metablocks so the
+ *       contiguous string {@code tsunami_brotli_check_7f9a2b} never appears in the raw compressed
+ *       request bytes.
+ *   <li><b>Step 2 (Invalid Brotli Control)</b>: Sends a 191-byte invalid Brotli stream consisting
+ *       of printable 7-bit ASCII (<code>{tsunami_brotli_invalid_control_...}</code>, matching the
+ *       exact wire length of Step 1) whose opening byte (<code>'{'</code> = {@code 0x7b})
+ *       immediately fails RFC 7932 Section 9.2 padding validation ({@code
  *       BROTLI_DECODER_ERROR_FORMAT_PADDING_2}) in any Brotli decoder while also failing raw
  *       non-Brotli JSON/XML syntax parsing identically to Step 1's raw compressed bytes. Verifies
  *       that the target actively decompresses {@code Content-Encoding: br} and discriminates valid
- *       vs. invalid Brotli (via decompressed canary reflection or decompression error status code
- *       differential). If the endpoint does not decompress {@code Content-Encoding: br}, detection
- *       aborts immediately without sending the probe.
+ *       vs. invalid Brotli (via decompressed canary reflection on any status code or decompression
+ *       error status code differential). If the endpoint does not decompress {@code
+ *       Content-Encoding: br}, detection aborts immediately without sending the probe.
  *   <li><b>Step 3 (CVE-2026-111497 Zero-Side-Effect Probe)</b>: Sends a crafted Brotli stream with
  *       {@code NBLTYPESD == 1} and {@code 16,777,217} commands using static dictionary transform
  *       {@code OmitLast7} (producing 0 output bytes for the first {@code 16,777,216} commands while
@@ -83,13 +88,13 @@ import javax.inject.Inject;
  *       zero-filled metadata metablock that preserves {@code s->pos == 0} across all arbitrary TCP
  *       chunk splits. Unpatched Brotli ({@code 1.0.3 .. 1.2.0}) ignores the {@code BROTLI_FALSE}
  *       return from {@code DecodeDistanceBlockSwitch}, underflows {@code s->block_length[2]} to
- *       {@code 0xFFFFFFFF}, and finishes decompressing the exact same 40-byte JSON payload as Step
+ *       {@code 0xFFFFFFFF}, and finishes decompressing the exact same 175-byte JSON payload as Step
  *       1. Patched Brotli ({@code 1.0.10}, {@code 1.1.1}, {@code 1.2.1}) immediately aborts at the
  *       {@code 16,777,217}th command with {@code BROTLI_DECODER_ERROR_FORMAT_BLOCK_SWITCH} ({@code
  *       -17}) and 0 output bytes.
- *   <li><b>Step 4 (Post-Probe Health &amp; Determinism Verification)</b>: Re-sends the 47-byte Step
- *       1 and Step 2 controls to confirm that the service remains healthy and that the differential
- *       is deterministic.
+ *   <li><b>Step 4 (Post-Probe Health &amp; Determinism Verification)</b>: Re-sends the 191-byte
+ *       Step 1 and Step 2 controls to confirm that the service remains healthy and that the
+ *       differential is deterministic.
  * </ol>
  */
 @ForWebService
@@ -137,11 +142,16 @@ public final class Cve2026111497Detector implements VulnDetector {
   @VisibleForTesting static final String DECOMPRESSED_CANARY = "tsunami_brotli_check_7f9a2b";
 
   /**
-   * 47-byte valid RFC 7932 Brotli stream that decompresses to {@code {\r\n
-   * \n\t"a":"tsunami_brotli_check_7f9a2b"}}. The canary is split across two uncompressed metablocks
-   * ({@code "a":"tsunami_brotl} and {@code i_check_7f9a2b"}}) separated by a 3-byte metablock
-   * header ({@code 78 00 08}) so the contiguous string {@link #DECOMPRESSED_CANARY} never appears
-   * in the raw compressed bytes.
+   * 191-byte valid RFC 7932 Brotli stream (composed solely of 7-bit UTF-8 safe bytes {@code <
+   * 0x80}, opening byte <code>'P'</code> = {@code 0x50}) that decompresses to the 175-byte
+   * multi-protocol JSON payload (with 4 spaces after the first colon and 2 spaces before {@code
+   * "method"} so every uncompressed metablock header byte stays {@code < 0x80}): <code>{\r\n
+   * \n\t"tsunami_brotli_check_7f9a2b":    "tsunami_brotli_check_7f9a2b","query":"{tsunami_brotli_check_7f9a2b}","jsonrpc":"2.0","id":
+   * 1,  "method":"tsunami_brotli_check_7f9a2b"}</code>. Placing {@link #DECOMPRESSED_CANARY} as the
+   * first property key and inside GraphQL {@code query} and JSON-RPC {@code method} fields elicits
+   * canary reflection in strict schema, unknown-field, and GraphQL validation errors, while
+   * splitting every canary instance across uncompressed metablocks ensures {@link
+   * #DECOMPRESSED_CANARY} never appears contiguously in the raw compressed bytes.
    */
   @VisibleForTesting
   static final ByteString VALID_BROTLI_CONTROL =
@@ -149,11 +159,15 @@ public final class Cve2026111497Detector implements VulnDetector {
           BaseEncoding.base16()
               .lowerCase()
               .decode(
-                  "7001107b0d0a200a092261223a227473756e616d695f62726f746c780008"
+                  "5001107b0d0a200a09227473756e616d695f62726f746c695f080108"
+                      + "636865636b5f376639613262223a20202020227473756e616d695f62726f746c695f200108"
+                      + "636865636b5f376639613262222c227175657279223a227b7473756e616d695f62726f746c"
+                      + "080208695f636865636b5f3766396132627d222c226a736f6e727063223a22322e3022"
+                      + "2c226964223a20312c2020226d6574686f64223a227473756e616d695f62726f746c780008"
                       + "695f636865636b5f376639613262227d03"));
 
   /**
-   * 47-byte invalid Brotli stream consisting of printable 7-bit ASCII (matching the exact 47-byte
+   * 191-byte invalid Brotli stream consisting of printable 7-bit ASCII (matching the exact 191-byte
    * length of {@link #VALID_BROTLI_CONTROL}) whose opening byte (<code>'{'</code> = {@code 0x7b}:
    * {@code WBITS = 21}, {@code ISLAST = 1}, {@code ISLASTEMPTY = 1}, non-zero padding bit 6)
    * immediately fails RFC 7932 Section 9.2 padding validation ({@code
@@ -189,11 +203,12 @@ public final class Cve2026111497Detector implements VulnDetector {
   @VisibleForTesting static final int PROBE_MIDDLE_ZERO_LEN = 23_068_672;
 
   /**
-   * 77-byte tail for the CVE-2026-111497 probe: Command #16,777,217 ({@code extra = 353},
-   * outputting {@code {\r\n \n\t}), followed by a 32-byte zero-filled metadata metablock (ensuring
-   * {@code s->pos == 0} and {@code s->max_distance == 0} remain unchanged even under arbitrary TCP
-   * packet splits), followed by the split uncompressed metablocks {@code "a":"tsunami_brotl} and
-   * {@code i_check_7f9a2b"}} and the final empty metablock {@code 0x03}.
+   * 221-byte tail for the CVE-2026-111497 probe: Command #16,777,217 ({@code extra = 353},
+   * outputting <code>{\r\n \n\t</code>), followed by a 32-byte zero-filled metadata metablock
+   * (ensuring {@code s->pos == 0} and {@code s->max_distance == 0} remain unchanged even under
+   * arbitrary TCP packet splits), followed by five split uncompressed metablocks reconstructing the
+   * exact same 175-byte multi-protocol JSON payload as {@link #VALID_BROTLI_CONTROL} and the final
+   * empty metablock {@code 0x03}.
    */
   @VisibleForTesting
   static final ByteString PROBE_TAIL =
@@ -201,8 +216,12 @@ public final class Cve2026111497Detector implements VulnDetector {
           BaseEncoding.base16()
               .lowerCase()
               .decode(
-                  "61b13e000000000000000000000000000000000000000000000000000000"
-                      + "0000000000008800082261223a227473756e616d695f62726f746c780008"
+                  "61b13e000000000000000000000000000000000000000000000000000000000000000000"
+                      + "780008227473756e616d695f62726f746c695f080108"
+                      + "636865636b5f376639613262223a20202020227473756e616d695f62726f746c695f200108"
+                      + "636865636b5f376639613262222c227175657279223a227b7473756e616d695f62726f746c"
+                      + "080208695f636865636b5f3766396132627d222c226a736f6e727063223a22322e3022"
+                      + "2c226964223a20312c2020226d6574686f64223a227473756e616d695f62726f746c780008"
                       + "695f636865636b5f376639613262227d03"));
 
   private static final int MAX_CRAWLED_URLS = 3;
@@ -233,7 +252,7 @@ public final class Cve2026111497Detector implements VulnDetector {
    *       {@code "login"}, {@code "api/login"}, {@code "auth/login"}, {@code "webhook"}).
    * </ul>
    *
-   * <p>Non-decompressing paths abort after Step 1 or Step 2 (1-2 requests of 47 bytes each) and
+   * <p>Non-decompressing paths abort after Step 1 or Step 2 (1-2 requests of 191 bytes each) and
    * never send the Step 3 probe, keeping the scan overhead negligible.
    */
   // TODO(b/352283036): Review candidate paths later to see if this list improves detection rate.
@@ -316,18 +335,18 @@ public final class Cve2026111497Detector implements VulnDetector {
   }
 
   private boolean isEndpointVulnerable(NetworkService networkService, String targetUrl) {
-    // Step 1: Send small (47-byte) valid RFC 7932 Brotli control payload.
+    // Step 1: Send small (191-byte) valid RFC 7932 Brotli control payload.
     Optional<HttpResponse> validControlOpt =
         sendBrotliRequest(networkService, targetUrl, VALID_BROTLI_CONTROL);
     if (validControlOpt.isEmpty()) {
       return false;
     }
     HttpResponse validControl = validControlOpt.get();
-    if (!isPostDecompressionStatus(validControl.status())) {
+    if (!containsCanary(validControl) && !isPostDecompressionStatus(validControl.status())) {
       return false;
     }
 
-    // Step 2: Send small (47-byte) invalid Brotli control payload to verify active decompression.
+    // Step 2: Send small (191-byte) invalid Brotli control payload to verify active decompression.
     Optional<HttpResponse> invalidControlOpt =
         sendBrotliRequest(networkService, targetUrl, INVALID_BROTLI_CONTROL);
     if (invalidControlOpt.isEmpty()) {
@@ -335,8 +354,11 @@ public final class Cve2026111497Detector implements VulnDetector {
     }
     HttpResponse invalidControl = invalidControlOpt.get();
 
+    // Because DECOMPRESSED_CANARY is split across uncompressed metablocks in VALID_BROTLI_CONTROL,
+    // its contiguous presence in validControl proves RFC 7932 decompression occurred even when
+    // downstream schema/GraphQL/type validation returns 400 or 422.
     boolean canaryReflected =
-        validControl.status().isSuccess()
+        validControl.status() != HttpStatus.HTTP_STATUS_UNSPECIFIED
             && containsCanary(validControl)
             && !containsCanary(invalidControl);
     boolean statusDifferential =
@@ -352,15 +374,12 @@ public final class Cve2026111497Detector implements VulnDetector {
       return false;
     }
     HttpResponse probeResponse = probeResponseOpt.get();
-    if (canaryReflected) {
-      if (!probeResponse.status().isSuccess() || !containsCanary(probeResponse)) {
-        return false;
-      }
-    } else if (probeResponse.status() != validControl.status()) {
+    if (probeResponse.status() != validControl.status()
+        || (canaryReflected && !containsCanary(probeResponse))) {
       return false;
     }
 
-    // Step 4: Post-probe health and determinism verification using the 47-byte controls.
+    // Step 4: Post-probe health and determinism verification using the 191-byte controls.
     Optional<HttpResponse> validVerifyOpt =
         sendBrotliRequest(networkService, targetUrl, VALID_BROTLI_CONTROL);
     if (validVerifyOpt.isEmpty()) {
@@ -374,14 +393,12 @@ public final class Cve2026111497Detector implements VulnDetector {
     HttpResponse validVerify = validVerifyOpt.get();
     HttpResponse invalidVerify = invalidVerifyOpt.get();
 
-    if (canaryReflected) {
-      if (!validVerify.status().isSuccess()
-          || !containsCanary(validVerify)
-          || containsCanary(invalidVerify)) {
-        return false;
-      }
-    } else if (validVerify.status() != validControl.status()
+    if (validVerify.status() != validControl.status()
         || invalidVerify.status() != invalidControl.status()) {
+      return false;
+    }
+    if (canaryReflected
+        && (!containsCanary(validVerify) || containsCanary(invalidVerify))) {
       return false;
     }
 

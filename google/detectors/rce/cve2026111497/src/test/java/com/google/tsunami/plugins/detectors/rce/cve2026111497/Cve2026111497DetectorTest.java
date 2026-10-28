@@ -55,6 +55,7 @@ import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
+import okhttp3.mockwebserver.SocketPolicy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -170,13 +171,20 @@ public final class Cve2026111497DetectorTest {
         .startsWith("{tsunami_brotli_invalid_control_");
     assertThat(Cve2026111497Detector.INVALID_BROTLI_CONTROL.toStringUtf8()).endsWith("}");
     assertThat(Cve2026111497Detector.INVALID_BROTLI_CONTROL.toStringUtf8()).doesNotContain("\"");
-    assertThat(Cve2026111497Detector.VALID_BROTLI_CONTROL.size()).isEqualTo(47);
-    assertThat(Cve2026111497Detector.INVALID_BROTLI_CONTROL.size()).isEqualTo(47);
+    assertThat(Cve2026111497Detector.VALID_BROTLI_CONTROL.toStringUtf8()).startsWith("P");
+    assertThat(Cve2026111497Detector.VALID_BROTLI_CONTROL.size()).isEqualTo(191);
+    assertThat(Cve2026111497Detector.INVALID_BROTLI_CONTROL.size()).isEqualTo(191);
+    byte[] probeTailUncompressedBlocks =
+        Cve2026111497Detector.PROBE_TAIL.substring(39).toByteArray();
+    assertThat(probeTailUncompressedBlocks)
+        .isEqualTo(Cve2026111497Detector.VALID_BROTLI_CONTROL.substring(9).toByteArray());
     assertThat(Cve2026111497Detector.VALID_BROTLI_CONTROL.toString(ISO_8859_1))
         .matches("(?s)[\\x00-\\x7F]+");
     assertThat(Cve2026111497Detector.INVALID_BROTLI_CONTROL.toString(ISO_8859_1))
         .matches("(?s)[\\x00-\\x7F]+");
-    assertThat(Cve2026111497Detector.Holder.CVE_2026_111497_PROBE.size()).isEqualTo(23_068_766);
+    assertThat(Cve2026111497Detector.PROBE_TAIL.substring(3).toString(ISO_8859_1))
+        .matches("(?s)[\\x00-\\x7F]+");
+    assertThat(Cve2026111497Detector.Holder.CVE_2026_111497_PROBE.size()).isEqualTo(23_068_910);
   }
 
   @Test
@@ -347,6 +355,222 @@ public final class Cve2026111497DetectorTest {
     assertThat(reports.getDetectionReportsList())
         .containsExactly(buildExpectedDetectionReport(target, service));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
+  }
+
+  @Test
+  public void
+      detect_whenVulnerableGraphQlReturns400WithCanaryOnValidAnd400WithoutCanaryOnInvalid_reportsVulnerability() {
+    // Strict GraphQL / Jackson / Go / Rust schema validators return 400 Bad Request on both valid
+    // Brotli (schema/field error containing the decompressed canary) and invalid Brotli
+    // (decompression error without the canary).
+    String graphQlError =
+        "{\"errors\":[{\"message\":\"Cannot query field '"
+            + Cve2026111497Detector.DECOMPRESSED_CANARY
+            + "' on type 'Query'.\"}]}";
+    String decompError = "{\"errors\":[{\"message\":\"Invalid Brotli stream\"}]}";
+    enqueueVulnerableCycle(
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                .setBody(graphQlError),
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                .setBody(decompError));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildExpectedDetectionReport(target, service));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
+  }
+
+  @Test
+  public void
+      detect_whenVulnerableFastApiReturns422WithCanaryOnValidAnd400OnInvalid_reportsVulnerability() {
+    String pydanticError =
+        "{\"detail\":[{\"type\":\"extra_forbidden\",\"loc\":[\"body\",\""
+            + Cve2026111497Detector.DECOMPRESSED_CANARY
+            + "\"]}]}";
+    enqueueVulnerableCycle(
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code())
+                .setBody(pydanticError),
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                .setBody("Invalid Brotli body"));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildExpectedDetectionReport(target, service));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
+  }
+
+  @Test
+  public void
+      detect_whenPatchedGraphQlReflectsCanaryOnControlButRejectsProbeWithoutCanary_reportsEmpty() {
+    String graphQlError =
+        "{\"errors\":[{\"message\":\"Cannot query field '"
+            + Cve2026111497Detector.DECOMPRESSED_CANARY
+            + "' on type 'Query'.\"}]}";
+    String decompError = "{\"errors\":[{\"message\":\"BROTLI_DECODER_ERROR_FORMAT_BLOCK_SWITCH\"}]}";
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/graphql")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              return isValidControl(request)
+                  ? new MockResponse()
+                      .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                      .setBody(graphQlError)
+                  : new MockResponse()
+                      .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                      .setBody(decompError);
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void detect_whenBothControlsReflectCanaryString_abortsBeforeSending23MbProbe() {
+    String staticBannerWithCanary = "Error trace: " + Cve2026111497Detector.DECOMPRESSED_CANARY;
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse()
+                    .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                    .setBody(staticBannerWithCanary));
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isFalse();
+  }
+
+  @Test
+  public void detect_whenProbeReflectsCanaryWithMismatchedStatusCode_reportsEmpty() {
+    String canaryError = "Field error: " + Cve2026111497Detector.DECOMPRESSED_CANARY;
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/graphql")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              if (isProbe(request)) {
+                return new MockResponse()
+                    .setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.code())
+                    .setBody(canaryError);
+              }
+              return isValidControl(request)
+                  ? new MockResponse()
+                      .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                      .setBody(canaryError)
+                  : new MockResponse()
+                      .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                      .setBody("Invalid Brotli");
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void detect_whenCanaryReflectedPostProbeInvalidControlReturns503_reportsEmpty() {
+    String canaryError = "Field error: " + Cve2026111497Detector.DECOMPRESSED_CANARY;
+    AtomicInteger graphQlStep = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/graphql")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              int step = graphQlStep.incrementAndGet();
+              if (step == 5) {
+                return new MockResponse()
+                    .setResponseCode(HttpStatus.SERVICE_UNAVAILABLE.code())
+                    .setBody("Service Unavailable");
+              }
+              return isValidControl(request) || isProbe(request)
+                  ? new MockResponse()
+                      .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                      .setBody(canaryError)
+                  : new MockResponse()
+                      .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                      .setBody("Invalid Brotli");
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void detect_whenCanaryReflectedPostProbeValidControlOmitsCanary_reportsEmpty() {
+    String canaryError = "Field error: " + Cve2026111497Detector.DECOMPRESSED_CANARY;
+    AtomicInteger graphQlStep = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/graphql")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              int step = graphQlStep.incrementAndGet();
+              if (step == 4) {
+                return new MockResponse()
+                    .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                    .setBody("Generic Bad Request");
+              }
+              return isValidControl(request) || isProbe(request)
+                  ? new MockResponse()
+                      .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                      .setBody(canaryError)
+                  : new MockResponse()
+                      .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                      .setBody("Invalid Brotli");
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void detect_whenServerDisconnectsDuringControlRequest_reportsEmpty() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START));
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isFalse();
   }
 
   @Test
