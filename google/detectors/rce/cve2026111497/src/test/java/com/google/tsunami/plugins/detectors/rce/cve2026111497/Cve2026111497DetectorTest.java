@@ -861,6 +861,128 @@ public final class Cve2026111497DetectorTest {
     assertThat(mockWebServer.takeRequest().getPath()).isEqualTo("/v1/ingest?source=test");
   }
 
+  @Test
+  public void
+      detect_whenCrawledEndpointsBeginWithStaticAssets_skipsStaticAssetsAndDetectsDynamicEndpoint()
+          throws InterruptedException {
+    enqueueVulnerableCycle(
+        () -> new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"),
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Error"));
+    NetworkService service =
+        createServiceWithCrawledUrls(
+            "mailto:admin@example.com",
+            mockWebServer.url("/assets/styles.css?v=1").toString(),
+            mockWebServer.url("/assets/app.js;jsessionid=ABCD1234").toString(),
+            mockWebServer.url("/static/BUNDLE.JS").toString(),
+            mockWebServer.url("/favicon.ico").toString(),
+            mockWebServer.url("/cgi-bin/api.cgi").toString());
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildExpectedDetectionReport(target, service));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
+    assertThat(mockWebServer.takeRequest().getPath()).isEqualTo("/cgi-bin/api.cgi");
+  }
+
+  @Test
+  public void
+      detect_whenCrawledEndpointsRepeatFragmentsAndCandidatePaths_deduplicatesBeforeCap() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/cgi-bin/api.cgi")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              return isValidControl(request) || isProbe(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK")
+                  : new MockResponse()
+                      .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                      .setBody("Error");
+            });
+    mockWebServer.setDispatcher(dispatcher);
+    NetworkService service =
+        createServiceWithCrawledUrls(
+            mockWebServer.url("/#skip").toString(),
+            mockWebServer.url("/#nav").toString(),
+            mockWebServer.url("/#footer").toString(),
+            mockWebServer.url("/").toString(),
+            mockWebServer.url("/login#form").toString(),
+            mockWebServer.url("/cgi-bin/api.cgi").toString());
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildExpectedDetectionReport(target, service));
+    assertThat(dispatcher.requestedPaths().get(0)).isEqualTo("/cgi-bin/api.cgi");
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void detect_whenMoreThanThreeDistinctDynamicCrawledUrls_probesAtMostThreeCrawledUrls() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
+    mockWebServer.setDispatcher(dispatcher);
+    NetworkService service =
+        createServiceWithCrawledUrls(
+            mockWebServer.url("/dyn-1").toString(),
+            mockWebServer.url("/dyn-2").toString(),
+            mockWebServer.url("/dyn-3").toString(),
+            mockWebServer.url("/dyn-4").toString());
+
+    DetectionReportList reports = detector.detect(createTargetInfo(), ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.requestedPaths()).containsAtLeast("/dyn-1", "/dyn-2", "/dyn-3");
+    assertThat(dispatcher.requestedPaths()).doesNotContain("/dyn-4");
+    assertThat(dispatcher.receivedProbe()).isFalse();
+  }
+
+  @Test
+  public void detect_whenApplianceExposesVulnerableRedfishPath_reportsVulnerability() {
+    assertVulnerableApplianceCandidatePathDetected("/redfish/v1");
+  }
+
+  @Test
+  public void detect_whenApplianceExposesVulnerableRpcPath_reportsVulnerability() {
+    assertVulnerableApplianceCandidatePathDetected("/rpc");
+  }
+
+  @Test
+  public void detect_whenApplianceExposesVulnerableJsonRpcPath_reportsVulnerability() {
+    assertVulnerableApplianceCandidatePathDetected("/jsonrpc");
+  }
+
+  @Test
+  public void detect_whenApplianceExposesVulnerableRestPath_reportsVulnerability() {
+    assertVulnerableApplianceCandidatePathDetected("/rest");
+  }
+
+  private void assertVulnerableApplianceCandidatePathDetected(String expectedPath) {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals(expectedPath)) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              return isValidControl(request) || isProbe(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code())
+                  : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+            });
+    mockWebServer.setDispatcher(dispatcher);
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildExpectedDetectionReport(target, service));
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+  }
+
   private static final class ProbeTrackingDispatcher extends Dispatcher {
     private final Function<RecordedRequest, MockResponse> handler;
     private final AtomicInteger probeCount = new AtomicInteger();

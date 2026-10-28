@@ -17,9 +17,11 @@ package com.google.tsunami.plugins.detectors.rce.cve2026111497;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ascii;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -51,7 +53,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Clock;
+import java.util.LinkedHashSet;
 import java.util.Optional;
+import java.util.Set;
 import javax.inject.Inject;
 
 /**
@@ -226,6 +230,11 @@ public final class Cve2026111497Detector implements VulnDetector {
 
   private static final int MAX_CRAWLED_URLS = 3;
 
+  private static final ImmutableSet<String> STATIC_ASSET_EXTENSIONS =
+      ImmutableSet.of(
+          ".css", ".js", ".mjs", ".map", ".ico", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp",
+          ".woff", ".woff2", ".ttf", ".eot", ".otf", ".pdf", ".zip");
+
   /**
    * Fallback HTTP POST paths probed when Tsunami's web crawler does not discover a vulnerable
    * endpoint in {@code WebServiceContext.getCrawlResultsList()}.
@@ -235,21 +244,25 @@ public final class Cve2026111497Detector implements VulnDetector {
    * REST/GraphQL/RPC services or SPAs), {@code CANDIDATE_PATHS} are in practice the ONLY paths
    * tested against most targets.
    *
-   * <p>These top 10 paths are selected to cover both middleware routing architectures in vulnerable
-   * systems (Node.js/Express/Fastify/Next.js/NestJS/Apollo/tRPC, Bun, Python, and Envoy):
+   * <p>These 14 paths are selected to cover middleware, appliance, and RPC routing architectures in
+   * vulnerable systems (Apache {@code mod_brotli}, Envoy HTTP decompressor, embedded/BMC
+   * appliances, Go/Java/Python/Rust JSON &amp; GraphQL APIs, and
+   * Node.js/Express/Fastify/Next.js/NestJS/Apollo/tRPC):
    *
    * <ul>
-   *   <li><b>Prefix- or globally-mounted decompression middleware</b> (e.g., Express {@code
-   *       app.use(express.json())} or {@code app.use('/api', express.json(), router)}, Envoy HTTP
-   *       Brotli decompressor filter): Decompresses {@code Content-Encoding: br} before leaf route
-   *       matching, so probing the mount prefix ({@code ""}, {@code "api"}, {@code "api/v1"},
-   *       {@code "trpc"}) triggers the differential (e.g., 404 on valid Brotli vs. 400 on invalid
-   *       Brotli) even without knowing any application-specific leaf route.
-   *   <li><b>Route-first decompression frameworks</b> (e.g., Fastify with {@code @fastify/compress}
-   *       {@code preParsing} hooks, Apollo Server, Next.js/NestJS controllers): Only decompress
-   *       when an exact registered {@code POST} route matches, covered by the most common
-   *       unauthenticated JSON {@code POST} endpoints ({@code "graphql"}, {@code "api/graphql"},
-   *       {@code "login"}, {@code "api/login"}, {@code "auth/login"}, {@code "webhook"}).
+   *   <li><b>Prefix- or globally-mounted decompression filters &amp; appliance APIs</b> (e.g.,
+   *       Envoy HTTP Brotli decompressor filter, Apache {@code SetInputFilter BROTLI_COMPRESS},
+   *       Express {@code app.use(express.json())}, BMC/Redfish &amp; appliance management gateways):
+   *       Decompresses {@code Content-Encoding: br} before leaf route or auth matching, so probing
+   *       the mount prefix ({@code ""}, {@code "api"}, {@code "api/v1"}, {@code "rest"}, {@code
+   *       "redfish/v1"}, {@code "trpc"}) triggers the differential even without knowing any
+   *       application-specific leaf route.
+   *   <li><b>Route-first decompression &amp; RPC endpoints</b> (e.g., JSON-RPC 2.0 daemons, GraphQL
+   *       servers, Fastify {@code @fastify/compress}, Next.js/NestJS controllers): Only decompress
+   *       when an exact registered {@code POST} route matches, covered by common JSON/RPC {@code
+   *       POST} endpoints ({@code "graphql"}, {@code "api/graphql"}, {@code "rpc"}, {@code
+   *       "jsonrpc"}, {@code "login"}, {@code "api/login"}, {@code "auth/login"}, {@code
+   *       "webhook"}).
    * </ul>
    *
    * <p>Non-decompressing paths abort after Step 1 or Step 2 (1-2 requests of 191 bytes each) and
@@ -263,6 +276,10 @@ public final class Cve2026111497Detector implements VulnDetector {
           "api",
           "api/v1",
           "api/graphql",
+          "rpc",
+          "jsonrpc",
+          "rest",
+          "redfish/v1",
           "trpc",
           "login",
           "api/login",
@@ -427,16 +444,20 @@ public final class Cve2026111497Detector implements VulnDetector {
 
   private ImmutableSet<String> getTargetUrls(NetworkService networkService) {
     String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    ImmutableSet.Builder<String> targetUrls = ImmutableSet.builder();
-    int crawledCount = 0;
+    ImmutableSet<String> candidateUrls =
+        CANDIDATE_PATHS.stream().map(subpath -> rootUrl + subpath).collect(toImmutableSet());
+    Set<String> crawledUrls = new LinkedHashSet<>();
     for (CrawlResult crawlResult :
         networkService.getServiceContext().getWebServiceContext().getCrawlResultsList()) {
-      if (crawledCount >= MAX_CRAWLED_URLS) {
+      if (crawledUrls.size() >= MAX_CRAWLED_URLS) {
         break;
       }
       String crawledUrl = crawlResult.getCrawlTarget().getUrl();
       try {
         URI uri = new URI(crawledUrl);
+        if (uri.getPath() == null || isStaticAssetPath(uri.getPath())) {
+          continue;
+        }
         URI normalizedUri =
             new URI(
                 uri.getScheme(),
@@ -445,16 +466,25 @@ public final class Cve2026111497Detector implements VulnDetector {
                 uri.getQuery(),
                 /* fragment= */ null);
         String normalizedUrl = normalizedUri.toString();
-        if (normalizedUrl.startsWith(rootUrl)) {
-          targetUrls.add(normalizedUrl);
-          crawledCount++;
+        if (normalizedUrl.startsWith(rootUrl) && !candidateUrls.contains(normalizedUrl)) {
+          crawledUrls.add(normalizedUrl);
         }
       } catch (URISyntaxException e) {
         logger.atFine().withCause(e).log("Failed to parse crawled URL '%s'", crawledUrl);
       }
     }
-    CANDIDATE_PATHS.forEach(subpath -> targetUrls.add(rootUrl + subpath));
-    return targetUrls.build();
+    return ImmutableSet.<String>builder().addAll(crawledUrls).addAll(candidateUrls).build();
+  }
+
+  private static boolean isStaticAssetPath(String path) {
+    String fileName = path.substring(path.lastIndexOf('/') + 1);
+    int semicolonIndex = fileName.indexOf(';');
+    if (semicolonIndex >= 0) {
+      fileName = fileName.substring(0, semicolonIndex);
+    }
+    int dotIndex = fileName.lastIndexOf('.');
+    return dotIndex >= 0
+        && STATIC_ASSET_EXTENSIONS.contains(Ascii.toLowerCase(fileName.substring(dotIndex)));
   }
 
   private Optional<HttpResponse> sendBrotliRequest(
