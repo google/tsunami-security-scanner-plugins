@@ -19,6 +19,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostname;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
@@ -42,7 +43,15 @@ import com.google.tsunami.proto.VulnerabilityId;
 import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.inject.Inject;
+import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -75,16 +84,55 @@ public final class Cve2026111497DetectorTest {
   }
 
   @After
-  public void tearDown() throws Exception {
+  public void tearDown() throws IOException {
     mockWebServer.shutdown();
   }
 
-  private NetworkService createNetworkService(MockWebServer mockService) {
+  private TargetInfo createTargetInfo() {
+    return TargetInfo.newBuilder()
+        .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
+        .build();
+  }
+
+  private NetworkService createNetworkService() {
     return NetworkService.newBuilder()
-        .setNetworkEndpoint(forHostnameAndPort(mockService.getHostName(), mockService.getPort()))
+        .setNetworkEndpoint(
+            forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
         .setTransportProtocol(TransportProtocol.TCP)
         .setServiceName("http")
         .build();
+  }
+
+  private NetworkService createServiceWithCrawledUrls(String... urls) {
+    WebServiceContext.Builder webContext = WebServiceContext.newBuilder();
+    for (String url : urls) {
+      webContext.addCrawlResults(
+          CrawlResult.newBuilder()
+              .setCrawlTarget(CrawlTarget.newBuilder().setUrl(url).setHttpMethod("POST")));
+    }
+    return createNetworkService().toBuilder()
+        .setServiceContext(ServiceContext.newBuilder().setWebServiceContext(webContext))
+        .build();
+  }
+
+  private void enqueueVulnerableCycle(
+      Supplier<MockResponse> validResponse, Supplier<MockResponse> invalidResponse) {
+    mockWebServer.enqueue(validResponse.get());
+    mockWebServer.enqueue(invalidResponse.get());
+    mockWebServer.enqueue(validResponse.get());
+    mockWebServer.enqueue(validResponse.get());
+    mockWebServer.enqueue(invalidResponse.get());
+  }
+
+  private static boolean isValidControl(RecordedRequest request) {
+    return request.getBodySize() == Cve2026111497Detector.VALID_BROTLI_CONTROL.size()
+        && Arrays.equals(
+            request.getBody().clone().readByteArray(),
+            Cve2026111497Detector.VALID_BROTLI_CONTROL.toByteArray());
+  }
+
+  private static boolean isProbe(RecordedRequest request) {
+    return request.getBodySize() == Cve2026111497Detector.Holder.CVE_2026_111497_PROBE.size();
   }
 
   private DetectionReport buildExpectedDetectionReport(TargetInfo target, NetworkService service) {
@@ -114,37 +162,34 @@ public final class Cve2026111497DetectorTest {
   public void payloadInvariants_rawBytesDoNotContainContiguousCanaryAndLengthsMatch() {
     assertThat(Cve2026111497Detector.VALID_BROTLI_CONTROL.toStringUtf8())
         .doesNotContain(Cve2026111497Detector.DECOMPRESSED_CANARY);
+    assertThat(Cve2026111497Detector.INVALID_BROTLI_CONTROL.toStringUtf8())
+        .doesNotContain(Cve2026111497Detector.DECOMPRESSED_CANARY);
     assertThat(Cve2026111497Detector.PROBE_TAIL.toStringUtf8())
         .doesNotContain(Cve2026111497Detector.DECOMPRESSED_CANARY);
-    assertThat(Cve2026111497Detector.VALID_BROTLI_CONTROL.size())
-        .isEqualTo(Cve2026111497Detector.INVALID_BROTLI_CONTROL.size());
-    assertThat(Cve2026111497Detector.Holder.buildProbePayload().size()).isEqualTo(23_068_766);
+    assertThat(Cve2026111497Detector.INVALID_BROTLI_CONTROL.toStringUtf8())
+        .startsWith("{tsunami_brotli_invalid_control_");
+    assertThat(Cve2026111497Detector.INVALID_BROTLI_CONTROL.toStringUtf8()).endsWith("}");
+    assertThat(Cve2026111497Detector.INVALID_BROTLI_CONTROL.toStringUtf8()).doesNotContain("\"");
+    assertThat(Cve2026111497Detector.VALID_BROTLI_CONTROL.size()).isEqualTo(47);
+    assertThat(Cve2026111497Detector.INVALID_BROTLI_CONTROL.size()).isEqualTo(47);
+    assertThat(Cve2026111497Detector.VALID_BROTLI_CONTROL.toString(ISO_8859_1))
+        .matches("(?s)[\\x00-\\x7F]+");
+    assertThat(Cve2026111497Detector.INVALID_BROTLI_CONTROL.toString(ISO_8859_1))
+        .matches("(?s)[\\x00-\\x7F]+");
+    assertThat(Cve2026111497Detector.Holder.CVE_2026_111497_PROBE.size()).isEqualTo(23_068_766);
   }
 
   @Test
   public void detect_whenVulnerableServerAcceptsProbeWithStatusDifferential_reportsVulnerability()
-      throws Exception {
-    // Step 1: Valid Brotli control -> 200 OK
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
-    // Step 2: Invalid Brotli control -> 400 Bad Request
-    mockWebServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.BAD_REQUEST.code())
-            .setBody("BadRequestError: decompression failed"));
-    // Step 3: CVE-2026-111497 probe -> 200 OK (unpatched Brotli succeeds)
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
-    // Step 4: Post-probe verification (Valid -> 200 OK, Invalid -> 400 Bad Request)
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
-    mockWebServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.BAD_REQUEST.code())
-            .setBody("BadRequestError: decompression failed"));
-
-    NetworkService service = createNetworkService(mockWebServer);
-    TargetInfo target =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
+      throws InterruptedException {
+    enqueueVulnerableCycle(
+        () -> new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"),
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                .setBody("BadRequestError: decompression failed"));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
 
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
@@ -171,26 +216,17 @@ public final class Cve2026111497DetectorTest {
       detect_whenVulnerableMiddlewareReturns404OnValidAnd400OnInvalid_reportsVulnerability() {
     // Express app.use(express.json()) on an unrouted POST / returns 404 after successful
     // decompression, but 400 Bad Request when Brotli decompression fails.
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()).setBody("Cannot POST /"));
-    mockWebServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.BAD_REQUEST.code())
-            .setBody("BadRequestError: decompression failed"));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()).setBody("Cannot POST /"));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()).setBody("Cannot POST /"));
-    mockWebServer.enqueue(
-        new MockResponse()
-            .setResponseCode(HttpStatus.BAD_REQUEST.code())
-            .setBody("BadRequestError: decompression failed"));
-
-    NetworkService service = createNetworkService(mockWebServer);
-    TargetInfo target =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
+    enqueueVulnerableCycle(
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.NOT_FOUND.code())
+                .setBody("Cannot POST /"),
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                .setBody("BadRequestError: decompression failed"));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
 
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
@@ -202,26 +238,109 @@ public final class Cve2026111497DetectorTest {
   @Test
   public void detect_whenVulnerableServerReflectsDecompressedCanary_reportsVulnerability() {
     String reflectedJson = "{\"echo\":\"" + Cve2026111497Detector.DECOMPRESSED_CANARY + "\"}";
-    // Step 1: Valid control reflects decompressed canary
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(reflectedJson));
-    // Step 2: Invalid control returns 200 OK with empty echo
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("{\"echo\":null}"));
-    // Step 3: CVE-2026-111497 probe reflects decompressed canary on unpatched Brotli
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(reflectedJson));
-    // Step 4: Post-probe verification
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(reflectedJson));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("{\"echo\":null}"));
+    enqueueVulnerableCycle(
+        () -> new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(reflectedJson),
+        () -> new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("{\"echo\":null}"));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
 
-    NetworkService service = createNetworkService(mockWebServer);
-    TargetInfo target =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildExpectedDetectionReport(target, service));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
+  }
+
+  @Test
+  public void
+      detect_whenApplianceFilterReturns401OnValidAnd400OnInvalid_reportsVulnerability() {
+    // Envoy HTTP decompressor filter / Apache mod_brotli in front of an authenticated appliance
+    // API returns 401 Unauthorized after successful Brotli decompression, and 400 Bad Request when
+    // Brotli decompression fails.
+    enqueueVulnerableCycle(
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.UNAUTHORIZED.code())
+                .setBody("Unauthorized"),
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                .setBody("Bad Request"));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildExpectedDetectionReport(target, service));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
+  }
+
+  @Test
+  public void detect_whenApplianceAclReturns403OnValidAnd422OnInvalid_reportsVulnerability() {
+    enqueueVulnerableCycle(
+        () -> new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code()).setBody("Forbidden"),
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code())
+                .setBody("Unprocessable Entity"));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildExpectedDetectionReport(target, service));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
+  }
+
+  @Test
+  public void detect_whenInputFilterReturns405OnValidAnd500OnInvalid_reportsVulnerability() {
+    // Apache SetInputFilter BROTLI_COMPRESS on a GET-only resource returns 405 Method Not Allowed
+    // when Brotli decompression succeeds, and 400/500 when Brotli decompression fails.
+    enqueueVulnerableCycle(
+        () -> new MockResponse().setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code()),
+        () -> new MockResponse().setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.code()));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildExpectedDetectionReport(target, service));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
+  }
+
+  @Test
+  public void
+      detect_whenApplianceLoginRedirectReturns302OnValidAnd400OnInvalid_reportsVulnerability() {
+    enqueueVulnerableCycle(
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.FOUND.code())
+                .setHeader("Location", "/auth"),
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildExpectedDetectionReport(target, service));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
+  }
+
+  @Test
+  public void
+      detect_whenApplianceLoginRedirectReturns303OnValidAnd400OnInvalid_reportsVulnerability() {
+    enqueueVulnerableCycle(
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.SEE_OTHER.code())
+                .setHeader("Location", "/auth"),
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
 
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
@@ -234,235 +353,230 @@ public final class Cve2026111497DetectorTest {
   public void
       detect_whenMultiPodServerAlternates200OkBodiesWithoutCanary_abortsBeforeSending23MbProbe() {
     // Multi-pod load-balanced services (e.g., GKE hello-app returning pod hostnames in 200 OK
-    // responses while ignoring Content-Encoding: br) must abort after the two 47-byte controls and
+    // responses while ignoring Content-Encoding: br) must abort after the two control requests and
     // never trigger a false positive or send the 23 MB probe.
-    String podAResponse = "Hello, world!\nVersion: 2.0.0\nHostname: deployment-pod-a\n";
-    String podBResponse = "Hello, world!\nVersion: 2.0.0\nHostname: deployment-pod-b\n";
+    AtomicInteger requestIndex = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              String podName =
+                  requestIndex.getAndIncrement() % 2 == 0
+                      ? "deployment-pod-a"
+                      : "deployment-pod-b";
+              return new MockResponse()
+                  .setResponseCode(HttpStatus.OK.code())
+                  .setBody("Hello, world!\nVersion: 2.0.0\nHostname: " + podName + "\n");
+            });
+    mockWebServer.setDispatcher(dispatcher);
 
-    for (int i = 0; i < Cve2026111497Detector.CANDIDATE_PATHS.size(); i++) {
-      mockWebServer.enqueue(
-          new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(podAResponse));
-      mockWebServer.enqueue(
-          new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(podBResponse));
-    }
-
-    NetworkService service = createNetworkService(mockWebServer);
-    TargetInfo target =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
-
-    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
-    assertThat(mockWebServer.getRequestCount())
-        .isEqualTo(Cve2026111497Detector.CANDIDATE_PATHS.size() * 2);
+    assertThat(dispatcher.receivedProbe()).isFalse();
   }
 
   @Test
   public void detect_whenPatchedServerRejectsProbeWith400_reportsEmpty() {
-    for (int i = 0; i < Cve2026111497Detector.CANDIDATE_PATHS.size(); i++) {
-      // Step 1: Valid control -> 200 OK
-      mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
-      // Step 2: Invalid control -> 400 Bad Request
-      mockWebServer.enqueue(
-          new MockResponse()
-              .setResponseCode(HttpStatus.BAD_REQUEST.code())
-              .setBody("BadRequestError: decompression failed"));
-      // Step 3: Patched Brotli (1.2.1) rejects CVE-2026-111497 probe with 400 Bad Request
-      mockWebServer.enqueue(
-          new MockResponse()
-              .setResponseCode(HttpStatus.BAD_REQUEST.code())
-              .setBody("BadRequestError: decompression failed"));
-    }
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              if (isValidControl(request)) {
+                return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK");
+              }
+              return new MockResponse()
+                  .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                  .setBody("BadRequestError: decompression failed");
+            });
+    mockWebServer.setDispatcher(dispatcher);
 
-    NetworkService service = createNetworkService(mockWebServer);
-    TargetInfo target =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
-
-    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
-    assertThat(mockWebServer.getRequestCount())
-        .isEqualTo(Cve2026111497Detector.CANDIDATE_PATHS.size() * 3);
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
   }
 
   @Test
   public void detect_whenServerIgnoresContentEncodingBr_abortsBeforeSending23MbProbe() {
-    for (int i = 0; i < Cve2026111497Detector.CANDIDATE_PATHS.size() * 2; i++) {
-      // Server ignores Content-Encoding: br and returns identical 200 OK to both controls
-      mockWebServer.enqueue(
-          new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("Static Page"));
-    }
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("Static Page"));
+    mockWebServer.setDispatcher(dispatcher);
 
-    NetworkService service = createNetworkService(mockWebServer);
-    TargetInfo target =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
-
-    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
-    // Only 2 small (47-byte) requests per candidate path; the 23 MB probe is never sent!
-    assertThat(mockWebServer.getRequestCount())
-        .isEqualTo(Cve2026111497Detector.CANDIDATE_PATHS.size() * 2);
+    assertThat(dispatcher.receivedProbe()).isFalse();
   }
 
   @Test
   public void detect_whenServerReturnsDynamicBodyWithNonce_abortsBeforeSending23MbProbe() {
-    int counter = 0;
-    for (int i = 0; i < Cve2026111497Detector.CANDIDATE_PATHS.size() * 2; i++) {
-      counter++;
-      mockWebServer.enqueue(
-          new MockResponse()
-              .setResponseCode(HttpStatus.OK.code())
-              .setBody("{\"requestId\":\"req-" + counter + "\"}"));
-    }
+    AtomicInteger counter = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse()
+                    .setResponseCode(HttpStatus.OK.code())
+                    .setBody("{\"requestId\":\"req-" + counter.incrementAndGet() + "\"}"));
+    mockWebServer.setDispatcher(dispatcher);
 
-    NetworkService service = createNetworkService(mockWebServer);
-    TargetInfo target =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
-
-    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
-    // Only 2 small (47-byte) requests per candidate path; the 23 MB probe is never sent!
-    assertThat(mockWebServer.getRequestCount())
-        .isEqualTo(Cve2026111497Detector.CANDIDATE_PATHS.size() * 2);
+    assertThat(dispatcher.receivedProbe()).isFalse();
   }
 
   @Test
   public void detect_whenRawEchoServerEchoesCompressedBytesWithoutDecompressing_reportsEmpty() {
-    String rawValidHex = Cve2026111497Detector.VALID_BROTLI_CONTROL.toStringUtf8();
-    String rawInvalidHex = Cve2026111497Detector.INVALID_BROTLI_CONTROL.toStringUtf8();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse()
+                    .setResponseCode(HttpStatus.OK.code())
+                    .setBody(request.getBody().clone()));
+    mockWebServer.setDispatcher(dispatcher);
 
-    for (int i = 0; i < Cve2026111497Detector.CANDIDATE_PATHS.size(); i++) {
-      mockWebServer.enqueue(
-          new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(rawValidHex));
-      mockWebServer.enqueue(
-          new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(rawInvalidHex));
-    }
-
-    NetworkService service = createNetworkService(mockWebServer);
-    TargetInfo target =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
-
-    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
-    assertThat(mockWebServer.getRequestCount())
-        .isEqualTo(Cve2026111497Detector.CANDIDATE_PATHS.size() * 2);
+    assertThat(dispatcher.receivedProbe()).isFalse();
+  }
+
+  @Test
+  public void detect_whenAuthWallReturns401ToBothControls_abortsBeforeSending23MbProbe() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse()
+                    .setResponseCode(HttpStatus.UNAUTHORIZED.code())
+                    .setBody("Unauthorized"));
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isFalse();
   }
 
   @Test
   public void
-      detect_whenCrawledEndpointsIncludeMalformedAndOffOriginUrls_filtersAndReportsSameOriginVuln()
-          throws Exception {
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Error"));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Error"));
+      detect_whenServerReturnsNonDecompressionStatusPair401And403_abortsBeforeSending23MbProbe() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse()
+                    .setResponseCode(
+                        isValidControl(request)
+                            ? HttpStatus.UNAUTHORIZED.code()
+                            : HttpStatus.FORBIDDEN.code()));
+    mockWebServer.setDispatcher(dispatcher);
 
-    String crawledUrl = mockWebServer.url("/v1/ingest?source=test#section").toString();
-    NetworkService service =
-        createNetworkService(mockWebServer).toBuilder()
-            .setServiceContext(
-                ServiceContext.newBuilder()
-                    .setWebServiceContext(
-                        WebServiceContext.newBuilder()
-                            .addCrawlResults(
-                                CrawlResult.newBuilder()
-                                    .setCrawlTarget(
-                                        CrawlTarget.newBuilder()
-                                            .setUrl("://malformed_uri")
-                                            .setHttpMethod("POST")))
-                            .addCrawlResults(
-                                CrawlResult.newBuilder()
-                                    .setCrawlTarget(
-                                        CrawlTarget.newBuilder()
-                                            .setUrl("http://external.example.com/ingest")
-                                            .setHttpMethod("POST")))
-                            .addCrawlResults(
-                                CrawlResult.newBuilder()
-                                    .setCrawlTarget(
-                                        CrawlTarget.newBuilder()
-                                            .setUrl(crawledUrl)
-                                            .setHttpMethod("POST")))))
-            .build();
-    TargetInfo target =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
 
-    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isFalse();
+  }
 
-    assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
-    assertThat(mockWebServer.takeRequest().getPath()).isEqualTo("/v1/ingest?source=test");
+  @Test
+  public void
+      detect_whenServerReturns200OnValidAnd503UnavailableOnInvalid_abortsBeforeSending23MbProbe() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse()
+                    .setResponseCode(
+                        isValidControl(request)
+                            ? HttpStatus.OK.code()
+                            : HttpStatus.SERVICE_UNAVAILABLE.code()));
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isFalse();
+  }
+
+  @Test
+  public void detect_whenNonBrotliServerReturns422OnValidControl_abortsAtStep1() {
+    // Non-Brotli FastAPI/Pydantic endpoints return 422 Unprocessable Entity when raw compressed
+    // bytes fail json.loads(); 422 must never be treated as post-decompression status success.
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse()
+                    .setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code())
+                    .setBody("{\"detail\":[{\"type\":\"json_invalid\"}]}"));
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(1);
+    assertThat(dispatcher.receivedProbe()).isFalse();
   }
 
   @Test
   public void detect_whenRootFailsButSecondCandidatePathVulnerable_reportsVulnerability() {
-    // Root path ("") returns 405 Method Not Allowed on Step 1
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code()));
-    // Second candidate path ("graphql") succeeds across all 4 steps
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Error"));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Error"));
-
-    NetworkService service = createNetworkService(mockWebServer);
-    TargetInfo target =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/graphql")) {
+                return new MockResponse().setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code());
+              }
+              return isValidControl(request) || isProbe(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK")
+                  : new MockResponse()
+                      .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                      .setBody("Error");
+            });
+    mockWebServer.setDispatcher(dispatcher);
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
 
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
         .containsExactly(buildExpectedDetectionReport(target, service));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(6);
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
   }
 
   @Test
   public void detect_whenPostProbeVerificationFails_reportsEmpty() {
-    // Root path (""): Steps 1-3 pass, but Step 4 invalid control returns 200 OK (inconsistent)
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Error"));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+    // Root path ("/"): Steps 1-3 pass, but Step 4 invalid control returns 200 OK (inconsistent).
+    AtomicInteger rootRequestCount = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/")) {
+                return new MockResponse().setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code());
+              }
+              int stepRequest = rootRequestCount.incrementAndGet();
+              if (stepRequest == 2) {
+                return new MockResponse()
+                    .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                    .setBody("Error");
+              }
+              return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK");
+            });
+    mockWebServer.setDispatcher(dispatcher);
 
-    // Remaining candidate paths return 405
-    for (int i = 1; i < Cve2026111497Detector.CANDIDATE_PATHS.size(); i++) {
-      mockWebServer.enqueue(
-          new MockResponse().setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code()));
-    }
-
-    NetworkService service = createNetworkService(mockWebServer);
-    TargetInfo target =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
-
-    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
   }
 
   @Test
@@ -474,36 +588,83 @@ public final class Cve2026111497DetectorTest {
             .setTransportProtocol(TransportProtocol.TCP)
             .setServiceName("ssh")
             .build();
-    TargetInfo target =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
 
-    DetectionReportList reports = detector.detect(target, ImmutableList.of(sshService));
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(sshService));
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
     assertThat(mockWebServer.getRequestCount()).isEqualTo(0);
   }
 
   @Test
-  public void detect_whenServerReturns302Redirect_doesNotFollowRedirectAndReportsEmpty() {
-    for (int i = 0; i < Cve2026111497Detector.CANDIDATE_PATHS.size(); i++) {
-      mockWebServer.enqueue(
-          new MockResponse()
-              .setResponseCode(HttpStatus.FOUND.code())
-              .setHeader("Location", "/login"));
-    }
+  public void
+      detect_whenServerReturns302RedirectToBothControls_doesNotFollowRedirectAndReportsEmpty() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse()
+                    .setResponseCode(HttpStatus.FOUND.code())
+                    .setHeader("Location", "/login-target"));
+    mockWebServer.setDispatcher(dispatcher);
 
-    NetworkService service = createNetworkService(mockWebServer);
-    TargetInfo target =
-        TargetInfo.newBuilder()
-            .addNetworkEndpoints(forHostname(mockWebServer.getHostName()))
-            .build();
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.requestedPaths()).doesNotContain("/login-target");
+    assertThat(dispatcher.receivedProbe()).isFalse();
+  }
+
+  @Test
+  public void
+      detect_whenCrawledEndpointsIncludeMalformedAndOffOriginUrls_filtersAndReportsSameOriginVuln()
+          throws InterruptedException {
+    enqueueVulnerableCycle(
+        () -> new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"),
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Error"));
+    NetworkService service =
+        createServiceWithCrawledUrls(
+            "://malformed_uri",
+            "http://external.example.com/ingest",
+            mockWebServer.url("/v1/ingest?source=test#section").toString());
+    TargetInfo target = createTargetInfo();
 
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
-    assertThat(reports.getDetectionReportsList()).isEmpty();
-    assertThat(mockWebServer.getRequestCount())
-        .isEqualTo(Cve2026111497Detector.CANDIDATE_PATHS.size());
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildExpectedDetectionReport(target, service));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
+    assertThat(mockWebServer.takeRequest().getPath()).isEqualTo("/v1/ingest?source=test");
+  }
+
+  private static final class ProbeTrackingDispatcher extends Dispatcher {
+    private final Function<RecordedRequest, MockResponse> handler;
+    private final AtomicInteger probeCount = new AtomicInteger();
+    private final List<String> requestedPaths = Collections.synchronizedList(new ArrayList<>());
+
+    ProbeTrackingDispatcher(Function<RecordedRequest, MockResponse> handler) {
+      this.handler = handler;
+    }
+
+    @Override
+    public MockResponse dispatch(RecordedRequest request) {
+      requestedPaths.add(request.getPath());
+      if (isProbe(request)) {
+        probeCount.incrementAndGet();
+      }
+      return handler.apply(request);
+    }
+
+    boolean receivedProbe() {
+      return probeCount.get() > 0;
+    }
+
+    int probeCount() {
+      return probeCount.get();
+    }
+
+    ImmutableList<String> requestedPaths() {
+      return ImmutableList.copyOf(requestedPaths);
+    }
   }
 }

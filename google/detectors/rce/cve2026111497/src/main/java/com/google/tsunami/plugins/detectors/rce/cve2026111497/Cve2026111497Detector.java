@@ -20,8 +20,10 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
@@ -65,12 +67,13 @@ import javax.inject.Inject;
  *       metablocks so the contiguous string {@code tsunami_brotli_check_7f9a2b} never appears in
  *       the raw compressed request bytes.
  *   <li><b>Step 2 (Invalid Brotli Control)</b>: Sends a 47-byte invalid Brotli stream consisting of
- *       printable 7-bit ASCII valid JSON (<code>{"a":"tsunami_brotli_invalid_control_________"}
- *       </code>, matching the exact wire length of Step 1) whose opening byte (<code>'{'</code> =
- *       {@code 0x7b}) immediately fails RFC 7932 Section 9.2 padding validation ({@code
- *       BROTLI_DECODER_ERROR_FORMAT_PADDING_2}) in any Brotli decoder. Verifies that the target
- *       actively decompresses {@code Content-Encoding: br} and discriminates valid vs. invalid
- *       Brotli (via decompressed canary reflection or decompression error status code
+ *       printable 7-bit ASCII (<code>{tsunami_brotli_invalid_control_______________}</code>,
+ *       matching the exact wire length of Step 1) whose opening byte (<code>'{'</code> = {@code
+ *       0x7b}) immediately fails RFC 7932 Section 9.2 padding validation ({@code
+ *       BROTLI_DECODER_ERROR_FORMAT_PADDING_2}) in any Brotli decoder while also failing raw
+ *       non-Brotli JSON/XML syntax parsing identically to Step 1's raw compressed bytes. Verifies
+ *       that the target actively decompresses {@code Content-Encoding: br} and discriminates valid
+ *       vs. invalid Brotli (via decompressed canary reflection or decompression error status code
  *       differential). If the endpoint does not decompress {@code Content-Encoding: br}, detection
  *       aborts immediately without sending the probe.
  *   <li><b>Step 3 (CVE-2026-111497 Zero-Side-Effect Probe)</b>: Sends a crafted Brotli stream with
@@ -150,16 +153,20 @@ public final class Cve2026111497Detector implements VulnDetector {
                       + "695f636865636b5f376639613262227d03"));
 
   /**
-   * 47-byte invalid Brotli stream consisting of printable 7-bit ASCII valid JSON (matching the
-   * exact 47-byte length of {@link #VALID_BROTLI_CONTROL}) whose opening byte (<code>'{'</code> =
-   * {@code 0x7b}: {@code WBITS = 21}, {@code ISLAST = 1}, {@code ISLASTEMPTY = 1}, non-zero padding
-   * bit 6) immediately fails RFC 7932 Section 9.2 padding validation ({@code
-   * BROTLI_DECODER_ERROR_FORMAT_PADDING_2}) in any Brotli decoder while never triggering non-Brotli
-   * UTF-8, ASCII, or JSON syntax errors.
+   * 47-byte invalid Brotli stream consisting of printable 7-bit ASCII (matching the exact 47-byte
+   * length of {@link #VALID_BROTLI_CONTROL}) whose opening byte (<code>'{'</code> = {@code 0x7b}:
+   * {@code WBITS = 21}, {@code ISLAST = 1}, {@code ISLASTEMPTY = 1}, non-zero padding bit 6)
+   * immediately fails RFC 7932 Section 9.2 padding validation ({@code
+   * BROTLI_DECODER_ERROR_FORMAT_PADDING_2}) in any Brotli decoder. Subsequent bytes intentionally
+   * omit JSON quotes so that non-Brotli endpoints ignoring {@code Content-Encoding: br} fail raw
+   * JSON/XML syntax parsing symmetrically on both {@link #VALID_BROTLI_CONTROL} and {@link
+   * #INVALID_BROTLI_CONTROL}.
    */
   @VisibleForTesting
   static final ByteString INVALID_BROTLI_CONTROL =
-      ByteString.copyFromUtf8("{\"a\":\"tsunami_brotli_invalid_control_________\"}");
+      ByteString.copyFromUtf8(
+          Strings.padEnd("{tsunami_brotli_invalid_control_", VALID_BROTLI_CONTROL.size() - 1, '_')
+              + "}");
 
   /**
    * 17-byte header for the CVE-2026-111497 probe: {@code WBITS = 16} + 0-length metadata metablock
@@ -230,8 +237,7 @@ public final class Cve2026111497Detector implements VulnDetector {
    * never send the Step 3 probe, keeping the scan overhead negligible.
    */
   // TODO(b/352283036): Review candidate paths later to see if this list improves detection rate.
-  @VisibleForTesting
-  static final ImmutableList<String> CANDIDATE_PATHS =
+  private static final ImmutableList<String> CANDIDATE_PATHS =
       ImmutableList.of(
           "",
           "graphql",
@@ -243,6 +249,21 @@ public final class Cve2026111497Detector implements VulnDetector {
           "api/login",
           "auth/login",
           "webhook");
+
+  private static final ImmutableSet<HttpStatus> POST_DECOMPRESSION_STATUSES =
+      Sets.immutableEnumSet(
+          HttpStatus.FOUND,
+          HttpStatus.SEE_OTHER,
+          HttpStatus.UNAUTHORIZED,
+          HttpStatus.FORBIDDEN,
+          HttpStatus.NOT_FOUND,
+          HttpStatus.METHOD_NOT_ALLOWED);
+
+  private static final ImmutableSet<HttpStatus> DECOMPRESSION_FAILURE_STATUSES =
+      Sets.immutableEnumSet(
+          HttpStatus.BAD_REQUEST,
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          HttpStatus.INTERNAL_SERVER_ERROR);
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -302,7 +323,7 @@ public final class Cve2026111497Detector implements VulnDetector {
       return false;
     }
     HttpResponse validControl = validControlOpt.get();
-    if (!isCandidateValidControlStatus(validControl.status())) {
+    if (!isPostDecompressionStatus(validControl.status())) {
       return false;
     }
 
@@ -314,18 +335,12 @@ public final class Cve2026111497Detector implements VulnDetector {
     }
     HttpResponse invalidControl = invalidControlOpt.get();
 
-    String validBody = validControl.bodyString().orElse("");
-    String invalidBody = invalidControl.bodyString().orElse("");
-    int validStatus = validControl.status().code();
-    int invalidStatus = invalidControl.status().code();
-
     boolean canaryReflected =
         validControl.status().isSuccess()
-            && validBody.contains(DECOMPRESSED_CANARY)
-            && !invalidBody.contains(DECOMPRESSED_CANARY);
-
-    boolean statusDifferential = isValidVsInvalidStatusDifferential(validStatus, invalidStatus);
-
+            && containsCanary(validControl)
+            && !containsCanary(invalidControl);
+    boolean statusDifferential =
+        isValidVsInvalidStatusDifferential(validControl.status(), invalidControl.status());
     if (!canaryReflected && !statusDifferential) {
       return false;
     }
@@ -337,70 +352,60 @@ public final class Cve2026111497Detector implements VulnDetector {
       return false;
     }
     HttpResponse probeResponse = probeResponseOpt.get();
-    String probeBody = probeResponse.bodyString().orElse("");
-    int probeStatus = probeResponse.status().code();
-
     if (canaryReflected) {
-      if (!probeResponse.status().isSuccess() || !probeBody.contains(DECOMPRESSED_CANARY)) {
+      if (!probeResponse.status().isSuccess() || !containsCanary(probeResponse)) {
         return false;
       }
-    } else {
-      if (probeStatus != validStatus || probeStatus == invalidStatus) {
-        return false;
-      }
+    } else if (probeResponse.status() != validControl.status()) {
+      return false;
     }
 
     // Step 4: Post-probe health and determinism verification using the 47-byte controls.
     Optional<HttpResponse> validVerifyOpt =
         sendBrotliRequest(networkService, targetUrl, VALID_BROTLI_CONTROL);
+    if (validVerifyOpt.isEmpty()) {
+      return false;
+    }
     Optional<HttpResponse> invalidVerifyOpt =
         sendBrotliRequest(networkService, targetUrl, INVALID_BROTLI_CONTROL);
-    if (validVerifyOpt.isEmpty() || invalidVerifyOpt.isEmpty()) {
+    if (invalidVerifyOpt.isEmpty()) {
       return false;
     }
     HttpResponse validVerify = validVerifyOpt.get();
     HttpResponse invalidVerify = invalidVerifyOpt.get();
-    String validVerifyBody = validVerify.bodyString().orElse("");
-    String invalidVerifyBody = invalidVerify.bodyString().orElse("");
 
     if (canaryReflected) {
       if (!validVerify.status().isSuccess()
-          || !validVerifyBody.contains(DECOMPRESSED_CANARY)
-          || invalidVerifyBody.contains(DECOMPRESSED_CANARY)) {
+          || !containsCanary(validVerify)
+          || containsCanary(invalidVerify)) {
         return false;
       }
-    } else {
-      if (validVerify.status().code() != validStatus
-          || invalidVerify.status().code() != invalidStatus) {
-        return false;
-      }
+    } else if (validVerify.status() != validControl.status()
+        || invalidVerify.status() != invalidControl.status()) {
+      return false;
     }
 
     logger.atInfo().log("Confirmed CVE-2026-111497 vulnerable Brotli decoder on '%s'", targetUrl);
     return true;
   }
 
-  private static boolean isCandidateValidControlStatus(HttpStatus status) {
-    if (status.isSuccess()) {
-      return true;
-    }
-    // Global decompression middleware (e.g., Express app.use(express.json())) decompresses the
-    // request body before route matching; if decompression succeeds on an unrouted path, the
-    // router returns 404 Not Found, whereas decompression failure returns 400 Bad Request.
-    return status.code() == HttpStatus.NOT_FOUND.code();
+  private static boolean containsCanary(HttpResponse response) {
+    return response.bodyString().orElse("").contains(DECOMPRESSED_CANARY);
   }
 
-  private static boolean isValidVsInvalidStatusDifferential(int validStatus, int invalidStatus) {
-    if (validStatus == invalidStatus) {
-      return false;
-    }
-    boolean validPassedDecompression =
-        (validStatus >= 200 && validStatus < 300) || validStatus == HttpStatus.NOT_FOUND.code();
-    boolean invalidFailedDecompression =
-        invalidStatus == HttpStatus.BAD_REQUEST.code()
-            || invalidStatus == HttpStatus.UNPROCESSABLE_ENTITY.code()
-            || invalidStatus == HttpStatus.INTERNAL_SERVER_ERROR.code();
-    return validPassedDecompression && invalidFailedDecompression;
+  private static boolean isPostDecompressionStatus(HttpStatus status) {
+    // Reverse proxies, input filters, and global middleware (e.g., Apache mod_brotli, Envoy HTTP
+    // decompressor filter, Express body-parser) decompress the request stream before downstream
+    // authentication, ACLs, login redirects, or route/method matching; when Brotli decompression
+    // succeeds, downstream handlers commonly return 2xx, 302/303, 401, 403, 404, or 405, whereas
+    // decompression failure aborts earlier with 400, 422, or 500.
+    return status.isSuccess() || POST_DECOMPRESSION_STATUSES.contains(status);
+  }
+
+  private static boolean isValidVsInvalidStatusDifferential(
+      HttpStatus validStatus, HttpStatus invalidStatus) {
+    return isPostDecompressionStatus(validStatus)
+        && DECOMPRESSION_FAILURE_STATUSES.contains(invalidStatus);
   }
 
   private ImmutableSet<String> getTargetUrls(NetworkService networkService) {
