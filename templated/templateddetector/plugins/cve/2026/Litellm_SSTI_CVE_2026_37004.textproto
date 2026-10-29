@@ -18,9 +18,9 @@ finding: {
     value: "CVE-2026-37004"
   }
   severity: CRITICAL
-  title: "LiteLLM <= 1.82.4 Unauthenticated Server-Side Template Injection RCE (CVE-2026-37004)"
-  description: "LiteLLM versions <= 1.82.4 are vulnerable to Server-Side Template Injection (SSTI) in the /prompts/test endpoint due to the use of an unsandboxed jinja2.Environment. An unauthenticated remote attacker can supply crafted input in the dotprompt_content parameter to execute arbitrary OS commands on the host server."
-  recommendation: "Upgrade LiteLLM to the latest version. Note that 1.82.5 is affected by other known vulnerabilities, so upgrading to the latest version is recommended."
+  title: "LiteLLM <= 1.83.6 Unauthenticated Server-Side Template Injection RCE (CVE-2026-37004)"
+  description: "LiteLLM versions <= 1.83.6 are vulnerable to Server-Side Template Injection (SSTI) in the /prompts/test endpoint due to the use of an unsandboxed jinja2.Environment. An unauthenticated remote attacker can supply crafted input in the dotprompt_content parameter to execute arbitrary OS commands on the host server."
+  recommendation: "Upgrade LiteLLM to the latest version. Note that 1.83.7 is affected by other known vulnerabilities, so upgrading to the latest version is recommended."
   related_id: {
     publisher: "CVE"
     value: "CVE-2026-37004"
