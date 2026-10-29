@@ -1,0 +1,179 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "RClone_CVE_2026_41176"
+}
+
+################ TESTS ################
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/rc/error"
+        status: 500
+        headers: [
+          { name: "Content-Type" value: "application/json" },
+          { name: "Server" value: "rclone/v1.73.4" }
+        ]
+        condition: {
+          request_type: POST
+          headers: [
+            { name: "Content-Type" value: "application/x-www-form-urlencoded" }
+          ]
+          body_content: "abc"
+        }
+        body_content: "{\n\t\"error\": \"arbitrary error on input map[abc:]\",\n\t\"input\": {\n\t\t\"abc\": \"\"\n\t},\n\t\"path\": \"rc/error\",\n\t\"status\": 500\n}\n"
+      },
+      {
+        uri: "/options/set"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" },
+          { name: "Server" value: "rclone/v1.73.4" }
+        ]
+        condition: {
+          request_type: POST
+          headers: [
+            { name: "Content-Type" value: "application/json" }
+          ]
+          body_content: "{}"
+        }
+        body_content: "{}\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/rc/error"
+        status: 500
+        headers: [
+          { name: "Content-Type" value: "application/json" },
+          { name: "Server" value: "rclone/v1.73.5" }
+        ]
+        body_content: "{\n\t\"error\": \"arbitrary error on input map[abc:]\",\n\t\"input\": {\n\t\t\"abc\": \"\"\n\t},\n\t\"path\": \"rc/error\",\n\t\"status\": 500\n}\n"
+      },
+      {
+        uri: "/options/set"
+        status: 403
+        headers: [
+          { name: "Content-Type" value: "application/json" },
+          { name: "Server" value: "rclone/v1.73.5" }
+        ]
+        body_content: "{\n\t\"error\": \"authentication must be set up on the rc server to use \\\"options/set\\\" or the --rc-no-auth flag must be in use\",\n\t\"input\": {},\n\t\"path\": \"options/set\",\n\t\"status\": 403\n}\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenMissingRcloneServerHeader_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/rc/error"
+        status: 500
+        headers: [
+          { name: "Content-Type" value: "application/json" },
+          { name: "Server" value: "nginx" }
+        ]
+        body_content: "{\n\t\"error\": \"arbitrary error on input map[abc:]\",\n\t\"input\": {\n\t\t\"abc\": \"\"\n\t},\n\t\"path\": \"rc/error\",\n\t\"status\": 500\n}\n"
+      },
+      {
+        uri: "/options/set"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" },
+          { name: "Server" value: "nginx" }
+        ]
+        body_content: "{}\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenOptionsSetMissingRcloneHeader_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/rc/error"
+        status: 500
+        headers: [
+          { name: "Content-Type" value: "application/json" },
+          { name: "Server" value: "rclone/v1.73.4" }
+        ]
+        body_content: "{\n\t\"error\": \"arbitrary error on input map[abc:]\",\n\t\"input\": {\n\t\t\"abc\": \"\"\n\t},\n\t\"path\": \"rc/error\",\n\t\"status\": 500\n}\n"
+      },
+      {
+        uri: "/options/set"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" },
+          { name: "Server" value: "nginx" }
+        ]
+        body_content: "{}\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenOptionsSetRedirects_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/rc/error"
+        status: 500
+        headers: [
+          { name: "Content-Type" value: "application/json" },
+          { name: "Server" value: "rclone/v1.73.4" }
+        ]
+        body_content: "{\n\t\"error\": \"arbitrary error on input map[abc:]\",\n\t\"input\": {\n\t\t\"abc\": \"\"\n\t},\n\t\"path\": \"rc/error\",\n\t\"status\": 500\n}\n"
+      },
+      {
+        uri: "/options/set"
+        status: 302
+        headers: [
+          { name: "Location" value: "/redirected" },
+          { name: "Server" value: "rclone/v1.73.4" }
+        ]
+      },
+      {
+        uri: "/redirected"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" },
+          { name: "Server" value: "rclone/v1.73.4" }
+        ]
+        body_content: "{}\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotRclone_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "404 Not Found"
+      }
+    ]
+  }
+}
