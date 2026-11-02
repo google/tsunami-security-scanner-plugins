@@ -67,6 +67,7 @@ public final class LangflowExposedUiDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private static final String VERSION_ENDPOINT = "api/v1/version";
+  private static final String AUTO_LOGIN_ENDPOINT = "api/v1/auto_login";
   private static final String COMPONENT_ENDPOINT = "api/v1/custom_component";
 
   private static final String PAYLOAD_TEMPLATE =
@@ -163,31 +164,48 @@ public final class LangflowExposedUiDetector implements VulnDetector {
   }
 
   private boolean isLangflow(NetworkService networkService) {
-    String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    String targetUri = rootUrl + VERSION_ENDPOINT;
-    String body = "";
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + VERSION_ENDPOINT;
 
     HttpRequest req =
         HttpRequest.get(targetUri)
             .setHeaders(HttpHeaders.builder().addHeader("Accept", "application/json").build())
             .build();
 
-    HttpResponse response;
     try {
-      response = this.httpClient.send(req, networkService);
-    } catch (IOException e) {
+      HttpResponse response = this.httpClient.send(req, networkService);
+      if (response.status().isSuccess() && response.bodyString().isPresent()) {
+        JsonObject obj = JsonParser.parseString(response.bodyString().get()).getAsJsonObject();
+        if (obj.has("package") && obj.get("package").getAsString().contains("Langflow")) {
+          return true;
+        }
+      }
+    } catch (IOException | RuntimeException e) {
       logger.atInfo().log("LangflowExposedUiDetector - request error: %s", e.getMessage());
       return false;
     }
+    return false;
+  }
 
-    if (response.bodyString().isPresent()) {
-      body = response.bodyString().get();
+  private String fetchAutoLoginToken(NetworkService networkService) {
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + AUTO_LOGIN_ENDPOINT;
+    HttpRequest req =
+        HttpRequest.get(targetUri)
+            .setHeaders(HttpHeaders.builder().addHeader("Accept", "application/json").build())
+            .build();
+    try {
+      HttpResponse response = this.httpClient.send(req, networkService);
+      if (response.status().isSuccess() && response.bodyString().isPresent()) {
+        JsonObject obj = JsonParser.parseString(response.bodyString().get()).getAsJsonObject();
+        if (obj.has("access_token") && !obj.get("access_token").isJsonNull()) {
+          return obj.get("access_token").getAsString();
+        }
+      }
+    } catch (IOException | RuntimeException e) {
+      logger.atInfo().log("LangflowExposedUiDetector - auto_login error: %s", e.getMessage());
     }
-
-    JsonObject obj = JsonParser.parseString(body).getAsJsonObject();
-    String pkg = obj.get("package").getAsString();
-
-    return pkg.contains("Langflow");
+    return "";
   }
 
   private boolean isServiceVulnerable(NetworkService networkService) {
@@ -209,8 +227,8 @@ public final class LangflowExposedUiDetector implements VulnDetector {
               + " only");
     }
 
-    String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    String targetUri = rootUrl + COMPONENT_ENDPOINT;
+    String targetUri =
+        NetworkServiceUtils.buildWebApplicationRootUrl(networkService) + COMPONENT_ENDPOINT;
 
     // If payload generation failed, fallback to reflective payload
     String payloadString =
@@ -231,6 +249,24 @@ public final class LangflowExposedUiDetector implements VulnDetector {
     HttpResponse response;
     try {
       response = this.httpClient.send(req, networkService);
+
+      if (response.status().code() == HttpStatus.UNAUTHORIZED.code()
+          || response.status().code() == HttpStatus.FORBIDDEN.code()) {
+        String token = fetchAutoLoginToken(networkService);
+        if (!token.isEmpty()) {
+          HttpRequest authReq =
+              HttpRequest.post(targetUri)
+                  .setHeaders(
+                      HttpHeaders.builder()
+                          .addHeader("Accept", "application/json")
+                          .addHeader("Content-Type", "application/json")
+                          .addHeader("Authorization", "Bearer " + token)
+                          .build())
+                  .setRequestBody(ByteString.copyFromUtf8(requestBody))
+                  .build();
+          response = this.httpClient.send(authReq, networkService);
+        }
+      }
 
       if (response.status().code() == HttpStatus.UNAUTHORIZED.code()
           || response.status().code() == HttpStatus.FORBIDDEN.code()) {

@@ -132,6 +132,7 @@ public class LangflowExposedUiDetectorWithoutCallbackServerTest {
             .setBody(
                 "{\"version\":\"1.4.1\",\"main_version\":\"1.4.1\",\"package\":\"Langflow\"}"));
     mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code()));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code()));
 
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
@@ -145,9 +146,80 @@ public class LangflowExposedUiDetectorWithoutCallbackServerTest {
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
 
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(0);
 
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_whenAutoLoginEnabled_returnsVulnerability() throws InterruptedException {
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody(
+                "{\"version\":\"1.5.0\",\"main_version\":\"1.5.0\",\"package\":\"Langflow\"}"));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code()));
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody("{\"access_token\":\"test-superuser-jwt\",\"token_type\":\"bearer\"}"));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()));
+
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setSoftware(Software.newBuilder().setName("http"))
+            .setServiceName("http")
+            .build();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(4);
+    assertThat(mockWebServer.takeRequest().getPath()).isEqualTo("/api/v1/version");
+    assertThat(mockWebServer.takeRequest().getPath()).isEqualTo("/api/v1/custom_component");
+    assertThat(mockWebServer.takeRequest().getPath()).isEqualTo("/api/v1/auto_login");
+    var authedPost = mockWebServer.takeRequest();
+    assertThat(authedPost.getPath()).isEqualTo("/api/v1/custom_component");
+    assertThat(authedPost.getHeader("Authorization")).isEqualTo("Bearer test-superuser-jwt");
+
+    assertThat(detectionReports.getDetectionReportsList())
+        .containsExactly(
+            DetectionReport.newBuilder()
+                .setTargetInfo(targetInfo)
+                .setNetworkService(targetNetworkService)
+                .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.instant().toEpochMilli()))
+                .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
+                .setVulnerability(detector.getAdvisories().get(0))
+                .build());
+  }
+
+  @Test
+  public void detect_whenAutoLoginDisabled_returnsNoVulnerability() {
+    mockWebServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody(
+                "{\"version\":\"1.5.0\",\"main_version\":\"1.5.0\",\"package\":\"Langflow\"}"));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code()));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code()));
+
+    NetworkService targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockWebServer.getHostName(), mockWebServer.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setSoftware(Software.newBuilder().setName("http"))
+            .setServiceName("http")
+            .build();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
   }
 }

@@ -137,6 +137,7 @@ public final class LangflowExposedUiDetectorWithCallbackServerTest {
             .setBody(
                 "{\"version\":\"1.4.1\",\"main_version\":\"1.4.1\",\"package\":\"Langflow\"}"));
     mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code()));
+    mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code()));
 
     NetworkService targetNetworkService =
         NetworkService.newBuilder()
@@ -150,7 +151,7 @@ public final class LangflowExposedUiDetectorWithCallbackServerTest {
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
 
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
     assertThat(mockCallbackServer.getRequestCount()).isEqualTo(0);
 
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
