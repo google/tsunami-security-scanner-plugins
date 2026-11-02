@@ -25,10 +25,7 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
 import com.google.tsunami.plugin.TsunamiPlugin;
-import com.google.tsunami.plugin.payload.testing.FakePayloadGeneratorModule;
-import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,21 +38,12 @@ public final class Php2ShellDetectorBootstrapModuleTest {
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2026-01-01T00:00:00.00Z"));
 
-  private final SecureRandom testSecureRandom =
-      new SecureRandom() {
-        @Override
-        public void nextBytes(byte[] bytes) {
-          Arrays.fill(bytes, (byte) 0xFF);
-        }
-      };
-
   @Test
   public void configurePlugin_registersPhp2ShellDetector() {
     Injector injector =
         Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
-            FakePayloadGeneratorModule.builder().setSecureRng(testSecureRandom).build(),
             new Php2ShellDetectorBootstrapModule());
 
     List<Binding<TsunamiPlugin>> bindings =

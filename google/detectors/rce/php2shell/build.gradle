@@ -15,7 +15,6 @@ repositories {
 }
 
 def coreRepoBranch = System.getenv("GITBRANCH_TSUNAMI_CORE") ?: "stable"
-def tcsRepoBranch = System.getenv("GITBRANCH_TSUNAMI_TCS") ?: "stable"
 
 dependencies {
     implementation("com.google.tsunami:tsunami-common") {
@@ -26,10 +25,6 @@ dependencies {
     }
     implementation("com.google.tsunami:tsunami-proto") {
       version { branch = "${coreRepoBranch}" }
-    }
-
-    testImplementation("com.google.tsunami:tcs-proto") {
-      version { branch = "${tcsRepoBranch}" }
     }
 
     testImplementation "junit:junit:4.13.2"

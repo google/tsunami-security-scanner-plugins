@@ -35,13 +35,16 @@ import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
+import com.google.tsunami.proto.HttpHeader;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
@@ -56,24 +59,27 @@ import javax.inject.Inject;
 /**
  * A {@link VulnDetector} that detects PHP2Shell RCE (CVE-2026-109618 / CVE-2026-109619).
  *
- * <p>Detection runs in two stages:
+ * <p>Verification uses a zero-side-effect behavioral differential in {@code ext/session/session.c}
+ * during {@code PHP Request Startup}:
  *
- * <ul>
- *   <li><b>Stage 1 (Startup Flush Warning Check):</b> Sends a non-destructive ~300-byte multipart
- *       POST with {@code Cookie: PHPSESSID=tsunami/invalid_sid_<ts>} and {@code
- *       PHP_SESSION_UPLOAD_PROGRESS}. Unpatched PHP fails {@code php_session_initialize()} during
- *       {@code PHP Request Startup} and calls {@code php_session_flush(1)}, emitting both {@code is
- *       too long or contains illegal characters} and {@code Failed to write session data}. Patched
- *       PHP returns early without calling {@code php_session_flush(1)}.
- *   <li><b>Stage 2 (Upload-Progress Session Cookie Differential + Version Check):</b> For servers
- *       with {@code display_startup_errors = Off} that disclose an unpatched PHP 8.2+ version
- *       ({@code 8.2.0..8.2.34}, {@code 8.3.0..8.3.35}, {@code 8.4.0..8.4.26}, {@code
- *       8.5.0..8.5.11}) via {@code phpinfo()}, {@code X-Powered-By}, or {@code Server}, sends a
- *       control multipart POST (without {@code PHP_SESSION_UPLOAD_PROGRESS}) and a marker multipart
- *       POST (with {@code PHP_SESSION_UPLOAD_PROGRESS}) using {@code Cookie: PHPSESSID=} to verify
- *       that {@code session.upload_progress} emits an additional {@code Set-Cookie: PHPSESSID}
- *       header.
- * </ul>
+ * <ol>
+ *   <li><b>Probe (with {@code PHP_SESSION_UPLOAD_PROGRESS}):</b> Sends a minimal multipart POST
+ *       supplying an illegal session ID ({@code tsunami/invalid_sid_<ts>}) in both the {@code
+ *       Cookie} header and a multipart form field alongside {@code PHP_SESSION_UPLOAD_PROGRESS} and
+ *       a 1-byte file part. Because {@code /} and {@code _} are rejected by session ID validation,
+ *       {@code php_session_initialize()} aborts without creating or modifying any session record on
+ *       disk. Unpatched PHP ({@code 5.4.0} through {@code 8.2.34}, {@code 8.3.35}, {@code 8.4.26},
+ *       {@code 8.5.11}) ignores the {@code FAILURE} return value in {@code
+ *       php_session_rfc1867_update()} / {@code php_session_rfc1867_cleanup()} and calls {@code
+ *       php_session_flush(1)}, emitting both the startup invalid-SID warning and {@code Failed to
+ *       write session data ... in Unknown on line 0}. Patched PHP releases and OS vendor backports
+ *       either return early without calling {@code php_session_flush(1)} or disable {@code
+ *       session.upload_progress} entirely.
+ *   <li><b>Causal-Ablation Control (without {@code PHP_SESSION_UPLOAD_PROGRESS}):</b> Whenever a
+ *       response matches the unpatched startup flush warning signature, sends an identical control
+ *       request omitting only the {@code PHP_SESSION_UPLOAD_PROGRESS} field and verifies that the
+ *       startup flush warning disappears, ruling out static pages or request-reflection endpoints.
+ * </ol>
  */
 @ForWebService
 @PluginInfo(
@@ -95,47 +101,81 @@ public final class Php2ShellDetector implements VulnDetector {
 
   @VisibleForTesting
   static final String VULN_DESCRIPTION =
-      "PHP versions 5.4 through 8.5.11 are vulnerable to an unauthenticated Remote Code Execution"
-          + " flaw caused by out-of-memory error-handling bailout corruption (CVE-2026-109618) and"
-          + " stale global state in session.upload_progress (CVE-2026-109619). This detector"
-          + " confirms that the PHP session.upload_progress RFC1867 handler is reachable"
-          + " unauthenticated and verifies patch status via either the unpatched startup"
-          + " session-flush warning or a disclosed PHP version below the fixed release (8.2.35,"
-          + " 8.3.36, 8.4.27, 8.5.12). Note: When startup errors are disabled, vendor OS packages"
-          + " that backport the fix without updating the disclosed PHP version number are still"
-          + " reported if session.upload_progress remains enabled.";
+      "PHP versions 5.4 through 8.5.11 (prior to 8.2.35, 8.3.36, 8.4.27, and 8.5.12) are"
+          + " vulnerable to unauthenticated Remote Code Execution caused by out-of-memory"
+          + " error-handling bailout corruption during input variable registration"
+          + " (CVE-2026-109618) combined with uncleaned cross-request global state in"
+          + " session.upload_progress (CVE-2026-109619). This detector non-destructively verifies"
+          + " that the PHP session.upload_progress RFC1867 startup handler is reachable and"
+          + " executes the unpatched session-flush code path when session initialization fails.";
 
   @VisibleForTesting
   static final String RECOMMENDATION =
-      "Upgrade PHP runtime to patched versions (8.5.12, 8.4.27, 8.3.36, 8.2.35) or disable"
-          + " 'session.upload_progress.enabled = 0' in php.ini. If using an OS vendor package that"
-          + " backports the fix without changing the PHP version string, set"
-          + " 'session.upload_progress.enabled = 0' or 'expose_php = Off' in php.ini.";
+      "Upgrade PHP to a patched release (8.5.12+, 8.4.27+, 8.3.36+, 8.2.35+, or the corresponding"
+          + " OS vendor security update). As a temporary mitigation for the unauthenticated"
+          + " session.upload_progress exploitation vector (CVE-2026-109619), set"
+          + " 'session.upload_progress.enabled = 0' in php.ini; upgrading PHP is still required"
+          + " to fully remediate CVE-2026-109618.";
+
+  @VisibleForTesting
+  static final String ADDITIONAL_DETAIL_DESCRIPTION =
+      "Verified unpatched PHP session.upload_progress startup session flush.";
 
   @VisibleForTesting
   static final ImmutableList<String> CANDIDATE_PATHS =
       ImmutableList.of("", "index.php", "public/index.php", "web/index.php", "wp-login.php");
 
-  @VisibleForTesting
-  static final String STAGE1_INVALID_SID_WARNING = "is too long or contains illegal characters";
+  private static final String DEFAULT_PHP_SESSION_NAME = "PHPSESSID";
+  private static final int MAX_CRAWLED_PHP_URLS = 3;
+  private static final int MAX_EVIDENCE_WARNING_LENGTH = 512;
 
-  @VisibleForTesting
-  static final String STAGE1_FAILED_FLUSH_WARNING = "Failed to write session data";
+  private static final String INVALID_SID_SUBSTRING = "is too long or contains illegal characters";
+  private static final String FAILED_FLUSH_SUBSTRING = "Failed to write session data";
 
-  private static final Pattern PHP_INFO_VERSION_PATTERN =
-      Pattern.compile("(?i)<h1 class=.p.>php version (\\d+(?:\\.\\d+)*)");
+  /**
+   * Matches the PHP Request Startup (PHP 8.0+) or Unknown (PHP 5.4-7.4) warning emitted on line 0
+   * when {@code mod_files} rejects our illegal session ID during {@code php_session_initialize()}.
+   */
+  private static final Pattern STARTUP_INVALID_SID_WARNING_PATTERN =
+      Pattern.compile(
+          "(?i)Warning(?:<[^>]*>)*:\\s*(?:<[^>]*>)*(?:PHP Request Startup|Unknown)"
+              + "[^\\r\\n]{0,1024}?is too long or contains illegal characters"
+              + "[^\\r\\n]{0,1024}?in (?:<[^>]*>)*Unknown(?:<[^>]*>)*"
+              + " on line (?:<[^>]*>)*0(?:<[^>]*>)*");
 
-  private static final Pattern PHP_X_POWERED_BY_VERSION_PATTERN =
-      Pattern.compile("(?i)^\\s*php/?(\\d+(?:\\.\\d+)*)");
+  /**
+   * Matches the PHP Request Startup (PHP 8.0+) or Unknown (PHP 5.4-7.4) warning emitted on line 0
+   * when unpatched {@code php_session_rfc1867_update()} / {@code php_session_rfc1867_cleanup()}
+   * ignores {@code php_session_initialize() == FAILURE} and calls {@code php_session_flush(1)}.
+   */
+  private static final Pattern STARTUP_FAILED_FLUSH_WARNING_PATTERN =
+      Pattern.compile(
+          "(?i)Warning(?:<[^>]*>)*:\\s*(?:<[^>]*>)*(?:PHP Request Startup|Unknown)"
+              + "[^\\r\\n]{0,1024}?Failed to write session data"
+              + "[^\\r\\n]{0,1024}?in (?:<[^>]*>)*Unknown(?:<[^>]*>)*"
+              + " on line (?:<[^>]*>)*0(?:<[^>]*>)*");
 
-  private static final Pattern PHP_SERVER_VERSION_PATTERN =
-      Pattern.compile("(?i)php/(\\d+(?:\\.\\d+)*)");
+  private static final Pattern HTML_TAG_PATTERN = Pattern.compile("<[^>]*>");
 
-  private static final Pattern ANY_PHPSESSID_COOKIE_PATTERN =
-      Pattern.compile("(?i)(?:^|;\\s*)PHPSESSID=[A-Za-z0-9,-]+");
+  private static final Pattern CUSTOM_SESSION_COOKIE_PATTERN =
+      Pattern.compile("^\\s*([A-Za-z_][A-Za-z0-9_]{0,63})=([A-Za-z0-9,-]{22,256})(?:\\s*;|$)");
 
-  private static final Pattern VALID_PHPSESSID_COOKIE_PATTERN =
-      Pattern.compile("(?i)(?:^|;\\s*)PHPSESSID=[A-Za-z0-9,-]{22,256}");
+  private static final ImmutableSet<String> IGNORED_COOKIE_NAMES =
+      ImmutableSet.of(
+          "PHPSESSID",
+          "JSESSIONID",
+          "ASPSESSIONID",
+          "CFID",
+          "CFTOKEN",
+          "AWSALB",
+          "AWSALBCORS",
+          "GCLB",
+          "__CF_BM",
+          "_CFUVID",
+          "SERVERID",
+          "XSRF_TOKEN",
+          "CSRF_TOKEN",
+          "CSRFTOKEN");
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -174,168 +214,172 @@ public final class Php2ShellDetector implements VulnDetector {
         .addAllDetectionReports(
             matchedServices.stream()
                 .filter(NetworkServiceUtils::isWebService)
-                .filter(this::isServiceVulnerable)
-                .map(networkService -> buildDetectionReport(targetInfo, networkService))
+                .map(this::probeService)
+                .flatMap(Optional::stream)
+                .map(result -> buildDetectionReport(targetInfo, result))
                 .collect(toImmutableList()))
         .build();
   }
 
-  private boolean isServiceVulnerable(NetworkService networkService) {
+  private Optional<VerificationResult> probeService(NetworkService networkService) {
+    Optional<String> crawledCustomSessionName = extractCustomSessionNameFromCrawl(networkService);
     for (String targetUrl : getTargetUrls(networkService)) {
-      if (isTargetUrlVulnerable(networkService, targetUrl)) {
-        return true;
+      Optional<VerificationResult> result =
+          probeTargetUrl(networkService, targetUrl, crawledCustomSessionName);
+      if (result.isPresent()) {
+        return result;
       }
     }
-    return false;
-  }
-
-  private boolean isTargetUrlVulnerable(NetworkService networkService, String targetUrl) {
-    if (isStage1InvalidSidFlushVulnerable(networkService, targetUrl)) {
-      return true;
-    }
-
-    return isStage2UploadProgressCookieDifferentialVulnerable(networkService, targetUrl);
-  }
-
-  private boolean isStage1InvalidSidFlushVulnerable(
-      NetworkService networkService, String targetUrl) {
-    Optional<HttpResponse> stage1Response = sendStage1InvalidSidProbe(networkService, targetUrl);
-    if (stage1Response.isEmpty()) {
-      return false;
-    }
-
-    String body = stage1Response.get().bodyString().orElse("");
-    if (body.contains(STAGE1_INVALID_SID_WARNING) && body.contains(STAGE1_FAILED_FLUSH_WARNING)) {
-      logger.atInfo().log(
-          "PHP2Shell Stage 1 confirmed unpatched rfc1867 startup session flush on '%s'", targetUrl);
-      return true;
-    }
-    return false;
-  }
-
-  private boolean isStage2UploadProgressCookieDifferentialVulnerable(
-      NetworkService networkService, String targetUrl) {
-    Optional<HttpResponse> controlResponse = sendStage2ControlProbe(networkService, targetUrl);
-    if (controlResponse.isEmpty()) {
-      return false;
-    }
-
-    Optional<HttpResponse> markerResponse = sendStage2MarkerProbe(networkService, targetUrl);
-    if (markerResponse.isEmpty() || markerResponse.get().status().code() >= 500) {
-      return false;
-    }
-
-    int controlCookieCount =
-        countMatchingSetCookieHeaders(controlResponse.get(), ANY_PHPSESSID_COOKIE_PATTERN);
-    int markerValidCookieCount =
-        countMatchingSetCookieHeaders(markerResponse.get(), VALID_PHPSESSID_COOKIE_PATTERN);
-
-    boolean cookieDifferentialMatched =
-        controlCookieCount < 2
-            && (markerValidCookieCount >= 2
-                || (controlCookieCount == 0 && markerValidCookieCount >= 1));
-
-    if (cookieDifferentialMatched && hasDisclosedUnpatchedPhpVersion(markerResponse.get())) {
-      logger.atInfo().log(
-          "PHP2Shell Stage 2 confirmed upload_progress session cookie differential with unpatched"
-              + " PHP version on '%s'",
-          targetUrl);
-      return true;
-    }
-    return false;
-  }
-
-  private static int countMatchingSetCookieHeaders(HttpResponse response, Pattern pattern) {
-    int count = 0;
-    for (String cookieHeader : response.headers().getAll("Set-Cookie")) {
-      if (pattern.matcher(cookieHeader).find()) {
-        count++;
-      }
-    }
-    return count;
-  }
-
-  private static boolean hasDisclosedUnpatchedPhpVersion(HttpResponse response) {
-    Optional<String> disclosedVersion = extractDisclosedPhpVersion(response);
-    return disclosedVersion.isPresent() && isUnpatchedPhpVersion(disclosedVersion.get());
-  }
-
-  /**
-   * Extracts the disclosed PHP version following precedence: {@code phpinfo()} body &gt; {@code
-   * X-Powered-By} header &gt; {@code Server} header.
-   */
-  private static Optional<String> extractDisclosedPhpVersion(HttpResponse response) {
-    String body = response.bodyString().orElse("");
-    Matcher phpInfoMatcher = PHP_INFO_VERSION_PATTERN.matcher(body);
-    if (phpInfoMatcher.find()) {
-      return Optional.of(phpInfoMatcher.group(1));
-    }
-
-    for (String xpb : response.headers().getAll("X-Powered-By")) {
-      Matcher xpbMatcher = PHP_X_POWERED_BY_VERSION_PATTERN.matcher(xpb);
-      if (xpbMatcher.find()) {
-        return Optional.of(xpbMatcher.group(1));
-      }
-    }
-
-    for (String server : response.headers().getAll("Server")) {
-      Matcher srvMatcher = PHP_SERVER_VERSION_PATTERN.matcher(server);
-      if (srvMatcher.find()) {
-        return Optional.of(srvMatcher.group(1));
-      }
-    }
-
     return Optional.empty();
   }
 
-  /**
-   * Returns true if the version is in the unpatched PHP 8.2+ range ({@code 8.2.0 <= v < 8.2.35},
-   * {@code 8.3.0 <= v < 8.3.36}, {@code 8.4.0 <= v < 8.4.27}, or {@code 8.5.0 <= v < 8.5.12}).
-   */
-  @VisibleForTesting
-  static boolean isUnpatchedPhpVersion(String versionStr) {
-    String[] parts = versionStr.split("\\.");
-    if (parts.length < 2) {
-      return false;
+  private Optional<VerificationResult> probeTargetUrl(
+      NetworkService networkService, String targetUrl, Optional<String> crawledCustomSessionName) {
+    Optional<HttpResponse> defaultProbeResponse =
+        sendMultipartProbe(
+            networkService, targetUrl, DEFAULT_PHP_SESSION_NAME, /* includeUploadProgress= */ true);
+    if (defaultProbeResponse.isEmpty()) {
+      return Optional.empty();
     }
-    try {
-      int major = Integer.parseInt(parts[0]);
-      int minor = Integer.parseInt(parts[1]);
-      int patch = parts.length >= 3 ? Integer.parseInt(parts[2]) : 0;
 
-      if (major != 8) {
-        return false;
-      }
-      switch (minor) {
-        case 2:
-          return patch < 35;
-        case 3:
-          return patch < 36;
-        case 4:
-          return patch < 27;
-        case 5:
-          return patch < 12;
-        default:
-          return false;
-      }
-    } catch (NumberFormatException e) {
-      return false;
+    Optional<VerificationResult> defaultResult =
+        verifyStartupFlushDifferential(
+            networkService, targetUrl, DEFAULT_PHP_SESSION_NAME, defaultProbeResponse.get());
+    if (defaultResult.isPresent()) {
+      return defaultResult;
     }
+
+    Optional<String> customSessionName =
+        extractCustomSessionNameFromHeaders(
+                defaultProbeResponse.get().headers().getAll("Set-Cookie"))
+            .or(() -> crawledCustomSessionName);
+    if (customSessionName.isEmpty()) {
+      return Optional.empty();
+    }
+
+    Optional<HttpResponse> customProbeResponse =
+        sendMultipartProbe(
+            networkService, targetUrl, customSessionName.get(), /* includeUploadProgress= */ true);
+    if (customProbeResponse.isEmpty()) {
+      return Optional.empty();
+    }
+    return verifyStartupFlushDifferential(
+        networkService, targetUrl, customSessionName.get(), customProbeResponse.get());
+  }
+
+  private Optional<VerificationResult> verifyStartupFlushDifferential(
+      NetworkService networkService,
+      String targetUrl,
+      String sessionName,
+      HttpResponse probeResponse) {
+    String probeBody = probeResponse.bodyString().orElse("");
+    Optional<String> matchedFlushWarning = extractMatchedStartupFlushWarning(probeBody);
+    if (matchedFlushWarning.isEmpty()) {
+      return Optional.empty();
+    }
+
+    Optional<HttpResponse> controlResponse =
+        sendMultipartProbe(
+            networkService, targetUrl, sessionName, /* includeUploadProgress= */ false);
+    if (controlResponse.isEmpty()) {
+      return Optional.empty();
+    }
+
+    String controlBody = controlResponse.get().bodyString().orElse("");
+    if (extractMatchedStartupFlushWarning(controlBody).isPresent()) {
+      logger.atFine().log(
+          "Ignoring non-differential startup warning text on '%s' (present without"
+              + " PHP_SESSION_UPLOAD_PROGRESS).",
+          targetUrl);
+      return Optional.empty();
+    }
+
+    logger.atInfo().log(
+        "PHP2Shell verified unpatched session.upload_progress startup session flush on '%s'"
+            + " (session parameter '%s').",
+        targetUrl, sessionName);
+    return Optional.of(
+        new VerificationResult(networkService, targetUrl, sessionName, matchedFlushWarning.get()));
+  }
+
+  private static Optional<String> extractMatchedStartupFlushWarning(String body) {
+    if (!body.contains(INVALID_SID_SUBSTRING) || !body.contains(FAILED_FLUSH_SUBSTRING)) {
+      return Optional.empty();
+    }
+    if (!STARTUP_INVALID_SID_WARNING_PATTERN.matcher(body).find()) {
+      return Optional.empty();
+    }
+    Matcher flushMatcher = STARTUP_FAILED_FLUSH_WARNING_PATTERN.matcher(body);
+    if (!flushMatcher.find()) {
+      return Optional.empty();
+    }
+    String sanitizedWarning =
+        HTML_TAG_PATTERN
+            .matcher(flushMatcher.group())
+            .replaceAll("")
+            .replace("&quot;", "\"")
+            .trim();
+    if (sanitizedWarning.length() > MAX_EVIDENCE_WARNING_LENGTH) {
+      sanitizedWarning = sanitizedWarning.substring(0, MAX_EVIDENCE_WARNING_LENGTH);
+    }
+    return Optional.of(sanitizedWarning);
+  }
+
+  private static Optional<String> extractCustomSessionNameFromCrawl(NetworkService networkService) {
+    for (CrawlResult crawlResult :
+        networkService.getServiceContext().getWebServiceContext().getCrawlResultsList()) {
+      ImmutableList.Builder<String> setCookies = ImmutableList.builder();
+      for (HttpHeader header : crawlResult.getResponseHeadersList()) {
+        if (Ascii.equalsIgnoreCase(header.getKey(), "Set-Cookie")) {
+          setCookies.add(header.getValue());
+        }
+      }
+      Optional<String> candidate = extractCustomSessionNameFromHeaders(setCookies.build());
+      if (candidate.isPresent()) {
+        return candidate;
+      }
+    }
+    return Optional.empty();
+  }
+
+  private static Optional<String> extractCustomSessionNameFromHeaders(Iterable<String> setCookies) {
+    for (String cookieHeader : setCookies) {
+      Matcher matcher = CUSTOM_SESSION_COOKIE_PATTERN.matcher(cookieHeader);
+      if (matcher.find()) {
+        String cookieName = matcher.group(1);
+        if (!IGNORED_COOKIE_NAMES.contains(Ascii.toUpperCase(cookieName))) {
+          return Optional.of(cookieName);
+        }
+      }
+    }
+    return Optional.empty();
   }
 
   private ImmutableSet<String> getTargetUrls(NetworkService networkService) {
     ImmutableSet.Builder<String> targetUrls = ImmutableSet.builder();
+    int addedCrawledPhpUrls = 0;
     for (CrawlResult crawlResult :
         networkService.getServiceContext().getWebServiceContext().getCrawlResultsList()) {
+      if (addedCrawledPhpUrls >= MAX_CRAWLED_PHP_URLS) {
+        break;
+      }
+      if (crawlResult.getResponseCode() == 404) {
+        continue;
+      }
       String crawledUrl = crawlResult.getCrawlTarget().getUrl();
-      try {
-        URI uri = new URI(crawledUrl);
-        if (uri.getPath() != null && Ascii.toLowerCase(uri.getPath()).endsWith(".php")) {
+      if (isPhpUrl(crawledUrl)) {
+        targetUrls.add(crawledUrl);
+        addedCrawledPhpUrls++;
+      }
+    }
+    if (addedCrawledPhpUrls == 0) {
+      for (CrawlResult crawlResult :
+          networkService.getServiceContext().getWebServiceContext().getCrawlResultsList()) {
+        String crawledUrl = crawlResult.getCrawlTarget().getUrl();
+        if (isPhpUrl(crawledUrl)) {
           targetUrls.add(crawledUrl);
           break;
         }
-      } catch (URISyntaxException e) {
-        logger.atFine().withCause(e).log("Failed to parse crawled URL '%s'", crawledUrl);
       }
     }
     String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
@@ -343,62 +387,53 @@ public final class Php2ShellDetector implements VulnDetector {
     return targetUrls.build();
   }
 
-  private Optional<HttpResponse> sendStage1InvalidSidProbe(
-      NetworkService networkService, String targetUrl) {
-    String boundary = "----TsunamiPhp2ShellBoundary" + utcClock.instant().toEpochMilli();
-
-    String multipartBody =
-        "--"
-            + boundary
-            + "\r\n"
-            + "Content-Disposition: form-data; name=\"PHP_SESSION_UPLOAD_PROGRESS\"\r\n\r\n"
-            + "tsunami\r\n"
-            + "--"
-            + boundary
-            + "\r\n"
-            + "Content-Disposition: form-data; name=\"file\"; filename=\"tsunami.txt\"\r\n"
-            + "Content-Type: text/plain\r\n\r\n"
-            + "TSUNAMI_PROBE\r\n"
-            + "--"
-            + boundary
-            + "--\r\n";
-
+  private boolean isPhpUrl(String candidateUrl) {
     try {
-      return Optional.of(
-          httpClient.send(
-              post(targetUrl)
-                  .setHeaders(
-                      HttpHeaders.builder()
-                          .addHeader("Content-Type", "multipart/form-data; boundary=" + boundary)
-                          .addHeader("Connection", "keep-alive")
-                          .addHeader(
-                              "Cookie",
-                              "PHPSESSID=tsunami/invalid_sid_" + utcClock.instant().toEpochMilli())
-                          .build())
-                  .setRequestBody(ByteString.copyFromUtf8(multipartBody))
-                  .build(),
-              networkService));
-    } catch (IOException e) {
-      logger.atFine().withCause(e).log(
-          "HTTP exception while sending PHP2Shell Stage 1 request to '%s'", targetUrl);
-      return Optional.empty();
+      URI uri = new URI(candidateUrl);
+      return uri.getPath() != null && Ascii.toLowerCase(uri.getPath()).endsWith(".php");
+    } catch (URISyntaxException e) {
+      logger.atFine().withCause(e).log("Failed to parse crawled URL '%s'", candidateUrl);
+      return false;
     }
   }
 
-  private Optional<HttpResponse> sendStage2ControlProbe(
-      NetworkService networkService, String targetUrl) {
-    String boundary = "----TsunamiPhp2ShellControl" + utcClock.instant().toEpochMilli();
+  private Optional<HttpResponse> sendMultipartProbe(
+      NetworkService networkService,
+      String targetUrl,
+      String sessionName,
+      boolean includeUploadProgress) {
+    long timestampMillis = utcClock.instant().toEpochMilli();
+    String boundary = "----TsunamiPhp2ShellBoundary" + timestampMillis;
+    String invalidSid = "tsunami/invalid_sid_" + timestampMillis;
 
-    String multipartBody =
-        "--"
-            + boundary
-            + "\r\n"
-            + "Content-Disposition: form-data; name=\"file\"; filename=\"tsunami.txt\"\r\n"
-            + "Content-Type: application/octet-stream\r\n\r\n"
-            + "X\r\n"
-            + "--"
-            + boundary
-            + "--\r\n";
+    StringBuilder multipartBody = new StringBuilder();
+    multipartBody
+        .append("--")
+        .append(boundary)
+        .append("\r\n")
+        .append("Content-Disposition: form-data; name=\"")
+        .append(sessionName)
+        .append("\"\r\n\r\n")
+        .append(invalidSid)
+        .append("\r\n");
+    if (includeUploadProgress) {
+      multipartBody
+          .append("--")
+          .append(boundary)
+          .append("\r\n")
+          .append("Content-Disposition: form-data; name=\"PHP_SESSION_UPLOAD_PROGRESS\"\r\n\r\n")
+          .append("tsunami\r\n");
+    }
+    multipartBody
+        .append("--")
+        .append(boundary)
+        .append("\r\n")
+        .append("Content-Disposition: form-data; name=\"file\"; filename=\"tsunami.txt\"\r\n")
+        .append("Content-Type: text/plain\r\n\r\n")
+        .append("X\r\n")
+        .append("--")
+        .append(boundary)
+        .append("--\r\n");
 
     try {
       return Optional.of(
@@ -408,66 +443,52 @@ public final class Php2ShellDetector implements VulnDetector {
                       HttpHeaders.builder()
                           .addHeader("Content-Type", "multipart/form-data; boundary=" + boundary)
                           .addHeader("Connection", "close")
-                          .addHeader("Cookie", "PHPSESSID=")
+                          .addHeader("Cookie", sessionName + "=" + invalidSid)
                           .build())
-                  .setRequestBody(ByteString.copyFromUtf8(multipartBody))
+                  .setRequestBody(ByteString.copyFromUtf8(multipartBody.toString()))
                   .build(),
               networkService));
     } catch (IOException e) {
       logger.atFine().withCause(e).log(
-          "HTTP exception while sending PHP2Shell Stage 2 control request to '%s'", targetUrl);
+          "HTTP exception while sending PHP2Shell verification request to '%s'", targetUrl);
       return Optional.empty();
     }
   }
 
-  private Optional<HttpResponse> sendStage2MarkerProbe(
-      NetworkService networkService, String targetUrl) {
-    String boundary = "----TsunamiPhp2ShellMarker" + utcClock.instant().toEpochMilli();
-
-    String multipartBody =
-        "--"
-            + boundary
-            + "\r\n"
-            + "Content-Disposition: form-data; name=\"PHP_SESSION_UPLOAD_PROGRESS\"\r\n\r\n"
-            + "tsunami\r\n"
-            + "--"
-            + boundary
-            + "\r\n"
-            + "Content-Disposition: form-data; name=\"file\"; filename=\"tsunami.txt\"\r\n"
-            + "Content-Type: application/octet-stream\r\n\r\n"
-            + "X\r\n"
-            + "--"
-            + boundary
-            + "--\r\n";
-
-    try {
-      return Optional.of(
-          httpClient.send(
-              post(targetUrl)
-                  .setHeaders(
-                      HttpHeaders.builder()
-                          .addHeader("Content-Type", "multipart/form-data; boundary=" + boundary)
-                          .addHeader("Connection", "close")
-                          .addHeader("Cookie", "PHPSESSID=")
-                          .build())
-                  .setRequestBody(ByteString.copyFromUtf8(multipartBody))
-                  .build(),
-              networkService));
-    } catch (IOException e) {
-      logger.atFine().withCause(e).log(
-          "HTTP exception while sending PHP2Shell Stage 2 marker request to '%s'", targetUrl);
-      return Optional.empty();
-    }
-  }
-
-  private DetectionReport buildDetectionReport(
-      TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
+  private DetectionReport buildDetectionReport(TargetInfo targetInfo, VerificationResult result) {
+    String detailText =
+        String.format(
+            "Vulnerable endpoint: %s\nSession parameter: %s\nMatched startup warning: %s",
+            result.targetUrl, result.sessionName, result.matchedWarning);
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
-        .setNetworkService(vulnerableNetworkService)
+        .setNetworkService(result.networkService)
         .setDetectionTimestamp(Timestamps.fromMillis(utcClock.instant().toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(getAdvisories().get(0))
+        .setVulnerability(
+            getAdvisories().get(0).toBuilder()
+                .addAdditionalDetails(
+                    AdditionalDetail.newBuilder()
+                        .setDescription(ADDITIONAL_DETAIL_DESCRIPTION)
+                        .setTextData(TextData.newBuilder().setText(detailText))))
         .build();
+  }
+
+  private static final class VerificationResult {
+    final NetworkService networkService;
+    final String targetUrl;
+    final String sessionName;
+    final String matchedWarning;
+
+    VerificationResult(
+        NetworkService networkService,
+        String targetUrl,
+        String sessionName,
+        String matchedWarning) {
+      this.networkService = networkService;
+      this.targetUrl = targetUrl;
+      this.sessionName = sessionName;
+      this.matchedWarning = matchedWarning;
+    }
   }
 }
