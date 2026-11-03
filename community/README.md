@@ -22,7 +22,7 @@ This directory contains plugins contributed by community members.
 
 #### Arbitrary File Read
 
-*   [CVE-2024-8438 Agentscope Studio Arbitrary File Download Detector](https://github.com/google/tsunami-security-scanner-plugins/tree/master/community/detectors/agentscope_cve_2024_8438)
+*   [CVE-2024-8438 Agentscope Studio Arbitrary File Download Detector, now updated to Templated format](https://github.com/google/tsunami-security-scanner-plugins/tree/master/templated/templateddetector/plugins/cve/2024/AgentScope_CVE_2024_8438.textproto)
 
 #### Remote Code Execution
 
