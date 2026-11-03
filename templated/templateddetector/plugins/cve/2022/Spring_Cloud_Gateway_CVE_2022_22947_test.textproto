@@ -1,0 +1,106 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Spring_Cloud_Gateway_CVE_2022_22947"
+}
+
+tests: {
+  name: "whenVulnerableReflective_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/actuator/gateway/routes/{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+        status: 201
+        body_content: "... 1f21f020c9 ..."
+      },
+      {
+        uri: "/actuator/gateway/refresh"
+        status: 200
+        body_content: " ... "
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerableReflective_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/actuator/gateway/routes/{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+        status: 201
+        body_content: " ... "
+      },
+      {
+        uri: "/actuator/gateway/refresh"
+        status: 200
+        body_content: " ... "
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerableOob_returnsTrue"
+  expect_vulnerability: true
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/actuator/gateway/routes/{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+        status: 201
+        body_content: " ... "
+      },
+      {
+        uri: "/actuator/gateway/refresh"
+        status: 200
+        body_content: " ... "
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerableOob_returnsFalse"
+  expect_vulnerability: false
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/actuator/gateway/routes/{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+        status: 201
+        body_content: " ... "
+      },
+      {
+        uri: "/actuator/gateway/refresh"
+        status: 200
+        body_content: " ... "
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRandomServer_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: " Hello World "
+      }
+    ]
+  }
+}
