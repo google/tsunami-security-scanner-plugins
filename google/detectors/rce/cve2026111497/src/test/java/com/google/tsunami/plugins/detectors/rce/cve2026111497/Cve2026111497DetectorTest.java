@@ -28,6 +28,7 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
+import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
 import com.google.tsunami.proto.DetectionReport;
@@ -37,6 +38,7 @@ import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.ServiceContext;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
@@ -136,7 +138,8 @@ public final class Cve2026111497DetectorTest {
     return request.getBodySize() == Cve2026111497Detector.Holder.CVE_2026_111497_PROBE.size();
   }
 
-  private DetectionReport buildExpectedDetectionReport(TargetInfo target, NetworkService service) {
+  private DetectionReport buildExpectedDetectionReport(
+      TargetInfo target, NetworkService service, String expectedEvidenceText) {
     return DetectionReport.newBuilder()
         .setTargetInfo(target)
         .setNetworkService(service)
@@ -155,7 +158,11 @@ public final class Cve2026111497DetectorTest {
                 .setSeverity(Severity.CRITICAL)
                 .setTitle(Cve2026111497Detector.VULNERABILITY_REPORT_TITLE)
                 .setDescription(Cve2026111497Detector.VULN_DESCRIPTION)
-                .setRecommendation(Cve2026111497Detector.RECOMMENDATION))
+                .setRecommendation(Cve2026111497Detector.RECOMMENDATION)
+                .addAdditionalDetails(
+                    AdditionalDetail.newBuilder()
+                        .setDescription(Cve2026111497Detector.DETECTION_EVIDENCE_DESCRIPTION)
+                        .setTextData(TextData.newBuilder().setText(expectedEvidenceText))))
         .build();
   }
 
@@ -202,7 +209,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200)"));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
 
     RecordedRequest req1 = mockWebServer.takeRequest();
@@ -239,7 +252,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=404, invalid_br=400, probe_br=404)"));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
   }
 
@@ -255,7 +274,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=canary_reflection, valid_br=200, invalid_br=200, probe_br=200)"));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
   }
 
@@ -280,7 +305,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=401, invalid_br=400, probe_br=401)"));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
   }
 
@@ -298,7 +329,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=403, invalid_br=422, probe_br=403)"));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
   }
 
@@ -315,7 +352,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=405, invalid_br=500, probe_br=405)"));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
   }
 
@@ -334,7 +377,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=302, invalid_br=400, probe_br=302)"));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
   }
 
@@ -353,7 +402,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=303, invalid_br=400, probe_br=303)"));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
   }
 
@@ -383,7 +438,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=canary_reflection, valid_br=400, invalid_br=400, probe_br=400)"));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
   }
 
@@ -409,7 +470,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=canary_reflection, valid_br=422, invalid_br=400, probe_br=422)"));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
   }
 
@@ -420,7 +487,8 @@ public final class Cve2026111497DetectorTest {
         "{\"errors\":[{\"message\":\"Cannot query field '"
             + Cve2026111497Detector.DECOMPRESSED_CANARY
             + "' on type 'Query'.\"}]}";
-    String decompError = "{\"errors\":[{\"message\":\"BROTLI_DECODER_ERROR_FORMAT_BLOCK_SWITCH\"}]}";
+    String decompError =
+        "{\"errors\":[{\"message\":\"BROTLI_DECODER_ERROR_FORMAT_BLOCK_SWITCH\"}]}";
     ProbeTrackingDispatcher dispatcher =
         new ProbeTrackingDispatcher(
             request -> {
@@ -772,7 +840,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/graphql")
+                    + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200)"));
     assertThat(dispatcher.probeCount()).isEqualTo(1);
   }
 
@@ -801,6 +875,85 @@ public final class Cve2026111497DetectorTest {
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
     assertThat(dispatcher.probeCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void detect_whenVulnerableServerIncludesServerHeader_recordsSanitizedServerInEvidence() {
+    enqueueVulnerableCycle(
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.OK.code())
+                .setHeader("Server", "Apache/2.4.58 (Ubuntu)")
+                .setBody("OK"),
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Error"));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200, server=Apache/2.4.58 (Ubuntu))"));
+  }
+
+  @Test
+  public void
+      detect_whenServerHeaderContainsControlCharsAndExceedsMaxLength_sanitizesAndTruncatesInEvidence() {
+    String rawServerHeader =
+        "  envoy/1.30.0\t\t\t(custom-build-identifier-0123456789-abcdefghijklmnopqrstuvwxyz)  ";
+    String expectedSanitizedServer =
+        "envoy/1.30.0   (custom-build-identifier-0123456789-abcdefghij...";
+    enqueueVulnerableCycle(
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.OK.code())
+                .setHeader("Server", rawServerHeader)
+                .setBody("OK"),
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Error"));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200, server="
+                    + expectedSanitizedServer
+                    + ")"));
+  }
+
+  @Test
+  public void detect_whenServerHeaderIsOnlyControlCharsOrWhitespace_omitsServerFieldFromEvidence() {
+    enqueueVulnerableCycle(
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.OK.code())
+                .setHeader("Server", "\t\t\t   ")
+                .setBody("OK"),
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Error"));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200)"));
   }
 
   @Test
@@ -856,7 +1009,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/v1/ingest?source=test")
+                    + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200)"));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
     assertThat(mockWebServer.takeRequest().getPath()).isEqualTo("/v1/ingest?source=test");
   }
@@ -881,7 +1040,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/cgi-bin/api.cgi")
+                    + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200)"));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(5);
     assertThat(mockWebServer.takeRequest().getPath()).isEqualTo("/cgi-bin/api.cgi");
   }
@@ -915,7 +1080,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/cgi-bin/api.cgi")
+                    + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200)"));
     assertThat(dispatcher.requestedPaths().get(0)).isEqualTo("/cgi-bin/api.cgi");
     assertThat(dispatcher.probeCount()).isEqualTo(1);
   }
@@ -979,7 +1150,13 @@ public final class Cve2026111497DetectorTest {
     DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
 
     assertThat(reports.getDetectionReportsList())
-        .containsExactly(buildExpectedDetectionReport(target, service));
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url(expectedPath)
+                    + " (signal=status_differential, valid_br=401, invalid_br=400, probe_br=401)"));
     assertThat(dispatcher.probeCount()).isEqualTo(1);
   }
 

@@ -40,6 +40,7 @@ import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
+import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
@@ -47,6 +48,7 @@ import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
@@ -144,6 +146,9 @@ public final class Cve2026111497Detector implements VulnDetector {
           + " reverse proxy or WAF layer.";
 
   @VisibleForTesting static final String DECOMPRESSED_CANARY = "tsunami_brotli_check_7f9a2b";
+
+  @VisibleForTesting
+  static final String DETECTION_EVIDENCE_DESCRIPTION = "CVE-2026-111497 detection evidence";
 
   /**
    * 191-byte valid RFC 7932 Brotli stream (composed solely of 7-bit UTF-8 safe bytes {@code <
@@ -336,38 +341,41 @@ public final class Cve2026111497Detector implements VulnDetector {
         .addAllDetectionReports(
             matchedServices.stream()
                 .filter(NetworkServiceUtils::isWebService)
-                .filter(this::isServiceVulnerable)
-                .map(networkService -> buildDetectionReport(targetInfo, networkService))
+                .map(networkService -> checkService(targetInfo, networkService))
+                .flatMap(Optional::stream)
                 .collect(toImmutableList()))
         .build();
   }
 
-  private boolean isServiceVulnerable(NetworkService networkService) {
+  private Optional<DetectionReport> checkService(
+      TargetInfo targetInfo, NetworkService networkService) {
     for (String targetUrl : getTargetUrls(networkService)) {
-      if (isEndpointVulnerable(networkService, targetUrl)) {
-        return true;
+      Optional<AdditionalDetail> evidence = checkEndpoint(networkService, targetUrl);
+      if (evidence.isPresent()) {
+        return Optional.of(buildDetectionReport(targetInfo, networkService, evidence.get()));
       }
     }
-    return false;
+    return Optional.empty();
   }
 
-  private boolean isEndpointVulnerable(NetworkService networkService, String targetUrl) {
+  private Optional<AdditionalDetail> checkEndpoint(
+      NetworkService networkService, String targetUrl) {
     // Step 1: Send small (191-byte) valid RFC 7932 Brotli control payload.
     Optional<HttpResponse> validControlOpt =
         sendBrotliRequest(networkService, targetUrl, VALID_BROTLI_CONTROL);
     if (validControlOpt.isEmpty()) {
-      return false;
+      return Optional.empty();
     }
     HttpResponse validControl = validControlOpt.get();
     if (!containsCanary(validControl) && !isPostDecompressionStatus(validControl.status())) {
-      return false;
+      return Optional.empty();
     }
 
     // Step 2: Send small (191-byte) invalid Brotli control payload to verify active decompression.
     Optional<HttpResponse> invalidControlOpt =
         sendBrotliRequest(networkService, targetUrl, INVALID_BROTLI_CONTROL);
     if (invalidControlOpt.isEmpty()) {
-      return false;
+      return Optional.empty();
     }
     HttpResponse invalidControl = invalidControlOpt.get();
 
@@ -381,46 +389,47 @@ public final class Cve2026111497Detector implements VulnDetector {
     boolean statusDifferential =
         isValidVsInvalidStatusDifferential(validControl.status(), invalidControl.status());
     if (!canaryReflected && !statusDifferential) {
-      return false;
+      return Optional.empty();
     }
 
     // Step 3: Send the zero-side-effect CVE-2026-111497 Brotli probe.
     Optional<HttpResponse> probeResponseOpt =
         sendBrotliRequest(networkService, targetUrl, Holder.CVE_2026_111497_PROBE);
     if (probeResponseOpt.isEmpty()) {
-      return false;
+      return Optional.empty();
     }
     HttpResponse probeResponse = probeResponseOpt.get();
     if (probeResponse.status() != validControl.status()
         || (canaryReflected && !containsCanary(probeResponse))) {
-      return false;
+      return Optional.empty();
     }
 
     // Step 4: Post-probe health and determinism verification using the 191-byte controls.
     Optional<HttpResponse> validVerifyOpt =
         sendBrotliRequest(networkService, targetUrl, VALID_BROTLI_CONTROL);
     if (validVerifyOpt.isEmpty()) {
-      return false;
+      return Optional.empty();
     }
     Optional<HttpResponse> invalidVerifyOpt =
         sendBrotliRequest(networkService, targetUrl, INVALID_BROTLI_CONTROL);
     if (invalidVerifyOpt.isEmpty()) {
-      return false;
+      return Optional.empty();
     }
     HttpResponse validVerify = validVerifyOpt.get();
     HttpResponse invalidVerify = invalidVerifyOpt.get();
 
     if (validVerify.status() != validControl.status()
         || invalidVerify.status() != invalidControl.status()) {
-      return false;
+      return Optional.empty();
     }
-    if (canaryReflected
-        && (!containsCanary(validVerify) || containsCanary(invalidVerify))) {
-      return false;
+    if (canaryReflected && (!containsCanary(validVerify) || containsCanary(invalidVerify))) {
+      return Optional.empty();
     }
 
     logger.atInfo().log("Confirmed CVE-2026-111497 vulnerable Brotli decoder on '%s'", targetUrl);
-    return true;
+    return Optional.of(
+        buildAdditionalDetail(
+            targetUrl, canaryReflected, validControl, /* invalidBrStatus= */ invalidControl.status()));
   }
 
   private static boolean containsCanary(HttpResponse response) {
@@ -509,14 +518,50 @@ public final class Cve2026111497Detector implements VulnDetector {
     }
   }
 
+  private static AdditionalDetail buildAdditionalDetail(
+      String targetUrl,
+      boolean canaryReflected,
+      HttpResponse validControl,
+      HttpStatus invalidBrStatus) {
+    int validStatusCode = validControl.status().code();
+    StringBuilder evidence =
+        new StringBuilder()
+            .append("Vulnerable endpoint: ")
+            .append(targetUrl)
+            .append(" (signal=")
+            .append(canaryReflected ? "canary_reflection" : "status_differential")
+            .append(", valid_br=")
+            .append(validStatusCode)
+            .append(", invalid_br=")
+            .append(invalidBrStatus.code())
+            .append(", probe_br=")
+            .append(validStatusCode);
+    validControl
+        .headers()
+        .get("Server")
+        .map(Cve2026111497Detector::sanitizeServerHeader)
+        .filter(server -> !server.isEmpty())
+        .ifPresent(server -> evidence.append(", server=").append(server));
+    evidence.append(')');
+    return AdditionalDetail.newBuilder()
+        .setDescription(DETECTION_EVIDENCE_DESCRIPTION)
+        .setTextData(TextData.newBuilder().setText(evidence.toString()))
+        .build();
+  }
+
+  private static String sanitizeServerHeader(String server) {
+    String cleaned = server.replaceAll("[^\\x20-\\x7E]", " ").trim();
+    return Ascii.truncate(cleaned, 64, "...");
+  }
+
   private DetectionReport buildDetectionReport(
-      TargetInfo targetInfo, NetworkService vulnerableNetworkService) {
+      TargetInfo targetInfo, NetworkService vulnerableNetworkService, AdditionalDetail evidence) {
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(vulnerableNetworkService)
         .setDetectionTimestamp(Timestamps.fromMillis(utcClock.instant().toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
-        .setVulnerability(getAdvisories().get(0))
+        .setVulnerability(getAdvisories().get(0).toBuilder().addAdditionalDetails(evidence).build())
         .build();
   }
 
