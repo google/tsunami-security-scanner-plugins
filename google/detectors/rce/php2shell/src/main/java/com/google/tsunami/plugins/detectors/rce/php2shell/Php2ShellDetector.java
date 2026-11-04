@@ -16,6 +16,7 @@
 package com.google.tsunami.plugins.detectors.rce.php2shell;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
@@ -30,6 +31,7 @@ import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
 import com.google.tsunami.common.net.http.HttpResponse;
+import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
@@ -127,6 +129,11 @@ public final class Php2ShellDetector implements VulnDetector {
 
   private static final String DEFAULT_PHP_SESSION_NAME = "PHPSESSID";
   private static final int MAX_CRAWLED_PHP_URLS = 3;
+  // Cap extensionless front-controller fallbacks (at most 1 route when 0 .php URLs were crawled)
+  // and speculative crawl-cookie retries (at most 2 live non-redirect/non-404 endpoints) to keep
+  // additional HTTP requests to a strict minimum.
+  private static final int MAX_CRAWLED_EXTENSIONLESS_HTML_URLS = 1;
+  private static final int MAX_CRAWLED_SESSION_RETRIES = 2;
   private static final int MAX_EVIDENCE_WARNING_LENGTH = 512;
 
   private static final String INVALID_SID_SUBSTRING = "is too long or contains illegal characters";
@@ -157,9 +164,15 @@ public final class Php2ShellDetector implements VulnDetector {
 
   private static final Pattern HTML_TAG_PATTERN = Pattern.compile("<[^>]*>");
 
+  // PHP's OnUpdateName in ext/session/session.c permits hyphens in php.ini/.htaccess session.name
+  // (e.g., "__Host-PHPSESSID" or "app-session"), and both Cookie parsing and rfc1867
+  // MULTIPART_EVENT_FORMDATA match hyphenated PS(session_name) verbatim.
   private static final Pattern CUSTOM_SESSION_COOKIE_PATTERN =
-      Pattern.compile("^\\s*([A-Za-z_][A-Za-z0-9_]{0,63})=([A-Za-z0-9,-]{22,256})(?:\\s*;|$)");
+      Pattern.compile("^\\s*([A-Za-z_][A-Za-z0-9_-]{0,63})=([A-Za-z0-9,-]{22,256})(?:\\s*;|$)");
 
+  // Matched after normalizing '-' to '_' and uppercasing so hyphenated non-PHP CSRF, framework,
+  // and load-balancer cookies (e.g., "XSRF-TOKEN", "CSRF-TOKEN", "__cf_bm") never trigger extra
+  // retry requests.
   private static final ImmutableSet<String> IGNORED_COOKIE_NAMES =
       ImmutableSet.of(
           "PHPSESSID",
@@ -169,13 +182,18 @@ public final class Php2ShellDetector implements VulnDetector {
           "CFTOKEN",
           "AWSALB",
           "AWSALBCORS",
+          "AWSALBTG",
+          "AWSALBTGCORS",
           "GCLB",
           "__CF_BM",
           "_CFUVID",
+          "CF_CLEARANCE",
           "SERVERID",
           "XSRF_TOKEN",
           "CSRF_TOKEN",
-          "CSRFTOKEN");
+          "CSRFTOKEN",
+          "_CSRF",
+          "LARAVEL_SESSION");
 
   private final Clock utcClock;
   private final HttpClient httpClient;
@@ -223,48 +241,63 @@ public final class Php2ShellDetector implements VulnDetector {
 
   private Optional<VerificationResult> probeService(NetworkService networkService) {
     Optional<String> crawledCustomSessionName = extractCustomSessionNameFromCrawl(networkService);
+    int remainingCrawledSessionRetries = MAX_CRAWLED_SESSION_RETRIES;
     for (String targetUrl : getTargetUrls(networkService)) {
-      Optional<VerificationResult> result =
-          probeTargetUrl(networkService, targetUrl, crawledCustomSessionName);
-      if (result.isPresent()) {
-        return result;
+      Optional<HttpResponse> defaultProbeResponse =
+          sendMultipartProbe(
+              networkService,
+              targetUrl,
+              DEFAULT_PHP_SESSION_NAME,
+              /* includeUploadProgress= */ true);
+      if (defaultProbeResponse.isEmpty()) {
+        continue;
+      }
+
+      Optional<VerificationResult> defaultResult =
+          verifyStartupFlushDifferential(
+              networkService, targetUrl, DEFAULT_PHP_SESSION_NAME, defaultProbeResponse.get());
+      if (defaultResult.isPresent()) {
+        return defaultResult;
+      }
+
+      HttpStatus status = defaultProbeResponse.get().status();
+      // Prefer a custom session cookie emitted directly by this endpoint. Only fall back to a
+      // crawl-discovered cookie on live non-redirect, non-404/405 responses (capped per service)
+      // so dead fallback paths, static 405s, and HTTP/front-controller redirects do not multiply
+      // probe traffic.
+      Optional<String> customSessionName =
+          extractCustomSessionNameFromHeaders(
+              defaultProbeResponse.get().headers().getAll("Set-Cookie"));
+      if (customSessionName.isEmpty()
+          && crawledCustomSessionName.isPresent()
+          && remainingCrawledSessionRetries > 0
+          && status != HttpStatus.NOT_FOUND
+          && status != HttpStatus.METHOD_NOT_ALLOWED
+          && !status.isRedirect()) {
+        customSessionName = crawledCustomSessionName;
+        remainingCrawledSessionRetries--;
+      }
+      if (customSessionName.isEmpty()) {
+        continue;
+      }
+
+      Optional<HttpResponse> customProbeResponse =
+          sendMultipartProbe(
+              networkService,
+              targetUrl,
+              customSessionName.get(),
+              /* includeUploadProgress= */ true);
+      if (customProbeResponse.isEmpty()) {
+        continue;
+      }
+      Optional<VerificationResult> customResult =
+          verifyStartupFlushDifferential(
+              networkService, targetUrl, customSessionName.get(), customProbeResponse.get());
+      if (customResult.isPresent()) {
+        return customResult;
       }
     }
     return Optional.empty();
-  }
-
-  private Optional<VerificationResult> probeTargetUrl(
-      NetworkService networkService, String targetUrl, Optional<String> crawledCustomSessionName) {
-    Optional<HttpResponse> defaultProbeResponse =
-        sendMultipartProbe(
-            networkService, targetUrl, DEFAULT_PHP_SESSION_NAME, /* includeUploadProgress= */ true);
-    if (defaultProbeResponse.isEmpty()) {
-      return Optional.empty();
-    }
-
-    Optional<VerificationResult> defaultResult =
-        verifyStartupFlushDifferential(
-            networkService, targetUrl, DEFAULT_PHP_SESSION_NAME, defaultProbeResponse.get());
-    if (defaultResult.isPresent()) {
-      return defaultResult;
-    }
-
-    Optional<String> customSessionName =
-        extractCustomSessionNameFromHeaders(
-                defaultProbeResponse.get().headers().getAll("Set-Cookie"))
-            .or(() -> crawledCustomSessionName);
-    if (customSessionName.isEmpty()) {
-      return Optional.empty();
-    }
-
-    Optional<HttpResponse> customProbeResponse =
-        sendMultipartProbe(
-            networkService, targetUrl, customSessionName.get(), /* includeUploadProgress= */ true);
-    if (customProbeResponse.isEmpty()) {
-      return Optional.empty();
-    }
-    return verifyStartupFlushDifferential(
-        networkService, targetUrl, customSessionName.get(), customProbeResponse.get());
   }
 
   private Optional<VerificationResult> verifyStartupFlushDifferential(
@@ -347,7 +380,8 @@ public final class Php2ShellDetector implements VulnDetector {
       Matcher matcher = CUSTOM_SESSION_COOKIE_PATTERN.matcher(cookieHeader);
       if (matcher.find()) {
         String cookieName = matcher.group(1);
-        if (!IGNORED_COOKIE_NAMES.contains(Ascii.toUpperCase(cookieName))) {
+        String normalizedName = Ascii.toUpperCase(cookieName).replace('-', '_');
+        if (!IGNORED_COOKIE_NAMES.contains(normalizedName)) {
           return Optional.of(cookieName);
         }
       }
@@ -363,7 +397,7 @@ public final class Php2ShellDetector implements VulnDetector {
       if (addedCrawledPhpUrls >= MAX_CRAWLED_PHP_URLS) {
         break;
       }
-      if (crawlResult.getResponseCode() == 404) {
+      if (crawlResult.getResponseCode() == HttpStatus.NOT_FOUND.code()) {
         continue;
       }
       String crawledUrl = crawlResult.getCrawlTarget().getUrl();
@@ -378,13 +412,71 @@ public final class Php2ShellDetector implements VulnDetector {
         String crawledUrl = crawlResult.getCrawlTarget().getUrl();
         if (isPhpUrl(crawledUrl)) {
           targetUrls.add(crawledUrl);
+          addedCrawledPhpUrls++;
           break;
         }
       }
     }
     String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
     CANDIDATE_PATHS.forEach(subpath -> targetUrls.add(rootUrl + subpath));
+
+    // Frameworks using front-controller URL rewriting (e.g., RewriteRule / FallbackResource routes
+    // such as /users/login) expose no .php URLs during crawling. Because HttpClient disables
+    // redirect-following so 301/302 responses do not turn multipart POSTs into bodyless GETs,
+    // web-server root redirects or buffered redirect handlers on CANDIDATE_PATHS may never reach
+    // PHP. When no .php URL was crawled, append at most 1 same-origin 200 OK HTML extensionless
+    // route after CANDIDATE_PATHS so standard servers incur 0 extra requests.
+    if (addedCrawledPhpUrls == 0) {
+      int addedExtensionlessUrls = 0;
+      for (CrawlResult crawlResult :
+          networkService.getServiceContext().getWebServiceContext().getCrawlResultsList()) {
+        if (addedExtensionlessUrls >= MAX_CRAWLED_EXTENSIONLESS_HTML_URLS) {
+          break;
+        }
+        if (isExtensionlessHtmlCrawlResult(crawlResult, rootUrl)) {
+          targetUrls.add(crawlResult.getCrawlTarget().getUrl());
+          addedExtensionlessUrls++;
+        }
+      }
+    }
     return targetUrls.build();
+  }
+
+  private boolean isExtensionlessHtmlCrawlResult(CrawlResult crawlResult, String rootUrl) {
+    if (crawlResult.getResponseCode() != HttpStatus.OK.code() || !hasHtmlContentType(crawlResult)) {
+      return false;
+    }
+    String crawledUrl = crawlResult.getCrawlTarget().getUrl();
+    if (!crawledUrl.startsWith(rootUrl)) {
+      return false;
+    }
+    try {
+      URI uri = new URI(crawledUrl);
+      URI rootUri = new URI(rootUrl);
+      String path = uri.getPath();
+      if (isNullOrEmpty(path) || path.equals("/") || path.equals(rootUri.getPath())) {
+        return false;
+      }
+      String lastSegment = path.substring(path.lastIndexOf('/') + 1);
+      return !lastSegment.contains(".");
+    } catch (URISyntaxException e) {
+      logger.atFine().withCause(e).log("Failed to parse crawled URL '%s'", crawledUrl);
+      return false;
+    }
+  }
+
+  private static boolean hasHtmlContentType(CrawlResult crawlResult) {
+    String contentType = crawlResult.getContentType();
+    if (contentType.isEmpty()) {
+      for (HttpHeader header : crawlResult.getResponseHeadersList()) {
+        if (Ascii.equalsIgnoreCase(header.getKey(), "Content-Type")) {
+          contentType = header.getValue();
+          break;
+        }
+      }
+    }
+    String normalized = Ascii.toLowerCase(contentType.trim());
+    return normalized.startsWith("text/html") || normalized.startsWith("application/xhtml+xml");
   }
 
   private boolean isPhpUrl(String candidateUrl) {

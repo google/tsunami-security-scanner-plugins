@@ -46,6 +46,7 @@ import com.google.tsunami.proto.VulnerabilityId;
 import com.google.tsunami.proto.WebServiceContext;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Objects;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -512,5 +513,589 @@ public final class Php2ShellDetectorTest {
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
     assertThat(mockPhpServer.getRequestCount()).isEqualTo(0);
+  }
+
+  @Test
+  public void
+      detect_whenHyphenatedHostPrefixedSessionCookieDisclosedAlongsideIgnoredCookie_verifiesViaCausalAblation()
+          throws Exception {
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .addHeader("Set-Cookie", "XSRF-TOKEN=0123456789abcdef0123456789abcdef; Path=/")
+            .addHeader(
+                "Set-Cookie",
+                "__Host-PHPSESSID=a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4; Path=/; Secure; HttpOnly")
+            .setBody("LOGIN"));
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody(PHP8_UNPATCHED_STARTUP_WARNINGS_HTML));
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+    NetworkService service = createNetworkService(mockPhpServer);
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                mockPhpServer.url("/").toString(),
+                "__Host-PHPSESSID",
+                SANITIZED_PHP8_FLUSH_WARNING));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
+
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).startsWith("PHPSESSID=");
+    RecordedRequest customProbe = mockPhpServer.takeRequest();
+    assertThat(customProbe.getHeader("Cookie"))
+        .isEqualTo("__Host-PHPSESSID=tsunami/invalid_sid_1767225600000");
+    String customProbeBody = customProbe.getBody().readUtf8();
+    assertThat(customProbeBody)
+        .contains("Content-Disposition: form-data; name=\"__Host-PHPSESSID\"");
+    assertThat(customProbeBody)
+        .contains("Content-Disposition: form-data; name=\"PHP_SESSION_UPLOAD_PROGRESS\"");
+
+    RecordedRequest customControl = mockPhpServer.takeRequest();
+    assertThat(customControl.getHeader("Cookie"))
+        .isEqualTo("__Host-PHPSESSID=tsunami/invalid_sid_1767225600000");
+    assertThat(customControl.getBody().readUtf8()).doesNotContain("PHP_SESSION_UPLOAD_PROGRESS");
+  }
+
+  @Test
+  public void detect_whenHyphenatedAppSessIdRecordedInCrawlHeaders_verifiesViaCausalAblation()
+      throws Exception {
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody(PHP8_UNPATCHED_STARTUP_WARNINGS_HTML));
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+
+    NetworkService service =
+        createNetworkService(mockPhpServer).toBuilder()
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(
+                        WebServiceContext.newBuilder()
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(mockPhpServer.url("/account").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .addResponseHeaders(
+                                        HttpHeader.newBuilder()
+                                            .setKey("Set-Cookie")
+                                            .setValue(
+                                                "APP-SESS-ID=0123456789abcdef0123456789; Path=/;"
+                                                    + " HttpOnly")))))
+            .build();
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                mockPhpServer.url("/").toString(),
+                "APP-SESS-ID",
+                SANITIZED_PHP8_FLUSH_WARNING));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).startsWith("PHPSESSID=");
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie"))
+        .isEqualTo("APP-SESS-ID=tsunami/invalid_sid_1767225600000");
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie"))
+        .isEqualTo("APP-SESS-ID=tsunami/invalid_sid_1767225600000");
+  }
+
+  @Test
+  public void
+      detect_whenHyphenatedIgnoredNonPhpCookiesReturnedInSetCookieAndCrawl_sendsNoRetryRequests() {
+    mockPhpServer.setDispatcher(
+        constantResponseDispatcher(
+            new MockResponse()
+                .setResponseCode(HttpStatus.OK.code())
+                .addHeader("Set-Cookie", "XSRF-TOKEN=0123456789abcdef0123456789abcdef; Path=/")
+                .addHeader("Set-Cookie", "CSRF-TOKEN=fedcba9876543210fedcba9876543210; Path=/")
+                .addHeader(
+                    "Set-Cookie", "__cf-bm=11223344556677889900aabbccddeeff; Path=/; HttpOnly")
+                .addHeader(
+                    "Set-Cookie",
+                    "laravel-session=aabbccddeeff00112233445566778899; Path=/; HttpOnly")
+                .setBody("OK")));
+
+    NetworkService service =
+        createNetworkService(mockPhpServer).toBuilder()
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(
+                        WebServiceContext.newBuilder()
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(mockPhpServer.url("/").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .addResponseHeaders(
+                                        HttpHeader.newBuilder()
+                                            .setKey("Set-Cookie")
+                                            .setValue(
+                                                "XSRF-TOKEN=0123456789abcdef0123456789abcdef;"
+                                                    + " Path=/"))
+                                    .addResponseHeaders(
+                                        HttpHeader.newBuilder()
+                                            .setKey("Set-Cookie")
+                                            .setValue(
+                                                "CSRF-TOKEN=fedcba9876543210fedcba9876543210;"
+                                                    + " Path=/"))
+                                    .addResponseHeaders(
+                                        HttpHeader.newBuilder()
+                                            .setKey("Set-Cookie")
+                                            .setValue(
+                                                "__cf-bm=11223344556677889900aabbccddeeff;"
+                                                    + " Path=/"))
+                                    .addResponseHeaders(
+                                        HttpHeader.newBuilder()
+                                            .setKey("Set-Cookie")
+                                            .setValue(
+                                                "cf-clearance=99887766554433221100ffeeddccbbaa;"
+                                                    + " Path=/")))))
+            .build();
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(Php2ShellDetector.CANDIDATE_PATHS.size());
+  }
+
+  @Test
+  public void
+      detect_whenZeroPhpUrlsCrawledAndCandidatePathsFail_verifiesExtensionlessHtmlRouteAfterCandidatePaths()
+          throws Exception {
+    for (int i = 0; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
+      mockPhpServer.enqueue(
+          new MockResponse()
+              .setResponseCode(HttpStatus.FOUND.code())
+              .setHeader("Location", "/users/login"));
+    }
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody(PHP8_UNPATCHED_STARTUP_WARNINGS_HTML));
+    mockPhpServer.enqueue(
+        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("LOGIN"));
+
+    String extensionlessRouteUrl = mockPhpServer.url("/users/login").toString();
+    NetworkService service =
+        createNetworkService(mockPhpServer).toBuilder()
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(
+                        WebServiceContext.newBuilder()
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(extensionlessRouteUrl)
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .addResponseHeaders(
+                                        HttpHeader.newBuilder()
+                                            .setKey("Content-Type")
+                                            .setValue("application/xhtml+xml; charset=UTF-8")))))
+            .build();
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target, service, extensionlessRouteUrl, "PHPSESSID", SANITIZED_PHP8_FLUSH_WARNING));
+    assertThat(mockPhpServer.getRequestCount())
+        .isEqualTo(Php2ShellDetector.CANDIDATE_PATHS.size() + 2);
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/index.php");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/public/index.php");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/web/index.php");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/wp-login.php");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/users/login");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/users/login");
+  }
+
+  @Test
+  public void
+      detect_whenStaticCrossSchemeAndMultipleExtensionlessRoutesCrawled_probesAtMostOneExtensionlessHtmlRoute()
+          throws Exception {
+    mockPhpServer.setDispatcher(
+        constantResponseDispatcher(
+            new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()).setBody("Not Found")));
+
+    String httpsCrossSchemeUrl =
+        String.format(
+            "https://%s:%d/secure/login", mockPhpServer.getHostName(), mockPhpServer.getPort());
+    NetworkService service =
+        createNetworkService(mockPhpServer).toBuilder()
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(
+                        WebServiceContext.newBuilder()
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(mockPhpServer.url("/?page=home").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .setContentType("text/html; charset=UTF-8"))
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(mockPhpServer.url("/about.html").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .setContentType("text/html; charset=UTF-8"))
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(
+                                                mockPhpServer.url("/assets/logo.png").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .setContentType("image/png"))
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(mockPhpServer.url("/api/status").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .setContentType("application/json"))
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(httpsCrossSchemeUrl)
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .setContentType("text/html"))
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl("http://other.example/users/login")
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .setContentType("text/html"))
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(mockPhpServer.url("/legacy/route").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.FOUND.code())
+                                    .setContentType("text/html"))
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(mockPhpServer.url("/users/login").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .setContentType("text/html; charset=UTF-8"))
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(mockPhpServer.url("/users/register").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .setContentType("text/html; charset=UTF-8"))))
+            .build();
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(mockPhpServer.getRequestCount())
+        .isEqualTo(Php2ShellDetector.CANDIDATE_PATHS.size() + 1);
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/index.php");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/public/index.php");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/web/index.php");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/wp-login.php");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/users/login");
+  }
+
+  @Test
+  public void detect_whenPhpUrlCrawled_doesNotAppendExtensionlessHtmlFallback() throws Exception {
+    mockPhpServer.setDispatcher(
+        constantResponseDispatcher(
+            new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()).setBody("Not Found")));
+
+    NetworkService service =
+        createNetworkService(mockPhpServer).toBuilder()
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(
+                        WebServiceContext.newBuilder()
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(mockPhpServer.url("/portal.php").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .setContentType("text/html"))
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(mockPhpServer.url("/users/login").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .setContentType("text/html"))))
+            .build();
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(mockPhpServer.getRequestCount())
+        .isEqualTo(1 + Php2ShellDetector.CANDIDATE_PATHS.size());
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/portal.php");
+  }
+
+  @Test
+  public void detect_whenOnly404PhpUrlCrawled_probesFallbackPhpUrlWithoutExtensionlessRoute()
+      throws Exception {
+    mockPhpServer.setDispatcher(
+        constantResponseDispatcher(
+            new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()).setBody("Not Found")));
+
+    NetworkService service =
+        createNetworkService(mockPhpServer).toBuilder()
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(
+                        WebServiceContext.newBuilder()
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(mockPhpServer.url("/legacy.php").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.NOT_FOUND.code())
+                                    .setContentType("text/html"))
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(mockPhpServer.url("/users/login").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .setContentType("text/html"))))
+            .build();
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(mockPhpServer.getRequestCount())
+        .isEqualTo(1 + Php2ShellDetector.CANDIDATE_PATHS.size());
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/legacy.php");
+  }
+
+  @Test
+  public void detect_whenCrawledCustomCookiePresent_skips404And405And3xxAndCapsLiveRetriesAtTwo()
+      throws Exception {
+    // Target URLs in order: /portal.php, /, /index.php, /public/index.php, /web/index.php,
+    // /wp-login.php.
+    // 1. /portal.php -> 302 redirect without Set-Cookie (skip retry).
+    mockPhpServer.enqueue(
+        new MockResponse().setResponseCode(HttpStatus.FOUND.code()).setHeader("Location", "/"));
+    // 2. / -> 405 Method Not Allowed without Set-Cookie (skip retry).
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code()));
+    // 3. /index.php -> 404 Not Found without Set-Cookie (skip retry).
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
+    // 4. /public/index.php -> 200 OK (consumes retry #1 of 2).
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+    // 5. /web/index.php -> 200 OK (consumes retry #2 of 2).
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+    // 6. /wp-login.php -> 200 OK (retry cap exhausted, no retry sent).
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+
+    NetworkService service =
+        createNetworkService(mockPhpServer).toBuilder()
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(
+                        WebServiceContext.newBuilder()
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(mockPhpServer.url("/portal.php").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .addResponseHeaders(
+                                        HttpHeader.newBuilder()
+                                            .setKey("Set-Cookie")
+                                            .setValue(
+                                                "APP-SESS-ID=0123456789abcdef0123456789;"
+                                                    + " Path=/")))))
+            .build();
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(8);
+
+    RecordedRequest req1 = mockPhpServer.takeRequest();
+    assertThat(req1.getPath()).isEqualTo("/portal.php");
+    assertThat(req1.getHeader("Cookie")).startsWith("PHPSESSID=");
+
+    RecordedRequest req2 = mockPhpServer.takeRequest();
+    assertThat(req2.getPath()).isEqualTo("/");
+    assertThat(req2.getHeader("Cookie")).startsWith("PHPSESSID=");
+
+    RecordedRequest req3 = mockPhpServer.takeRequest();
+    assertThat(req3.getPath()).isEqualTo("/index.php");
+    assertThat(req3.getHeader("Cookie")).startsWith("PHPSESSID=");
+
+    RecordedRequest req4 = mockPhpServer.takeRequest();
+    assertThat(req4.getPath()).isEqualTo("/public/index.php");
+    assertThat(req4.getHeader("Cookie")).startsWith("PHPSESSID=");
+    RecordedRequest req5 = mockPhpServer.takeRequest();
+    assertThat(req5.getPath()).isEqualTo("/public/index.php");
+    assertThat(req5.getHeader("Cookie")).startsWith("APP-SESS-ID=");
+
+    RecordedRequest req6 = mockPhpServer.takeRequest();
+    assertThat(req6.getPath()).isEqualTo("/web/index.php");
+    assertThat(req6.getHeader("Cookie")).startsWith("PHPSESSID=");
+    RecordedRequest req7 = mockPhpServer.takeRequest();
+    assertThat(req7.getPath()).isEqualTo("/web/index.php");
+    assertThat(req7.getHeader("Cookie")).startsWith("APP-SESS-ID=");
+
+    RecordedRequest req8 = mockPhpServer.takeRequest();
+    assertThat(req8.getPath()).isEqualTo("/wp-login.php");
+    assertThat(req8.getHeader("Cookie")).startsWith("PHPSESSID=");
+  }
+
+  @Test
+  public void detect_when302RedirectResponseEmitsCustomSetCookie_retriesAndReportsVulnerability() {
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.FOUND.code())
+            .setHeader("Location", "/login")
+            .addHeader(
+                "Set-Cookie",
+                "__Host-PHPSESSID=a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4; Path=/; Secure; HttpOnly"));
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.FOUND.code())
+            .setHeader("Location", "/login")
+            .setBody(PHP8_UNPATCHED_STARTUP_WARNINGS_HTML));
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.FOUND.code())
+            .setHeader("Location", "/login"));
+    NetworkService service = createNetworkService(mockPhpServer);
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                mockPhpServer.url("/").toString(),
+                "__Host-PHPSESSID",
+                SANITIZED_PHP8_FLUSH_WARNING));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
+  }
+
+  @Test
+  public void detect_when405ResponseItselfEmitsCustomSetCookie_retriesAndReportsVulnerability() {
+    mockPhpServer.setDispatcher(
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            if (!Objects.equals(request.getPath(), "/")) {
+              return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+            }
+            String cookie = request.getHeader("Cookie");
+            String body = request.getBody().readUtf8();
+            if (cookie != null
+                && cookie.startsWith("APP-SESS-ID=")
+                && body.contains("PHP_SESSION_UPLOAD_PROGRESS")) {
+              return new MockResponse()
+                  .setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code())
+                  .setBody(PHP8_UNPATCHED_STARTUP_WARNINGS_HTML);
+            }
+            return new MockResponse()
+                .setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code())
+                .addHeader(
+                    "Set-Cookie", "APP-SESS-ID=a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4; Path=/; HttpOnly")
+                .setBody("Method Not Allowed");
+          }
+        });
+    NetworkService service = createNetworkService(mockPhpServer);
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                mockPhpServer.url("/").toString(),
+                "APP-SESS-ID",
+                SANITIZED_PHP8_FLUSH_WARNING));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
+  }
+
+  @Test
+  public void detect_when404ResponseItselfEmitsCustomSetCookie_retriesAndReportsVulnerability() {
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.NOT_FOUND.code())
+            .addHeader(
+                "Set-Cookie", "APP-SESS-ID=a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4; Path=/; HttpOnly")
+            .setBody("Not Found"));
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.NOT_FOUND.code())
+            .setBody(PHP8_UNPATCHED_STARTUP_WARNINGS_HTML));
+    mockPhpServer.enqueue(
+        new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()).setBody("Not Found"));
+    NetworkService service = createNetworkService(mockPhpServer);
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                mockPhpServer.url("/").toString(),
+                "APP-SESS-ID",
+                SANITIZED_PHP8_FLUSH_WARNING));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
   }
 }
