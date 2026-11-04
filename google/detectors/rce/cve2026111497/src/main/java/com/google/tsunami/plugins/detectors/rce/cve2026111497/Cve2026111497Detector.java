@@ -64,7 +64,7 @@ import javax.inject.Inject;
  * A {@link VulnDetector} that detects the Google Brotli decoder out-of-bounds write RCE
  * vulnerability (CVE-2026-111497).
  *
- * <p>Detection uses a zero-side-effect, false-positive-free 4-step differential protocol:
+ * <p>Detection uses a zero-side-effect, false-positive-free 5-step differential protocol:
  *
  * <ol>
  *   <li><b>Step 1 (Valid Brotli Control)</b>: Sends a 191-byte valid RFC 7932 Brotli stream ({@code
@@ -78,15 +78,15 @@ import javax.inject.Inject;
  *       contiguous string {@code tsunami_brotli_check_7f9a2b} never appears in the raw compressed
  *       request bytes.
  *   <li><b>Step 2 (Invalid Brotli Control)</b>: Sends a 191-byte invalid Brotli stream consisting
- *       of printable 7-bit ASCII (<code>{tsunami_brotli_invalid_control_...}</code>, matching the
- *       exact wire length of Step 1) whose opening byte (<code>'{'</code> = {@code 0x7b})
+ *       of printable 7-bit ASCII (<code>Vtsunami_brotli_invalid_control_...</code>, matching the
+ *       exact wire length of Step 1) whose opening byte (<code>'V'</code> = {@code 0x56})
  *       immediately fails RFC 7932 Section 9.2 padding validation ({@code
- *       BROTLI_DECODER_ERROR_FORMAT_PADDING_2}) in any Brotli decoder while also failing raw
- *       non-Brotli JSON/XML syntax parsing identically to Step 1's raw compressed bytes. Verifies
- *       that the target actively decompresses {@code Content-Encoding: br} and discriminates valid
- *       vs. invalid Brotli (via decompressed canary reflection on any status code or decompression
- *       error status code differential). If the endpoint does not decompress {@code
- *       Content-Encoding: br}, detection aborts immediately without sending the probe.
+ *       BROTLI_DECODER_ERROR_FORMAT_PADDING_2}) in any Brotli decoder while failing raw non-Brotli
+ *       syntax parsing identically to Step 1's raw compressed bytes. Verifies that the target
+ *       actively decompresses {@code Content-Encoding: br} and discriminates valid vs. invalid
+ *       Brotli (via decompressed canary reflection on any status code or decompression error status
+ *       code differential). If the endpoint does not decompress {@code Content-Encoding: br},
+ *       detection aborts immediately without sending the probe.
  *   <li><b>Step 3 (CVE-2026-111497 Zero-Side-Effect Probe)</b>: Sends a crafted Brotli stream with
  *       {@code NBLTYPESD == 1} and {@code 16,777,217} commands using static dictionary transform
  *       {@code OmitLast7} (producing 0 output bytes for the first {@code 16,777,216} commands while
@@ -101,6 +101,9 @@ import javax.inject.Inject;
  *   <li><b>Step 4 (Post-Probe Health &amp; Determinism Verification)</b>: Re-sends the 191-byte
  *       Step 1 and Step 2 controls to confirm that the service remains healthy and that the
  *       differential is deterministic.
+ *   <li><b>Step 5 (Unencoded Baseline Verification)</b>: Re-sends the 191-byte control payload(s)
+ *       without {@code Content-Encoding: br} to confirm that the differential in Steps 1–4 depends
+ *       on {@code Content-Encoding: br} decompression.
  * </ol>
  */
 @ForWebService
@@ -177,19 +180,16 @@ public final class Cve2026111497Detector implements VulnDetector {
 
   /**
    * 191-byte invalid Brotli stream consisting of printable 7-bit ASCII (matching the exact 191-byte
-   * length of {@link #VALID_BROTLI_CONTROL}) whose opening byte (<code>'{'</code> = {@code 0x7b}:
-   * {@code WBITS = 21}, {@code ISLAST = 1}, {@code ISLASTEMPTY = 1}, non-zero padding bit 6)
-   * immediately fails RFC 7932 Section 9.2 padding validation ({@code
-   * BROTLI_DECODER_ERROR_FORMAT_PADDING_2}) in any Brotli decoder. Subsequent bytes intentionally
-   * omit JSON quotes so that non-Brotli endpoints ignoring {@code Content-Encoding: br} fail raw
-   * JSON/XML syntax parsing symmetrically on both {@link #VALID_BROTLI_CONTROL} and {@link
-   * #INVALID_BROTLI_CONTROL}.
+   * length of {@link #VALID_BROTLI_CONTROL}) whose opening byte (<code>'V'</code> = {@code 0x56}:
+   * {@code WBITS = 16}, {@code ISLAST = 1}, {@code ISLASTEMPTY = 1}, non-zero padding bits {@code
+   * 01010}) immediately fails RFC 7932 Section 9.2 padding validation ({@code
+   * BROTLI_DECODER_ERROR_FORMAT_PADDING_2}). Both controls start with an uppercase ASCII letter and
+   * omit JSON/XML structural delimiters so non-Brotli parsers reject both streams symmetrically.
    */
   @VisibleForTesting
   static final ByteString INVALID_BROTLI_CONTROL =
       ByteString.copyFromUtf8(
-          Strings.padEnd("{tsunami_brotli_invalid_control_", VALID_BROTLI_CONTROL.size() - 1, '_')
-              + "}");
+          Strings.padEnd("Vtsunami_brotli_invalid_control_", VALID_BROTLI_CONTROL.size(), '_'));
 
   /**
    * 17-byte header for the CVE-2026-111497 probe: {@code WBITS = 16} + 0-length metadata metablock
@@ -426,10 +426,41 @@ public final class Cve2026111497Detector implements VulnDetector {
       return Optional.empty();
     }
 
+    // Step 5: Unencoded baseline verification without Content-Encoding: br.
+    Optional<HttpResponse> unencodedValidOpt =
+        sendUnencodedRequest(networkService, targetUrl, VALID_BROTLI_CONTROL);
+    if (unencodedValidOpt.isEmpty()) {
+      return Optional.empty();
+    }
+    HttpResponse unencodedValid = unencodedValidOpt.get();
+    if (unencodedValid.status() == HttpStatus.HTTP_STATUS_UNSPECIFIED) {
+      return Optional.empty();
+    }
+    if (canaryReflected) {
+      if (containsCanary(unencodedValid)) {
+        return Optional.empty();
+      }
+    } else if (unencodedValid.status() == validControl.status()) {
+      // If unencoded requests bypass a decompression filter (e.g., Envoy or mod_brotli) to a
+      // body-agnostic handler, verify INVALID_BROTLI_CONTROL returns the same status unencoded.
+      Optional<HttpResponse> unencodedInvalidOpt =
+          sendUnencodedRequest(networkService, targetUrl, INVALID_BROTLI_CONTROL);
+      if (unencodedInvalidOpt.isEmpty()
+          || unencodedInvalidOpt.get().status() != validControl.status()) {
+        return Optional.empty();
+      }
+    } else if (!isUnencodedRejectionStatus(unencodedValid.status())) {
+      return Optional.empty();
+    }
+
     logger.atInfo().log("Confirmed CVE-2026-111497 vulnerable Brotli decoder on '%s'", targetUrl);
     return Optional.of(
         buildAdditionalDetail(
-            targetUrl, canaryReflected, validControl, /* invalidBrStatus= */ invalidControl.status()));
+            targetUrl,
+            canaryReflected,
+            validControl,
+            /* invalidBrStatus= */ invalidControl.status(),
+            /* unencodedValidStatus= */ unencodedValid.status()));
   }
 
   private static boolean containsCanary(HttpResponse response) {
@@ -449,6 +480,11 @@ public final class Cve2026111497Detector implements VulnDetector {
       HttpStatus validStatus, HttpStatus invalidStatus) {
     return isPostDecompressionStatus(validStatus)
         && DECOMPRESSION_FAILURE_STATUSES.contains(invalidStatus);
+  }
+
+  private static boolean isUnencodedRejectionStatus(HttpStatus status) {
+    return DECOMPRESSION_FAILURE_STATUSES.contains(status)
+        || status == HttpStatus.UNSUPPORTED_MEDIA_TYPE;
   }
 
   private ImmutableSet<String> getTargetUrls(NetworkService networkService) {
@@ -498,22 +534,34 @@ public final class Cve2026111497Detector implements VulnDetector {
 
   private Optional<HttpResponse> sendBrotliRequest(
       NetworkService networkService, String targetUrl, ByteString brotliBody) {
+    return sendPostRequest(networkService, targetUrl, brotliBody, /* includeBrotliHeader= */ true);
+  }
+
+  private Optional<HttpResponse> sendUnencodedRequest(
+      NetworkService networkService, String targetUrl, ByteString rawBody) {
+    return sendPostRequest(networkService, targetUrl, rawBody, /* includeBrotliHeader= */ false);
+  }
+
+  private Optional<HttpResponse> sendPostRequest(
+      NetworkService networkService,
+      String targetUrl,
+      ByteString body,
+      boolean includeBrotliHeader) {
+    HttpHeaders.Builder headers =
+        HttpHeaders.builder()
+            .addHeader("Content-Type", "application/json")
+            .addHeader("Accept", "application/json, text/plain, */*");
+    if (includeBrotliHeader) {
+      headers.addHeader("Content-Encoding", "br");
+    }
     try {
       return Optional.of(
           httpClient.send(
-              post(targetUrl)
-                  .setHeaders(
-                      HttpHeaders.builder()
-                          .addHeader("Content-Encoding", "br")
-                          .addHeader("Content-Type", "application/json")
-                          .addHeader("Accept", "application/json, text/plain, */*")
-                          .build())
-                  .setRequestBody(brotliBody)
-                  .build(),
+              post(targetUrl).setHeaders(headers.build()).setRequestBody(body).build(),
               networkService));
     } catch (IOException e) {
       logger.atFine().withCause(e).log(
-          "HTTP exception while sending Brotli request to '%s'", targetUrl);
+          "HTTP exception while sending POST request to '%s'", targetUrl);
       return Optional.empty();
     }
   }
@@ -522,7 +570,8 @@ public final class Cve2026111497Detector implements VulnDetector {
       String targetUrl,
       boolean canaryReflected,
       HttpResponse validControl,
-      HttpStatus invalidBrStatus) {
+      HttpStatus invalidBrStatus,
+      HttpStatus unencodedValidStatus) {
     int validStatusCode = validControl.status().code();
     StringBuilder evidence =
         new StringBuilder()
@@ -535,7 +584,12 @@ public final class Cve2026111497Detector implements VulnDetector {
             .append(", invalid_br=")
             .append(invalidBrStatus.code())
             .append(", probe_br=")
-            .append(validStatusCode);
+            .append(validStatusCode)
+            .append(", unencoded_valid=")
+            .append(unencodedValidStatus.code());
+    if (!canaryReflected && unencodedValidStatus == validControl.status()) {
+      evidence.append(", unencoded_invalid=").append(validStatusCode);
+    }
     validControl
         .headers()
         .get("Server")
