@@ -1,0 +1,68 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "H2O_CVE_2025_6544"
+}
+
+# --- TEST 1: VULNERABLE H2O (DOUBLE-ENCODED PARAMETER ACCEPTED, JOB STARTED) ---
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '<title>H2O Flow</title>'
+      },
+      {
+        uri: "/99/ImportSQLTable"
+        status: 200
+        body_content: '{"__meta":{"schema_name":"JobV3"},"description":"Import SQL Table","status":"RUNNING"}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+# --- TEST 2: PATCHED H2O (DOUBLE-ENCODED PARAMETER REJECTED WITH 400) ---
+tests: {
+  name: "whenPatched_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: '<title>H2O Flow</title>'
+      },
+      {
+        uri: "/99/ImportSQLTable"
+        status: 400
+        body_content: '{"msg":"Potentially dangerous JDBC parameter found: allowLoadLocalInfile"}'
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+# --- TEST 3: NOT H2O SERVICE ---
+tests: {
+  name: "whenNotH2O_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
+

