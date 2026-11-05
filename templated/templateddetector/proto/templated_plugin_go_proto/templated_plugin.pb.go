@@ -71,8 +71,9 @@ func (x PluginAction_ActionPhase) Number() protoreflect.EnumNumber {
 type PluginWorkflow_Condition int32
 
 const (
-	PluginWorkflow_CONDITION_UNSPECIFIED    PluginWorkflow_Condition = 0
-	PluginWorkflow_REQUIRES_CALLBACK_SERVER PluginWorkflow_Condition = 1
+	PluginWorkflow_CONDITION_UNSPECIFIED        PluginWorkflow_Condition = 0
+	PluginWorkflow_REQUIRES_CALLBACK_SERVER     PluginWorkflow_Condition = 1
+	PluginWorkflow_REQUIRES_DNS_CALLBACK_SERVER PluginWorkflow_Condition = 2
 )
 
 // Enum value maps for PluginWorkflow_Condition.
@@ -80,10 +81,12 @@ var (
 	PluginWorkflow_Condition_name = map[int32]string{
 		0: "CONDITION_UNSPECIFIED",
 		1: "REQUIRES_CALLBACK_SERVER",
+		2: "REQUIRES_DNS_CALLBACK_SERVER",
 	}
 	PluginWorkflow_Condition_value = map[string]int32{
-		"CONDITION_UNSPECIFIED":    0,
-		"REQUIRES_CALLBACK_SERVER": 1,
+		"CONDITION_UNSPECIFIED":        0,
+		"REQUIRES_CALLBACK_SERVER":     1,
+		"REQUIRES_DNS_CALLBACK_SERVER": 2,
 	}
 )
 
@@ -1047,7 +1050,7 @@ var File_templated_plugin_proto protoreflect.FileDescriptor
 
 const file_templated_plugin_proto_rawDesc = "" +
 	"\n" +
-	"\x16templated_plugin.proto\x12\x1atsunami_templated_detector\x1a\x1bplugin_representation.proto\x1a\x13vulnerability.proto\x1a\x11action_http.proto\x1a\x1baction_callbackserver.proto\x1a\x12action_utils.proto\"\x88\x04\n" +
+	"\x16templated_plugin.proto\x12\x1atsunami_templated_detector\x1a\x1bplugin_representation.proto\x1a\x13vulnerability.proto\x1a\x1baction_callbackserver.proto\x1a\x11action_http.proto\x1a\x12action_utils.proto\"\x88\x04\n" +
 	"\fPluginAction\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12'\n" +
 	"\x0fcleanup_actions\x18\x02 \x03(\tR\x0ecleanupActions\x12K\n" +
@@ -1060,17 +1063,18 @@ const file_templated_plugin_proto_rawDesc = "" +
 	"\x18ACTION_PHASE_FINGERPRINT\x10\x01\x12\x1a\n" +
 	"\x16ACTION_PHASE_DETECTION\x10\x02B\f\n" +
 	"\n" +
-	"any_action\"\xcd\x02\n" +
+	"any_action\"\xef\x02\n" +
 	"\x0ePluginWorkflow\x12R\n" +
 	"\tcondition\x18\x01 \x01(\x0e24.tsunami_templated_detector.PluginWorkflow.ConditionR\tcondition\x12Q\n" +
 	"\tvariables\x18\x02 \x03(\v23.tsunami_templated_detector.PluginWorkflow.VariableR\tvariables\x12\x18\n" +
 	"\aactions\x18\x03 \x03(\tR\aactions\x1a4\n" +
 	"\bVariable\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\"D\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"f\n" +
 	"\tCondition\x12\x19\n" +
 	"\x15CONDITION_UNSPECIFIED\x10\x00\x12\x1c\n" +
-	"\x18REQUIRES_CALLBACK_SERVER\x10\x01\"@\n" +
+	"\x18REQUIRES_CALLBACK_SERVER\x10\x01\x12 \n" +
+	"\x1cREQUIRES_DNS_CALLBACK_SERVER\x10\x02\"@\n" +
 	"\fPluginConfig\x12\x1a\n" +
 	"\bdisabled\x18\x01 \x01(\bR\bdisabled\x12\x14\n" +
 	"\x05debug\x18\x02 \x01(\bR\x05debug\">\n" +
@@ -1144,8 +1148,8 @@ func file_templated_plugin_proto_init() {
 	if File_templated_plugin_proto != nil {
 		return
 	}
-	file_action_http_proto_init()
 	file_action_callbackserver_proto_init()
+	file_action_http_proto_init()
 	file_action_utils_proto_init()
 	file_templated_plugin_proto_msgTypes[0].OneofWrappers = []any{
 		(*pluginAction_HttpRequest)(nil),
