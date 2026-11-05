@@ -77,16 +77,18 @@ import javax.inject.Inject;
  *       0x80}). Every occurrence of the canary is split across uncompressed metablocks so the
  *       contiguous string {@code tsunami_brotli_check_7f9a2b} never appears in the raw compressed
  *       request bytes.
- *   <li><b>Step 2 (Invalid Brotli Control)</b>: Sends a 191-byte invalid Brotli stream consisting
- *       of printable 7-bit ASCII (<code>Vtsunami_brotli_invalid_control_...</code>, matching the
- *       exact wire length of Step 1) whose opening byte (<code>'V'</code> = {@code 0x56})
- *       immediately fails RFC 7932 Section 9.2 padding validation ({@code
- *       BROTLI_DECODER_ERROR_FORMAT_PADDING_2}) in any Brotli decoder while failing raw non-Brotli
- *       syntax parsing identically to Step 1's raw compressed bytes. Verifies that the target
- *       actively decompresses {@code Content-Encoding: br} and discriminates valid vs. invalid
- *       Brotli (via decompressed canary reflection on any status code or decompression error status
- *       code differential). If the endpoint does not decompress {@code Content-Encoding: br},
- *       detection aborts immediately without sending the probe.
+ *   <li><b>Step 2 (Invalid Brotli Control &amp; Pre-Probe Determinism Gate)</b>: Sends a 191-byte
+ *       invalid Brotli stream consisting of printable 7-bit ASCII (<code>
+ *       Vtsunami_brotli_invalid_control_...</code>, matching the exact wire length of Step 1) whose
+ *       opening byte (<code>'V'</code> = {@code 0x56}) immediately fails RFC 7932 Section 9.2
+ *       padding validation ({@code BROTLI_DECODER_ERROR_FORMAT_PADDING_2}) in any Brotli decoder
+ *       while failing raw non-Brotli syntax parsing identically to Step 1's raw compressed bytes.
+ *       Verifies that the target actively decompresses {@code Content-Encoding: br} and
+ *       discriminates valid vs. invalid Brotli (via decompressed canary reflection on any status
+ *       code or decompression error status code differential). In status-only differential mode (no
+ *       canary reflection), confirms determinism across two additional aperiodic control pairs
+ *       before ever sending the Step 3 probe. If the endpoint does not deterministically decompress
+ *       {@code Content-Encoding: br}, detection aborts immediately without sending the probe.
  *   <li><b>Step 3 (CVE-2026-111497 Zero-Side-Effect Probe)</b>: Sends a crafted Brotli stream with
  *       {@code NBLTYPESD == 1} and {@code 16,777,217} commands using static dictionary transform
  *       {@code OmitLast7} (producing 0 output bytes for the first {@code 16,777,216} commands while
@@ -98,12 +100,15 @@ import javax.inject.Inject;
  *       1. Patched Brotli ({@code 1.0.10}, {@code 1.1.1}, {@code 1.2.1}) immediately aborts at the
  *       {@code 16,777,217}th command with {@code BROTLI_DECODER_ERROR_FORMAT_BLOCK_SWITCH} ({@code
  *       -17}) and 0 output bytes.
- *   <li><b>Step 4 (Post-Probe Health &amp; Determinism Verification)</b>: Re-sends the 191-byte
- *       Step 1 and Step 2 controls to confirm that the service remains healthy and that the
- *       differential is deterministic.
+ *   <li><b>Step 4 (Post-Probe Health &amp; Multi-Round Determinism Verification)</b>: Re-sends the
+ *       191-byte Step 1 and Step 2 controls (one pair when canary reflection is present; five
+ *       aperiodic pairs in status-differential mode) to confirm that the service remains healthy
+ *       and to eliminate false positives from stochastic TCP timing races or multi-pod status
+ *       oscillation.
  *   <li><b>Step 5 (Unencoded Baseline Verification)</b>: Re-sends the 191-byte control payload(s)
- *       without {@code Content-Encoding: br} to confirm that the differential in Steps 1–4 depends
- *       on {@code Content-Encoding: br} decompression.
+ *       without {@code Content-Encoding: br} (both valid and invalid control payloads in
+ *       status-differential mode) to confirm that the differential in Steps 1–4 depends on {@code
+ *       Content-Encoding: br} decompression.
  * </ol>
  */
 @ForWebService
@@ -306,6 +311,40 @@ public final class Cve2026111497Detector implements VulnDetector {
           HttpStatus.UNPROCESSABLE_ENTITY,
           HttpStatus.INTERNAL_SERVER_ERROR);
 
+  /** Ordering of the valid and invalid 191-byte control requests within a verification pair. */
+  @VisibleForTesting
+  enum ControlPairOrder {
+    VALID_FIRST,
+    INVALID_FIRST
+  }
+
+  /**
+   * Pre-probe control pair schedule executed in Step 2 when {@code !canaryReflected}. Reversing the
+   * first confirmation pair ({@link ControlPairOrder#INVALID_FIRST}) immediately aborts
+   * deterministic 2-pod, 3-pod, and 5-pod round-robin load balancers before sending the 23 MB Step
+   * 3 probe, while two additional pairs cut random 50/50 multi-pod probe traffic by 16x (to 1/64
+   * per path).
+   */
+  @VisibleForTesting
+  static final ImmutableList<ControlPairOrder> PRE_PROBE_STATUS_PAIR_POLARITIES =
+      ImmutableList.of(ControlPairOrder.INVALID_FIRST, ControlPairOrder.VALID_FIRST);
+
+  /**
+   * Post-probe control pair schedule executed in Step 4 when {@code !canaryReflected}. Five
+   * aperiodic pairs (combined with Steps 1-3 and dual unencoded controls in Step 5) eliminate all
+   * periodic round-robin status patterns of period {@code <= 17} and bound single-endpoint i.i.d.
+   * stochastic false positives (e.g., TCP socket reader races) below {@code 4e-6} ({@code < 1 in
+   * 250,000} scans) while keeping total traffic on a vulnerable endpoint at 19 requests.
+   */
+  @VisibleForTesting
+  static final ImmutableList<ControlPairOrder> POST_PROBE_STATUS_PAIR_POLARITIES =
+      ImmutableList.of(
+          ControlPairOrder.INVALID_FIRST,
+          ControlPairOrder.VALID_FIRST,
+          ControlPairOrder.INVALID_FIRST,
+          ControlPairOrder.INVALID_FIRST,
+          ControlPairOrder.VALID_FIRST);
+
   private final Clock utcClock;
   private final HttpClient httpClient;
 
@@ -392,6 +431,22 @@ public final class Cve2026111497Detector implements VulnDetector {
       return Optional.empty();
     }
 
+    // Pre-probe determinism gate in status-differential mode: confirm the status split across two
+    // additional aperiodic 191-byte control pairs before sending the 23 MB Step 3 probe.
+    if (!canaryReflected) {
+      for (ControlPairOrder pairOrder : PRE_PROBE_STATUS_PAIR_POLARITIES) {
+        if (!verifyBrotliControlPair(
+            networkService,
+            targetUrl,
+            validControl.status(),
+            invalidControl.status(),
+            /* canaryReflected= */ false,
+            pairOrder)) {
+          return Optional.empty();
+        }
+      }
+    }
+
     // Step 3: Send the zero-side-effect CVE-2026-111497 Brotli probe.
     Optional<HttpResponse> probeResponseOpt =
         sendBrotliRequest(networkService, targetUrl, Holder.CVE_2026_111497_PROBE);
@@ -404,29 +459,61 @@ public final class Cve2026111497Detector implements VulnDetector {
       return Optional.empty();
     }
 
-    // Step 4: Post-probe health and determinism verification using the 191-byte controls.
-    Optional<HttpResponse> validVerifyOpt =
-        sendBrotliRequest(networkService, targetUrl, VALID_BROTLI_CONTROL);
-    if (validVerifyOpt.isEmpty()) {
-      return Optional.empty();
-    }
-    Optional<HttpResponse> invalidVerifyOpt =
-        sendBrotliRequest(networkService, targetUrl, INVALID_BROTLI_CONTROL);
-    if (invalidVerifyOpt.isEmpty()) {
-      return Optional.empty();
-    }
-    HttpResponse validVerify = validVerifyOpt.get();
-    HttpResponse invalidVerify = invalidVerifyOpt.get();
-
-    if (validVerify.status() != validControl.status()
-        || invalidVerify.status() != invalidControl.status()) {
-      return Optional.empty();
-    }
-    if (canaryReflected && (!containsCanary(validVerify) || containsCanary(invalidVerify))) {
+    // Step 4: Post-probe health and multi-round determinism verification using 191-byte controls.
+    if (!verifyPostProbeControls(
+        networkService,
+        targetUrl,
+        validControl.status(),
+        invalidControl.status(),
+        canaryReflected)) {
       return Optional.empty();
     }
 
     // Step 5: Unencoded baseline verification without Content-Encoding: br.
+    Optional<AdditionalDetail> detail =
+        verifyUnencodedBaseline(
+            networkService, targetUrl, validControl, invalidControl.status(), canaryReflected);
+    if (detail.isPresent()) {
+      logger.atInfo().log("Confirmed CVE-2026-111497 vulnerable Brotli decoder on '%s'", targetUrl);
+    }
+    return detail;
+  }
+
+  private boolean verifyPostProbeControls(
+      NetworkService networkService,
+      String targetUrl,
+      HttpStatus expectedValidStatus,
+      HttpStatus expectedInvalidStatus,
+      boolean canaryReflected) {
+    if (canaryReflected) {
+      return verifyBrotliControlPair(
+          networkService,
+          targetUrl,
+          expectedValidStatus,
+          expectedInvalidStatus,
+          /* canaryReflected= */ true,
+          ControlPairOrder.VALID_FIRST);
+    }
+    for (ControlPairOrder pairOrder : POST_PROBE_STATUS_PAIR_POLARITIES) {
+      if (!verifyBrotliControlPair(
+          networkService,
+          targetUrl,
+          expectedValidStatus,
+          expectedInvalidStatus,
+          /* canaryReflected= */ false,
+          pairOrder)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private Optional<AdditionalDetail> verifyUnencodedBaseline(
+      NetworkService networkService,
+      String targetUrl,
+      HttpResponse validControl,
+      HttpStatus invalidBrStatus,
+      boolean canaryReflected) {
     Optional<HttpResponse> unencodedValidOpt =
         sendUnencodedRequest(networkService, targetUrl, VALID_BROTLI_CONTROL);
     if (unencodedValidOpt.isEmpty()) {
@@ -440,27 +527,79 @@ public final class Cve2026111497Detector implements VulnDetector {
       if (containsCanary(unencodedValid)) {
         return Optional.empty();
       }
-    } else if (unencodedValid.status() == validControl.status()) {
-      // If unencoded requests bypass a decompression filter (e.g., Envoy or mod_brotli) to a
-      // body-agnostic handler, verify INVALID_BROTLI_CONTROL returns the same status unencoded.
-      Optional<HttpResponse> unencodedInvalidOpt =
-          sendUnencodedRequest(networkService, targetUrl, INVALID_BROTLI_CONTROL);
-      if (unencodedInvalidOpt.isEmpty()
-          || unencodedInvalidOpt.get().status() != validControl.status()) {
-        return Optional.empty();
-      }
-    } else if (!isUnencodedRejectionStatus(unencodedValid.status())) {
-      return Optional.empty();
+      return Optional.of(
+          buildCanaryReflectionDetail(
+              targetUrl, validControl, invalidBrStatus, unencodedValid.status()));
     }
 
-    logger.atInfo().log("Confirmed CVE-2026-111497 vulnerable Brotli decoder on '%s'", targetUrl);
+    boolean unencodedBypassedFilter = unencodedValid.status() == validControl.status();
+    if (!unencodedBypassedFilter && !isUnencodedRejectionStatus(unencodedValid.status())) {
+      return Optional.empty();
+    }
+    // Always verify INVALID_BROTLI_CONTROL unencoded in status-differential mode: if unencoded
+    // requests bypass a decompression filter (e.g., Envoy or mod_brotli) to a body-agnostic
+    // handler, both unencoded payloads must return validControl.status(); if downstream rejects
+    // unencoded non-JSON bodies, both unencoded payloads must return an unencoded rejection status.
+    Optional<HttpResponse> unencodedInvalidOpt =
+        sendUnencodedRequest(networkService, targetUrl, INVALID_BROTLI_CONTROL);
+    if (unencodedInvalidOpt.isEmpty()) {
+      return Optional.empty();
+    }
+    HttpResponse unencodedInvalid = unencodedInvalidOpt.get();
+    if (unencodedBypassedFilter) {
+      if (unencodedInvalid.status() != validControl.status()) {
+        return Optional.empty();
+      }
+    } else if (!isUnencodedRejectionStatus(unencodedInvalid.status())) {
+      return Optional.empty();
+    }
     return Optional.of(
-        buildAdditionalDetail(
+        buildStatusDifferentialDetail(
             targetUrl,
-            canaryReflected,
             validControl,
-            /* invalidBrStatus= */ invalidControl.status(),
-            /* unencodedValidStatus= */ unencodedValid.status()));
+            invalidBrStatus,
+            unencodedValid.status(),
+            unencodedInvalid.status()));
+  }
+
+  private boolean verifyBrotliControlPair(
+      NetworkService networkService,
+      String targetUrl,
+      HttpStatus expectedValidStatus,
+      HttpStatus expectedInvalidStatus,
+      boolean canaryReflected,
+      ControlPairOrder pairOrder) {
+    if (pairOrder == ControlPairOrder.VALID_FIRST) {
+      return verifyValidControl(networkService, targetUrl, expectedValidStatus, canaryReflected)
+          && verifyInvalidControl(
+              networkService, targetUrl, expectedInvalidStatus, canaryReflected);
+    }
+    return verifyInvalidControl(networkService, targetUrl, expectedInvalidStatus, canaryReflected)
+        && verifyValidControl(networkService, targetUrl, expectedValidStatus, canaryReflected);
+  }
+
+  private boolean verifyValidControl(
+      NetworkService networkService,
+      String targetUrl,
+      HttpStatus expectedValidStatus,
+      boolean canaryReflected) {
+    Optional<HttpResponse> response =
+        sendBrotliRequest(networkService, targetUrl, VALID_BROTLI_CONTROL);
+    return response.isPresent()
+        && response.get().status() == expectedValidStatus
+        && (!canaryReflected || containsCanary(response.get()));
+  }
+
+  private boolean verifyInvalidControl(
+      NetworkService networkService,
+      String targetUrl,
+      HttpStatus expectedInvalidStatus,
+      boolean canaryReflected) {
+    Optional<HttpResponse> response =
+        sendBrotliRequest(networkService, targetUrl, INVALID_BROTLI_CONTROL);
+    return response.isPresent()
+        && response.get().status() == expectedInvalidStatus
+        && (!canaryReflected || !containsCanary(response.get()));
   }
 
   private static boolean containsCanary(HttpResponse response) {
@@ -566,30 +705,56 @@ public final class Cve2026111497Detector implements VulnDetector {
     }
   }
 
-  private static AdditionalDetail buildAdditionalDetail(
+  private static AdditionalDetail buildCanaryReflectionDetail(
       String targetUrl,
-      boolean canaryReflected,
       HttpResponse validControl,
       HttpStatus invalidBrStatus,
       HttpStatus unencodedValidStatus) {
+    return formatAdditionalDetail(
+        targetUrl,
+        "canary_reflection",
+        validControl,
+        invalidBrStatus,
+        ", unencoded_valid=" + unencodedValidStatus.code());
+  }
+
+  private static AdditionalDetail buildStatusDifferentialDetail(
+      String targetUrl,
+      HttpResponse validControl,
+      HttpStatus invalidBrStatus,
+      HttpStatus unencodedValidStatus,
+      HttpStatus unencodedInvalidStatus) {
+    return formatAdditionalDetail(
+        targetUrl,
+        "status_differential",
+        validControl,
+        invalidBrStatus,
+        ", unencoded_valid="
+            + unencodedValidStatus.code()
+            + ", unencoded_invalid="
+            + unencodedInvalidStatus.code());
+  }
+
+  private static AdditionalDetail formatAdditionalDetail(
+      String targetUrl,
+      String signal,
+      HttpResponse validControl,
+      HttpStatus invalidBrStatus,
+      String unencodedSummary) {
     int validStatusCode = validControl.status().code();
     StringBuilder evidence =
         new StringBuilder()
             .append("Vulnerable endpoint: ")
             .append(targetUrl)
             .append(" (signal=")
-            .append(canaryReflected ? "canary_reflection" : "status_differential")
+            .append(signal)
             .append(", valid_br=")
             .append(validStatusCode)
             .append(", invalid_br=")
             .append(invalidBrStatus.code())
             .append(", probe_br=")
             .append(validStatusCode)
-            .append(", unencoded_valid=")
-            .append(unencodedValidStatus.code());
-    if (!canaryReflected && unencodedValidStatus == validControl.status()) {
-      evidence.append(", unencoded_invalid=").append(validStatusCode);
-    }
+            .append(unencodedSummary);
     validControl
         .headers()
         .get("Server")

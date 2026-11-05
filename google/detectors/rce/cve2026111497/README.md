@@ -37,16 +37,17 @@ decompressor filter enabled on requests.
 
 ## Verification
 
-The detector uses a zero-side-effect, false-positive-free 4-step differential
+The detector uses a zero-side-effect, false-positive-free 5-step differential
 protocol:
 
-1. Sends a 47-byte valid RFC 7932 Brotli control payload (`Content-Encoding:
+1. Sends a 191-byte valid RFC 7932 Brotli control payload (`Content-Encoding:
    br`) whose decompressed JSON canary (`tsunami_brotli_check_7f9a2b`) is split
-   across two metablocks so the contiguous canary string never appears in raw
-   wire bytes.
-2. Sends a 47-byte invalid Brotli control payload (`Content-Encoding: br`) to
+   across uncompressed metablocks so the contiguous canary string never appears
+   in raw wire bytes.
+2. Sends a 191-byte invalid Brotli control payload (`Content-Encoding: br`) to
    confirm that the endpoint actively decompresses `Content-Encoding: br` and
-   discriminates valid vs. invalid Brotli before ever sending the probe.
+   discriminates valid vs. invalid Brotli, confirming status-only differentials
+   across two additional aperiodic control pairs before ever sending the probe.
 3. Sends a compact, zero-side-effect CVE-2026-111497 Brotli bitstream
    (`16,777,216` zero-output `OmitLast7` static dictionary commands with
    `s->pos == 0`, followed by the `16,777,217`th command and a 32-byte
@@ -55,5 +56,10 @@ protocol:
    1 on unpatched Brotli (`1.0.3 .. 1.2.0`) and fails with
    `BROTLI_DECODER_ERROR_FORMAT_BLOCK_SWITCH` on patched Brotli (`1.0.10`,
    `1.1.1`, `1.2.1`).
-4. Re-verifies the small Step 1 and Step 2 controls to confirm deterministic
-   behavior and target health.
+4. Re-verifies the 191-byte Step 1 and Step 2 controls (one pair with canary
+   reflection; five aperiodic pairs in status-differential mode) to confirm
+   target health and eliminate multi-pod round-robin or TCP race false
+   positives.
+5. Re-sends the 191-byte control payload(s) without `Content-Encoding: br` (both
+   valid and invalid controls in status-differential mode) to confirm that the
+   differential depends on `Content-Encoding: br` decompression.

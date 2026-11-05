@@ -28,6 +28,7 @@ import com.google.tsunami.common.net.http.HttpClientModule;
 import com.google.tsunami.common.net.http.HttpStatus;
 import com.google.tsunami.common.time.testing.FakeUtcClock;
 import com.google.tsunami.common.time.testing.FakeUtcClockModule;
+import com.google.tsunami.plugins.detectors.rce.cve2026111497.Cve2026111497Detector.ControlPairOrder;
 import com.google.tsunami.proto.AdditionalDetail;
 import com.google.tsunami.proto.CrawlResult;
 import com.google.tsunami.proto.CrawlTarget;
@@ -50,6 +51,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -119,7 +121,7 @@ public final class Cve2026111497DetectorTest {
         .build();
   }
 
-  private void enqueueVulnerableCycle(
+  private void enqueueVulnerableCanaryCycle(
       Supplier<MockResponse> validResponse, Supplier<MockResponse> invalidResponse) {
     mockWebServer.enqueue(validResponse.get());
     mockWebServer.enqueue(invalidResponse.get());
@@ -129,12 +131,69 @@ public final class Cve2026111497DetectorTest {
     mockWebServer.enqueue(invalidResponse.get());
   }
 
-  private static boolean isValidControl(RecordedRequest request) {
-    return Objects.equals(request.getHeader("Content-Encoding"), "br")
-        && request.getBodySize() == Cve2026111497Detector.VALID_BROTLI_CONTROL.size()
+  private void enqueueVulnerableStatusCycle(
+      Supplier<MockResponse> validResponse, Supplier<MockResponse> invalidResponse) {
+    enqueueVulnerableStatusCycle(validResponse, invalidResponse, invalidResponse, invalidResponse);
+  }
+
+  private void enqueueVulnerableStatusCycle(
+      Supplier<MockResponse> validResponse,
+      Supplier<MockResponse> invalidResponse,
+      Supplier<MockResponse> unencodedValidResponse,
+      Supplier<MockResponse> unencodedInvalidResponse) {
+    enqueueControlPair(ControlPairOrder.VALID_FIRST, validResponse, invalidResponse);
+    for (ControlPairOrder pairOrder : Cve2026111497Detector.PRE_PROBE_STATUS_PAIR_POLARITIES) {
+      enqueueControlPair(pairOrder, validResponse, invalidResponse);
+    }
+    mockWebServer.enqueue(validResponse.get());
+    for (ControlPairOrder pairOrder : Cve2026111497Detector.POST_PROBE_STATUS_PAIR_POLARITIES) {
+      enqueueControlPair(pairOrder, validResponse, invalidResponse);
+    }
+    mockWebServer.enqueue(unencodedValidResponse.get());
+    mockWebServer.enqueue(unencodedInvalidResponse.get());
+  }
+
+  private void enqueueControlPair(
+      ControlPairOrder pairOrder,
+      Supplier<MockResponse> validResponse,
+      Supplier<MockResponse> invalidResponse) {
+    if (pairOrder == ControlPairOrder.VALID_FIRST) {
+      mockWebServer.enqueue(validResponse.get());
+      mockWebServer.enqueue(invalidResponse.get());
+    } else {
+      mockWebServer.enqueue(invalidResponse.get());
+      mockWebServer.enqueue(validResponse.get());
+    }
+  }
+
+  private void assertRecordedBrotliRequests(int count) throws InterruptedException {
+    for (int i = 0; i < count; i++) {
+      assertThat(mockWebServer.takeRequest().getHeader("Content-Encoding")).isEqualTo("br");
+    }
+  }
+
+  private static void assertRecordedBrotliControl(RecordedRequest request, byte[] expectedBody) {
+    assertThat(request.getHeader("Content-Encoding")).isEqualTo("br");
+    assertThat(request.getHeader("Content-Type")).startsWith("application/json");
+    assertThat(request.getBody().readByteArray()).isEqualTo(expectedBody);
+  }
+
+  private static void assertRecordedUnencodedControl(RecordedRequest request, byte[] expectedBody) {
+    assertThat(request.getHeader("Content-Encoding")).isNull();
+    assertThat(request.getHeader("Content-Type")).startsWith("application/json");
+    assertThat(request.getBody().readByteArray()).isEqualTo(expectedBody);
+  }
+
+  private static boolean hasValidControlBody(RecordedRequest request) {
+    return request.getBodySize() == Cve2026111497Detector.VALID_BROTLI_CONTROL.size()
         && Arrays.equals(
             request.getBody().clone().readByteArray(),
             Cve2026111497Detector.VALID_BROTLI_CONTROL.toByteArray());
+  }
+
+  private static boolean isValidControl(RecordedRequest request) {
+    return Objects.equals(request.getHeader("Content-Encoding"), "br")
+        && hasValidControlBody(request);
   }
 
   private static boolean isProbe(RecordedRequest request) {
@@ -201,9 +260,24 @@ public final class Cve2026111497DetectorTest {
   }
 
   @Test
+  public void statusPairPolarities_matchAperiodicPreAndPostProbeSchedule() {
+    assertThat(Cve2026111497Detector.PRE_PROBE_STATUS_PAIR_POLARITIES)
+        .containsExactly(ControlPairOrder.INVALID_FIRST, ControlPairOrder.VALID_FIRST)
+        .inOrder();
+    assertThat(Cve2026111497Detector.POST_PROBE_STATUS_PAIR_POLARITIES)
+        .containsExactly(
+            ControlPairOrder.INVALID_FIRST,
+            ControlPairOrder.VALID_FIRST,
+            ControlPairOrder.INVALID_FIRST,
+            ControlPairOrder.INVALID_FIRST,
+            ControlPairOrder.VALID_FIRST)
+        .inOrder();
+  }
+
+  @Test
   public void detect_whenVulnerableServerAcceptsProbeWithStatusDifferential_reportsVulnerability()
       throws InterruptedException {
-    enqueueVulnerableCycle(
+    enqueueVulnerableStatusCycle(
         () -> new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"),
         () ->
             new MockResponse()
@@ -222,35 +296,43 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/")
                     + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200,"
-                    + " unencoded_valid=400)"));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(6);
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
 
-    RecordedRequest req1 = mockWebServer.takeRequest();
-    assertThat(req1.getHeader("Content-Encoding")).isEqualTo("br");
-    assertThat(req1.getHeader("Content-Type")).startsWith("application/json");
-    assertThat(req1.getBodySize()).isEqualTo(Cve2026111497Detector.VALID_BROTLI_CONTROL.size());
+    byte[] validControlBytes = Cve2026111497Detector.VALID_BROTLI_CONTROL.toByteArray();
+    byte[] invalidControlBytes = Cve2026111497Detector.INVALID_BROTLI_CONTROL.toByteArray();
 
-    RecordedRequest req2 = mockWebServer.takeRequest();
-    assertThat(req2.getHeader("Content-Encoding")).isEqualTo("br");
-    assertThat(req2.getBodySize()).isEqualTo(Cve2026111497Detector.INVALID_BROTLI_CONTROL.size());
+    // Steps 1-2 initial pair: (valid, invalid)
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), validControlBytes);
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), invalidControlBytes);
+    // Step 2 pre-probe polarities [false, true]: (invalid, valid), (valid, invalid)
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), invalidControlBytes);
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), validControlBytes);
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), validControlBytes);
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), invalidControlBytes);
 
-    RecordedRequest req3 = mockWebServer.takeRequest();
-    assertThat(req3.getHeader("Content-Encoding")).isEqualTo("br");
-    assertThat(req3.getBodySize())
+    // Step 3 probe
+    RecordedRequest probeReq = mockWebServer.takeRequest();
+    assertThat(probeReq.getHeader("Content-Encoding")).isEqualTo("br");
+    assertThat(probeReq.getHeader("Content-Type")).startsWith("application/json");
+    assertThat(probeReq.getBodySize())
         .isEqualTo(Cve2026111497Detector.Holder.CVE_2026_111497_PROBE.size());
 
-    RecordedRequest req4 = mockWebServer.takeRequest();
-    assertThat(req4.getHeader("Content-Encoding")).isEqualTo("br");
-    assertThat(req4.getBodySize()).isEqualTo(Cve2026111497Detector.VALID_BROTLI_CONTROL.size());
+    // Step 4 post-probe polarities [false, true, false, false, true]
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), invalidControlBytes);
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), validControlBytes);
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), validControlBytes);
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), invalidControlBytes);
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), invalidControlBytes);
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), validControlBytes);
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), invalidControlBytes);
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), validControlBytes);
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), validControlBytes);
+    assertRecordedBrotliControl(mockWebServer.takeRequest(), invalidControlBytes);
 
-    RecordedRequest req5 = mockWebServer.takeRequest();
-    assertThat(req5.getHeader("Content-Encoding")).isEqualTo("br");
-    assertThat(req5.getBodySize()).isEqualTo(Cve2026111497Detector.INVALID_BROTLI_CONTROL.size());
-
-    RecordedRequest req6 = mockWebServer.takeRequest();
-    assertThat(req6.getHeader("Content-Encoding")).isNull();
-    assertThat(req6.getHeader("Content-Type")).startsWith("application/json");
-    assertThat(req6.getBodySize()).isEqualTo(Cve2026111497Detector.VALID_BROTLI_CONTROL.size());
+    // Step 5 dual unencoded baseline: (valid unencoded, invalid unencoded)
+    assertRecordedUnencodedControl(mockWebServer.takeRequest(), validControlBytes);
+    assertRecordedUnencodedControl(mockWebServer.takeRequest(), invalidControlBytes);
   }
 
   @Test
@@ -258,7 +340,7 @@ public final class Cve2026111497DetectorTest {
       detect_whenVulnerableMiddlewareReturns404OnValidAnd400OnInvalid_reportsVulnerability() {
     // Express app.use(express.json()) on an unrouted POST / returns 404 after successful
     // decompression, but 400 Bad Request when Brotli decompression fails.
-    enqueueVulnerableCycle(
+    enqueueVulnerableStatusCycle(
         () ->
             new MockResponse()
                 .setResponseCode(HttpStatus.NOT_FOUND.code())
@@ -280,14 +362,14 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/")
                     + " (signal=status_differential, valid_br=404, invalid_br=400, probe_br=404,"
-                    + " unencoded_valid=400)"));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(6);
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
   }
 
   @Test
   public void detect_whenVulnerableServerReflectsDecompressedCanary_reportsVulnerability() {
     String reflectedJson = "{\"echo\":\"" + Cve2026111497Detector.DECOMPRESSED_CANARY + "\"}";
-    enqueueVulnerableCycle(
+    enqueueVulnerableCanaryCycle(
         () -> new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(reflectedJson),
         () -> new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("{\"echo\":null}"));
     NetworkService service = createNetworkService();
@@ -308,12 +390,11 @@ public final class Cve2026111497DetectorTest {
   }
 
   @Test
-  public void
-      detect_whenApplianceFilterReturns401OnValidAnd400OnInvalid_reportsVulnerability() {
+  public void detect_whenApplianceFilterReturns401OnValidAnd400OnInvalid_reportsVulnerability() {
     // Envoy HTTP decompressor filter / Apache mod_brotli in front of an authenticated appliance
     // API returns 401 Unauthorized after successful Brotli decompression, and 400 Bad Request when
     // Brotli decompression fails.
-    enqueueVulnerableCycle(
+    enqueueVulnerableStatusCycle(
         () ->
             new MockResponse()
                 .setResponseCode(HttpStatus.UNAUTHORIZED.code())
@@ -335,13 +416,13 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/")
                     + " (signal=status_differential, valid_br=401, invalid_br=400, probe_br=401,"
-                    + " unencoded_valid=400)"));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(6);
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
   }
 
   @Test
   public void detect_whenApplianceAclReturns403OnValidAnd422OnInvalid_reportsVulnerability() {
-    enqueueVulnerableCycle(
+    enqueueVulnerableStatusCycle(
         () -> new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code()).setBody("Forbidden"),
         () ->
             new MockResponse()
@@ -360,15 +441,15 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/")
                     + " (signal=status_differential, valid_br=403, invalid_br=422, probe_br=403,"
-                    + " unencoded_valid=422)"));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(6);
+                    + " unencoded_valid=422, unencoded_invalid=422)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
   }
 
   @Test
   public void detect_whenInputFilterReturns405OnValidAnd500OnInvalid_reportsVulnerability() {
     // Apache SetInputFilter BROTLI_COMPRESS on a GET-only resource returns 405 Method Not Allowed
     // when Brotli decompression succeeds, and 400/500 when Brotli decompression fails.
-    enqueueVulnerableCycle(
+    enqueueVulnerableStatusCycle(
         () -> new MockResponse().setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code()),
         () -> new MockResponse().setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.code()));
     NetworkService service = createNetworkService();
@@ -384,14 +465,14 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/")
                     + " (signal=status_differential, valid_br=405, invalid_br=500, probe_br=405,"
-                    + " unencoded_valid=500)"));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(6);
+                    + " unencoded_valid=500, unencoded_invalid=500)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
   }
 
   @Test
   public void
       detect_whenApplianceLoginRedirectReturns302OnValidAnd400OnInvalid_reportsVulnerability() {
-    enqueueVulnerableCycle(
+    enqueueVulnerableStatusCycle(
         () ->
             new MockResponse()
                 .setResponseCode(HttpStatus.FOUND.code())
@@ -410,14 +491,14 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/")
                     + " (signal=status_differential, valid_br=302, invalid_br=400, probe_br=302,"
-                    + " unencoded_valid=400)"));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(6);
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
   }
 
   @Test
   public void
       detect_whenApplianceLoginRedirectReturns303OnValidAnd400OnInvalid_reportsVulnerability() {
-    enqueueVulnerableCycle(
+    enqueueVulnerableStatusCycle(
         () ->
             new MockResponse()
                 .setResponseCode(HttpStatus.SEE_OTHER.code())
@@ -436,8 +517,8 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/")
                     + " (signal=status_differential, valid_br=303, invalid_br=400, probe_br=303,"
-                    + " unencoded_valid=400)"));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(6);
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
   }
 
   @Test
@@ -451,15 +532,11 @@ public final class Cve2026111497DetectorTest {
             + Cve2026111497Detector.DECOMPRESSED_CANARY
             + "' on type 'Query'.\"}]}";
     String decompError = "{\"errors\":[{\"message\":\"Invalid Brotli stream\"}]}";
-    enqueueVulnerableCycle(
+    enqueueVulnerableCanaryCycle(
         () ->
-            new MockResponse()
-                .setResponseCode(HttpStatus.BAD_REQUEST.code())
-                .setBody(graphQlError),
+            new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody(graphQlError),
         () ->
-            new MockResponse()
-                .setResponseCode(HttpStatus.BAD_REQUEST.code())
-                .setBody(decompError));
+            new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody(decompError));
     NetworkService service = createNetworkService();
     TargetInfo target = createTargetInfo();
 
@@ -484,7 +561,7 @@ public final class Cve2026111497DetectorTest {
         "{\"detail\":[{\"type\":\"extra_forbidden\",\"loc\":[\"body\",\""
             + Cve2026111497Detector.DECOMPRESSED_CANARY
             + "\"]}]}";
-    enqueueVulnerableCycle(
+    enqueueVulnerableCanaryCycle(
         () ->
             new MockResponse()
                 .setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code())
@@ -682,9 +759,7 @@ public final class Cve2026111497DetectorTest {
         new ProbeTrackingDispatcher(
             request -> {
               String podName =
-                  requestIndex.getAndIncrement() % 2 == 0
-                      ? "deployment-pod-a"
-                      : "deployment-pod-b";
+                  requestIndex.getAndIncrement() % 2 == 0 ? "deployment-pod-a" : "deployment-pod-b";
               return new MockResponse()
                   .setResponseCode(HttpStatus.OK.code())
                   .setBody("Hello, world!\nVersion: 2.0.0\nHostname: " + podName + "\n");
@@ -877,27 +952,34 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/graphql")
                     + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200,"
-                    + " unencoded_valid=400)"));
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
     assertThat(dispatcher.probeCount()).isEqualTo(1);
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/graphql")).isEqualTo(19);
   }
 
   @Test
   public void detect_whenPostProbeVerificationFails_reportsEmpty() {
-    // Root path ("/"): Steps 1-3 pass, but Step 4 invalid control returns 200 OK (inconsistent).
-    AtomicInteger rootRequestCount = new AtomicInteger();
+    // Root path ("/"): Steps 1-3 pass, but Step 4's first post-probe invalid control returns 200 OK
+    // instead of 400 Bad Request.
+    AtomicBoolean probeSeen = new AtomicBoolean();
     ProbeTrackingDispatcher dispatcher =
         new ProbeTrackingDispatcher(
             request -> {
               if (!request.getPath().equals("/")) {
                 return new MockResponse().setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code());
               }
-              int stepRequest = rootRequestCount.incrementAndGet();
-              if (stepRequest == 2) {
-                return new MockResponse()
-                    .setResponseCode(HttpStatus.BAD_REQUEST.code())
-                    .setBody("Error");
+              if (isProbe(request)) {
+                probeSeen.set(true);
+                return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK");
               }
-              return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK");
+              if (probeSeen.get()) {
+                return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK");
+              }
+              return isValidControl(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK")
+                  : new MockResponse()
+                      .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                      .setBody("Error");
             });
     mockWebServer.setDispatcher(dispatcher);
 
@@ -906,6 +988,7 @@ public final class Cve2026111497DetectorTest {
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
     assertThat(dispatcher.probeCount()).isEqualTo(1);
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(8);
   }
 
   @Test
@@ -973,28 +1056,23 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/")
                     + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200,"
-                    + " unencoded_valid=415)"));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(6);
+                    + " unencoded_valid=415, unencoded_invalid=415)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
   }
 
   @Test
   public void
       detect_whenFilterBypassesUnencodedControlsWithMatchingStatus_reportsVulnerabilityWithBothUnencodedStatuses()
           throws InterruptedException {
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code()).setBody("Unauthorized"));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Bad Brotli"));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code()).setBody("Unauthorized"));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code()).setBody("Unauthorized"));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Bad Brotli"));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code()).setBody("Unauthorized"));
-    mockWebServer.enqueue(
-        new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code()).setBody("Unauthorized"));
+    Supplier<MockResponse> unauthorized =
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.UNAUTHORIZED.code())
+                .setBody("Unauthorized");
+    Supplier<MockResponse> badBrotli =
+        () ->
+            new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Bad Brotli");
+    enqueueVulnerableStatusCycle(unauthorized, badBrotli, unauthorized, unauthorized);
     NetworkService service = createNetworkService();
     TargetInfo target = createTargetInfo();
 
@@ -1009,20 +1087,12 @@ public final class Cve2026111497DetectorTest {
                     + mockWebServer.url("/")
                     + " (signal=status_differential, valid_br=401, invalid_br=400, probe_br=401,"
                     + " unencoded_valid=401, unencoded_invalid=401)"));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(7);
-    assertThat(mockWebServer.takeRequest().getHeader("Content-Encoding")).isEqualTo("br");
-    assertThat(mockWebServer.takeRequest().getHeader("Content-Encoding")).isEqualTo("br");
-    assertThat(mockWebServer.takeRequest().getHeader("Content-Encoding")).isEqualTo("br");
-    assertThat(mockWebServer.takeRequest().getHeader("Content-Encoding")).isEqualTo("br");
-    assertThat(mockWebServer.takeRequest().getHeader("Content-Encoding")).isEqualTo("br");
-    RecordedRequest unencodedValidReq = mockWebServer.takeRequest();
-    assertThat(unencodedValidReq.getHeader("Content-Encoding")).isNull();
-    assertThat(unencodedValidReq.getBody().readByteArray())
-        .isEqualTo(Cve2026111497Detector.VALID_BROTLI_CONTROL.toByteArray());
-    RecordedRequest unencodedInvalidReq = mockWebServer.takeRequest();
-    assertThat(unencodedInvalidReq.getHeader("Content-Encoding")).isNull();
-    assertThat(unencodedInvalidReq.getBody().readByteArray())
-        .isEqualTo(Cve2026111497Detector.INVALID_BROTLI_CONTROL.toByteArray());
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
+    assertRecordedBrotliRequests(17);
+    assertRecordedUnencodedControl(
+        mockWebServer.takeRequest(), Cve2026111497Detector.VALID_BROTLI_CONTROL.toByteArray());
+    assertRecordedUnencodedControl(
+        mockWebServer.takeRequest(), Cve2026111497Detector.INVALID_BROTLI_CONTROL.toByteArray());
   }
 
   @Test
@@ -1053,21 +1123,19 @@ public final class Cve2026111497DetectorTest {
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
     assertThat(dispatcher.probeCount()).isEqualTo(1);
-    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(7);
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(19);
   }
 
   @Test
   public void
       detect_whenStatusDifferentialStep5UnencodedValidReturnsNonRejectionStatus_reportsEmpty() {
-    AtomicInteger rootStep = new AtomicInteger();
     ProbeTrackingDispatcher dispatcher =
         new ProbeTrackingDispatcher(
             request -> {
               if (!request.getPath().equals("/")) {
                 return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
               }
-              int step = rootStep.incrementAndGet();
-              if (step == 6) {
+              if (request.getHeader("Content-Encoding") == null) {
                 return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
               }
               return isValidControl(request) || isProbe(request)
@@ -1081,20 +1149,19 @@ public final class Cve2026111497DetectorTest {
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
     assertThat(dispatcher.probeCount()).isEqualTo(1);
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(18);
   }
 
   @Test
   public void detect_whenStep5UnencodedValidReturnsUnspecifiedStatus_reportsEmpty() {
     String canaryError = "Field error: " + Cve2026111497Detector.DECOMPRESSED_CANARY;
-    AtomicInteger graphQlStep = new AtomicInteger();
     ProbeTrackingDispatcher dispatcher =
         new ProbeTrackingDispatcher(
             request -> {
               if (!request.getPath().equals("/graphql")) {
                 return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
               }
-              int step = graphQlStep.incrementAndGet();
-              if (step == 6) {
+              if (request.getHeader("Content-Encoding") == null) {
                 return new MockResponse().setResponseCode(599).setBody("Unknown proxy status");
               }
               return isValidControl(request) || isProbe(request)
@@ -1116,15 +1183,13 @@ public final class Cve2026111497DetectorTest {
 
   @Test
   public void detect_whenStep5UnencodedValidRequestDisconnects_reportsEmpty() {
-    AtomicInteger rootStep = new AtomicInteger();
     ProbeTrackingDispatcher dispatcher =
         new ProbeTrackingDispatcher(
             request -> {
               if (!request.getPath().equals("/")) {
                 return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
               }
-              int step = rootStep.incrementAndGet();
-              if (step >= 6) {
+              if (request.getHeader("Content-Encoding") == null) {
                 return new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST);
               }
               return isValidControl(request) || isProbe(request)
@@ -1142,19 +1207,16 @@ public final class Cve2026111497DetectorTest {
 
   @Test
   public void detect_whenStep5UnencodedInvalidRequestDisconnects_reportsEmpty() {
-    AtomicInteger rootStep = new AtomicInteger();
     ProbeTrackingDispatcher dispatcher =
         new ProbeTrackingDispatcher(
             request -> {
               if (!request.getPath().equals("/")) {
                 return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
               }
-              int step = rootStep.incrementAndGet();
-              if (step == 6) {
-                return new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code());
-              }
-              if (step >= 7) {
-                return new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST);
+              if (request.getHeader("Content-Encoding") == null) {
+                return hasValidControlBody(request)
+                    ? new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code())
+                    : new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST);
               }
               return isValidControl(request) || isProbe(request)
                   ? new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code())
@@ -1171,7 +1233,7 @@ public final class Cve2026111497DetectorTest {
 
   @Test
   public void detect_whenVulnerableServerIncludesServerHeader_recordsSanitizedServerInEvidence() {
-    enqueueVulnerableCycle(
+    enqueueVulnerableStatusCycle(
         () ->
             new MockResponse()
                 .setResponseCode(HttpStatus.OK.code())
@@ -1191,7 +1253,8 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/")
                     + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200,"
-                    + " unencoded_valid=400, server=Apache/2.4.58 (Ubuntu))"));
+                    + " unencoded_valid=400, unencoded_invalid=400, server=Apache/2.4.58"
+                    + " (Ubuntu))"));
   }
 
   @Test
@@ -1201,7 +1264,7 @@ public final class Cve2026111497DetectorTest {
         "  envoy/1.30.0\t\t\t(custom-build-identifier-0123456789-abcdefghijklmnopqrstuvwxyz)  ";
     String expectedSanitizedServer =
         "envoy/1.30.0   (custom-build-identifier-0123456789-abcdefghij...";
-    enqueueVulnerableCycle(
+    enqueueVulnerableStatusCycle(
         () ->
             new MockResponse()
                 .setResponseCode(HttpStatus.OK.code())
@@ -1221,14 +1284,14 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/")
                     + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200,"
-                    + " unencoded_valid=400, server="
+                    + " unencoded_valid=400, unencoded_invalid=400, server="
                     + expectedSanitizedServer
                     + ")"));
   }
 
   @Test
   public void detect_whenServerHeaderIsOnlyControlCharsOrWhitespace_omitsServerFieldFromEvidence() {
-    enqueueVulnerableCycle(
+    enqueueVulnerableStatusCycle(
         () ->
             new MockResponse()
                 .setResponseCode(HttpStatus.OK.code())
@@ -1248,7 +1311,7 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/")
                     + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200,"
-                    + " unencoded_valid=400)"));
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
   }
 
   @Test
@@ -1261,8 +1324,7 @@ public final class Cve2026111497DetectorTest {
             .setServiceName("ssh")
             .build();
 
-    DetectionReportList reports =
-        detector.detect(createTargetInfo(), ImmutableList.of(sshService));
+    DetectionReportList reports = detector.detect(createTargetInfo(), ImmutableList.of(sshService));
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
     assertThat(mockWebServer.getRequestCount()).isEqualTo(0);
@@ -1291,7 +1353,7 @@ public final class Cve2026111497DetectorTest {
   public void
       detect_whenCrawledEndpointsIncludeMalformedAndOffOriginUrls_filtersAndReportsSameOriginVuln()
           throws InterruptedException {
-    enqueueVulnerableCycle(
+    enqueueVulnerableStatusCycle(
         () -> new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"),
         () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Error"));
     NetworkService service =
@@ -1311,8 +1373,8 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/v1/ingest?source=test")
                     + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200,"
-                    + " unencoded_valid=400)"));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(6);
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
     assertThat(mockWebServer.takeRequest().getPath()).isEqualTo("/v1/ingest?source=test");
   }
 
@@ -1320,7 +1382,7 @@ public final class Cve2026111497DetectorTest {
   public void
       detect_whenCrawledEndpointsBeginWithStaticAssets_skipsStaticAssetsAndDetectsDynamicEndpoint()
           throws InterruptedException {
-    enqueueVulnerableCycle(
+    enqueueVulnerableStatusCycle(
         () -> new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"),
         () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Error"));
     NetworkService service =
@@ -1343,14 +1405,13 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/cgi-bin/api.cgi")
                     + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200,"
-                    + " unencoded_valid=400)"));
-    assertThat(mockWebServer.getRequestCount()).isEqualTo(6);
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
     assertThat(mockWebServer.takeRequest().getPath()).isEqualTo("/cgi-bin/api.cgi");
   }
 
   @Test
-  public void
-      detect_whenCrawledEndpointsRepeatFragmentsAndCandidatePaths_deduplicatesBeforeCap() {
+  public void detect_whenCrawledEndpointsRepeatFragmentsAndCandidatePaths_deduplicatesBeforeCap() {
     ProbeTrackingDispatcher dispatcher =
         new ProbeTrackingDispatcher(
             request -> {
@@ -1384,7 +1445,7 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url("/cgi-bin/api.cgi")
                     + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200,"
-                    + " unencoded_valid=400)"));
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
     assertThat(dispatcher.requestedPaths().get(0)).isEqualTo("/cgi-bin/api.cgi");
     assertThat(dispatcher.probeCount()).isEqualTo(1);
   }
@@ -1430,6 +1491,501 @@ public final class Cve2026111497DetectorTest {
     assertVulnerableApplianceCandidatePathDetected("/rest");
   }
 
+  @Test
+  public void
+      detect_whenTwoPodRoundRobinAlternates200And400AcrossCandidatePaths_abortsBeforeSending23MbProbe() {
+    int[] statusCycle = {HttpStatus.OK.code(), HttpStatus.BAD_REQUEST.code()};
+    AtomicInteger requestIndex = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse()
+                    .setResponseCode(
+                        statusCycle[requestIndex.getAndIncrement() % statusCycle.length]));
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isFalse();
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(3);
+  }
+
+  @Test
+  public void
+      detect_whenTwoPodRoundRobinAlternates404And500AcrossCandidatePaths_abortsBeforeSending23MbProbe() {
+    int[] statusCycle = {HttpStatus.NOT_FOUND.code(), HttpStatus.INTERNAL_SERVER_ERROR.code()};
+    AtomicInteger requestIndex = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse()
+                    .setResponseCode(
+                        statusCycle[requestIndex.getAndIncrement() % statusCycle.length]));
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isFalse();
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(3);
+  }
+
+  @Test
+  public void
+      detect_whenThreePodRoundRobinCycles404And500And500AcrossCandidatePaths_abortsBeforeSending23MbProbe() {
+    int[] statusCycle = {
+      HttpStatus.NOT_FOUND.code(),
+      HttpStatus.INTERNAL_SERVER_ERROR.code(),
+      HttpStatus.INTERNAL_SERVER_ERROR.code()
+    };
+    AtomicInteger requestIndex = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse()
+                    .setResponseCode(
+                        statusCycle[requestIndex.getAndIncrement() % statusCycle.length]));
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isFalse();
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(5);
+  }
+
+  @Test
+  public void
+      detect_whenFivePodRoundRobinMatchesFirstFiveControlsAcrossCandidatePaths_abortsBeforeSending23MbProbe() {
+    int[] statusCycle = {
+      HttpStatus.OK.code(),
+      HttpStatus.BAD_REQUEST.code(),
+      HttpStatus.BAD_REQUEST.code(),
+      HttpStatus.OK.code(),
+      HttpStatus.OK.code()
+    };
+    AtomicInteger requestIndex = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse()
+                    .setResponseCode(
+                        statusCycle[requestIndex.getAndIncrement() % statusCycle.length]));
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isFalse();
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(6);
+  }
+
+  @Test
+  public void detect_whenFourPodRoundRobinPassesPreProbeGate_rejectedAtProbeStep3() {
+    int[] statusCycle = {
+      HttpStatus.OK.code(),
+      HttpStatus.BAD_REQUEST.code(),
+      HttpStatus.BAD_REQUEST.code(),
+      HttpStatus.OK.code()
+    };
+    AtomicInteger requestIndex = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse()
+                    .setResponseCode(
+                        statusCycle[requestIndex.getAndIncrement() % statusCycle.length]));
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isTrue();
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(7);
+  }
+
+  @Test
+  public void detect_whenSevenPodRoundRobinPassesPreProbeAndProbe_rejectedInPostProbeStep4() {
+    int[] statusCycle = {
+      HttpStatus.OK.code(),
+      HttpStatus.BAD_REQUEST.code(),
+      HttpStatus.BAD_REQUEST.code(),
+      HttpStatus.OK.code(),
+      HttpStatus.OK.code(),
+      HttpStatus.BAD_REQUEST.code(),
+      HttpStatus.OK.code()
+    };
+    AtomicInteger requestIndex = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                new MockResponse()
+                    .setResponseCode(
+                        statusCycle[requestIndex.getAndIncrement() % statusCycle.length]));
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isTrue();
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(8);
+  }
+
+  @Test
+  public void
+      detect_whenStochasticSocketRaceProducesSixRequest200And400Sequence_abortsBeforeSending23MbProbe() {
+    // Non-blocking TCP socket reader race on a crawled query endpoint (e.g., /login?from=/) that
+    // previously satisfied a 6-request [200, 400, 200, 200, 400, 400] status sequence while
+    // returning 200 OK on non-query candidate paths; reversed pre-probe pair 1 now aborts at
+    // request 3 before sending the 23 MB probe.
+    assertCrawledQueryRaceSequenceAbortsAtRequestThree(200, 400, 200, 200, 400, 400);
+  }
+
+  @Test
+  public void
+      detect_whenStochasticSocketRaceProducesSevenRequestUnencoded200Sequence_abortsBeforeSending23MbProbe() {
+    // Legacy 7-request dual-unencoded bypass vector [200, 400, 200, 200, 400, 200, 200] is
+    // likewise preempted at request 3 by the reversed first pre-probe control pair.
+    assertCrawledQueryRaceSequenceAbortsAtRequestThree(200, 400, 200, 200, 400, 200, 200);
+  }
+
+  private void assertCrawledQueryRaceSequenceAbortsAtRequestThree(int... raceSequence) {
+    AtomicInteger loginStep = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/login?from=/")) {
+                return new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK");
+              }
+              int index = loginStep.getAndIncrement();
+              int code = index < raceSequence.length ? raceSequence[index] : HttpStatus.OK.code();
+              return new MockResponse().setResponseCode(code);
+            });
+    mockWebServer.setDispatcher(dispatcher);
+    NetworkService service =
+        createServiceWithCrawledUrls(mockWebServer.url("/login?from=%2F").toString());
+
+    DetectionReportList reports = detector.detect(createTargetInfo(), ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isFalse();
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/login?from=/")).isEqualTo(3);
+  }
+
+  @Test
+  public void detect_whenPreProbeFirstPairSecondControlFails_abortsBeforeSending23MbProbe() {
+    AtomicInteger rootStep = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              if (rootStep.incrementAndGet() == 4) {
+                return new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+              }
+              return isValidControl(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.OK.code())
+                  : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isFalse();
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(4);
+  }
+
+  @Test
+  public void detect_whenControlPairFirstRequestDisconnects_abortsBeforeSending23MbProbe() {
+    AtomicInteger rootStep = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              if (rootStep.incrementAndGet() == 3) {
+                return new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST);
+              }
+              return isValidControl(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.OK.code())
+                  : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isFalse();
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(3);
+  }
+
+  @Test
+  public void detect_whenControlPairSecondRequestDisconnects_abortsBeforeSending23MbProbe() {
+    AtomicInteger rootStep = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              if (rootStep.incrementAndGet() == 4) {
+                return new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST);
+              }
+              return isValidControl(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.OK.code())
+                  : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isFalse();
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(4);
+  }
+
+  @Test
+  public void detect_whenCanaryReflectedPostProbeInvalidControlContainsCanary_reportsEmpty() {
+    String canaryError = "Field error: " + Cve2026111497Detector.DECOMPRESSED_CANARY;
+    AtomicInteger graphQlStep = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/graphql")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              if (graphQlStep.incrementAndGet() == 5) {
+                return new MockResponse()
+                    .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                    .setBody(canaryError);
+              }
+              return isValidControl(request) || isProbe(request)
+                  ? new MockResponse()
+                      .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                      .setBody(canaryError)
+                  : new MockResponse()
+                      .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                      .setBody("Invalid Brotli");
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/graphql")).isEqualTo(5);
+  }
+
+  @Test
+  public void detect_whenFinalPostProbeConfirmationRoundFirstControlFails_reportsEmpty() {
+    AtomicInteger brStep = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              if (request.getHeader("Content-Encoding") == null) {
+                return new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+              }
+              if (brStep.incrementAndGet() == 16) {
+                return new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+              }
+              return isValidControl(request) || isProbe(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK")
+                  : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(16);
+  }
+
+  @Test
+  public void detect_whenFinalPostProbeConfirmationRoundSecondControlFails_reportsEmpty() {
+    AtomicInteger brStep = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              if (request.getHeader("Content-Encoding") == null) {
+                return new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+              }
+              if (brStep.incrementAndGet() == 17) {
+                return new MockResponse().setResponseCode(HttpStatus.OK.code());
+              }
+              return isValidControl(request) || isProbe(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK")
+                  : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(17);
+  }
+
+  @Test
+  public void detect_whenStep5UnencodedInvalidMismatchesBypassedValidStatus_reportsEmpty() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              if (request.getHeader("Content-Encoding") == null) {
+                return hasValidControlBody(request)
+                    ? new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code())
+                    : new MockResponse().setResponseCode(HttpStatus.FORBIDDEN.code());
+              }
+              return isValidControl(request) || isProbe(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code())
+                  : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(19);
+  }
+
+  @Test
+  public void
+      detect_whenStep5UnencodedValidRejectedWith400ButUnencodedInvalidReturns200_reportsEmpty() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              if (request.getHeader("Content-Encoding") == null) {
+                return hasValidControlBody(request)
+                    ? new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code())
+                    : new MockResponse().setResponseCode(HttpStatus.OK.code());
+              }
+              return isValidControl(request) || isProbe(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.OK.code())
+                  : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(19);
+  }
+
+  @Test
+  public void
+      detect_whenStep5UnencodedValidRejectedWith400ButUnencodedInvalidReturnsNonRejection404_reportsEmpty() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              if (request.getHeader("Content-Encoding") == null) {
+                return hasValidControlBody(request)
+                    ? new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code())
+                    : new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              return isValidControl(request) || isProbe(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.OK.code())
+                  : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(19);
+  }
+
+  @Test
+  public void detect_whenStep5UnencodedInvalidReturnsUnspecifiedStatus_reportsEmpty() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              if (request.getHeader("Content-Encoding") == null) {
+                return hasValidControlBody(request)
+                    ? new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code())
+                    : new MockResponse().setResponseCode(599).setBody("Unknown proxy status");
+              }
+              return isValidControl(request) || isProbe(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.OK.code())
+                  : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(19);
+  }
+
+  @Test
+  public void
+      detect_whenStep5UnencodedControlsReturnDistinctRejectionStatuses_recordsBothInEvidence() {
+    enqueueVulnerableStatusCycle(
+        () -> new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"),
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Bad br"),
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Bad JSON"),
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code())
+                .setBody("Unprocessable"));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200,"
+                    + " unencoded_valid=400, unencoded_invalid=422)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
+  }
+
   private void assertVulnerableApplianceCandidatePathDetected(String expectedPath) {
     ProbeTrackingDispatcher dispatcher =
         new ProbeTrackingDispatcher(
@@ -1455,7 +2011,7 @@ public final class Cve2026111497DetectorTest {
                 "Vulnerable endpoint: "
                     + mockWebServer.url(expectedPath)
                     + " (signal=status_differential, valid_br=401, invalid_br=400, probe_br=401,"
-                    + " unencoded_valid=400)"));
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
     assertThat(dispatcher.probeCount()).isEqualTo(1);
   }
 
