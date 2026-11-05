@@ -54,7 +54,7 @@ import javax.inject.Inject;
  * A {@link VulnDetector} that detects the OpenSSH password authentication bypass vulnerability on
  * musl-based systems (such as Alpine Linux).
  */
-@ForServiceName({"ssh"})
+@ForServiceName({"ssh", "tcpwrapped"})
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "OpenSshAuthBypassDetector",
@@ -108,6 +108,8 @@ public final class OpenSshAuthBypassDetector implements VulnDetector {
    * sshd} immediately closes new TCP connections before sending a banner. We retry on immediate
    * pre-banner EOF until the port-scan penalty window expires.
    */
+  private static final int DEFAULT_SSH_PORT = 22;
+
   private static final int MAX_PENALTY_COOLDOWN_RETRIES = 10;
 
   private static final Duration PENALTY_COOLDOWN_SLEEP = Duration.ofSeconds(3);
@@ -156,9 +158,14 @@ public final class OpenSshAuthBypassDetector implements VulnDetector {
   }
 
   private static boolean isSshService(NetworkService service) {
-    return service.getTransportProtocol() == TransportProtocol.TCP
-        && (service.getServiceName().isEmpty()
-            || Ascii.equalsIgnoreCase(service.getServiceName(), "ssh"));
+    if (service.getTransportProtocol() != TransportProtocol.TCP) {
+      return false;
+    }
+    String serviceName = service.getServiceName();
+    return serviceName.isEmpty()
+        || Ascii.equalsIgnoreCase(serviceName, "ssh")
+        || (Ascii.equalsIgnoreCase(serviceName, "tcpwrapped")
+            && service.getNetworkEndpoint().getPort().getPortNumber() == DEFAULT_SSH_PORT);
   }
 
   private Optional<DetectionReport> checkService(TargetInfo targetInfo, NetworkService service) {

@@ -92,7 +92,7 @@ public final class OpenSshAuthBypassDetectorTest {
     Mockito.when(
             socketFactoryMock.createSocket(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
         .thenAnswer(
-            inv -> new Socket(InetAddress.getLoopbackAddress(), (Integer) inv.getArgument(1)));
+            inv -> new Socket(InetAddress.getLoopbackAddress(), fakeSshServer.getPort()));
 
     Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
@@ -238,6 +238,44 @@ public final class OpenSshAuthBypassDetectorTest {
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
     assertThat(fakeSshServer.getConnectionCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void detect_whenTcpwrappedOnPort22AndVulnerable_returnsVulnerability() {
+    fakeSshServer.setAuthPolicy(
+        (user, pw, promptIndex) -> promptIndex >= 1 && user.equals("root") && pw.length() > 256);
+    NetworkService service =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(NetworkEndpointUtils.forIpAndPort("127.0.0.1", 22))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setServiceName("tcpwrapped")
+            .build();
+    TargetInfo targetInfo = TargetInfo.getDefaultInstance();
+
+    DetectionReportList reports = detector.detect(targetInfo, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildExpectedReport(targetInfo, service, "root"));
+    assertThat(fakeSshServer.getConnectionCount()).isEqualTo(3);
+  }
+
+  @Test
+  public void detect_whenTcpwrappedOnNon22Port_skipsServiceAndReturnsEmpty() {
+    fakeSshServer.setAuthPolicy(
+        (user, pw, promptIndex) -> user.equals("root") && pw.length() > 256);
+    NetworkService service =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                NetworkEndpointUtils.forIpAndPort("127.0.0.1", fakeSshServer.getPort()))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setServiceName("tcpwrapped")
+            .build();
+    TargetInfo targetInfo = TargetInfo.getDefaultInstance();
+
+    DetectionReportList reports = detector.detect(targetInfo, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(fakeSshServer.getConnectionCount()).isEqualTo(0);
   }
 
   private static NetworkService createSshService(int port) {
