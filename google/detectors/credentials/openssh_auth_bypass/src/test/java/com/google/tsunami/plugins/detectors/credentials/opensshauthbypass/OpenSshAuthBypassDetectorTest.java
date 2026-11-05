@@ -31,10 +31,13 @@ import com.google.tsunami.proto.DetectionReport;
 import com.google.tsunami.proto.DetectionReportList;
 import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
+import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.Software;
 import com.google.tsunami.proto.TargetInfo;
 import com.google.tsunami.proto.TextData;
 import com.google.tsunami.proto.TransportProtocol;
+import com.google.tsunami.proto.Vulnerability;
+import com.google.tsunami.proto.VulnerabilityId;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -108,6 +111,24 @@ public final class OpenSshAuthBypassDetectorTest {
     if (fakeSshServer != null) {
       fakeSshServer.close();
     }
+  }
+
+  @Test
+  public void getAdvisories_always_includesCve2026123158RelatedId() {
+    assertThat(detector.getAdvisories())
+        .containsExactly(
+            Vulnerability.newBuilder()
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("GOOGLE")
+                        .setValue("OPENSSH_MUSL_PASSWORD_AUTH_BYPASS"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2026-123158"))
+                .setSeverity(Severity.CRITICAL)
+                .setTitle(OpenSshAuthBypassDetector.VULNERABILITY_REPORT_TITLE)
+                .setDescription(OpenSshAuthBypassDetector.VULN_DESCRIPTION)
+                .setRecommendation(OpenSshAuthBypassDetector.RECOMMENDATION)
+                .build());
   }
 
   @Test
@@ -248,7 +269,19 @@ public final class OpenSshAuthBypassDetectorTest {
         .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(
-            detector.getAdvisories().get(0).toBuilder().addAdditionalDetails(detail).build())
+            Vulnerability.newBuilder()
+                .setMainId(
+                    VulnerabilityId.newBuilder()
+                        .setPublisher("GOOGLE")
+                        .setValue("OPENSSH_MUSL_PASSWORD_AUTH_BYPASS"))
+                .addRelatedId(
+                    VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2026-123158"))
+                .setSeverity(Severity.CRITICAL)
+                .setTitle(OpenSshAuthBypassDetector.VULNERABILITY_REPORT_TITLE)
+                .setDescription(OpenSshAuthBypassDetector.VULN_DESCRIPTION)
+                .setRecommendation(OpenSshAuthBypassDetector.RECOMMENDATION)
+                .addAdditionalDetails(detail)
+                .build())
         .build();
   }
 

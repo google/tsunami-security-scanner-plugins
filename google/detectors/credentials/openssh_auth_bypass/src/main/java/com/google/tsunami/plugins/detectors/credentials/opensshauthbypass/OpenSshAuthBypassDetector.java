@@ -131,6 +131,8 @@ public final class OpenSshAuthBypassDetector implements VulnDetector {
                 VulnerabilityId.newBuilder()
                     .setPublisher(VULNERABILITY_REPORT_PUBLISHER)
                     .setValue(VULNERABILITY_REPORT_ID))
+            .addRelatedId(
+                VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2026-123158"))
             .setSeverity(Severity.CRITICAL)
             .setTitle(VULNERABILITY_REPORT_TITLE)
             .setDescription(VULN_DESCRIPTION)
