@@ -175,12 +175,16 @@ public final class Cve2026111497DetectorTest {
   private static void assertRecordedBrotliControl(RecordedRequest request, byte[] expectedBody) {
     assertThat(request.getHeader("Content-Encoding")).isEqualTo("br");
     assertThat(request.getHeader("Content-Type")).startsWith("application/json");
+    assertThat(request.getHeader("Accept"))
+        .isEqualTo("application/json, text/event-stream, text/plain, */*");
     assertThat(request.getBody().readByteArray()).isEqualTo(expectedBody);
   }
 
   private static void assertRecordedUnencodedControl(RecordedRequest request, byte[] expectedBody) {
     assertThat(request.getHeader("Content-Encoding")).isNull();
     assertThat(request.getHeader("Content-Type")).startsWith("application/json");
+    assertThat(request.getHeader("Accept"))
+        .isEqualTo("application/json, text/event-stream, text/plain, */*");
     assertThat(request.getBody().readByteArray()).isEqualTo(expectedBody);
   }
 
@@ -746,6 +750,88 @@ public final class Cve2026111497DetectorTest {
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
     assertThat(dispatcher.receivedProbe()).isFalse();
+    assertThat(dispatcher.requestedPaths())
+        .hasSize(Cve2026111497Detector.MAX_CONSECUTIVE_STEP1_IO_ERRORS);
+  }
+
+  @Test
+  public void
+      detect_whenIntermittentStep1IoErrorsResetByHttpResponse_continuesProbingUntilVulnerablePath() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              String path = request.getPath();
+              if (path.equals("/")
+                  || path.equals("/graphql")
+                  || path.equals("/api/v1")
+                  || path.equals("/api/graphql")) {
+                return new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST);
+              }
+              if (!path.equals("/rpc")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              return isValidControl(request) || isProbe(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.code())
+                  : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+            });
+    mockWebServer.setDispatcher(dispatcher);
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/rpc")
+                    + " (signal=status_differential, valid_br=401, invalid_br=400, probe_br=401,"
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void
+      detect_whenPatchedGlobalBrotliFilterAcceptsControlsOnAllPaths_stopsAfterSingleRootProbe() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request ->
+                isValidControl(request)
+                    ? new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code())
+                    : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()));
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+    assertThat(dispatcher.requestedPaths()).containsExactly("/", "/", "/", "/", "/", "/", "/");
+  }
+
+  @Test
+  public void
+      detect_whenMultipleRouteSpecificPatchedEndpointsRejectStep3Probe_capsProbesAtMaxPerService() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (request.getPath().equals("/")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              return isValidControl(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK")
+                  : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+            });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(Cve2026111497Detector.MAX_PROBES_PER_SERVICE);
+    assertThat(dispatcher.requestedPaths()).doesNotContain("/api/v1");
   }
 
   @Test
@@ -1489,6 +1575,153 @@ public final class Cve2026111497DetectorTest {
   @Test
   public void detect_whenApplianceExposesVulnerableRestPath_reportsVulnerability() {
     assertVulnerableApplianceCandidatePathDetected("/rest");
+  }
+
+  @Test
+  public void detect_whenServiceExposesVulnerableMcpPath_reportsVulnerability() {
+    assertVulnerableApplianceCandidatePathDetected("/mcp");
+  }
+
+  @Test
+  public void detect_whenMcpStreamableHttpRequiresEventStreamAcceptHeader_reportsVulnerability() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(
+            request -> {
+              if (!request.getPath().equals("/mcp")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+              }
+              String accept = request.getHeader("Accept");
+              if (accept == null
+                  || !accept.contains("application/json")
+                  || !accept.contains("text/event-stream")) {
+                return new MockResponse().setResponseCode(HttpStatus.NOT_ACCEPTABLE.code());
+              }
+              return isValidControl(request) || isProbe(request)
+                  ? new MockResponse().setResponseCode(HttpStatus.ACCEPTED.code())
+                  : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+            });
+    mockWebServer.setDispatcher(dispatcher);
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/mcp")
+                    + " (signal=status_differential, valid_br=202, invalid_br=400, probe_br=202,"
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void
+      detect_whenProxyDecompressesBeforeHandlerReturns406OnValidAnd400OnInvalid_reportsVulnerability() {
+    enqueueVulnerableStatusCycle(
+        () -> new MockResponse().setResponseCode(HttpStatus.NOT_ACCEPTABLE.code()),
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=406, invalid_br=400, probe_br=406,"
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
+  }
+
+  @Test
+  public void detect_whenServiceExposesVulnerableMessagesPath_reportsVulnerability() {
+    assertVulnerableApplianceCandidatePathDetected(
+        "/messages?session_id=00000000-0000-0000-0000-000000000000"
+            + "&sessionId=00000000-0000-0000-0000-000000000000");
+  }
+
+  @Test
+  public void
+      detect_whenFastMcpSlashRedirectReturns307OnValidAnd400OnInvalid_reportsVulnerability() {
+    enqueueVulnerableStatusCycle(
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.TEMPORARY_REDIRECT.code())
+                .setHeader("Location", "/messages/"),
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=307, invalid_br=400, probe_br=307,"
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
+  }
+
+  @Test
+  public void detect_whenFlaskSlashRedirectReturns308OnValidAnd400OnInvalid_reportsVulnerability() {
+    enqueueVulnerableStatusCycle(
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.PERMANENT_REDIRECT.code())
+                .setHeader("Location", "/messages/"),
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=308, invalid_br=400, probe_br=308,"
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
+  }
+
+  @Test
+  public void detect_whenServiceExposesVulnerableV1Path_reportsVulnerability() {
+    assertVulnerableApplianceCandidatePathDetected("/v1");
+  }
+
+  @Test
+  public void detect_whenServiceExposesVulnerableApiV2Path_reportsVulnerability() {
+    assertVulnerableApplianceCandidatePathDetected("/api/v2");
+  }
+
+  @Test
+  public void detect_whenServiceExposesVulnerableInvocationsPath_reportsVulnerability() {
+    assertVulnerableApplianceCandidatePathDetected("/invocations");
+  }
+
+  @Test
+  public void detect_whenServiceExposesVulnerablePredictPath_reportsVulnerability() {
+    assertVulnerableApplianceCandidatePathDetected("/predict");
+  }
+
+  @Test
+  public void detect_whenServiceExposesVulnerableIndexPhpPath_reportsVulnerability() {
+    assertVulnerableApplianceCandidatePathDetected("/index.php");
   }
 
   @Test

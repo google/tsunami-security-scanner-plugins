@@ -239,6 +239,8 @@ public final class Cve2026111497Detector implements VulnDetector {
                       + "695f636865636b5f376639613262227d03"));
 
   private static final int MAX_CRAWLED_URLS = 3;
+  @VisibleForTesting static final int MAX_CONSECUTIVE_STEP1_IO_ERRORS = 3;
+  @VisibleForTesting static final int MAX_PROBES_PER_SERVICE = 2;
 
   private static final ImmutableSet<String> STATIC_ASSET_EXTENSIONS =
       ImmutableSet.of(
@@ -254,29 +256,34 @@ public final class Cve2026111497Detector implements VulnDetector {
    * REST/GraphQL/RPC services or SPAs), {@code CANDIDATE_PATHS} are in practice the ONLY paths
    * tested against most targets.
    *
-   * <p>These 14 paths are selected to cover middleware, appliance, and RPC routing architectures in
+   * <p>These 21 paths are selected to cover middleware, appliance, and RPC routing architectures in
    * vulnerable systems (Apache {@code mod_brotli}, Envoy HTTP decompressor, embedded/BMC
-   * appliances, Go/Java/Python/Rust JSON &amp; GraphQL APIs, and
+   * appliances, Go/Java/Python/Rust JSON &amp; GraphQL APIs, MCP/AI inference servers, and
    * Node.js/Express/Fastify/Next.js/NestJS/Apollo/tRPC):
    *
    * <ul>
    *   <li><b>Prefix- or globally-mounted decompression filters &amp; appliance APIs</b> (e.g.,
    *       Envoy HTTP Brotli decompressor filter, Apache {@code SetInputFilter BROTLI_COMPRESS},
-   *       Express {@code app.use(express.json())}, BMC/Redfish &amp; appliance management gateways):
-   *       Decompresses {@code Content-Encoding: br} before leaf route or auth matching, so probing
-   *       the mount prefix ({@code ""}, {@code "api"}, {@code "api/v1"}, {@code "rest"}, {@code
-   *       "redfish/v1"}, {@code "trpc"}) triggers the differential even without knowing any
+   *       Express {@code app.use(express.json())}, BMC/Redfish &amp; appliance management gateways,
+   *       PHP front-controller routers): Decompresses {@code Content-Encoding: br} before leaf
+   *       route or auth matching, so probing the mount prefix ({@code ""}, {@code "api"}, {@code
+   *       "api/v1"}, {@code "api/v2"}, {@code "v1"}, {@code "rest"}, {@code "redfish/v1"}, {@code
+   *       "trpc"}, {@code "index.php"}) triggers the differential even without knowing any
    *       application-specific leaf route.
-   *   <li><b>Route-first decompression &amp; RPC endpoints</b> (e.g., JSON-RPC 2.0 daemons, GraphQL
-   *       servers, Fastify {@code @fastify/compress}, Next.js/NestJS controllers): Only decompress
-   *       when an exact registered {@code POST} route matches, covered by common JSON/RPC {@code
-   *       POST} endpoints ({@code "graphql"}, {@code "api/graphql"}, {@code "rpc"}, {@code
-   *       "jsonrpc"}, {@code "login"}, {@code "api/login"}, {@code "auth/login"}, {@code
-   *       "webhook"}).
+   *   <li><b>Route-first decompression &amp; RPC endpoints</b> (e.g., JSON-RPC 2.0 &amp; MCP
+   *       daemons, GraphQL servers, ML inference servers, Fastify {@code @fastify/compress},
+   *       Next.js/NestJS controllers): Only decompress when an exact registered {@code POST} route
+   *       matches, covered by common JSON/RPC {@code POST} endpoints ({@code "graphql"}, {@code
+   *       "api/graphql"}, {@code "rpc"}, {@code "jsonrpc"}, {@code "mcp"}, {@code
+   *       "messages?session_id=...&sessionId=..."}, {@code "invocations"}, {@code "predict"},
+   *       {@code "login"}, {@code "api/login"}, {@code "auth/login"}, {@code "webhook"}).
    * </ul>
    *
    * <p>Non-decompressing paths abort after Step 1 or Step 2 (1-2 requests of 191 bytes each) and
-   * never send the Step 3 probe, keeping the scan overhead negligible.
+   * never send the Step 3 probe, keeping the scan overhead negligible. Services that fail Step 1
+   * with {@link #MAX_CONSECUTIVE_STEP1_IO_ERRORS} consecutive I/O errors abort early, and Step 3
+   * probes are capped at {@link #MAX_PROBES_PER_SERVICE} per service (stopping immediately if the
+   * root path confirms a patched global Brotli filter).
    */
   // TODO(b/352283036): Review candidate paths later to see if this list improves detection rate.
   private static final ImmutableList<String> CANDIDATE_PATHS =
@@ -294,16 +301,42 @@ public final class Cve2026111497Detector implements VulnDetector {
           "login",
           "api/login",
           "auth/login",
-          "webhook");
+          "webhook",
+          // Model Context Protocol (MCP) Streamable HTTP JSON-RPC POST endpoint (Node.js, Python,
+          // and Java MCP SDKs).
+          "mcp",
+          // Legacy MCP HTTP+SSE transport POST endpoint where MCP servers receive JSON-RPC client
+          // messages over POST /messages (with dummy UUID session query parameters for Python
+          // session_id and Node.js/Java/Go sessionId handlers so active SSE routes return 404
+          // instead of 400 when session lookup runs after proxy decompression).
+          "messages?session_id=00000000-0000-0000-0000-000000000000"
+              + "&sessionId=00000000-0000-0000-0000-000000000000",
+          // Root prefix for OpenAI-compatible LLM/vLLM/TGI/LiteLLM APIs (/v1/*) and versioned REST
+          // gateways where prefix-mounted decompression middleware runs before leaf routing.
+          "v1",
+          // Common second-generation REST API mount prefix (e.g., Looker, Airflow, Grafana, and
+          // Envoy/Express/Fastify gateways) not covered by /api/v1.
+          "api/v2",
+          // Standard MLflow PyFunc, BentoML, and SageMaker/Vertex custom container inference POST
+          // endpoint backed by Uvicorn/Starlette/aiohttp/Tornado.
+          "invocations",
+          // Standard FastAPI, BentoML, Ray Serve, and TorchServe JSON inference POST endpoint.
+          "predict",
+          // Universal PHP/Apache front-controller entrypoint (Drupal, WordPress, Joomla, Symfony,
+          // Laravel) when Apache mod_brotli or php-ext-brotli input filters are scoped to .php.
+          "index.php");
 
   private static final ImmutableSet<HttpStatus> POST_DECOMPRESSION_STATUSES =
       Sets.immutableEnumSet(
           HttpStatus.FOUND,
           HttpStatus.SEE_OTHER,
+          HttpStatus.TEMPORARY_REDIRECT,
+          HttpStatus.PERMANENT_REDIRECT,
           HttpStatus.UNAUTHORIZED,
           HttpStatus.FORBIDDEN,
           HttpStatus.NOT_FOUND,
-          HttpStatus.METHOD_NOT_ALLOWED);
+          HttpStatus.METHOD_NOT_ALLOWED,
+          HttpStatus.NOT_ACCEPTABLE);
 
   private static final ImmutableSet<HttpStatus> DECOMPRESSION_FAILURE_STATUSES =
       Sets.immutableEnumSet(
@@ -388,33 +421,51 @@ public final class Cve2026111497Detector implements VulnDetector {
 
   private Optional<DetectionReport> checkService(
       TargetInfo targetInfo, NetworkService networkService) {
+    String rootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    int consecutiveStep1IoErrors = 0;
+    int probesSent = 0;
     for (String targetUrl : getTargetUrls(networkService)) {
-      Optional<AdditionalDetail> evidence = checkEndpoint(networkService, targetUrl);
-      if (evidence.isPresent()) {
-        return Optional.of(buildDetectionReport(targetInfo, networkService, evidence.get()));
+      EndpointResult result = checkEndpoint(networkService, targetUrl);
+      if (result.evidence.isPresent()) {
+        return Optional.of(buildDetectionReport(targetInfo, networkService, result.evidence.get()));
+      }
+      if (result.step1IoError) {
+        if (++consecutiveStep1IoErrors >= MAX_CONSECUTIVE_STEP1_IO_ERRORS) {
+          logger.atFine().log(
+              "Stopping scan of '%s' after %d consecutive Step 1 I/O errors",
+              rootUrl, consecutiveStep1IoErrors);
+          break;
+        }
+        continue;
+      }
+      consecutiveStep1IoErrors = 0;
+      if (result.probeSent) {
+        probesSent++;
+        if (targetUrl.equals(rootUrl) || probesSent >= MAX_PROBES_PER_SERVICE) {
+          break;
+        }
       }
     }
     return Optional.empty();
   }
 
-  private Optional<AdditionalDetail> checkEndpoint(
-      NetworkService networkService, String targetUrl) {
+  private EndpointResult checkEndpoint(NetworkService networkService, String targetUrl) {
     // Step 1: Send small (191-byte) valid RFC 7932 Brotli control payload.
     Optional<HttpResponse> validControlOpt =
         sendBrotliRequest(networkService, targetUrl, VALID_BROTLI_CONTROL);
     if (validControlOpt.isEmpty()) {
-      return Optional.empty();
+      return EndpointResult.STEP1_IO_ERROR;
     }
     HttpResponse validControl = validControlOpt.get();
     if (!containsCanary(validControl) && !isPostDecompressionStatus(validControl.status())) {
-      return Optional.empty();
+      return EndpointResult.ABORTED_PRE_PROBE;
     }
 
     // Step 2: Send small (191-byte) invalid Brotli control payload to verify active decompression.
     Optional<HttpResponse> invalidControlOpt =
         sendBrotliRequest(networkService, targetUrl, INVALID_BROTLI_CONTROL);
     if (invalidControlOpt.isEmpty()) {
-      return Optional.empty();
+      return EndpointResult.ABORTED_PRE_PROBE;
     }
     HttpResponse invalidControl = invalidControlOpt.get();
 
@@ -428,7 +479,7 @@ public final class Cve2026111497Detector implements VulnDetector {
     boolean statusDifferential =
         isValidVsInvalidStatusDifferential(validControl.status(), invalidControl.status());
     if (!canaryReflected && !statusDifferential) {
-      return Optional.empty();
+      return EndpointResult.ABORTED_PRE_PROBE;
     }
 
     // Pre-probe determinism gate in status-differential mode: confirm the status split across two
@@ -442,7 +493,7 @@ public final class Cve2026111497Detector implements VulnDetector {
             invalidControl.status(),
             /* canaryReflected= */ false,
             pairOrder)) {
-          return Optional.empty();
+          return EndpointResult.ABORTED_PRE_PROBE;
         }
       }
     }
@@ -451,12 +502,12 @@ public final class Cve2026111497Detector implements VulnDetector {
     Optional<HttpResponse> probeResponseOpt =
         sendBrotliRequest(networkService, targetUrl, Holder.CVE_2026_111497_PROBE);
     if (probeResponseOpt.isEmpty()) {
-      return Optional.empty();
+      return EndpointResult.PROBE_FAILED;
     }
     HttpResponse probeResponse = probeResponseOpt.get();
     if (probeResponse.status() != validControl.status()
         || (canaryReflected && !containsCanary(probeResponse))) {
-      return Optional.empty();
+      return EndpointResult.PROBE_FAILED;
     }
 
     // Step 4: Post-probe health and multi-round determinism verification using 191-byte controls.
@@ -466,7 +517,7 @@ public final class Cve2026111497Detector implements VulnDetector {
         validControl.status(),
         invalidControl.status(),
         canaryReflected)) {
-      return Optional.empty();
+      return EndpointResult.PROBE_FAILED;
     }
 
     // Step 5: Unencoded baseline verification without Content-Encoding: br.
@@ -475,8 +526,9 @@ public final class Cve2026111497Detector implements VulnDetector {
             networkService, targetUrl, validControl, invalidControl.status(), canaryReflected);
     if (detail.isPresent()) {
       logger.atInfo().log("Confirmed CVE-2026-111497 vulnerable Brotli decoder on '%s'", targetUrl);
+      return EndpointResult.vulnerable(detail.get());
     }
-    return detail;
+    return EndpointResult.PROBE_FAILED;
   }
 
   private boolean verifyPostProbeControls(
@@ -609,9 +661,10 @@ public final class Cve2026111497Detector implements VulnDetector {
   private static boolean isPostDecompressionStatus(HttpStatus status) {
     // Reverse proxies, input filters, and global middleware (e.g., Apache mod_brotli, Envoy HTTP
     // decompressor filter, Express body-parser) decompress the request stream before downstream
-    // authentication, ACLs, login redirects, or route/method matching; when Brotli decompression
-    // succeeds, downstream handlers commonly return 2xx, 302/303, 401, 403, 404, or 405, whereas
-    // decompression failure aborts earlier with 400, 422, or 500.
+    // authentication, ACLs, login/slash redirects, or route/method/content-negotiation matching;
+    // when Brotli decompression succeeds, downstream handlers commonly return 2xx, 302/303/307/308,
+    // 401, 403, 404, 405, or 406, whereas decompression failure aborts earlier with 400, 422, or
+    // 500.
     return status.isSuccess() || POST_DECOMPRESSION_STATUSES.contains(status);
   }
 
@@ -689,7 +742,7 @@ public final class Cve2026111497Detector implements VulnDetector {
     HttpHeaders.Builder headers =
         HttpHeaders.builder()
             .addHeader("Content-Type", "application/json")
-            .addHeader("Accept", "application/json, text/plain, */*");
+            .addHeader("Accept", "application/json, text/event-stream, text/plain, */*");
     if (includeBrotliHeader) {
       headers.addHeader("Content-Encoding", "br");
     }
@@ -702,6 +755,31 @@ public final class Cve2026111497Detector implements VulnDetector {
       logger.atFine().withCause(e).log(
           "HTTP exception while sending POST request to '%s'", targetUrl);
       return Optional.empty();
+    }
+  }
+
+  private static final class EndpointResult {
+    private static final EndpointResult STEP1_IO_ERROR =
+        new EndpointResult(/* step1IoError= */ true, /* probeSent= */ false, Optional.empty());
+    private static final EndpointResult ABORTED_PRE_PROBE =
+        new EndpointResult(/* step1IoError= */ false, /* probeSent= */ false, Optional.empty());
+    private static final EndpointResult PROBE_FAILED =
+        new EndpointResult(/* step1IoError= */ false, /* probeSent= */ true, Optional.empty());
+
+    private final boolean step1IoError;
+    private final boolean probeSent;
+    private final Optional<AdditionalDetail> evidence;
+
+    private EndpointResult(
+        boolean step1IoError, boolean probeSent, Optional<AdditionalDetail> evidence) {
+      this.step1IoError = step1IoError;
+      this.probeSent = probeSent;
+      this.evidence = evidence;
+    }
+
+    static EndpointResult vulnerable(AdditionalDetail evidence) {
+      return new EndpointResult(
+          /* step1IoError= */ false, /* probeSent= */ true, Optional.of(evidence));
     }
   }
 
