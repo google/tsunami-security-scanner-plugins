@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.rce.wordpress.cve2026111497;
+package com.google.tsunami.plugins.detectors.rce.cve2026111497outbound;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -32,27 +32,27 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Unit tests for {@link WordPressXmlRpcCve2026111497DetectorBootstrapModule}. */
+/** Unit tests for {@link Cve2026111497OutboundDetectorBootstrapModule}. */
 @RunWith(JUnit4.class)
-public final class WordPressXmlRpcCve2026111497DetectorBootstrapModuleTest {
+public final class Cve2026111497OutboundDetectorBootstrapModuleTest {
 
   private final FakeUtcClock fakeUtcClock =
       FakeUtcClock.create().setNow(Instant.parse("2026-01-01T00:00:00.00Z"));
 
   @Test
-  public void configurePlugin_registersWordPressXmlRpcCve2026111497Detector() {
+  public void configurePlugin_registersCve2026111497OutboundDetector() {
     Injector injector =
         Guice.createInjector(
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
             FakePayloadGeneratorModule.builder().build(),
-            new WordPressXmlRpcCve2026111497DetectorBootstrapModule());
+            new Cve2026111497OutboundDetectorBootstrapModule());
 
     List<Binding<TsunamiPlugin>> bindings =
         injector.findBindingsByType(TypeLiteral.get(TsunamiPlugin.class));
 
     assertThat(bindings).hasSize(1);
     assertThat(bindings.get(0).getProvider().get())
-        .isInstanceOf(WordPressXmlRpcCve2026111497Detector.class);
+        .isInstanceOf(Cve2026111497OutboundDetector.class);
   }
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.rce.wordpress.cve2026111497;
+package com.google.tsunami.plugins.detectors.rce.cve2026111497outbound;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -84,20 +84,19 @@ import javax.inject.Inject;
 @ForWebService
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
-    name = "WordPressXmlRpcCve2026111497Detector",
+    name = "Cve2026111497OutboundDetector",
     version = "0.1",
     description =
         "This detector checks for the Google Brotli decoder out-of-bounds write RCE vulnerability"
             + " (CVE-2026-111497) exposed via WordPress xmlrpc.php pingback.ping.",
     author = "Tsunami Security Scanner",
-    bootstrapModule = WordPressXmlRpcCve2026111497DetectorBootstrapModule.class)
-public final class WordPressXmlRpcCve2026111497Detector implements VulnDetector {
+    bootstrapModule = Cve2026111497OutboundDetectorBootstrapModule.class)
+public final class Cve2026111497OutboundDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   @VisibleForTesting static final String VULNERABILITY_REPORT_PUBLISHER = "GOOGLE";
 
-  @VisibleForTesting
-  static final String VULNERABILITY_REPORT_ID = "CVE-2026-111497-WORDPRESS-XMLRPC";
+  @VisibleForTesting static final String VULNERABILITY_REPORT_ID = "CVE-2026-111497-OUTBOUND";
 
   @VisibleForTesting static final String RELATED_CVE_ID = "CVE-2026-111497";
 
@@ -191,7 +190,7 @@ public final class WordPressXmlRpcCve2026111497Detector implements VulnDetector 
   private final PayloadSecretGenerator secretGenerator;
 
   @Inject
-  WordPressXmlRpcCve2026111497Detector(
+  Cve2026111497OutboundDetector(
       @UtcClock Clock utcClock,
       HttpClient httpClient,
       TcsClient tcsClient,
@@ -221,11 +220,11 @@ public final class WordPressXmlRpcCve2026111497Detector implements VulnDetector 
   @Override
   public DetectionReportList detect(
       TargetInfo targetInfo, ImmutableList<NetworkService> matchedServices) {
-    logger.atInfo().log("WordPressXmlRpcCve2026111497Detector starts detecting.");
+    logger.atInfo().log("Cve2026111497OutboundDetector starts detecting.");
 
     if (!tcsClient.isCallbackServerEnabled()) {
       logger.atWarning().log(
-          "Tsunami callback server is not enabled; skipping WordPressXmlRpcCve2026111497Detector.");
+          "Tsunami callback server is not enabled; skipping Cve2026111497OutboundDetector.");
       return DetectionReportList.getDefaultInstance();
     }
 
@@ -648,7 +647,7 @@ public final class WordPressXmlRpcCve2026111497Detector implements VulnDetector 
             .append(", probe_fault=")
             .append(probeFaultCode);
     serverHeader
-        .map(WordPressXmlRpcCve2026111497Detector::sanitizeServerHeader)
+        .map(Cve2026111497OutboundDetector::sanitizeServerHeader)
         .filter(server -> !server.isEmpty())
         .ifPresent(server -> evidence.append(", server=").append(server));
     evidence.append(')');

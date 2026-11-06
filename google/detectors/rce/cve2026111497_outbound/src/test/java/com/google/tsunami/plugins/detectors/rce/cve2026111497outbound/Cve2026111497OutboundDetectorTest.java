@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.rce.wordpress.cve2026111497;
+package com.google.tsunami.plugins.detectors.rce.cve2026111497outbound;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
@@ -81,9 +81,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Unit tests for {@link WordPressXmlRpcCve2026111497Detector}. */
+/** Unit tests for {@link Cve2026111497OutboundDetector}. */
 @RunWith(JUnit4.class)
-public final class WordPressXmlRpcCve2026111497DetectorTest {
+public final class Cve2026111497OutboundDetectorTest {
   private static final Pattern XMLRPC_STRING_PARAM_PATTERN =
       Pattern.compile("<param>\\s*<value>\\s*<string>(.*?)</string>\\s*</value>\\s*</param>");
 
@@ -137,8 +137,8 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
   }
 
   @Test
-  public void getAdvisories_whenCalled_returnsWordPressSpecificMainIdAndRelatedCveId() {
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+  public void getAdvisories_whenCalled_returnsOutboundMainIdAndRelatedCveId() {
+    Cve2026111497OutboundDetector detector = createDetector();
 
     ImmutableList<Vulnerability> advisories = detector.getAdvisories();
 
@@ -148,19 +148,19 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
                 .setMainId(
                     VulnerabilityId.newBuilder()
                         .setPublisher("GOOGLE")
-                        .setValue("CVE-2026-111497-WORDPRESS-XMLRPC"))
+                        .setValue("CVE-2026-111497-OUTBOUND"))
                 .addRelatedId(
                     VulnerabilityId.newBuilder().setPublisher("CVE").setValue("CVE-2026-111497"))
                 .setSeverity(Severity.CRITICAL)
-                .setTitle(WordPressXmlRpcCve2026111497Detector.VULNERABILITY_REPORT_TITLE)
-                .setDescription(WordPressXmlRpcCve2026111497Detector.VULN_DESCRIPTION)
-                .setRecommendation(WordPressXmlRpcCve2026111497Detector.RECOMMENDATION)
+                .setTitle(Cve2026111497OutboundDetector.VULNERABILITY_REPORT_TITLE)
+                .setDescription(Cve2026111497OutboundDetector.VULN_DESCRIPTION)
+                .setRecommendation(Cve2026111497OutboundDetector.RECOMMENDATION)
                 .build());
   }
 
   @Test
   public void detect_whenCallbackServerDisabled_skipsWithoutSendingRequests() {
-    WordPressXmlRpcCve2026111497Detector detector = createDetectorWithoutCallbackServer();
+    Cve2026111497OutboundDetector detector = createDetectorWithoutCallbackServer();
 
     DetectionReportList reports =
         detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
@@ -188,7 +188,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             .setOpenPingbackPostUrls(ImmutableSet.of(postUrl))
             .build();
     mockWebServer.setDispatcher(wpDispatcher);
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
     TargetInfo target = createTargetInfo();
     NetworkService service = createNetworkService();
 
@@ -219,7 +219,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             .setOpenPingbackPostUrls(ImmutableSet.of(postUrl))
             .build();
     mockWebServer.setDispatcher(wpDispatcher);
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
     TargetInfo target = createTargetInfo();
     NetworkService service = createNetworkService();
 
@@ -255,7 +255,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             .setOpenPingbackPostUrls(ImmutableSet.of(postUrl))
             .build();
     mockWebServer.setDispatcher(wpDispatcher);
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
     TargetInfo target = createTargetInfo();
     NetworkService service = createNetworkService();
 
@@ -285,7 +285,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             .setOpenPingbackPostUrls(ImmutableSet.of(postUrl))
             .build();
     mockWebServer.setDispatcher(wpDispatcher);
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
     TargetInfo target = createTargetInfo();
     NetworkService service = createNetworkService();
 
@@ -312,7 +312,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             .setOpenPingbackPostUrls(ImmutableSet.of(postUrl))
             .build();
     mockWebServer.setDispatcher(wpDispatcher);
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
 
     DetectionReportList reports =
         detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
@@ -325,36 +325,36 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
 
   @Test
   public void isAllowedControlFaultPair_enforcesExpectedMaskedAndUnmaskedCombinations() {
-    assertThat(WordPressXmlRpcCve2026111497Detector.isAllowedControlFaultPair(0, 0)).isTrue();
+    assertThat(Cve2026111497OutboundDetector.isAllowedControlFaultPair(0, 0)).isTrue();
     assertThat(
-            WordPressXmlRpcCve2026111497Detector.isAllowedControlFaultPair(
+            Cve2026111497OutboundDetector.isAllowedControlFaultPair(
                 FAULT_PINGBACK_TITLE_MISSING, FAULT_PINGBACK_SOURCE_NOT_FOUND))
         .isTrue();
     assertThat(
-            WordPressXmlRpcCve2026111497Detector.isAllowedControlFaultPair(
+            Cve2026111497OutboundDetector.isAllowedControlFaultPair(
                 FAULT_PINGBACK_TARGET_LINK_MISSING, FAULT_PINGBACK_SOURCE_NOT_FOUND))
         .isTrue();
     assertThat(
-            WordPressXmlRpcCve2026111497Detector.isAllowedControlFaultPair(
+            Cve2026111497OutboundDetector.isAllowedControlFaultPair(
                 0, FAULT_PINGBACK_SOURCE_NOT_FOUND))
         .isFalse();
     assertThat(
-            WordPressXmlRpcCve2026111497Detector.isAllowedControlFaultPair(
+            Cve2026111497OutboundDetector.isAllowedControlFaultPair(
                 FAULT_PINGBACK_SOURCE_NOT_FOUND, 0))
         .isFalse();
     assertThat(
-            WordPressXmlRpcCve2026111497Detector.isAllowedControlFaultPair(
+            Cve2026111497OutboundDetector.isAllowedControlFaultPair(
                 FAULT_PINGBACK_SOURCE_NOT_FOUND, FAULT_PINGBACK_SOURCE_NOT_FOUND))
         .isFalse();
     assertThat(
-            WordPressXmlRpcCve2026111497Detector.isAllowedControlFaultPair(
+            Cve2026111497OutboundDetector.isAllowedControlFaultPair(
                 FAULT_PINGBACK_TITLE_MISSING, FAULT_PINGBACK_TITLE_MISSING))
         .isFalse();
     assertThat(
-            WordPressXmlRpcCve2026111497Detector.isAllowedControlFaultPair(
+            Cve2026111497OutboundDetector.isAllowedControlFaultPair(
                 FAULT_PINGBACK_CLOSED, FAULT_PINGBACK_SOURCE_NOT_FOUND))
         .isFalse();
-    assertThat(WordPressXmlRpcCve2026111497Detector.isAllowedControlFaultPair(48, 48)).isFalse();
+    assertThat(Cve2026111497OutboundDetector.isAllowedControlFaultPair(48, 48)).isFalse();
   }
 
   @Test
@@ -367,7 +367,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             .setOpenPingbackPostUrls(ImmutableSet.of(postUrl, baseServerUrl() + "/?p=1"))
             .build();
     mockWebServer.setDispatcher(wpDispatcher);
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
 
     DetectionReportList reports =
         detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
@@ -387,7 +387,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             .setOpenPingbackPostUrls(ImmutableSet.of(postUrl))
             .build();
     mockWebServer.setDispatcher(wpDispatcher);
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
 
     DetectionReportList reports =
         detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
@@ -407,7 +407,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
                 .setBody("Not Found");
           }
         });
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
 
     DetectionReportList reports =
         detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
@@ -424,7 +424,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             .setPingbackMethodListed(false)
             .build();
     mockWebServer.setDispatcher(wpDispatcher);
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
 
     DetectionReportList reports =
         detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
@@ -442,7 +442,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             .setOpenPingbackPostUrls(ImmutableSet.of(postUrl))
             .build();
     mockWebServer.setDispatcher(wpDispatcher);
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
 
     DetectionReportList reports =
         detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
@@ -461,7 +461,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             .setOpenPingbackPostUrls(ImmutableSet.of(postUrl))
             .build();
     mockWebServer.setDispatcher(wpDispatcher);
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
 
     DetectionReportList reports =
         detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
@@ -493,7 +493,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             .setOpenPingbackPostUrls(ImmutableSet.of(rssPostUrl))
             .build();
     mockWebServer.setDispatcher(wpDispatcher);
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
     TargetInfo target = createTargetInfo();
     NetworkService service = createNetworkService();
 
@@ -524,7 +524,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             .setOpenPingbackPostUrls(ImmutableSet.of(defaultHelloWorldUrl))
             .build();
     mockWebServer.setDispatcher(wpDispatcher);
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
     TargetInfo target = createTargetInfo();
     NetworkService service = createNetworkService();
 
@@ -559,7 +559,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             .setOpenPingbackPostUrls(ImmutableSet.of(subPostUrl))
             .build();
     mockWebServer.setDispatcher(wpDispatcher);
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
     TargetInfo target = createTargetInfo();
     NetworkService service =
         createNetworkService().toBuilder()
@@ -604,7 +604,7 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             .setOpenPingbackPostUrls(ImmutableSet.of(postUrl))
             .build();
     mockWebServer.setDispatcher(wpDispatcher);
-    WordPressXmlRpcCve2026111497Detector detector = createDetector();
+    Cve2026111497OutboundDetector detector = createDetector();
 
     DetectionReportList reports =
         detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
@@ -613,11 +613,11 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
     assertThat(wpDispatcher.pingbackSourceUris()).hasSize(5);
   }
 
-  private WordPressXmlRpcCve2026111497Detector createDetector() {
+  private Cve2026111497OutboundDetector createDetector() {
     return createDetector(/* callbackServerEnabled= */ true);
   }
 
-  private WordPressXmlRpcCve2026111497Detector createDetector(boolean callbackServerEnabled) {
+  private Cve2026111497OutboundDetector createDetector(boolean callbackServerEnabled) {
     FakePayloadGeneratorModule.Builder payloadBuilder = FakePayloadGeneratorModule.builder();
     if (callbackServerEnabled) {
       payloadBuilder.setCallbackServer(mockCallbackServer);
@@ -626,11 +626,11 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             new FakeUtcClockModule(fakeUtcClock),
             new HttpClientModule.Builder().build(),
             payloadBuilder.build(),
-            new WordPressXmlRpcCve2026111497DetectorBootstrapModule())
-        .getInstance(WordPressXmlRpcCve2026111497Detector.class);
+            new Cve2026111497OutboundDetectorBootstrapModule())
+        .getInstance(Cve2026111497OutboundDetector.class);
   }
 
-  private WordPressXmlRpcCve2026111497Detector createDetectorWithoutCallbackServer() {
+  private Cve2026111497OutboundDetector createDetectorWithoutCallbackServer() {
     return createDetector(/* callbackServerEnabled= */ false);
   }
 
@@ -661,21 +661,20 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
             Vulnerability.newBuilder()
                 .setMainId(
                     VulnerabilityId.newBuilder()
-                        .setPublisher(
-                            WordPressXmlRpcCve2026111497Detector.VULNERABILITY_REPORT_PUBLISHER)
-                        .setValue(WordPressXmlRpcCve2026111497Detector.VULNERABILITY_REPORT_ID))
+                        .setPublisher(Cve2026111497OutboundDetector.VULNERABILITY_REPORT_PUBLISHER)
+                        .setValue(Cve2026111497OutboundDetector.VULNERABILITY_REPORT_ID))
                 .addRelatedId(
                     VulnerabilityId.newBuilder()
                         .setPublisher("CVE")
-                        .setValue(WordPressXmlRpcCve2026111497Detector.RELATED_CVE_ID))
+                        .setValue(Cve2026111497OutboundDetector.RELATED_CVE_ID))
                 .setSeverity(Severity.CRITICAL)
-                .setTitle(WordPressXmlRpcCve2026111497Detector.VULNERABILITY_REPORT_TITLE)
-                .setDescription(WordPressXmlRpcCve2026111497Detector.VULN_DESCRIPTION)
-                .setRecommendation(WordPressXmlRpcCve2026111497Detector.RECOMMENDATION)
+                .setTitle(Cve2026111497OutboundDetector.VULNERABILITY_REPORT_TITLE)
+                .setDescription(Cve2026111497OutboundDetector.VULN_DESCRIPTION)
+                .setRecommendation(Cve2026111497OutboundDetector.RECOMMENDATION)
                 .addAdditionalDetails(
                     AdditionalDetail.newBuilder()
                         .setDescription(
-                            WordPressXmlRpcCve2026111497Detector.DETECTION_EVIDENCE_DESCRIPTION)
+                            Cve2026111497OutboundDetector.DETECTION_EVIDENCE_DESCRIPTION)
                         .setTextData(TextData.newBuilder().setText(expectedEvidenceText))))
         .build();
   }
@@ -740,11 +739,9 @@ public final class WordPressXmlRpcCve2026111497DetectorTest {
 
         ByteString body =
             switch (responsePreset.get()) {
-              case WordPressXmlRpcCve2026111497Detector.PRESET_BROTLI_VALID -> VALID_CONTROL_BYTES;
-              case WordPressXmlRpcCve2026111497Detector.PRESET_BROTLI_INVALID ->
-                  INVALID_CONTROL_BYTES;
-              case WordPressXmlRpcCve2026111497Detector.PRESET_BROTLI_CVE_2026_111497 ->
-                  PROBE_BYTES;
+              case Cve2026111497OutboundDetector.PRESET_BROTLI_VALID -> VALID_CONTROL_BYTES;
+              case Cve2026111497OutboundDetector.PRESET_BROTLI_INVALID -> INVALID_CONTROL_BYTES;
+              case Cve2026111497OutboundDetector.PRESET_BROTLI_CVE_2026_111497 -> PROBE_BYTES;
               default -> throw new AssertionError("Unexpected preset: " + responsePreset.get());
             };
         Buffer buf = new Buffer().write(body.toByteArray());

@@ -2,7 +2,7 @@ plugins {
   id 'java-library'
 }
 
-description = 'Tsunami WordPress XML-RPC CVE-2026-111497 (Google Brotli RCE) VulnDetector plugin.'
+description = 'Tsunami Outbound CVE-2026-111497 (Google Brotli RCE) VulnDetector plugin.'
 group = 'com.google.tsunami'
 version = '0.0.1-SNAPSHOT'
 

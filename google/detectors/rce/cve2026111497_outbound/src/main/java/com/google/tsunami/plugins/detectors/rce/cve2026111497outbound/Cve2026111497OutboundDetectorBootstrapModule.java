@@ -13,16 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.tsunami.plugins.detectors.rce.wordpress.cve2026111497;
+package com.google.tsunami.plugins.detectors.rce.cve2026111497outbound;
 
 import com.google.tsunami.plugin.PluginBootstrapModule;
 
-/** A {@link PluginBootstrapModule} for {@link WordPressXmlRpcCve2026111497Detector}. */
-public final class WordPressXmlRpcCve2026111497DetectorBootstrapModule
-    extends PluginBootstrapModule {
+/** A {@link PluginBootstrapModule} for {@link Cve2026111497OutboundDetector}. */
+public final class Cve2026111497OutboundDetectorBootstrapModule extends PluginBootstrapModule {
 
   @Override
   protected void configurePlugin() {
-    registerPlugin(WordPressXmlRpcCve2026111497Detector.class);
+    registerPlugin(Cve2026111497OutboundDetector.class);
   }
 }

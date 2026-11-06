@@ -1,4 +1,4 @@
-# WordPress XML-RPC CVE-2026-111497 (Google Brotli Decoder RCE) Detector
+# Outbound CVE-2026-111497 (Google Brotli Decoder RCE) Detector
 
 ## Description
 
