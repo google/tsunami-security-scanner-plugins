@@ -1,0 +1,72 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "n8n_CVE_2026_21858"
+}
+
+#########
+# TESTS #
+#########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!DOCTYPE html><html><head><title>n8n.io - Workflow Automation</title></head><body></body></html>"
+      },
+      {
+        uri: "/rest/settings"
+        status: 200
+        body_content: "{\"data\":{\"endpointForm\":\"form\",\"versionCli\":\"1.116.0\",\"releaseChannel\":\"stable\"}}"
+      },
+      {
+        uri: "/form/upload"
+        status: 200
+        body_content: "root:x:0:0:root:/root:/bin/sh\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!DOCTYPE html><html><head><title>n8n.io - Workflow Automation</title></head><body></body></html>"
+      },
+      {
+        uri: "/rest/settings"
+        status: 200
+        body_content: "{\"data\":{\"endpointForm\":\"form\",\"versionCli\":\"1.121.0\",\"releaseChannel\":\"stable\"}}"
+      },
+      {
+        uri: "/form/upload"
+        status: 500
+        body_content: "{\"code\":0,\"message\":\"Workflow Form Error: Workflow could not be started!\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotN8n_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!DOCTYPE html><html><head><title>Other App</title></head><body></body></html>"
+      }
+    ]
+  }
+}
