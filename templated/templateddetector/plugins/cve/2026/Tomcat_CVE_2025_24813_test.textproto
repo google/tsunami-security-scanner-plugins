@@ -1,0 +1,83 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "TOMCAT_CVE_2025_24813"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html><html lang=\"en\"><head><title>Apache Tomcat/9.0.98</title></head><body><h1>If you're seeing this, you've successfully installed Tomcat. Congratulations!</h1></body></html>"
+      },
+      {
+        uri: "/test_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.session"
+        status: 201
+        condition: {
+          request_type: PUT
+          headers: [
+            { name: "Content-Type" value: "application/octet-stream" },
+            { name: "Content-Range" value: "bytes 0-452/457" }
+          ]
+          body_content: [
+            "racedata"
+          ]
+        }
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenReadOnlyEnabled_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html><html lang=\"en\"><head><title>Apache Tomcat/9.0.98</title></head><body><h1>If you're seeing this, you've successfully installed Tomcat. Congratulations!</h1></body></html>"
+      },
+      {
+        uri: "/test_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.session"
+        status: 403
+        condition: {
+          request_type: PUT
+        }
+      },
+      {
+        uri: "/test_session.session"
+        status: 403
+        condition: {
+          request_type: PUT
+        }
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotTomcat_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        headers: [
+          { name: "Server" value: "nginx" }
+        ]
+        body_content: "<html><head><title>Welcome to nginx!</title></head></html>"
+      }
+    ]
+  }
+}
