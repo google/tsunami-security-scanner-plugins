@@ -16,12 +16,13 @@
 
 package com.google.tsunami.plugins.detectors.exposedui.argocd;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static com.google.tsunami.common.data.NetworkEndpointUtils.forHostnameAndPort;
 import static com.google.tsunami.plugins.detectors.exposedui.argocd.ExposedArgoCdApiDetector.PAYLOAD_ARGOCD_TOKEN_SESSION;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.truth.Truth;
 import com.google.inject.Guice;
 import com.google.inject.testing.fieldbinder.Bind;
 import com.google.inject.testing.fieldbinder.BoundFieldModule;
@@ -118,13 +119,12 @@ public final class ExposedArgoCdApiDetectorTest {
             DetectionReport.newBuilder()
                 .setTargetInfo(targetInfo)
                 .setNetworkService(targetNetworkService)
-                .setDetectionTimestamp(
-                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.instant().toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(detector.getAdvisories().get(1))
                 .build());
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(5);
-    Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
+    assertThat(mockTargetService.getRequestCount()).isEqualTo(5);
+    assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
   }
 
   @Test
@@ -142,13 +142,12 @@ public final class ExposedArgoCdApiDetectorTest {
             DetectionReport.newBuilder()
                 .setTargetInfo(targetInfo)
                 .setNetworkService(targetNetworkService)
-                .setDetectionTimestamp(
-                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.instant().toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(detector.getAdvisories().get(1))
                 .build());
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
-    Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(0);
+    assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
+    assertThat(mockCallbackServer.getRequestCount()).isEqualTo(0);
   }
 
   @Test
@@ -165,13 +164,12 @@ public final class ExposedArgoCdApiDetectorTest {
             DetectionReport.newBuilder()
                 .setTargetInfo(targetInfo)
                 .setNetworkService(targetNetworkService)
-                .setDetectionTimestamp(
-                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.instant().toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(detector.getAdvisories().get(0))
                 .build());
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
-    Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
+    assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
+    assertThat(mockCallbackServer.getRequestCount()).isEqualTo(1);
   }
 
   @Test
@@ -189,13 +187,12 @@ public final class ExposedArgoCdApiDetectorTest {
             DetectionReport.newBuilder()
                 .setTargetInfo(targetInfo)
                 .setNetworkService(targetNetworkService)
-                .setDetectionTimestamp(
-                    Timestamps.fromMillis(Instant.now(fakeUtcClock).toEpochMilli()))
+                .setDetectionTimestamp(Timestamps.fromMillis(fakeUtcClock.instant().toEpochMilli()))
                 .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
                 .setVulnerability(detector.getAdvisories().get(0))
                 .build());
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(3);
-    Truth.assertThat(mockCallbackServer.getRequestCount()).isEqualTo(0);
+    assertThat(mockTargetService.getRequestCount()).isEqualTo(3);
+    assertThat(mockCallbackServer.getRequestCount()).isEqualTo(0);
   }
 
   @Test
@@ -207,7 +204,7 @@ public final class ExposedArgoCdApiDetectorTest {
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(10);
+    assertThat(mockTargetService.getRequestCount()).isEqualTo(10);
   }
 
   @Test
@@ -218,7 +215,231 @@ public final class ExposedArgoCdApiDetectorTest {
     DetectionReportList detectionReports =
         detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
     assertThat(detectionReports.getDetectionReportsList()).isEmpty();
-    Truth.assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
+    assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
+  }
+
+  @Test
+  public void detect_whenVulnerableToExposedUiOob_sendsCallbackUrlAsRepoUrl() throws Exception {
+    startMockWebServerForTestingWithOob(false);
+    createInjector();
+    mockCallbackServer.enqueue(PayloadTestHelper.generateMockSuccessfulCallbackResponse());
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).hasSize(1);
+    mockTargetService.takeRequest();
+    mockTargetService.takeRequest();
+    RecordedRequest createAppRequest = mockTargetService.takeRequest();
+    String createAppBody = createAppRequest.getBody().readString(UTF_8);
+    assertThat(createAppBody).contains("\"server\":\"https://kubernetes.default.svc\"");
+    assertThat(createAppBody).contains("\"project\":\"default\"");
+    assertThat(createAppBody)
+        .contains(
+            String.format(
+                "\"repoURL\":\"http://%s:%d/",
+                mockCallbackServer.getHostName(), mockCallbackServer.getPort()));
+  }
+
+  @Test
+  public void detect_whenCertificatesRedirectsToLandingPage_doesNotReportVuln() throws IOException {
+    final Dispatcher dispatcher =
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            if (Objects.equals(request.getPath(), "/api/v1/certificates")) {
+              return new MockResponse()
+                  .setResponseCode(302)
+                  .addHeader("Location", mockTargetService.url("/landing").toString());
+            }
+            return new MockResponse()
+                .setResponseCode(200)
+                .setBody(
+                    "{\"metadata\":{},\"items\":[{\"serverName\":\"github.com\","
+                        + "\"certType\":\"ssh\",\"certInfo\":\"SHA256:abc\"}]}");
+          }
+        };
+    startMockWebServerWithDispatcher(dispatcher);
+    createInjector();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+    assertThat(mockTargetService.getRequestCount()).isEqualTo(4);
+  }
+
+  @Test
+  public void detect_whenCertificatesReturnsHtmlWithItemsAndMetadata_doesNotReportVuln()
+      throws IOException {
+    startMockWebServerForCertificatesResponse(
+        200,
+        "<!DOCTYPE html><html><body><script>self.__next_f.push([1,"
+            + "{\"metadata\":{\"page\":\"landing\"},\"items\":[{\"id\":\"1\"}]}])"
+            + "</script></body></html>");
+    createInjector();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_whenCertificatesReturnsNonSuccessWithValidJsonBody_doesNotReportVuln()
+      throws IOException {
+    startMockWebServerForCertificatesResponse(
+        403,
+        "{\"metadata\":{},\"items\":[{\"serverName\":\"github.com\",\"certType\":\"ssh\","
+            + "\"certInfo\":\"SHA256:p2QAMXNIC1TJYWeIOttrVc98/R1BUFWu3/LiyKgUfQM\"}]}");
+    createInjector();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_whenCertificatesReturnsEmptyBody_doesNotReportVuln() throws IOException {
+    startMockWebServerForCertificatesResponse(200, "");
+    createInjector();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_whenCertificatesMissingMetadataObject_doesNotReportVuln() throws IOException {
+    startMockWebServerForCertificatesResponse(
+        200,
+        "{\"items\":[{\"serverName\":\"github.com\",\"certType\":\"ssh\","
+            + "\"certInfo\":\"SHA256:abc\"}]}");
+    createInjector();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_whenCertificatesItemsNotArray_doesNotReportVuln() throws IOException {
+    startMockWebServerForCertificatesResponse(200, "{\"metadata\":{},\"items\":{}}");
+    createInjector();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_whenCertificatesItemsEmpty_doesNotReportVuln() throws IOException {
+    startMockWebServerForCertificatesResponse(200, "{\"metadata\":{},\"items\":[]}");
+    createInjector();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_whenCertificatesItemNotJsonObject_doesNotReportVuln() throws IOException {
+    startMockWebServerForCertificatesResponse(200, "{\"metadata\":{},\"items\":[\"invalid\"]}");
+    createInjector();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_whenCertificatesMissingServerName_doesNotReportVuln() throws IOException {
+    startMockWebServerForCertificatesResponse(
+        200, "{\"metadata\":{},\"items\":[{\"certType\":\"ssh\",\"certInfo\":\"SHA256:abc\"}]}");
+    createInjector();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_whenCertificatesEmptyServerName_doesNotReportVuln() throws IOException {
+    startMockWebServerForCertificatesResponse(
+        200,
+        "{\"metadata\":{},\"items\":[{\"serverName\":\"\",\"certType\":\"ssh\","
+            + "\"certInfo\":\"SHA256:abc\"}]}");
+    createInjector();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_whenCertificatesMissingCertType_doesNotReportVuln() throws IOException {
+    startMockWebServerForCertificatesResponse(
+        200,
+        "{\"metadata\":{},\"items\":[{\"serverName\":\"github.com\","
+            + "\"certInfo\":\"SHA256:abc\"}]}");
+    createInjector();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  @Test
+  public void detect_whenCertificatesMissingCertInfo_doesNotReportVuln() throws IOException {
+    startMockWebServerForCertificatesResponse(
+        200, "{\"metadata\":{},\"items\":[{\"serverName\":\"github.com\",\"certType\":\"ssh\"}]}");
+    createInjector();
+
+    DetectionReportList detectionReports =
+        detector.detect(targetInfo, ImmutableList.of(targetNetworkService));
+
+    assertThat(detectionReports.getDetectionReportsList()).isEmpty();
+  }
+
+  private void startMockWebServerForCertificatesResponse(int statusCode, String body)
+      throws IOException {
+    final Dispatcher dispatcher =
+        new Dispatcher() {
+          @Override
+          public MockResponse dispatch(RecordedRequest request) {
+            if (Objects.equals(request.getPath(), "/api/v1/certificates")) {
+              return new MockResponse().setResponseCode(statusCode).setBody(body);
+            }
+            return new MockResponse().setResponseCode(404);
+          }
+        };
+    startMockWebServerWithDispatcher(dispatcher);
+  }
+
+  private void startMockWebServerWithDispatcher(Dispatcher dispatcher) throws IOException {
+    mockTargetService.setDispatcher(dispatcher);
+    mockTargetService.start();
+    mockTargetService.url("/");
+
+    targetNetworkService =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(
+                forHostnameAndPort(mockTargetService.getHostName(), mockTargetService.getPort()))
+            .addSupportedHttpMethods("POST")
+            .build();
+    targetInfo =
+        TargetInfo.newBuilder()
+            .addNetworkEndpoints(targetNetworkService.getNetworkEndpoint())
+            .build();
   }
 
   private void startMockWebServerForTestingWithOob(boolean mustHaveForgedCookie)

