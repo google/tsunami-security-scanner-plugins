@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.util.Timestamps;
@@ -98,7 +99,16 @@ public final class OpenSshAuthBypassDetector implements VulnDetector {
    */
   @VisibleForTesting
   static final ImmutableList<String> CANDIDATE_USERNAMES =
-      ImmutableList.of("root", "alpine", "sshuser");
+      ImmutableList.of("root", "alpine", "sshuser", "admin", "user", "guest");
+
+  /**
+   * Standard and fleet-observed alternative SSH ports accepted when Nmap labels the service as
+   * {@code "tcpwrapped"} due to OpenSSH {@code PerSourcePenalties} or {@code MaxStartups}
+   * rate-limiting during {@code -sV} banner fingerprinting.
+   */
+  @VisibleForTesting
+  static final ImmutableSet<Integer> TCPWRAPPED_SSH_PORTS =
+      ImmutableSet.of(22, 26, 222, 1022, 2022, 2222, 3389);
 
   /**
    * OpenSSH 9.8+ enables {@code PerSourcePenalties} by default ({@code noauth:1s, min:15s}). When
@@ -108,8 +118,6 @@ public final class OpenSshAuthBypassDetector implements VulnDetector {
    * sshd} immediately closes new TCP connections before sending a banner. We retry on immediate
    * pre-banner EOF until the port-scan penalty window expires.
    */
-  private static final int DEFAULT_SSH_PORT = 22;
-
   private static final int MAX_PENALTY_COOLDOWN_RETRIES = 10;
 
   private static final Duration PENALTY_COOLDOWN_SLEEP = Duration.ofSeconds(3);
@@ -165,7 +173,8 @@ public final class OpenSshAuthBypassDetector implements VulnDetector {
     return serviceName.isEmpty()
         || Ascii.equalsIgnoreCase(serviceName, "ssh")
         || (Ascii.equalsIgnoreCase(serviceName, "tcpwrapped")
-            && service.getNetworkEndpoint().getPort().getPortNumber() == DEFAULT_SSH_PORT);
+            && TCPWRAPPED_SSH_PORTS.contains(
+                service.getNetworkEndpoint().getPort().getPortNumber()));
   }
 
   private Optional<DetectionReport> checkService(TargetInfo targetInfo, NetworkService service) {

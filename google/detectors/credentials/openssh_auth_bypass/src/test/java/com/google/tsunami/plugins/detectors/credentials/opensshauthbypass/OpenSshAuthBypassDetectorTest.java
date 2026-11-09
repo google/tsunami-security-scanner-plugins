@@ -179,6 +179,20 @@ public final class OpenSshAuthBypassDetectorTest {
   }
 
   @Test
+  public void detect_whenRootNotPermittedButAdminVulnerable_returnsVulnerability() {
+    fakeSshServer.setAuthPolicy(
+        (user, pw, promptIndex) -> promptIndex >= 1 && user.equals("admin") && pw.length() > 256);
+    NetworkService service = createSshService(fakeSshServer.getPort());
+    TargetInfo targetInfo = TargetInfo.getDefaultInstance();
+
+    DetectionReportList reports = detector.detect(targetInfo, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(buildExpectedReport(targetInfo, service, "admin"));
+    assertThat(fakeSshServer.getConnectionCount()).isEqualTo(6);
+  }
+
+  @Test
   public void detect_whenOnlyFirstLongPasswordAccepted_returnsEmpty() {
     fakeSshServer.setAuthPolicy(
         (user, pw, promptIndex) ->
@@ -260,13 +274,40 @@ public final class OpenSshAuthBypassDetectorTest {
   }
 
   @Test
+  public void detect_whenTcpwrappedOnAlternateSshPortAndVulnerable_returnsVulnerability() {
+    fakeSshServer.setAuthPolicy(
+        (user, pw, promptIndex) -> promptIndex >= 1 && user.equals("root") && pw.length() > 256);
+    NetworkService service3389 =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(NetworkEndpointUtils.forIpAndPort("127.0.0.1", 3389))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setServiceName("tcpwrapped")
+            .build();
+    NetworkService service2222 =
+        NetworkService.newBuilder()
+            .setNetworkEndpoint(NetworkEndpointUtils.forIpAndPort("127.0.0.1", 2222))
+            .setTransportProtocol(TransportProtocol.TCP)
+            .setServiceName("tcpwrapped")
+            .build();
+    TargetInfo targetInfo = TargetInfo.getDefaultInstance();
+
+    DetectionReportList reports =
+        detector.detect(targetInfo, ImmutableList.of(service3389, service2222));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedReport(targetInfo, service3389, "root"),
+            buildExpectedReport(targetInfo, service2222, "root"));
+    assertThat(fakeSshServer.getConnectionCount()).isEqualTo(6);
+  }
+
+  @Test
   public void detect_whenTcpwrappedOnNon22Port_skipsServiceAndReturnsEmpty() {
     fakeSshServer.setAuthPolicy(
         (user, pw, promptIndex) -> user.equals("root") && pw.length() > 256);
     NetworkService service =
         NetworkService.newBuilder()
-            .setNetworkEndpoint(
-                NetworkEndpointUtils.forIpAndPort("127.0.0.1", fakeSshServer.getPort()))
+            .setNetworkEndpoint(NetworkEndpointUtils.forIpAndPort("127.0.0.1", 80))
             .setTransportProtocol(TransportProtocol.TCP)
             .setServiceName("tcpwrapped")
             .build();
