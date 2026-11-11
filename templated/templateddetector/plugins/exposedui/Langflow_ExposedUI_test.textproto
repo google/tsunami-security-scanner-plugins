@@ -6,6 +6,56 @@ config: {
 }
 
 tests: {
+  name: "whenVulnerable_withAutoLoginToken_returnsTrue"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/v1/version"
+        status: 200
+        body_content: "{\"version\":\"1.13.0\",\"main_version\":\"1.13.0\",\"package\":\"Langflow\"}"
+      },
+      {
+        uri: "/api/v1/auto_login"
+        status: 200
+        body_content: "{\"access_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\",\"token_type\":\"bearer\"}"
+      },
+      {
+        uri: "/api/v1/users/whoami"
+        status: 200
+        condition: {
+          headers: [
+            { name: "Authorization" value: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" }
+          ]
+        }
+        body_content:
+          "{\"id\":\"ae76c1d9-6b48-4287-8463-65115fb65d14\",\"username\":\"langflow\",\"profile_ima"
+          "ge\":null,\"store_api_key\":null,\"is_active\":true,\"is_superuser\":true,\"create_at\":"
+          "\"2026-08-26T15:57:26.294302\",\"updated_at\":\"2026-08-26T16:07:17.672016\",\"last_lo"
+          "gin_at\":\"2026-08-26T16:07:17.670531\",\"optins\":{\"github_starred\":false,\"dialog_d"
+          "ismissed\":false,\"discord_clicked\":false}}"
+      },
+      {
+        uri: "/api/v1/custom_component"
+        status: 200
+        condition: {
+          headers: [
+            { name: "Authorization" value: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" }
+          ]
+        }
+        body_content: "{\"data\":{}}"
+      }
+    ]
+  }
+}
+
+tests: {
   name: "whenVulnerable_returnsTrue"
   expect_vulnerability: true
 
@@ -19,22 +69,22 @@ tests: {
       {
         uri: "/api/v1/version"
         status: 200
-        body_content: '{"version":"1.10.1","main_version":"1.10.1","package":"Langflow"}'
+        body_content: "{\"version\":\"1.10.1\",\"main_version\":\"1.10.1\",\"package\":\"Langflow\"}"
       },
       {
         uri: "/api/v1/users/whoami"
         status: 200
-        body_content: 
-        '{"id":"ae76c1d9-6b48-4287-8463-65115fb65d14","username":"langflow","profile_ima'
-        'ge":null,"store_api_key":null,"is_active":true,"is_superuser":true,"create_at":'
-        '"2026-08-26T15:57:26.294302","updated_at":"2026-08-26T16:07:17.672016","last_lo'
-        'gin_at":"2026-08-26T16:07:17.670531","optins":{"github_starred":false,"dialog_d'
-        'ismissed":false,"discord_clicked":false}}'
+        body_content:
+          "{\"id\":\"ae76c1d9-6b48-4287-8463-65115fb65d14\",\"username\":\"langflow\",\"profile_ima"
+          "ge\":null,\"store_api_key\":null,\"is_active\":true,\"is_superuser\":true,\"create_at\":"
+          "\"2026-08-26T15:57:26.294302\",\"updated_at\":\"2026-08-26T16:07:17.672016\",\"last_lo"
+          "gin_at\":\"2026-08-26T16:07:17.670531\",\"optins\":{\"github_starred\":false,\"dialog_d"
+          "ismissed\":false,\"discord_clicked\":false}}"
       },
       {
         uri: "TSUNAMI_MAGIC_ANY_URI"
         status: 200
-        body_content: ' ... '
+        body_content: " ... "
       }
     ]
   }
@@ -54,12 +104,12 @@ tests: {
       {
         uri: "/api/v1/version"
         status: 200
-        body_content: '{"version":"1.10.1","main_version":"1.10.1","package":"Langflow"}'
+        body_content: "{\"version\":\"1.10.1\",\"main_version\":\"1.10.1\",\"package\":\"Langflow\"}"
       },
       {
         uri: "TSUNAMI_MAGIC_ANY_URI"
         status: 403
-        body_content: ' ... '
+        body_content: " ... "
       }
     ]
   }
