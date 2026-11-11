@@ -1,0 +1,69 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "BentoML_CVE_2025_27520"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/docs.json"
+        status: 200
+        body_content: "{\"openapi\":\"3.0.2\",\"info\":{\"title\":\"DemoService\",\"description\":\"BentoML-1.4.2\"},\"paths\":{\"/echo\":{\"post\":{\"tags\":[\"Service APIs\"]}}}}"
+      },
+      {
+        uri: "/echo"
+        status: 400
+        headers: [
+          { name: "Server" value: "BentoML Service/DemoService" },
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"error\":\"0 validation error for b'1f21f020c9'\",\"detail\":[]}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatched_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/docs.json"
+        status: 200
+        body_content: "{\"openapi\":\"3.0.2\",\"info\":{\"title\":\"DemoService\",\"description\":\"BentoML-1.4.3\"},\"paths\":{\"/echo\":{\"post\":{\"tags\":[\"Service APIs\"]}}}}"
+      },
+      {
+        uri: "/echo"
+        status: 415
+        headers: [
+          { name: "Server" value: "BentoML Service/DemoService" },
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"error\":\"application/vnd.bentoml+pickle is not allowed in main server\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotBentoML_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
