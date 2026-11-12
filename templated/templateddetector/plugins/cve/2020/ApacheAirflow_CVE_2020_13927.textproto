@@ -1,0 +1,77 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ApacheAirflow_CVE_2020_13927"
+  author: "mangeshwalsane2-hash"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2020-13927"
+  }
+  severity: HIGH
+  title: "Apache Airflow Default Unauthenticated Experimental REST API (CVE-2020-13927)"
+  description: "Apache Airflow versions prior to 1.10.11 have the experimental REST API enabled by default without requiring authentication (airflow.api.auth.backend.default), allowing unauthenticated remote access to query metadata and trigger DAG tasks."
+  recommendation: "Upgrade Apache Airflow to version 1.10.11 or higher and configure api.auth.backend to require authentication (e.g., airflow.api.auth.backend.deny_all or password-based authentication). Note that version 1.10.11 changes the configuration default for new installs only, and existing installations will still be vulnerable after updating the version."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2020-13927"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_airflow"
+  http_request: {
+    method: GET
+    uri: "/admin/"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "<title>Airflow" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_unauthenticated_api"
+  http_request: {
+    method: GET
+    uri: "/api/experimental/test"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "{\"status\":\"OK\"}" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_airflow",
+    "check_unauthenticated_api"
+  ]
+}
