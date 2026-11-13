@@ -1,0 +1,77 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "TOMCAT_CVE_2025_24813"
+  author: "dyeddala"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2025-24813"
+  }
+  severity: CRITICAL
+  title: "Apache Tomcat Path Equivalence Leading to RCE (CVE-2025-24813)"
+  description: "Path Equivalence via 'file.Name' (Internal Dot) leading to Remote Code Execution and/or Information disclosure via the write-enabled Default Servlet in Apache Tomcat (versions 11.0.0-M1 through 11.0.2, 10.1.0-M1 through 10.1.34, 9.0.0.M1 through 9.0.98, and 8.5.0 through 8.5.100). Malicious users can leverage partial PUT requests combined with file-based session persistence to achieve remote code execution."
+  recommendation: "Upgrade Apache Tomcat to version 11.0.3, 10.1.35, or 9.0.99 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-24813"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_apache_tomcat"
+  http_request: {
+    method: GET
+    uri: ["/", "/tsunami_tomcat_check"]
+    response: {
+      expect_any: {
+        conditions: [
+          { header: { name: "Server" } contains: "Apache" },
+          { body: {} contains: "Apache Tomcat" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_tomcat_path_equivalence_exploit"
+  http_request: {
+    method: PUT
+    uri: ["/test_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.session", "/test_session.session"]
+    headers: [
+      { name: "Content-Type" value: "application/octet-stream" },
+      { name: "Content-Range" value: "bytes 0-452/457" }
+    ]
+    data: "racedata"
+    response: {
+      http_status: 201
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_apache_tomcat",
+    "check_tomcat_path_equivalence_exploit"
+  ]
+}
