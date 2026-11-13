@@ -1,0 +1,162 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Keycloak_CVE_2026_18963"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/realms/master/.well-known/openid-configuration"
+        status: 200
+        body_content: "{\"issuer\":\"http://localhost/realms/master\",\"authorization_endpoint\":\"http://localhost/realms/master/protocol/openid-connect/auth\"}"
+      },
+      {
+        uri: "/realms/master/protocol/openid-connect/auth?client_id=security-admin-console&redirect_uri={{ T_NS_BASEURL }}admin/master/console/&response_type=code&scope=openid&code_challenge_method=S256&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "AUTH_SESSION_ID=test-auth-session; Path=/realms/master/; HttpOnly" },
+          { name: "Set-Cookie" value: "KC_RESTART=test-kc-restart; Path=/realms/master/; HttpOnly" }
+        ]
+        body_content:
+          "<html><head><title>Sign in to Keycloak</title></head><body>"
+          "<a href=\"/realms/master/login-actions/reset-credentials?client_id=security-admin-console&amp;tab_id=testtab\">Forgot Password?</a>"
+          "</body></html>"
+      },
+      {
+        uri: "/realms/master/login-actions/reset-credentials?client_id=security-admin-console&tab_id=testtab"
+        status: 200
+        body_content:
+          "<html><body>"
+          "<form id=\"kc-reset-password-form\" action=\"http://localhost/realms/master/login-actions/reset-credentials?session_code=sc-reset&amp;execution=exec-reset&amp;client_id=security-admin-console&amp;tab_id=testtab\" method=\"post\"></form>"
+          "<form id=\"kc-select-credential-form\" action=\"http://localhost/realms/master/login-actions/reset-credentials?session_code=sc-stale&amp;execution=exec-stale&amp;client_id=security-admin-console&amp;tab_id=testtab\" method=\"post\"></form>"
+          "</body></html>"
+      },
+      {
+        uri: "/realms/master/login-actions/reset-credentials?session_code=sc-reset&execution=exec-reset&client_id=security-admin-console&tab_id=testtab"
+        status: 200
+        condition: {
+          request_type: POST
+          body_content: [ "tryAnotherWay=on" ]
+        }
+        body_content:
+          "<html><body>"
+          "<form id=\"kc-select-credential-form\" action=\"http://localhost/realms/master/login-actions/reset-credentials?session_code=sc-selector&amp;execution=exec-selector&amp;client_id=security-admin-console&amp;tab_id=testtab\" method=\"post\"></form>"
+          "</body></html>"
+      },
+      {
+        uri: "/realms/master/login-actions/reset-credentials?session_code=sc-selector&execution=exec-selector&client_id=security-admin-console&tab_id=testtab"
+        status: 200
+        condition: {
+          request_type: POST
+          body_content: [ "username=admin" ]
+        }
+        body_content:
+          "<html><body>"
+          "<a id=\"reset-login\" href=\"/realms/master/login-actions/restart?client_id=security-admin-console&amp;tab_id=testtab&amp;skip_logout=true\">Restart login</a>"
+          "</body></html>"
+      },
+      {
+        uri: "/realms/master/login-actions/reset-credentials?session_code=sc-stale&execution=exec-stale&client_id=security-admin-console&tab_id=testtab"
+        status: 200
+        condition: {
+          request_type: POST
+          body_content: [ "username=admin" ]
+        }
+        body_content:
+          "<html><body>"
+          "<form id=\"kc-passwd-update-form\" action=\"http://localhost/realms/master/login-actions/required-action?execution=UPDATE_PASSWORD\" method=\"post\"></form>"
+          "</body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/realms/master/.well-known/openid-configuration"
+        status: 200
+        body_content: "{\"issuer\":\"http://localhost/realms/master\",\"authorization_endpoint\":\"http://localhost/realms/master/protocol/openid-connect/auth\"}"
+      },
+      {
+        uri: "/realms/master/protocol/openid-connect/auth?client_id=security-admin-console&redirect_uri={{ T_NS_BASEURL }}admin/master/console/&response_type=code&scope=openid&code_challenge_method=S256&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+        status: 200
+        headers: [
+          { name: "Set-Cookie" value: "AUTH_SESSION_ID=test-auth-session; Path=/realms/master/; HttpOnly" },
+          { name: "Set-Cookie" value: "KC_RESTART=test-kc-restart; Path=/realms/master/; HttpOnly" }
+        ]
+        body_content:
+          "<html><head><title>Sign in to Keycloak</title></head><body>"
+          "<a href=\"/realms/master/login-actions/reset-credentials?client_id=security-admin-console&amp;tab_id=testtab\">Forgot Password?</a>"
+          "</body></html>"
+      },
+      {
+        uri: "/realms/master/login-actions/reset-credentials?client_id=security-admin-console&tab_id=testtab"
+        status: 200
+        body_content:
+          "<html><body>"
+          "<form id=\"kc-reset-password-form\" action=\"http://localhost/realms/master/login-actions/reset-credentials?session_code=sc-reset&amp;execution=exec-reset&amp;client_id=security-admin-console&amp;tab_id=testtab\" method=\"post\"></form>"
+          "<form id=\"kc-select-credential-form\" action=\"http://localhost/realms/master/login-actions/reset-credentials?session_code=sc-stale&amp;execution=exec-stale&amp;client_id=security-admin-console&amp;tab_id=testtab\" method=\"post\"></form>"
+          "</body></html>"
+      },
+      {
+        uri: "/realms/master/login-actions/reset-credentials?session_code=sc-reset&execution=exec-reset&client_id=security-admin-console&tab_id=testtab"
+        status: 200
+        condition: {
+          request_type: POST
+          body_content: [ "tryAnotherWay=on" ]
+        }
+        body_content:
+          "<html><body>"
+          "<form id=\"kc-select-credential-form\" action=\"http://localhost/realms/master/login-actions/reset-credentials?session_code=sc-selector&amp;execution=exec-selector&amp;client_id=security-admin-console&amp;tab_id=testtab\" method=\"post\"></form>"
+          "</body></html>"
+      },
+      {
+        uri: "/realms/master/login-actions/reset-credentials?session_code=sc-selector&execution=exec-selector&client_id=security-admin-console&tab_id=testtab"
+        status: 200
+        condition: {
+          request_type: POST
+          body_content: [ "username=admin" ]
+        }
+        body_content:
+          "<html><body>"
+          "<a id=\"reset-login\" href=\"/realms/master/login-actions/restart?client_id=security-admin-console&amp;tab_id=testtab&amp;skip_logout=true\">Restart login</a>"
+          "</body></html>"
+      },
+      {
+        uri: "/realms/master/login-actions/reset-credentials?session_code=sc-stale&execution=exec-stale&client_id=security-admin-console&tab_id=testtab"
+        status: 400
+        condition: {
+          request_type: POST
+          body_content: [ "username=admin" ]
+        }
+        body_content:
+          "<html><body>"
+          "<div id=\"kc-error-message\"><p class=\"instruction\">Action expired. Please start again.</p></div>"
+          "</body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotKeycloak_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/realms/master/.well-known/openid-configuration"
+        status: 200
+        body_content: "<html><body>Welcome</body></html>"
+      }
+    ]
+  }
+}
