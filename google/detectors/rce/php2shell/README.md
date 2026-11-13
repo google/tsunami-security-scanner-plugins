@@ -20,18 +20,31 @@ compiled-in defaults when `php.ini-production` is not loaded).
 Verification uses a zero-side-effect behavioral differential in
 `ext/session/session.c` during `PHP Request Startup`:
 
-1. **Startup Flush Probe**: Sends a small multipart `POST` containing an illegal
-   session identifier (`tsunami/invalid_sid_<ts>`) in both the `Cookie` header
-   and a multipart form field alongside `PHP_SESSION_UPLOAD_PROGRESS` and a
-   1-byte file upload. Because `/` and `_` fail session ID character validation,
+1. **Startup Flush Probe**: Sends a small multipart `POST` containing an
+   illegal, overlong session identifier (`tsunami/invalid_sid_<ts>_<padding>`,
+   >250 bytes) in both the `Cookie` header and a multipart form field alongside
+   `PHP_SESSION_UPLOAD_PROGRESS` and a 1-byte file upload (stripping any
+   pre-existing session ID query parameter so `$_GET` cannot mask the invalid
+   identifier). Because `/` and `_` fail `mod_files` validation and keys over
+   250 bytes fail `memcached`/`memcache` `s_read` (`MEMC_RES_KEY_TOO_BIG`),
    `php_session_initialize()` aborts before creating or modifying any session
-   file on disk. Unpatched PHP ignores the `FAILURE` return value in
+   record. Unpatched PHP ignores the `FAILURE` return value in
    `php_session_rfc1867_update()` / `php_session_rfc1867_cleanup()` and invokes
-   `php_session_flush(1)`, emitting both the invalid-SID warning and
-   `Failed to write session data ... in Unknown on line 0`. Patched PHP releases
-   and OS vendor backports either return early without calling
-   `php_session_flush(1)` or disable `session.upload_progress`.
-2. **Causal-Ablation Control**: If the startup flush warning is observed, the
+   `php_session_flush(1)`, emitting both the startup initialization failure
+   warning (`is too long or contains illegal characters`,
+   `Failed to read session data`, `Failed to create session data file path`, or
+   `Failed to initialize storage module` across `files`, `memcached`,
+   unreachable/misconfigured `redis`, and custom handlers; note that healthy
+   `redis` backends accept arbitrary keys in `s_read` and regenerate invalid
+   IDs when `session.use_strict_mode = 1`) and `Failed to write session data ...
+   in Unknown on line 0`. Patched PHP releases and OS vendor backports either
+   return early without calling `php_session_flush(1)` or disable
+   `session.upload_progress`.
+2. **Custom Session Cookie Discovery**: When `PHPSESSID` does not trigger the
+   startup flush warning, the detector inspects all candidate `Set-Cookie`
+   headers emitted by the endpoint or recorded during crawling to test custom
+   `session.name` configurations.
+3. **Causal-Ablation Control**: If the startup flush warning is observed, the
    detector sends a single control request omitting only
    `PHP_SESSION_UPLOAD_PROGRESS` and confirms that the startup flush warning
    disappears, eliminating false positives from static pages or reflection

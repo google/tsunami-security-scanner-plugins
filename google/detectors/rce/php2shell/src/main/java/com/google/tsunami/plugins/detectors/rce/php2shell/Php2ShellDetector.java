@@ -17,6 +17,7 @@ package com.google.tsunami.plugins.detectors.rce.php2shell;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.tsunami.common.net.http.HttpRequest.post;
 
@@ -53,6 +54,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Clock;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,17 +68,19 @@ import javax.inject.Inject;
  *
  * <ol>
  *   <li><b>Probe (with {@code PHP_SESSION_UPLOAD_PROGRESS}):</b> Sends a minimal multipart POST
- *       supplying an illegal session ID ({@code tsunami/invalid_sid_<ts>}) in both the {@code
- *       Cookie} header and a multipart form field alongside {@code PHP_SESSION_UPLOAD_PROGRESS} and
- *       a 1-byte file part. Because {@code /} and {@code _} are rejected by session ID validation,
- *       {@code php_session_initialize()} aborts without creating or modifying any session record on
- *       disk. Unpatched PHP ({@code 5.4.0} through {@code 8.2.34}, {@code 8.3.35}, {@code 8.4.26},
- *       {@code 8.5.11}) ignores the {@code FAILURE} return value in {@code
- *       php_session_rfc1867_update()} / {@code php_session_rfc1867_cleanup()} and calls {@code
- *       php_session_flush(1)}, emitting both the startup invalid-SID warning and {@code Failed to
- *       write session data ... in Unknown on line 0}. Patched PHP releases and OS vendor backports
- *       either return early without calling {@code php_session_flush(1)} or disable {@code
- *       session.upload_progress} entirely.
+ *       supplying an illegal, overlong session ID ({@code tsunami/invalid_sid_<ts>_<padding>},
+ *       &gt;250 bytes) in both the {@code Cookie} header and a multipart form field alongside
+ *       {@code PHP_SESSION_UPLOAD_PROGRESS} and a 1-byte file part. Because {@code /} and {@code _}
+ *       are rejected by {@code mod_files} session ID validation and keys exceeding 250 bytes fail
+ *       {@code memcached}/{@code memcache} {@code s_read} ({@code MEMC_RES_KEY_TOO_BIG}), {@code
+ *       php_session_initialize()} aborts without creating or modifying any session record.
+ *       Unpatched PHP ({@code 5.4.0} through {@code 8.2.34}, {@code 8.3.35}, {@code 8.4.26}, {@code
+ *       8.5.11}) ignores the {@code FAILURE} return value in {@code php_session_rfc1867_update()} /
+ *       {@code php_session_rfc1867_cleanup()} and calls {@code php_session_flush(1)}, emitting both
+ *       the startup initialization failure warning and {@code Failed to write session data ... in
+ *       Unknown on line 0}. Patched PHP releases and OS vendor backports either return early
+ *       without calling {@code php_session_flush(1)} or disable {@code session.upload_progress}
+ *       entirely.
  *   <li><b>Causal-Ablation Control (without {@code PHP_SESSION_UPLOAD_PROGRESS}):</b> Whenever a
  *       response matches the unpatched startup flush warning signature, sends an identical control
  *       request omitting only the {@code PHP_SESSION_UPLOAD_PROGRESS} field and verifies that the
@@ -125,18 +129,26 @@ public final class Php2ShellDetector implements VulnDetector {
 
   @VisibleForTesting
   static final ImmutableList<String> CANDIDATE_PATHS =
-      ImmutableList.of("", "index.php", "public/index.php", "web/index.php", "wp-login.php");
+      ImmutableList.of("index.php", "", "public/index.php", "web/index.php", "wp-login.php");
 
   private static final String DEFAULT_PHP_SESSION_NAME = "PHPSESSID";
+  // Padded past 250 bytes so healthy memcached/memcache save handlers reject the key in s_read
+  // (MEMC_RES_KEY_TOO_BIG) without creating a session entry, while '/' and '_' immediately fail
+  // mod_files validation (ps_files_valid_key).
+  private static final String INVALID_SID_PADDING = "a".repeat(240);
   private static final int MAX_CRAWLED_PHP_URLS = 3;
   // Cap extensionless front-controller fallbacks (at most 1 route when 0 .php URLs were crawled)
   // and speculative crawl-cookie retries (at most 2 live non-redirect/non-404 endpoints) to keep
   // additional HTTP requests to a strict minimum.
   private static final int MAX_CRAWLED_EXTENSIONLESS_HTML_URLS = 1;
   private static final int MAX_CRAWLED_SESSION_RETRIES = 2;
+  private static final int MAX_CUSTOM_SESSION_COOKIES_PER_SOURCE = 3;
   private static final int MAX_EVIDENCE_WARNING_LENGTH = 512;
 
   private static final String INVALID_SID_SUBSTRING = "is too long or contains illegal characters";
+  private static final String FAILED_READ_SUBSTRING = "Failed to read session data";
+  private static final String FAILED_PATH_SUBSTRING = "Failed to create session data file path";
+  private static final String FAILED_INIT_SUBSTRING = "Failed to initialize storage module";
   private static final String FAILED_FLUSH_SUBSTRING = "Failed to write session data";
 
   /**
@@ -147,6 +159,25 @@ public final class Php2ShellDetector implements VulnDetector {
       Pattern.compile(
           "(?i)Warning(?:<[^>]*>)*:\\s*(?:<[^>]*>)*(?:PHP Request Startup|Unknown)"
               + "[^\\r\\n]{0,1024}?is too long or contains illegal characters"
+              + "[^\\r\\n]{0,1024}?in (?:<[^>]*>)*Unknown(?:<[^>]*>)*"
+              + " on line (?:<[^>]*>)*0(?:<[^>]*>)*");
+
+  /**
+   * Matches the PHP Request Startup (PHP 8.0+) or Unknown (PHP 5.4-7.4) warning emitted on line 0
+   * when {@code php_session_initialize()} fails in {@code s_read} or {@code s_open} (for example,
+   * when {@code memcached}/{@code memcache} rejects the &gt;250-byte session key in {@code s_read},
+   * when {@code redis} or custom handlers fail {@code s_open}/{@code s_read} on an unreachable or
+   * misconfigured backend, or when {@code mod_files} fails path creation on a {@code
+   * session.save_path} directory-depth prefix; note that healthy {@code redis} backends accept
+   * arbitrary key characters in {@code s_read} and regenerate invalid IDs via {@code s_create_sid}
+   * when {@code session.use_strict_mode = 1}).
+   */
+  private static final Pattern STARTUP_FAILED_INIT_WARNING_PATTERN =
+      Pattern.compile(
+          "(?i)Warning(?:<[^>]*>)*:\\s*(?:<[^>]*>)*(?:PHP Request Startup|Unknown)"
+              + "[^\\r\\n]{0,1024}?(?:Failed to read session data"
+              + "|Failed to create session data file path"
+              + "|Failed to initialize storage module)"
               + "[^\\r\\n]{0,1024}?in (?:<[^>]*>)*Unknown(?:<[^>]*>)*"
               + " on line (?:<[^>]*>)*0(?:<[^>]*>)*");
 
@@ -166,9 +197,11 @@ public final class Php2ShellDetector implements VulnDetector {
 
   // PHP's OnUpdateName in ext/session/session.c permits hyphens in php.ini/.htaccess session.name
   // (e.g., "__Host-PHPSESSID" or "app-session"), and both Cookie parsing and rfc1867
-  // MULTIPART_EVENT_FORMDATA match hyphenated PS(session_name) verbatim.
+  // MULTIPART_EVENT_FORMDATA match hyphenated PS(session_name) verbatim. Broaden the value class
+  // to cover URL-encoded (e.g., %2C), double-quoted, or custom _, ., and ~ session identifiers.
   private static final Pattern CUSTOM_SESSION_COOKIE_PATTERN =
-      Pattern.compile("^\\s*([A-Za-z_][A-Za-z0-9_-]{0,63})=([A-Za-z0-9,-]{22,256})(?:\\s*;|$)");
+      Pattern.compile(
+          "^\\s*([A-Za-z_][A-Za-z0-9_-]{0,63})=\"?([A-Za-z0-9,_%.~-]{8,256})\"?(?:\\s*;|$)");
 
   // Matched after normalizing '-' to '_' and uppercasing so hyphenated non-PHP CSRF, framework,
   // and load-balancer cookies (e.g., "XSRF-TOKEN", "CSRF-TOKEN", "__cf_bm") never trigger extra
@@ -240,7 +273,8 @@ public final class Php2ShellDetector implements VulnDetector {
   }
 
   private Optional<VerificationResult> probeService(NetworkService networkService) {
-    Optional<String> crawledCustomSessionName = extractCustomSessionNameFromCrawl(networkService);
+    ImmutableSet<String> crawledCustomSessionNames =
+        extractCustomSessionNamesFromCrawl(networkService);
     int remainingCrawledSessionRetries = MAX_CRAWLED_SESSION_RETRIES;
     for (String targetUrl : getTargetUrls(networkService)) {
       Optional<HttpResponse> defaultProbeResponse =
@@ -261,40 +295,54 @@ public final class Php2ShellDetector implements VulnDetector {
       }
 
       HttpStatus status = defaultProbeResponse.get().status();
-      // Prefer a custom session cookie emitted directly by this endpoint. Only fall back to a
-      // crawl-discovered cookie on live non-redirect, non-404/405 responses (capped per service)
+      // Prefer custom session cookies emitted directly by this endpoint. Only fall back to
+      // crawl-discovered cookies on live non-redirect, non-404/405 responses (capped per service)
       // so dead fallback paths, static 405s, and HTTP/front-controller redirects do not multiply
       // probe traffic.
-      Optional<String> customSessionName =
-          extractCustomSessionNameFromHeaders(
+      ImmutableSet<String> endpointCustomSessionNames =
+          extractCustomSessionNamesFromHeaders(
               defaultProbeResponse.get().headers().getAll("Set-Cookie"));
-      if (customSessionName.isEmpty()
-          && crawledCustomSessionName.isPresent()
+      for (String customSessionName : endpointCustomSessionNames) {
+        Optional<HttpResponse> customProbeResponse =
+            sendMultipartProbe(
+                networkService, targetUrl, customSessionName, /* includeUploadProgress= */ true);
+        if (customProbeResponse.isEmpty()) {
+          continue;
+        }
+        Optional<VerificationResult> customResult =
+            verifyStartupFlushDifferential(
+                networkService, targetUrl, customSessionName, customProbeResponse.get());
+        if (customResult.isPresent()) {
+          return customResult;
+        }
+      }
+
+      if (!crawledCustomSessionNames.isEmpty()
           && remainingCrawledSessionRetries > 0
           && status != HttpStatus.NOT_FOUND
           && status != HttpStatus.METHOD_NOT_ALLOWED
           && !status.isRedirect()) {
-        customSessionName = crawledCustomSessionName;
-        remainingCrawledSessionRetries--;
-      }
-      if (customSessionName.isEmpty()) {
-        continue;
-      }
-
-      Optional<HttpResponse> customProbeResponse =
-          sendMultipartProbe(
-              networkService,
-              targetUrl,
-              customSessionName.get(),
-              /* includeUploadProgress= */ true);
-      if (customProbeResponse.isEmpty()) {
-        continue;
-      }
-      Optional<VerificationResult> customResult =
-          verifyStartupFlushDifferential(
-              networkService, targetUrl, customSessionName.get(), customProbeResponse.get());
-      if (customResult.isPresent()) {
-        return customResult;
+        for (String crawledSessionName : crawledCustomSessionNames) {
+          if (endpointCustomSessionNames.contains(crawledSessionName)) {
+            continue;
+          }
+          if (remainingCrawledSessionRetries <= 0) {
+            break;
+          }
+          remainingCrawledSessionRetries--;
+          Optional<HttpResponse> customProbeResponse =
+              sendMultipartProbe(
+                  networkService, targetUrl, crawledSessionName, /* includeUploadProgress= */ true);
+          if (customProbeResponse.isEmpty()) {
+            continue;
+          }
+          Optional<VerificationResult> customResult =
+              verifyStartupFlushDifferential(
+                  networkService, targetUrl, crawledSessionName, customProbeResponse.get());
+          if (customResult.isPresent()) {
+            return customResult;
+          }
+        }
       }
     }
     return Optional.empty();
@@ -336,10 +384,21 @@ public final class Php2ShellDetector implements VulnDetector {
   }
 
   private static Optional<String> extractMatchedStartupFlushWarning(String body) {
-    if (!body.contains(INVALID_SID_SUBSTRING) || !body.contains(FAILED_FLUSH_SUBSTRING)) {
+    if (!body.contains(FAILED_FLUSH_SUBSTRING)) {
       return Optional.empty();
     }
-    if (!STARTUP_INVALID_SID_WARNING_PATTERN.matcher(body).find()) {
+    boolean hasInitFailureSubstring =
+        body.contains(INVALID_SID_SUBSTRING)
+            || body.contains(FAILED_READ_SUBSTRING)
+            || body.contains(FAILED_PATH_SUBSTRING)
+            || body.contains(FAILED_INIT_SUBSTRING);
+    if (!hasInitFailureSubstring) {
+      return Optional.empty();
+    }
+    boolean hasStartupInitWarning =
+        STARTUP_INVALID_SID_WARNING_PATTERN.matcher(body).find()
+            || STARTUP_FAILED_INIT_WARNING_PATTERN.matcher(body).find();
+    if (!hasStartupInitWarning) {
       return Optional.empty();
     }
     Matcher flushMatcher = STARTUP_FAILED_FLUSH_WARNING_PATTERN.matcher(body);
@@ -358,35 +417,37 @@ public final class Php2ShellDetector implements VulnDetector {
     return Optional.of(sanitizedWarning);
   }
 
-  private static Optional<String> extractCustomSessionNameFromCrawl(NetworkService networkService) {
+  private static ImmutableSet<String> extractCustomSessionNamesFromCrawl(
+      NetworkService networkService) {
+    ImmutableList.Builder<String> setCookies = ImmutableList.builder();
     for (CrawlResult crawlResult :
         networkService.getServiceContext().getWebServiceContext().getCrawlResultsList()) {
-      ImmutableList.Builder<String> setCookies = ImmutableList.builder();
       for (HttpHeader header : crawlResult.getResponseHeadersList()) {
         if (Ascii.equalsIgnoreCase(header.getKey(), "Set-Cookie")) {
           setCookies.add(header.getValue());
         }
       }
-      Optional<String> candidate = extractCustomSessionNameFromHeaders(setCookies.build());
-      if (candidate.isPresent()) {
-        return candidate;
-      }
     }
-    return Optional.empty();
+    return extractCustomSessionNamesFromHeaders(setCookies.build());
   }
 
-  private static Optional<String> extractCustomSessionNameFromHeaders(Iterable<String> setCookies) {
+  private static ImmutableSet<String> extractCustomSessionNamesFromHeaders(
+      Iterable<String> setCookies) {
+    LinkedHashSet<String> customNames = new LinkedHashSet<>();
     for (String cookieHeader : setCookies) {
       Matcher matcher = CUSTOM_SESSION_COOKIE_PATTERN.matcher(cookieHeader);
       if (matcher.find()) {
         String cookieName = matcher.group(1);
         String normalizedName = Ascii.toUpperCase(cookieName).replace('-', '_');
         if (!IGNORED_COOKIE_NAMES.contains(normalizedName)) {
-          return Optional.of(cookieName);
+          customNames.add(cookieName);
+          if (customNames.size() >= MAX_CUSTOM_SESSION_COOKIES_PER_SOURCE) {
+            break;
+          }
         }
       }
     }
-    return Optional.empty();
+    return ImmutableSet.copyOf(customNames);
   }
 
   private ImmutableSet<String> getTargetUrls(NetworkService networkService) {
@@ -496,7 +557,7 @@ public final class Php2ShellDetector implements VulnDetector {
       boolean includeUploadProgress) {
     long timestampMillis = utcClock.instant().toEpochMilli();
     String boundary = "----TsunamiPhp2ShellBoundary" + timestampMillis;
-    String invalidSid = "tsunami/invalid_sid_" + timestampMillis;
+    String invalidSid = "tsunami/invalid_sid_" + timestampMillis + "_" + INVALID_SID_PADDING;
 
     StringBuilder multipartBody = new StringBuilder();
     multipartBody
@@ -527,10 +588,11 @@ public final class Php2ShellDetector implements VulnDetector {
         .append(boundary)
         .append("--\r\n");
 
+    String requestUrl = stripSessionQueryParam(targetUrl, sessionName);
     try {
       return Optional.of(
           httpClient.send(
-              post(targetUrl)
+              post(requestUrl)
                   .setHeaders(
                       HttpHeaders.builder()
                           .addHeader("Content-Type", "multipart/form-data; boundary=" + boundary)
@@ -542,8 +604,43 @@ public final class Php2ShellDetector implements VulnDetector {
               networkService));
     } catch (IOException e) {
       logger.atFine().withCause(e).log(
-          "HTTP exception while sending PHP2Shell verification request to '%s'", targetUrl);
+          "HTTP exception while sending PHP2Shell verification request to '%s'", requestUrl);
       return Optional.empty();
+    }
+  }
+
+  private static String stripSessionQueryParam(String targetUrl, String sessionName) {
+    try {
+      URI uri = new URI(targetUrl);
+      String rawQuery = uri.getRawQuery();
+      if (isNullOrEmpty(rawQuery)) {
+        return targetUrl;
+      }
+      StringBuilder filteredQuery = new StringBuilder();
+      boolean removed = false;
+      for (String param : rawQuery.split("&", -1)) {
+        int eqIdx = param.indexOf('=');
+        String key = eqIdx >= 0 ? param.substring(0, eqIdx) : param;
+        if (Ascii.equalsIgnoreCase(key, sessionName)) {
+          removed = true;
+          continue;
+        }
+        if (filteredQuery.length() > 0) {
+          filteredQuery.append('&');
+        }
+        filteredQuery.append(param);
+      }
+      if (!removed) {
+        return targetUrl;
+      }
+      return uri.getScheme()
+          + "://"
+          + uri.getRawAuthority()
+          + nullToEmpty(uri.getRawPath())
+          + (filteredQuery.length() > 0 ? "?" + filteredQuery : "")
+          + (uri.getRawFragment() != null ? "#" + uri.getRawFragment() : "");
+    } catch (URISyntaxException e) {
+      return targetUrl;
     }
   }
 

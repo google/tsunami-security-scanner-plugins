@@ -51,6 +51,7 @@ import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
+import okhttp3.mockwebserver.SocketPolicy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -76,6 +77,9 @@ public final class Php2ShellDetectorTest {
   private static final String SANITIZED_PHP8_FLUSH_WARNING =
       "Warning:  PHP Request Startup: Failed to write session data (files). Please verify that the"
           + " current setting of session.save_path is correct (/tmp) in Unknown on line 0";
+
+  private static final String EXPECTED_INVALID_SID =
+      "tsunami/invalid_sid_1767225600000_" + "a".repeat(240);
 
   private final FakeUtcClock fakeUtcClock = FakeUtcClock.create().setNow(TEST_INSTANT);
 
@@ -175,24 +179,23 @@ public final class Php2ShellDetectorTest {
             buildExpectedDetectionReport(
                 target,
                 service,
-                mockPhpServer.url("/").toString(),
+                mockPhpServer.url("/index.php").toString(),
                 "PHPSESSID",
                 SANITIZED_PHP8_FLUSH_WARNING));
     assertThat(mockPhpServer.getRequestCount()).isEqualTo(2);
+    assertThat(EXPECTED_INVALID_SID.length()).isGreaterThan(250);
 
     RecordedRequest probeRequest = mockPhpServer.takeRequest();
     String probeBody = probeRequest.getBody().readUtf8();
-    assertThat(probeRequest.getHeader("Cookie"))
-        .isEqualTo("PHPSESSID=tsunami/invalid_sid_1767225600000");
+    assertThat(probeRequest.getHeader("Cookie")).isEqualTo("PHPSESSID=" + EXPECTED_INVALID_SID);
     assertThat(probeBody).contains("Content-Disposition: form-data; name=\"PHPSESSID\"");
-    assertThat(probeBody).contains("tsunami/invalid_sid_1767225600000");
+    assertThat(probeBody).contains(EXPECTED_INVALID_SID);
     assertThat(probeBody)
         .contains("Content-Disposition: form-data; name=\"PHP_SESSION_UPLOAD_PROGRESS\"");
 
     RecordedRequest controlRequest = mockPhpServer.takeRequest();
     String controlBody = controlRequest.getBody().readUtf8();
-    assertThat(controlRequest.getHeader("Cookie"))
-        .isEqualTo("PHPSESSID=tsunami/invalid_sid_1767225600000");
+    assertThat(controlRequest.getHeader("Cookie")).isEqualTo("PHPSESSID=" + EXPECTED_INVALID_SID);
     assertThat(controlBody).contains("Content-Disposition: form-data; name=\"PHPSESSID\"");
     assertThat(controlBody).doesNotContain("PHP_SESSION_UPLOAD_PROGRESS");
   }
@@ -218,7 +221,7 @@ public final class Php2ShellDetectorTest {
             buildExpectedDetectionReport(
                 target,
                 service,
-                mockPhpServer.url("/").toString(),
+                mockPhpServer.url("/index.php").toString(),
                 "PHPSESSID",
                 "Warning: Unknown: Failed to write session data (files). Please verify that the"
                     + " current setting of session.save_path is correct (/var/lib/php/sessions) in"
@@ -348,19 +351,17 @@ public final class Php2ShellDetectorTest {
             buildExpectedDetectionReport(
                 target,
                 service,
-                mockPhpServer.url("/").toString(),
+                mockPhpServer.url("/index.php").toString(),
                 "APPSESSID",
                 SANITIZED_PHP8_FLUSH_WARNING));
     assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
     assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).startsWith("PHPSESSID=");
     RecordedRequest customProbe = mockPhpServer.takeRequest();
-    assertThat(customProbe.getHeader("Cookie"))
-        .isEqualTo("APPSESSID=tsunami/invalid_sid_1767225600000");
+    assertThat(customProbe.getHeader("Cookie")).isEqualTo("APPSESSID=" + EXPECTED_INVALID_SID);
     assertThat(customProbe.getBody().readUtf8())
         .contains("Content-Disposition: form-data; name=\"APPSESSID\"");
     RecordedRequest customControl = mockPhpServer.takeRequest();
-    assertThat(customControl.getHeader("Cookie"))
-        .isEqualTo("APPSESSID=tsunami/invalid_sid_1767225600000");
+    assertThat(customControl.getHeader("Cookie")).isEqualTo("APPSESSID=" + EXPECTED_INVALID_SID);
     assertThat(customControl.getBody().readUtf8()).doesNotContain("PHP_SESSION_UPLOAD_PROGRESS");
   }
 
@@ -407,7 +408,7 @@ public final class Php2ShellDetectorTest {
             buildExpectedDetectionReport(
                 target,
                 service,
-                mockPhpServer.url("/").toString(),
+                mockPhpServer.url("/index.php").toString(),
                 "MYSESSID",
                 SANITIZED_PHP8_FLUSH_WARNING));
     assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
@@ -458,7 +459,7 @@ public final class Php2ShellDetectorTest {
   }
 
   @Test
-  public void detect_whenRootReturns405ButIndexPhpVulnerable_fallsBackAndReportsVulnerability() {
+  public void detect_whenIndexPhpReturns405ButRootVulnerable_fallsBackAndReportsVulnerability() {
     mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code()));
     mockPhpServer.enqueue(
         new MockResponse()
@@ -475,7 +476,7 @@ public final class Php2ShellDetectorTest {
             buildExpectedDetectionReport(
                 target,
                 service,
-                mockPhpServer.url("/index.php").toString(),
+                mockPhpServer.url("/").toString(),
                 "PHPSESSID",
                 SANITIZED_PHP8_FLUSH_WARNING));
     assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
@@ -495,7 +496,7 @@ public final class Php2ShellDetectorTest {
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
     assertThat(mockPhpServer.getRequestCount()).isEqualTo(Php2ShellDetector.CANDIDATE_PATHS.size());
-    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/index.php");
   }
 
   @Test
@@ -542,7 +543,7 @@ public final class Php2ShellDetectorTest {
             buildExpectedDetectionReport(
                 target,
                 service,
-                mockPhpServer.url("/").toString(),
+                mockPhpServer.url("/index.php").toString(),
                 "__Host-PHPSESSID",
                 SANITIZED_PHP8_FLUSH_WARNING));
     assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
@@ -550,7 +551,7 @@ public final class Php2ShellDetectorTest {
     assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).startsWith("PHPSESSID=");
     RecordedRequest customProbe = mockPhpServer.takeRequest();
     assertThat(customProbe.getHeader("Cookie"))
-        .isEqualTo("__Host-PHPSESSID=tsunami/invalid_sid_1767225600000");
+        .isEqualTo("__Host-PHPSESSID=" + EXPECTED_INVALID_SID);
     String customProbeBody = customProbe.getBody().readUtf8();
     assertThat(customProbeBody)
         .contains("Content-Disposition: form-data; name=\"__Host-PHPSESSID\"");
@@ -559,7 +560,7 @@ public final class Php2ShellDetectorTest {
 
     RecordedRequest customControl = mockPhpServer.takeRequest();
     assertThat(customControl.getHeader("Cookie"))
-        .isEqualTo("__Host-PHPSESSID=tsunami/invalid_sid_1767225600000");
+        .isEqualTo("__Host-PHPSESSID=" + EXPECTED_INVALID_SID);
     assertThat(customControl.getBody().readUtf8()).doesNotContain("PHP_SESSION_UPLOAD_PROGRESS");
   }
 
@@ -602,15 +603,15 @@ public final class Php2ShellDetectorTest {
             buildExpectedDetectionReport(
                 target,
                 service,
-                mockPhpServer.url("/").toString(),
+                mockPhpServer.url("/index.php").toString(),
                 "APP-SESS-ID",
                 SANITIZED_PHP8_FLUSH_WARNING));
     assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
     assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).startsWith("PHPSESSID=");
     assertThat(mockPhpServer.takeRequest().getHeader("Cookie"))
-        .isEqualTo("APP-SESS-ID=tsunami/invalid_sid_1767225600000");
+        .isEqualTo("APP-SESS-ID=" + EXPECTED_INVALID_SID);
     assertThat(mockPhpServer.takeRequest().getHeader("Cookie"))
-        .isEqualTo("APP-SESS-ID=tsunami/invalid_sid_1767225600000");
+        .isEqualTo("APP-SESS-ID=" + EXPECTED_INVALID_SID);
   }
 
   @Test
@@ -721,8 +722,8 @@ public final class Php2ShellDetectorTest {
                 target, service, extensionlessRouteUrl, "PHPSESSID", SANITIZED_PHP8_FLUSH_WARNING));
     assertThat(mockPhpServer.getRequestCount())
         .isEqualTo(Php2ShellDetector.CANDIDATE_PATHS.size() + 2);
-    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/");
     assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/index.php");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/");
     assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/public/index.php");
     assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/web/index.php");
     assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/wp-login.php");
@@ -828,8 +829,8 @@ public final class Php2ShellDetectorTest {
     assertThat(reports.getDetectionReportsList()).isEmpty();
     assertThat(mockPhpServer.getRequestCount())
         .isEqualTo(Php2ShellDetector.CANDIDATE_PATHS.size() + 1);
-    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/");
     assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/index.php");
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/");
     assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/public/index.php");
     assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/web/index.php");
     assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/wp-login.php");
@@ -918,14 +919,14 @@ public final class Php2ShellDetectorTest {
   @Test
   public void detect_whenCrawledCustomCookiePresent_skips404And405And3xxAndCapsLiveRetriesAtTwo()
       throws Exception {
-    // Target URLs in order: /portal.php, /, /index.php, /public/index.php, /web/index.php,
+    // Target URLs in order: /portal.php, /index.php, /, /public/index.php, /web/index.php,
     // /wp-login.php.
     // 1. /portal.php -> 302 redirect without Set-Cookie (skip retry).
     mockPhpServer.enqueue(
         new MockResponse().setResponseCode(HttpStatus.FOUND.code()).setHeader("Location", "/"));
-    // 2. / -> 405 Method Not Allowed without Set-Cookie (skip retry).
+    // 2. /index.php -> 405 Method Not Allowed without Set-Cookie (skip retry).
     mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.METHOD_NOT_ALLOWED.code()));
-    // 3. /index.php -> 404 Not Found without Set-Cookie (skip retry).
+    // 3. / -> 404 Not Found without Set-Cookie (skip retry).
     mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code()));
     // 4. /public/index.php -> 200 OK (consumes retry #1 of 2).
     mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
@@ -968,11 +969,11 @@ public final class Php2ShellDetectorTest {
     assertThat(req1.getHeader("Cookie")).startsWith("PHPSESSID=");
 
     RecordedRequest req2 = mockPhpServer.takeRequest();
-    assertThat(req2.getPath()).isEqualTo("/");
+    assertThat(req2.getPath()).isEqualTo("/index.php");
     assertThat(req2.getHeader("Cookie")).startsWith("PHPSESSID=");
 
     RecordedRequest req3 = mockPhpServer.takeRequest();
-    assertThat(req3.getPath()).isEqualTo("/index.php");
+    assertThat(req3.getPath()).isEqualTo("/");
     assertThat(req3.getHeader("Cookie")).startsWith("PHPSESSID=");
 
     RecordedRequest req4 = mockPhpServer.takeRequest();
@@ -1022,7 +1023,7 @@ public final class Php2ShellDetectorTest {
             buildExpectedDetectionReport(
                 target,
                 service,
-                mockPhpServer.url("/").toString(),
+                mockPhpServer.url("/index.php").toString(),
                 "__Host-PHPSESSID",
                 SANITIZED_PHP8_FLUSH_WARNING));
     assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
@@ -1034,7 +1035,7 @@ public final class Php2ShellDetectorTest {
         new Dispatcher() {
           @Override
           public MockResponse dispatch(RecordedRequest request) {
-            if (!Objects.equals(request.getPath(), "/")) {
+            if (!Objects.equals(request.getPath(), "/index.php")) {
               return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
             }
             String cookie = request.getHeader("Cookie");
@@ -1063,7 +1064,7 @@ public final class Php2ShellDetectorTest {
             buildExpectedDetectionReport(
                 target,
                 service,
-                mockPhpServer.url("/").toString(),
+                mockPhpServer.url("/index.php").toString(),
                 "APP-SESS-ID",
                 SANITIZED_PHP8_FLUSH_WARNING));
     assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
@@ -1093,9 +1094,276 @@ public final class Php2ShellDetectorTest {
             buildExpectedDetectionReport(
                 target,
                 service,
-                mockPhpServer.url("/").toString(),
+                mockPhpServer.url("/index.php").toString(),
                 "APP-SESS-ID",
                 SANITIZED_PHP8_FLUSH_WARNING));
     assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
+  }
+
+  @Test
+  public void
+      detect_whenRedisSaveHandlerEmitsFailedReadAndStartupFlushWarnings_reportsVulnerability() {
+    String redisStartupWarnings =
+        "<br />\n"
+            + "<b>Warning</b>:  PHP Request Startup: Failed to read session data: redis (path:"
+            + " tcp://127.0.0.1:6379) in <b>Unknown</b> on line <b>0</b><br />\n"
+            + "<br />\n"
+            + "<b>Warning</b>:  PHP Request Startup: Failed to write session data (redis). Please"
+            + " verify that the current setting of session.save_path is correct"
+            + " (tcp://127.0.0.1:6379) in <b>Unknown</b> on line <b>0</b><br />\n"
+            + "OK\n";
+    mockPhpServer.enqueue(
+        new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody(redisStartupWarnings));
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK\n"));
+    NetworkService service = createNetworkService(mockPhpServer);
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                mockPhpServer.url("/index.php").toString(),
+                "PHPSESSID",
+                "Warning:  PHP Request Startup: Failed to write session data (redis). Please"
+                    + " verify that the current setting of session.save_path is correct"
+                    + " (tcp://127.0.0.1:6379) in Unknown on line 0"));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(2);
+  }
+
+  @Test
+  public void detect_whenMultipleCustomSetCookiesPresent_iteratesToSecondSessionCookieAndVerifies()
+      throws Exception {
+    // 1. Default PHPSESSID probe returns three non-ignored Set-Cookie headers: a transient cookie
+    // whose retry disconnects, a non-session cookie ("theme_preference"), and the actual PHP
+    // session cookie ("MoodleSession").
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .addHeader("Set-Cookie", "transient_cookie=0011223344556677; Path=/")
+            .addHeader("Set-Cookie", "theme_preference=darkmodev2abcd1234; Path=/")
+            .addHeader("Set-Cookie", "MoodleSession=a1b2c3d4e5f6a1b2; Path=/; HttpOnly")
+            .setBody("OK"));
+    // 2. First custom cookie ("transient_cookie") fails with an I/O disconnect.
+    mockPhpServer.enqueue(
+        new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST));
+    // 3. Second custom cookie ("theme_preference") does not match PS(session_name).
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+    // 4. Third custom cookie ("MoodleSession") matches PS(session_name) and triggers startup
+    // flush.
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody(PHP8_UNPATCHED_STARTUP_WARNINGS_HTML));
+    // 5. Control request for "MoodleSession" without PHP_SESSION_UPLOAD_PROGRESS returns clean OK.
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+    NetworkService service = createNetworkService(mockPhpServer);
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                mockPhpServer.url("/index.php").toString(),
+                "MoodleSession",
+                SANITIZED_PHP8_FLUSH_WARNING));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(5);
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).startsWith("PHPSESSID=");
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).startsWith("transient_cookie=");
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).startsWith("theme_preference=");
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).startsWith("MoodleSession=");
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).startsWith("MoodleSession=");
+  }
+
+  @Test
+  public void
+      detect_whenThreeCrawledCustomCookiesPresentAndFirstRetryDisconnects_verifiesSecondAndSkipsThird()
+          throws Exception {
+    // 1. Default PHPSESSID probe on "/" returns 200 OK without Set-Cookie.
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+    // 2. First crawled cookie ("FIRSTSESSID", retry #1 of 2) disconnects -> skipped.
+    mockPhpServer.enqueue(
+        new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST));
+    // 3. Second crawled cookie ("SECONDSESSID", retry #2 of 2) returns 200 OK without warnings ->
+    // exhausts the 2-retry cap before "THIRDSESSID" in the same loop.
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+    // 4. Remaining fallback paths receive only the default PHPSESSID probe.
+    for (int i = 1; i < Php2ShellDetector.CANDIDATE_PATHS.size(); i++) {
+      mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+    }
+
+    NetworkService service =
+        createNetworkService(mockPhpServer).toBuilder()
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(
+                        WebServiceContext.newBuilder()
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(mockPhpServer.url("/login.php").toString())
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.NOT_FOUND.code())
+                                    .addResponseHeaders(
+                                        HttpHeader.newBuilder()
+                                            .setKey("Set-Cookie")
+                                            .setValue("FIRSTSESSID=0123456789abcdef; Path=/"))
+                                    .addResponseHeaders(
+                                        HttpHeader.newBuilder()
+                                            .setKey("Set-Cookie")
+                                            .setValue("SECONDSESSID=fedcba9876543210; Path=/"))
+                                    .addResponseHeaders(
+                                        HttpHeader.newBuilder()
+                                            .setKey("Set-Cookie")
+                                            .setValue("THIRDSESSID=aabbccddeeff0011; Path=/"))
+                                    .addResponseHeaders(
+                                        HttpHeader.newBuilder()
+                                            .setKey("Set-Cookie")
+                                            .setValue("FOURTHSESSID=9988776655443322; Path=/")))))
+            .build();
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(mockPhpServer.getRequestCount())
+        .isEqualTo(1 + Php2ShellDetector.CANDIDATE_PATHS.size() + 2);
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).startsWith("PHPSESSID=");
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).startsWith("FIRSTSESSID=");
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).startsWith("SECONDSESSID=");
+    assertThat(mockPhpServer.takeRequest().getHeader("Cookie")).startsWith("PHPSESSID=");
+  }
+
+  @Test
+  public void detect_whenCrawledPhpUrlContainsSessionQueryParam_stripsSessionQueryParamFromRequest()
+      throws Exception {
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody(PHP8_UNPATCHED_STARTUP_WARNINGS_HTML));
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+
+    String singleParamPhpUrl =
+        mockPhpServer.url("/first.php?PHPSESSID=0123456789abcdef0123456789abcdef").toString();
+    String crawledPhpUrl =
+        mockPhpServer
+            .url(
+                "/my%20app/upload.php?PHPSESSID=0123456789abcdef0123456789abcdef&id=42%20test#sec%201")
+            .toString();
+    NetworkService service =
+        createNetworkService(mockPhpServer).toBuilder()
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(
+                        WebServiceContext.newBuilder()
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(singleParamPhpUrl)
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code()))
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(crawledPhpUrl)
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code()))))
+            .build();
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target, service, crawledPhpUrl, "PHPSESSID", SANITIZED_PHP8_FLUSH_WARNING));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(3);
+    assertThat(mockPhpServer.takeRequest().getPath()).isEqualTo("/first.php");
+    assertThat(mockPhpServer.takeRequest().getPath())
+        .isEqualTo("/my%20app/upload.php?id=42%20test");
+    assertThat(mockPhpServer.takeRequest().getPath())
+        .isEqualTo("/my%20app/upload.php?id=42%20test");
+  }
+
+  @Test
+  public void
+      detect_whenEndpointEmitsNonSessionCookieAndCrawlHasQuotedUrlEncodedSessionCookie_verifiesCrawlCookie()
+          throws Exception {
+    // 1. Default PHPSESSID probe on /index.php emits a non-session cookie
+    // ("theme_cookie=darkmode1")
+    // that also appears first in crawl results.
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .addHeader("Set-Cookie", "theme_cookie=darkmode1; Path=/")
+            .setBody("OK"));
+    // 2. Endpoint custom cookie ("theme_cookie") retry returns 200 OK without startup warnings.
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+    // 3. Crawl custom cookie loop skips already-tested "theme_cookie" without consuming retry
+    // budget and tests quoted URL-encoded "CUSTOM_SESS", triggering startup flush.
+    mockPhpServer.enqueue(
+        new MockResponse()
+            .setResponseCode(HttpStatus.OK.code())
+            .setBody(PHP8_UNPATCHED_STARTUP_WARNINGS_HTML));
+    // 4. Control probe for "CUSTOM_SESS" returns clean OK.
+    mockPhpServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.code()).setBody("OK"));
+
+    String crawledWithLeadingAmpersandUrl =
+        mockPhpServer.url("/index.php?&foo=1#frag%20ment").toString();
+    NetworkService service =
+        createNetworkService(mockPhpServer).toBuilder()
+            .setServiceContext(
+                ServiceContext.newBuilder()
+                    .setWebServiceContext(
+                        WebServiceContext.newBuilder()
+                            .addCrawlResults(
+                                CrawlResult.newBuilder()
+                                    .setCrawlTarget(
+                                        CrawlTarget.newBuilder()
+                                            .setUrl(crawledWithLeadingAmpersandUrl)
+                                            .setHttpMethod("GET"))
+                                    .setResponseCode(HttpStatus.OK.code())
+                                    .addResponseHeaders(
+                                        HttpHeader.newBuilder()
+                                            .setKey("Set-Cookie")
+                                            .setValue("theme_cookie=darkmode1; Path=/"))
+                                    .addResponseHeaders(
+                                        HttpHeader.newBuilder()
+                                            .setKey("Set-Cookie")
+                                            .setValue(
+                                                "CUSTOM_SESS=\"a1b2_c3.d4~e5%2Cf6\"; Path=/;"
+                                                    + " HttpOnly")))))
+            .build();
+    TargetInfo target = createTargetInfo(mockPhpServer);
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                crawledWithLeadingAmpersandUrl,
+                "CUSTOM_SESS",
+                SANITIZED_PHP8_FLUSH_WARNING));
+    assertThat(mockPhpServer.getRequestCount()).isEqualTo(4);
+    RecordedRequest req1 = mockPhpServer.takeRequest();
+    assertThat(req1.getPath()).isEqualTo("/index.php?&foo=1");
+    assertThat(req1.getHeader("Cookie")).startsWith("PHPSESSID=");
+    RecordedRequest req2 = mockPhpServer.takeRequest();
+    assertThat(req2.getHeader("Cookie")).startsWith("theme_cookie=");
+    RecordedRequest req3 = mockPhpServer.takeRequest();
+    assertThat(req3.getHeader("Cookie")).isEqualTo("CUSTOM_SESS=" + EXPECTED_INVALID_SID);
+    RecordedRequest req4 = mockPhpServer.takeRequest();
+    assertThat(req4.getHeader("Cookie")).isEqualTo("CUSTOM_SESS=" + EXPECTED_INVALID_SID);
   }
 }
