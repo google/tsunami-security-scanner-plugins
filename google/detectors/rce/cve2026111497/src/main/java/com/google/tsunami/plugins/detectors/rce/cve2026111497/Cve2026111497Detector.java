@@ -336,7 +336,14 @@ public final class Cve2026111497Detector implements VulnDetector {
           HttpStatus.FORBIDDEN,
           HttpStatus.NOT_FOUND,
           HttpStatus.METHOD_NOT_ALLOWED,
-          HttpStatus.NOT_ACCEPTABLE);
+          // Content-negotiation rejection after request body decompression (e.g., strict Accept or
+          // representation handlers behind a proxy or middleware Brotli decompressor).
+          HttpStatus.NOT_ACCEPTABLE,
+          // Post-decompression schema/type validation failure (e.g., FastAPI/Pydantic, Rails,
+          // Symfony, WebDAV). Because 422 is also in DECOMPRESSION_FAILURE_STATUSES, it only
+          // qualifies as a post-decompression status when invalidStatus is a distinct decompression
+          // error (400 or 500) and Step 5 unencoded requests do not return 422.
+          HttpStatus.UNPROCESSABLE_ENTITY);
 
   private static final ImmutableSet<HttpStatus> DECOMPRESSION_FAILURE_STATUSES =
       Sets.immutableEnumSet(
@@ -584,8 +591,16 @@ public final class Cve2026111497Detector implements VulnDetector {
               targetUrl, validControl, invalidBrStatus, unencodedValid.status()));
     }
 
-    boolean unencodedBypassedFilter = unencodedValid.status() == validControl.status();
-    if (!unencodedBypassedFilter && !isUnencodedRejectionStatus(unencodedValid.status())) {
+    // 422 (Unprocessable Entity) is a body-validation error also present in
+    // DECOMPRESSION_FAILURE_STATUSES, never a body-agnostic filter-bypass status: when validControl
+    // returned 422 without canary reflection, Step 5 unencoded requests must be rejected with a
+    // non-422 unencoded rejection status (400, 415, or 500).
+    boolean unencodedBypassedFilter =
+        unencodedValid.status() == validControl.status()
+            && validControl.status() != HttpStatus.UNPROCESSABLE_ENTITY;
+    if (!unencodedBypassedFilter
+        && (!isUnencodedRejectionStatus(unencodedValid.status())
+            || unencodedValid.status() == validControl.status())) {
       return Optional.empty();
     }
     // Always verify INVALID_BROTLI_CONTROL unencoded in status-differential mode: if unencoded
@@ -602,7 +617,8 @@ public final class Cve2026111497Detector implements VulnDetector {
       if (unencodedInvalid.status() != validControl.status()) {
         return Optional.empty();
       }
-    } else if (!isUnencodedRejectionStatus(unencodedInvalid.status())) {
+    } else if (!isUnencodedRejectionStatus(unencodedInvalid.status())
+        || unencodedInvalid.status() == validControl.status()) {
       return Optional.empty();
     }
     return Optional.of(
@@ -661,16 +677,21 @@ public final class Cve2026111497Detector implements VulnDetector {
   private static boolean isPostDecompressionStatus(HttpStatus status) {
     // Reverse proxies, input filters, and global middleware (e.g., Apache mod_brotli, Envoy HTTP
     // decompressor filter, Express body-parser) decompress the request stream before downstream
-    // authentication, ACLs, login/slash redirects, or route/method/content-negotiation matching;
-    // when Brotli decompression succeeds, downstream handlers commonly return 2xx, 302/303/307/308,
-    // 401, 403, 404, 405, or 406, whereas decompression failure aborts earlier with 400, 422, or
-    // 500.
+    // authentication, ACLs, login/slash redirects, route/method/content-negotiation matching, or
+    // schema validation; when Brotli decompression succeeds, downstream handlers commonly return
+    // 2xx, 302/303/307/308, 401, 403, 404, 405, 406, or 422, whereas decompression failure aborts
+    // earlier with 400, 422, or 500.
     return status.isSuccess() || POST_DECOMPRESSION_STATUSES.contains(status);
   }
 
   private static boolean isValidVsInvalidStatusDifferential(
       HttpStatus validStatus, HttpStatus invalidStatus) {
-    return isPostDecompressionStatus(validStatus)
+    // Require validStatus != invalidStatus so that HttpStatus.UNPROCESSABLE_ENTITY (422), which
+    // appears in both POST_DECOMPRESSION_STATUSES and DECOMPRESSION_FAILURE_STATUSES, never matches
+    // 422 vs. 422 on non-Brotli FastAPI/Pydantic endpoints (while still permitting 422 vs. 400/500
+    // and 403 vs. 422).
+    return validStatus != invalidStatus
+        && isPostDecompressionStatus(validStatus)
         && DECOMPRESSION_FAILURE_STATUSES.contains(invalidStatus);
   }
 

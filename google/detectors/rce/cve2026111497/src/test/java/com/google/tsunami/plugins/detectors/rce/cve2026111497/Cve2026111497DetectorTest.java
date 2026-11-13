@@ -991,22 +991,22 @@ public final class Cve2026111497DetectorTest {
   }
 
   @Test
-  public void detect_whenNonBrotliServerReturns422OnValidControl_abortsAtStep1() {
-    // Non-Brotli FastAPI/Pydantic endpoints return 422 Unprocessable Entity when raw compressed
-    // bytes fail json.loads(); 422 must never be treated as post-decompression status success.
+  public void detect_whenNonBrotliServerReturns422OnValidControl_abortsAtStep2() {
+    // Non-Brotli FastAPI/Pydantic endpoints return 422 Unprocessable Entity on both valid and
+    // invalid Brotli controls when raw compressed bytes fail json.loads(); Step 2 requires
+    // validStatus != invalidStatus and aborts before sending the 2.3 MB probe.
     ProbeTrackingDispatcher dispatcher =
-        new ProbeTrackingDispatcher(
-            request ->
-                new MockResponse()
-                    .setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code())
-                    .setBody("{\"detail\":[{\"type\":\"json_invalid\"}]}"));
+        new ProbeTrackingDispatcher(request ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code())
+                .setBody("{\"detail\":[{\"type\":\"json_invalid\"}]}"));
     mockWebServer.setDispatcher(dispatcher);
 
     DetectionReportList reports =
         detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
-    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(1);
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(2);
     assertThat(dispatcher.receivedProbe()).isFalse();
   }
 
@@ -2217,6 +2217,221 @@ public final class Cve2026111497DetectorTest {
                     + " (signal=status_differential, valid_br=200, invalid_br=400, probe_br=200,"
                     + " unencoded_valid=400, unencoded_invalid=422)"));
     assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
+  }
+
+  @Test
+  public void
+      detect_whenSchemaValidatorReturns422WithoutCanaryOnValidAnd400OnInvalid_reportsVulnerability() {
+    enqueueVulnerableStatusCycle(
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code())
+                .setBody("{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"query\"]}]}"),
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Bad br"));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=422, invalid_br=400, probe_br=422,"
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
+  }
+
+  @Test
+  public void
+      detect_whenSchemaValidatorReturns422OnValidAnd500OnInvalidWith415Unencoded_reportsVulnerability() {
+    Supplier<MockResponse> unprocessable =
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code())
+                .setBody("{\"detail\":\"Missing required field\"}");
+    Supplier<MockResponse> decompressionFailure =
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.code())
+                .setBody("Brotli decompression failed");
+    Supplier<MockResponse> unsupportedMediaType =
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.UNSUPPORTED_MEDIA_TYPE.code())
+                .setBody("Content-Encoding: br required");
+    enqueueVulnerableStatusCycle(
+        unprocessable, decompressionFailure, unsupportedMediaType, unsupportedMediaType);
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=422, invalid_br=500, probe_br=422,"
+                    + " unencoded_valid=415, unencoded_invalid=415)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
+  }
+
+  @Test
+  public void detect_whenContentNegotiationReturns406OnValidAnd400OnInvalid_reportsVulnerability() {
+    enqueueVulnerableStatusCycle(
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.NOT_ACCEPTABLE.code())
+                .setBody("Not Acceptable"),
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Bad br"));
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=406, invalid_br=400, probe_br=406,"
+                    + " unencoded_valid=400, unencoded_invalid=400)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
+  }
+
+  @Test
+  public void detect_whenContentNegotiationFilterBypassesUnencodedWith406_reportsVulnerability() {
+    Supplier<MockResponse> notAcceptable =
+        () ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.NOT_ACCEPTABLE.code())
+                .setBody("Not Acceptable");
+    Supplier<MockResponse> badBrotli =
+        () -> new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code()).setBody("Bad br");
+    enqueueVulnerableStatusCycle(notAcceptable, badBrotli, notAcceptable, notAcceptable);
+    NetworkService service = createNetworkService();
+    TargetInfo target = createTargetInfo();
+
+    DetectionReportList reports = detector.detect(target, ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList())
+        .containsExactly(
+            buildExpectedDetectionReport(
+                target,
+                service,
+                "Vulnerable endpoint: "
+                    + mockWebServer.url("/")
+                    + " (signal=status_differential, valid_br=406, invalid_br=400, probe_br=406,"
+                    + " unencoded_valid=406, unencoded_invalid=406)"));
+    assertThat(mockWebServer.getRequestCount()).isEqualTo(19);
+  }
+
+  @Test
+  public void detect_whenServerReturns415UnsupportedMediaTypeOnValidControl_abortsAtStep1() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(request ->
+            new MockResponse()
+                .setResponseCode(HttpStatus.UNSUPPORTED_MEDIA_TYPE.code())
+                .setBody("Unsupported Content-Encoding: br"));
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(1);
+    assertThat(dispatcher.receivedProbe()).isFalse();
+  }
+
+  @Test
+  public void
+      detect_whenValidControlReturns422WithoutCanaryAndStep5UnencodedReturns422_reportsEmpty() {
+    // 422 Unprocessable Entity is in both POST_DECOMPRESSION_STATUSES and
+    // DECOMPRESSION_FAILURE_STATUSES, so it must never qualify for the body-agnostic filter-bypass
+    // exception in Step 5; unencodedValid returning 422 when validControl returned 422 is rejected.
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(request -> {
+          if (!request.getPath().equals("/")) {
+            return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+          }
+          if (request.getHeader("Content-Encoding") == null) {
+            return new MockResponse()
+                .setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code())
+                .setBody("Unprocessable raw bytes");
+          }
+          return isValidControl(request) || isProbe(request)
+              ? new MockResponse()
+                  .setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code())
+                  .setBody("{\"detail\":\"Missing required field\"}")
+              : new MockResponse()
+                  .setResponseCode(HttpStatus.BAD_REQUEST.code())
+                  .setBody("Bad Brotli");
+        });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(18);
+  }
+
+  @Test
+  public void
+      detect_whenValidControlReturns422AndStep5UnencodedValid400ButUnencodedInvalid422_reportsEmpty() {
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(request -> {
+          if (!request.getPath().equals("/")) {
+            return new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.code());
+          }
+          if (request.getHeader("Content-Encoding") == null) {
+            return hasValidControlBody(request)
+                ? new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code())
+                : new MockResponse().setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code());
+          }
+          return isValidControl(request) || isProbe(request)
+              ? new MockResponse().setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code())
+              : new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.code());
+        });
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.probeCount()).isEqualTo(1);
+    assertThat(Collections.frequency(dispatcher.requestedPaths(), "/")).isEqualTo(19);
+  }
+
+  @Test
+  public void
+      detect_whenTwoPodRoundRobinAlternates422And500AcrossCandidatePaths_abortsBeforeSending23MbProbe() {
+    AtomicInteger requestIndex = new AtomicInteger();
+    ProbeTrackingDispatcher dispatcher =
+        new ProbeTrackingDispatcher(request ->
+            requestIndex.getAndIncrement() % 2 == 0
+                ? new MockResponse()
+                    .setResponseCode(HttpStatus.UNPROCESSABLE_ENTITY.code())
+                    .setBody("{\"detail\":[{\"type\":\"json_invalid\"}]}")
+                : new MockResponse()
+                    .setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.code())
+                    .setBody("Internal Server Error"));
+    mockWebServer.setDispatcher(dispatcher);
+
+    DetectionReportList reports =
+        detector.detect(createTargetInfo(), ImmutableList.of(createNetworkService()));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(dispatcher.receivedProbe()).isFalse();
   }
 
   private void assertVulnerableApplianceCandidatePathDetected(String expectedPath) {
