@@ -5,9 +5,9 @@ config: {
   tested_plugin: "Horovod_CVE_2024_10190"
 }
 
-########
+#########
 # TESTS #
-########
+#########
 
 tests: {
   name: "whenVulnerable_returnsTrue"
@@ -26,7 +26,7 @@ tests: {
         body_content: "<!DOCTYPE HTML><html><head><title>Error response</title></head><body><h1>Error response</h1><p>Error code 400.</p></body></html>"
       },
       {
-        uri: "/cve_test_scope/probe_key"
+        uri: "/worker_addresses/localhost:0"
         status: 200
         condition: {
           request_type: PUT
@@ -34,12 +34,12 @@ tests: {
         body_content: ""
       },
       {
-        uri: "/cve_test_scope/probe_key"
+        uri: "/cve_2024_10190/proof"
         status: 200
         condition: {
           request_type: GET
         }
-        body_content: "gAWVQQAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlIwMdG91Y2ggL3RtcC9jdGVfdGVzdC50eHSFlFKULg=="
+        body_content: "CVE-2024-10190_RCE_CONFIRMED"
       }
     ]
   }
@@ -62,12 +62,12 @@ tests: {
         body_content: "<!DOCTYPE HTML><html><head><title>Error response</title></head><body><h1>Error response</h1><p>Error code 400.</p></body></html>"
       },
       {
-        uri: "/cve_test_scope/probe_key"
-        status: 404
+        uri: "/worker_addresses/localhost:0"
+        status: 400
         condition: {
           request_type: PUT
         }
-        body_content: "Not Found"
+        body_content: "<!DOCTYPE HTML><html><head><title>Error response</title></head><body><h1>Error response</h1><p>Error code 400.</p></body></html>"
       }
     ]
   }
@@ -90,7 +90,7 @@ tests: {
         body_content: "<!DOCTYPE HTML><html><head><title>Error response</title></head><body><h1>Error response</h1><p>Error code 400.</p></body></html>"
       },
       {
-        uri: "/cve_test_scope/probe_key"
+        uri: "/worker_addresses/localhost:0"
         status: 200
         condition: {
           request_type: PUT
@@ -98,7 +98,7 @@ tests: {
         body_content: ""
       },
       {
-        uri: "/cve_test_scope/probe_key"
+        uri: "/cve_2024_10190/proof"
         status: 404
         condition: {
           request_type: GET

