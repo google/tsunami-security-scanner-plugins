@@ -1,0 +1,152 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "BentoML_CVE_2025_54381"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/docs.json"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"openapi\":\"3.0.2\",\"info\":{\"title\":\"ssrf_test_service\",\"version\":\"None\",\"description\":\"# ssrf_test_service:dev\\n\\n[![pypi_status](https://img.shields.io/badge/BentoML-1.4.18-informational)](https://pypi.org/project/BentoML)\",\"contact\":{\"name\":\"BentoML Team\"}},\"paths\":{\"/healthz\":{\"get\":{\"tags\":[\"Infrastructure\"]}},\"/process_file\":{\"post\":{\"tags\":[\"Service APIs\"],\"x-bentoml-name\":\"process_file\",\"requestBody\":{\"content\":{\"multipart/form-data\":{\"schema\":{\"type\":\"object\",\"title\":\"Input\",\"required\":[\"file_input\"],\"properties\":{\"file_input\":{\"format\":\"binary\",\"title\":\"File Input\",\"type\":\"string\"}}}}}},\"operationId\":\"ssrf_test_service__process_file\"}}}}"
+      },
+      {
+        uri: "/process_file"
+        status: 200
+        condition: {
+          request_type: POST
+          headers: [
+            { name: "Content-Type" value: "multipart/form-data; boundary=TsunamiBoundary" }
+          ]
+          body_content: [
+            "Content-Disposition: form-data; name=\"file_input\"\r\n\r\nhttp://127.0.0.1:3000/readyz\r\n--TsunamiBoundary--"
+          ]
+        }
+        headers: [
+          { name: "Server" value: "BentoML Service/ssrf_test_service" },
+          { name: "x-bentoml-request-id" value: "88f68922896f5bc6" },
+          { name: "Content-Type" value: "text/plain; charset=utf-8" }
+        ]
+        body_content: "Successfully processed file path: /tmp/bentoml-request-yggf4bsa/tmpjrbo2ejsreadyz"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerableCustomEndpoint_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/docs.json"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"openapi\":\"3.0.2\",\"info\":{\"title\":\"DocumentService\",\"version\":\"None\",\"description\":\"Custom service\"},\"paths\":{\"/echo\":{\"post\":{\"tags\":[\"Service APIs\"],\"x-bentoml-name\":\"echo\",\"requestBody\":{\"content\":{\"application/json\":{\"schema\":{\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\"}}}}}}}},\"/upload_doc\":{\"post\":{\"tags\":[\"Service APIs\"],\"x-bentoml-name\":\"upload_doc\",\"requestBody\":{\"content\":{\"multipart/form-data\":{\"schema\":{\"type\":\"object\",\"properties\":{\"label\":{\"type\":\"string\"},\"doc_file\":{\"title\":\"Document\",\"type\":\"string\",\"format\":\"binary\"}}}}}}}}}}"
+      },
+      {
+        uri: "/upload_doc"
+        status: 200
+        condition: {
+          request_type: POST
+          headers: [
+            { name: "Content-Type" value: "multipart/form-data; boundary=TsunamiBoundary" }
+          ]
+          body_content: [
+            "Content-Disposition: form-data; name=\"doc_file\"\r\n\r\nhttp://127.0.0.1:3000/readyz\r\n--TsunamiBoundary--"
+          ]
+        }
+        headers: [
+          { name: "Server" value: "BentoML Service/DocumentService" },
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"status\":\"ok\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatched_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/docs.json"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"openapi\":\"3.0.2\",\"info\":{\"title\":\"ssrf_test_service\",\"version\":\"None\",\"description\":\"# ssrf_test_service:dev\\n\\n[![pypi_status](https://img.shields.io/badge/BentoML-1.4.22-informational)](https://pypi.org/project/BentoML)\",\"contact\":{\"name\":\"BentoML Team\"}},\"paths\":{\"/process_file\":{\"post\":{\"tags\":[\"Service APIs\"],\"x-bentoml-name\":\"process_file\",\"requestBody\":{\"content\":{\"multipart/form-data\":{\"schema\":{\"type\":\"object\",\"title\":\"Input\",\"required\":[\"file_input\"],\"properties\":{\"file_input\":{\"format\":\"binary\",\"title\":\"File Input\",\"type\":\"string\"}}}}}},\"operationId\":\"ssrf_test_service__process_file\"}}}}"
+      },
+      {
+        uri: "/process_file"
+        status: 500
+        condition: {
+          request_type: POST
+          headers: [
+            { name: "Content-Type" value: "multipart/form-data; boundary=TsunamiBoundary" }
+          ]
+          body_content: [
+            "Content-Disposition: form-data; name=\"file_input\"\r\n\r\nhttp://127.0.0.1:3000/readyz\r\n--TsunamiBoundary--"
+          ]
+        }
+        headers: [
+          { name: "Server" value: "BentoML Service/ssrf_test_service" },
+          { name: "x-bentoml-request-id" value: "b929e0f009a24945" },
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"error\":\"An unexpected error has occurred, please check the server log.\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoFileUploadEndpoint_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/docs.json"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"openapi\":\"3.0.2\",\"info\":{\"title\":\"DemoService\",\"version\":\"None\"},\"paths\":{\"/echo\":{\"post\":{\"tags\":[\"Service APIs\"],\"x-bentoml-name\":\"echo\",\"requestBody\":{\"content\":{\"application/json\":{\"schema\":{\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\"}}}}}}}}}}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotBentoML_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        headers: [
+          { name: "Server" value: "nginx" }
+        ]
+        body_content: "Hello world"
+      }
+    ]
+  }
+}
