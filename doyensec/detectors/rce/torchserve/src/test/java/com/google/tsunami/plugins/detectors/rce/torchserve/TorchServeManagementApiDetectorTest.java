@@ -91,7 +91,7 @@ public final class TorchServeManagementApiDetectorTest extends TorchServeManagem
                             VulnerabilityId.newBuilder()
                                 .setPublisher("DOYENSEC")
                                 .setValue("TORCHSERVE_MANAGEMENT_API_RCE"))
-                        .setSeverity(Severity.LOW)
+                        .setSeverity(Severity.MINIMAL)
                         .setTitle("TorchServe Management API Remote Code Execution")
                         .setDescription(
                             "An exposed TorchServe management API was detected on the target."
