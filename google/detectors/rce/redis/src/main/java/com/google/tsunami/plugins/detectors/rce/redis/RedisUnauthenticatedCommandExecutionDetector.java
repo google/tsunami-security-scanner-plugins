@@ -46,11 +46,11 @@ import java.time.Clock;
 import java.time.Instant;
 import javax.inject.Inject;
 
-/** Detects Redis unauthenticated command execution allowing RCE. */
+/** Detects unauthenticated Redis protocol command access and potential RCE escalation paths. */
 @PluginInfo(
     type = PluginType.VULN_DETECTION,
     name = "RedisUnauthenticatedCommandExecutionDetector",
-    version = "0.1",
+    version = "0.2",
     description = "Detects Redis unauthenticated command execution.",
     author = "Oleksii Prokopchuk (prokopchuk@google.com)",
     bootstrapModule = RedisUnauthenticatedCommandExecutionDetectorBootstrapModule.class)
@@ -59,30 +59,41 @@ public final class RedisUnauthenticatedCommandExecutionDetector implements VulnD
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   static final String VULN_DESCRIPTION =
-      "The scanner detected that this Redis instance does not require authentication.\n"
-          + "This implies that anyone having network access to this Redis service can likely"
-          + " execute any command, and may be able to escalate to the OS shell.\n"
-          + "Unauthenticated command execution is a feature of Redis that can be desired if one is"
-          + " positive that only trusted clients can ever access it over the network"
-          + " (recommended).\n"
+      "The scanner executed the Redis \"INFO server\" command without authentication and observed"
+          + " \"redis_version:\" in the response (an authenticated instance returns \"-NOAUTH"
+          + " Authentication required.\"). Despite the legacy"
+          + " REDIS_UNAUTHENTICATED_COMMAND_EXECUTION identifier, this check confirms"
+          + " unauthenticated Redis protocol command access rather than guaranteed OS shell"
+          + " execution.\n"
           + "\n"
-          + "Details on the scanner logic:\n"
-          + "The detection was made by successfully executing the Redis \"INFO server\" command"
-          + " without authentication. The \"INFO\" command should normally require admin"
-          + " privilege.\n"
-          + "- A protected Redis instance would return \"-NOAUTH Authentication required.\".\n"
-          + "- An unprotected Redis instance would successfully return, with the redis_version"
-          + " field present in the response.";
+          + "Impact on any unauthenticated Redis instance (including Redis >= 7.0 and Valkey with"
+          + " default protected-config and module restrictions):\n"
+          + "- Data read/write and secret exposure: Full read, modification, and deletion"
+          + " (FLUSHALL) of keys, session tokens, and queues, plus live traffic capture when"
+          + " MONITOR is permitted.\n"
+          + "- Application-layer RCE via unsafe deserialization: Poisoning keys or job queues"
+          + " consumed by workers using Python pickle (Celery, RQ, Django), Ruby Marshal"
+          + " (Sidekiq, Rails), Java serialization/Kryo, or PHP session handlers can achieve"
+          + " remote code execution on downstream application hosts.\n"
+          + "- Internal network SSRF: If REPLICAOF/SLAVEOF or MIGRATE is permitted, an attacker"
+          + " can force outbound TCP connections from the Redis host to internal VPC endpoints.\n"
+          + "\n"
+          + "Direct Redis-server OS RCE (version- and configuration-dependent):\n"
+          + "- Escalating directly to OS command execution on the Redis host requires Redis < 7.0"
+          + " (or relaxed enable-protected-configs / enable-module-command settings) permitting"
+          + " CONFIG SET dir/dbfilename, MODULE LOAD, or rogue-primary replication, or an"
+          + " unpatched engine/Lua vulnerability (such as CVE-2022-0543 or CVE-2025-49844).";
 
   static final String VULN_RECOMMENDATION =
-      "Preferably, make sure that only trusted clients can ever connect to Redis:"
-          + " https://redis.io/topics/security.\n"
-          + "Requesting authentication to execute Redis commands will protect it further. Edit"
-          + " redis.conf: uncomment requirepass option and set a strong password. This file is"
-          + " self-documented. General instructions: https://redis.io/topics/config.\n"
-          + "If connections are over untrusted networks, they need to be encrypted (otherwise,"
-          + " attacker may read passwords): https://redis.io/topics/encryption.\n"
-          + "Then restart Redis service for the settings to take effect.";
+      "1. Restrict network reachability so only trusted clients can connect (bind to loopback or"
+          + " private VPC interfaces, enforce firewall rules, and keep protected-mode yes).\n"
+          + "2. Require strong authentication via Redis ACLs (configure ACL SETUSER in users.acl"
+          + " to disable or restrict the default user and block @admin, @dangerous, and"
+          + " @scripting commands where unneeded) or set requirepass in redis.conf.\n"
+          + "3. Keep enable-protected-configs no and enable-module-command no (the default in"
+          + " Redis >= 7.0 and Valkey), enable TLS on untrusted networks, and keep the Redis or"
+          + " Valkey server patched:\n"
+          + "https://redis.io/docs/latest/operate/oss_and_stack/management/security/";
 
   private final Clock utcClock;
   private final TsunamiSocketFactory socketFactory;
@@ -125,7 +136,7 @@ public final class RedisUnauthenticatedCommandExecutionDetector implements VulnD
             VulnerabilityId.newBuilder()
                 .setPublisher("GOOGLE")
                 .setValue("REDIS_UNAUTHENTICATED_COMMAND_EXECUTION"))
-        .setSeverity(Severity.CRITICAL)
+        .setSeverity(Severity.HIGH)
         .setTitle("Redis unauthenticated command execution")
         .setDescription(VULN_DESCRIPTION)
         .setRecommendation(VULN_RECOMMENDATION)

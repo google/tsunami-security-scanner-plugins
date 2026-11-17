@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-description = 'Detects unauthenticated Redis allowing RCE.'
+description = 'Detects Redis unauthenticated command execution.'
 group = 'com.google.tsunami'
 version = '0.0.1-SNAPSHOT'
 
