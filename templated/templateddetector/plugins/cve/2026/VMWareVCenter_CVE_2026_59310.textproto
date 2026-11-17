@@ -18,7 +18,7 @@ finding: {
     publisher: "GOOGLE"
     value: "CVE_2026_59310"
   }
-  severity: LOW
+  severity: MINIMAL
   title: "vCenter Syslog Server Directory Traversal (CVE-2026-59310)"
   description: "VMware vCenter Syslog Server contains a directory traversal vulnerability that could allow a remote unauthenticated attacker to execute arbitrary code."
   recommendation: "Apply the updates listed in the 'Fixed Version' column of the 'Response Matrix' at VMSA-2026-0006. See https://brcm.tech/vmsa-2026-0006."
