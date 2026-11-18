@@ -1,0 +1,59 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "PraisonAI_CVE_2026_57139"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        condition: {
+          request_type: POST
+        }
+        body_content: "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{\"tools\":{}},\"serverInfo\":{\"name\":\"praisonai\",\"version\":\"1.0.0\"}}}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      },
+      {
+        uri: "/"
+        status: 200
+        condition: {
+          request_type: POST
+        }
+        body_content: "{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{\"tools\":[{\"name\":\"query_account_balance\",\"description\":\"Returns account balance\"}]}}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 401
+        condition: {
+          request_type: POST
+        }
+        body_content: "{\"error\":\"Unauthorized\"}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,86 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "PraisonAI_CVE_2026_57139"
+  author: "mangeshwalsane2-hash"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-57139"
+  }
+  severity: CRITICAL
+  title: "PraisonAI MCPServer Authentication Bypass Leading to Tool Execution (CVE-2026-57139)"
+  description: "PraisonAI versions 1.5.0 through 1.7.1 contain an authentication bypass vulnerability in MCPServer.startHttp(). The HTTP request handler fails to enforce configured authentication tokens, allowing unauthenticated remote attackers to list and invoke registered tools."
+  recommendation: "Upgrade praisonai to version 1.7.2 or higher."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-57139"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_mcp_initialize"
+  http_request: {
+    method: POST
+    uri: "/"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"tsunami\",\"version\":\"1.0\"}}}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"protocolVersion\"" },
+          { body: {} contains: "\"serverInfo\"" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "trigger_auth_bypass"
+  http_request: {
+    method: POST
+    uri: "/"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\"}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"tools\"" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_mcp_initialize",
+    "trigger_auth_bypass"
+  ]
+}
