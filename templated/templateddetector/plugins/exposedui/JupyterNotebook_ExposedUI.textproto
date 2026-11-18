@@ -35,7 +35,9 @@ finding: {
 # ACTIONS #
 ###########
 
-# Mirrors the original Java detector's passive HTML check on /terminals/1.
+# Mirrors the original Java detector's passive HTML check on /terminals/1 and
+# extends it to /lab (JupyterLab / Jupyter Server 2.x, where /terminals/1 is
+# absent and returns 404) and /tree (Jupyter Notebook 7.x).
 # Split across two actions because templated expectations cannot nest expect_any
 # inside expect_all.
 
@@ -44,6 +46,8 @@ actions: {
   http_request: {
     method: GET
     uri: "/terminals/1"
+    uri: "/lab"
+    uri: "/tree"
     client_options: {
       disable_follow_redirects: true
     }
@@ -64,6 +68,8 @@ actions: {
   http_request: {
     method: GET
     uri: "/terminals/1"
+    uri: "/lab"
+    uri: "/tree"
     client_options: {
       disable_follow_redirects: true
     }

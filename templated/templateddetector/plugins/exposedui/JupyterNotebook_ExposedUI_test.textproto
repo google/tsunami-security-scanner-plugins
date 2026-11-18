@@ -42,6 +42,61 @@ tests: {
 }
 
 tests: {
+  name: "whenJupyterLabVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/terminals/1"
+        status: 404
+        body_content: "404 : Not Found"
+      },
+      {
+        uri: "/lab"
+        status: 200
+        body_content:
+          "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+          "<title>JupyterLab</title>"
+          "<script id=\"jupyter-config-data\" type=\"application/json\">"
+          "{\"appName\": \"JupyterLab\", \"appNamespace\": \"lab\", \"appUrl\": \"/lab\"}"
+          "</script></head></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotebook7TreeVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/terminals/1"
+        status: 404
+        body_content: "404 : Not Found"
+      },
+      {
+        uri: "/lab"
+        status: 404
+        body_content: "404 : Not Found"
+      },
+      {
+        uri: "/tree"
+        status: 200
+        body_content:
+          "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+          "<title>Jupyter Notebook</title>"
+          "<script id=\"jupyter-config-data\" type=\"application/json\">"
+          "{\"appName\": \"Jupyter Notebook\", \"appNamespace\": \"notebook\"}"
+          "</script></head></html>"
+      }
+    ]
+  }
+}
+
+tests: {
   name: "whenRedirectsToLogin_returnsFalse"
   expect_vulnerability: false
 
@@ -62,6 +117,36 @@ tests: {
           "<title>Jupyter Notebook</title>"
           " ... "
           "<script id=\"jupyter-config-data\" type=\"application/json\">"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenJupyterLabRedirectsToLogin_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/terminals/1"
+        status: 404
+        body_content: "404 : Not Found"
+      },
+      {
+        uri: "/lab"
+        status: 302
+        headers: [
+          { name: "Location" value: "/login?next=%2Flab" }
+        ]
+        body_content: ""
+      },
+      {
+        uri: "/login"
+        status: 200
+        body_content:
+          "<!DOCTYPE HTML><html><head><title>Jupyter Server</title></head>"
+          "<body><div id=\"jupyter_server\"></div></body></html>"
       }
     ]
   }
