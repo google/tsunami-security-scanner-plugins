@@ -1,0 +1,163 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ApacheSparksExposedApiVulnDetector"
+  author: "Timo Mueller (work@mtimo.de)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "Apache_Spark_Exposed_Api"
+  }
+  severity: CRITICAL
+  title: "Exposed Apache Spark API which allows unauthenticated RCE detected."
+  description: "An exposed Apache Spark API allows an unauthenticated attacker to submit a malicious task. If an Apache Spark worker processes such a task, it loads and executes attacker-controlled content from an external resource. This allows an attacker to execute arbitrary Java Code within the context of the worker node."
+  recommendation: "Don't expose the Apache Spark API to unauthenticated attackers."
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_spark_rest_api"
+  action_phase: ACTION_PHASE_FINGERPRINT
+  http_request: {
+    method: GET
+    uri: "/v1/submissions/status/driver-00000000000000-0000"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { header: { name: "Content-Type" } contains: "application/json" },
+          { body: {} contains: "\"SubmissionStatusResponse\"" },
+          { body: {} contains: "\"serverSparkVersion\"" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"serverSparkVersion\"\\s*:\\s*\"([0-9]+\\.[0-9]+[^\"]*)\""
+            variable_name: "spark_version"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "submit_probe_driver"
+  action_phase: ACTION_PHASE_DETECTION
+  http_request: {
+    method: POST
+    uri: "/v1/submissions/create"
+    headers: [
+      { name: "Content-Type" value: "application/json;charset=UTF-8" }
+    ]
+    data:
+      "{\"action\":\"CreateSubmissionRequest\","
+      "\"appArgs\":[],"
+      "\"appResource\":\"file:/nonexistent_tsunami_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.jar\","
+      "\"clientSparkVersion\":\"{{ spark_version }}\","
+      "\"environmentVariables\":{\"SPARK_ENV_LOADED\":\"1\"},"
+      "\"mainClass\":\"org.apache.spark.examples.SparkPi\","
+      "\"sparkProperties\":{"
+      "\"spark.app.name\":\"tsunami-check-{{ T_UTL_CURRENT_TIMESTAMP_MS }}\","
+      "\"spark.driver.supervise\":\"false\","
+      "\"spark.master\":\"spark://127.0.0.1:7077\","
+      "\"spark.submit.deployMode\":\"cluster\""
+      "}}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { header: { name: "Content-Type" } contains: "application/json" },
+          { body: {} contains: "\"CreateSubmissionResponse\"" },
+          { body: {} contains: "Driver successfully submitted as " }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"submissionId\"\\s*:\\s*\"(driver-[0-9]+-[0-9]+)\""
+            variable_name: "submission_id"
+          },
+          {
+            from_body: {}
+            regexp: "\"success\"\\s*:\\s*(true)"
+            variable_name: "submission_success"
+          }
+        ]
+      }
+    }
+  }
+  cleanup_actions: ["kill_probe_driver"]
+}
+
+actions: {
+  name: "verify_submitted_driver_status"
+  action_phase: ACTION_PHASE_DETECTION
+  http_request: {
+    method: GET
+    uri: "/v1/submissions/status/{{ submission_id }}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { header: { name: "Content-Type" } contains: "application/json" },
+          { body: {} contains: "\"SubmissionStatusResponse\"" },
+          { body: {} contains: "\"driverState\"" },
+          { body: {} contains: "{{ submission_id }}" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"success\"\\s*:\\s*(true)"
+            variable_name: "status_success"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "kill_probe_driver"
+  action_phase: ACTION_PHASE_DETECTION
+  http_request: {
+    method: POST
+    uri: "/v1/submissions/kill/{{ submission_id }}"
+    headers: [
+      { name: "Content-Type" value: "application/json;charset=UTF-8" }
+    ]
+    data: "{}"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_spark_rest_api",
+    "submit_probe_driver",
+    "verify_submitted_driver_status"
+  ]
+}

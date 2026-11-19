@@ -1,0 +1,200 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ApacheSparksExposedApiVulnDetector"
+}
+
+tests: {
+  name: "whenUnauthenticatedRestSubmissionSucceeds_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/v1/submissions/status/driver-00000000000000-0000"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json;charset=UTF-8" }
+        ]
+        body_content:
+          "{\n"
+          "  \"action\" : \"SubmissionStatusResponse\",\n"
+          "  \"serverSparkVersion\" : \"4.0.0\",\n"
+          "  \"submissionId\" : \"driver-00000000000000-0000\",\n"
+          "  \"success\" : false\n"
+          "}"
+      },
+      {
+        uri: "/v1/submissions/create"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json;charset=UTF-8" }
+        ]
+        condition: {
+          request_type: POST
+          body_content: ["\"clientSparkVersion\":\"4.0.0\""]
+        }
+        body_content:
+          "{\n"
+          "  \"action\" : \"CreateSubmissionResponse\",\n"
+          "  \"message\" : \"Driver successfully submitted as driver-20261114020322-0000\",\n"
+          "  \"serverSparkVersion\" : \"4.0.0\",\n"
+          "  \"submissionId\" : \"driver-20261114020322-0000\",\n"
+          "  \"success\" : true\n"
+          "}"
+      },
+      {
+        uri: "/v1/submissions/status/driver-20261114020322-0000"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json;charset=UTF-8" }
+        ]
+        body_content:
+          "{\n"
+          "  \"action\" : \"SubmissionStatusResponse\",\n"
+          "  \"driverState\" : \"SUBMITTED\",\n"
+          "  \"serverSparkVersion\" : \"4.0.0\",\n"
+          "  \"submissionId\" : \"driver-20261114020322-0000\",\n"
+          "  \"success\" : true\n"
+          "}"
+      },
+      {
+        uri: "/v1/submissions/kill/driver-20261114020322-0000"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json;charset=UTF-8" }
+        ]
+        condition: {
+          request_type: POST
+        }
+        body_content:
+          "{\n"
+          "  \"action\" : \"KillSubmissionResponse\",\n"
+          "  \"message\" : \"Kill request for driver-20261114020322-0000 submitted\",\n"
+          "  \"serverSparkVersion\" : \"4.0.0\",\n"
+          "  \"submissionId\" : \"driver-20261114020322-0000\",\n"
+          "  \"success\" : true\n"
+          "}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenProtectedByJwsAuthFilter_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/v1/submissions/status/driver-00000000000000-0000"
+        status: 403
+        headers: [
+          { name: "Content-Type" value: "text/html;charset=ISO-8859-1" }
+        ]
+        body_content: "<title>Error 403 Authorization header is missing.</title>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenStandbyNodeRejectsSubmission_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/v1/submissions/status/driver-00000000000000-0000"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json;charset=UTF-8" }
+        ]
+        body_content:
+          "{\n"
+          "  \"action\" : \"SubmissionStatusResponse\",\n"
+          "  \"serverSparkVersion\" : \"4.0.0\",\n"
+          "  \"submissionId\" : \"driver-00000000000000-0000\",\n"
+          "  \"success\" : false\n"
+          "}"
+      },
+      {
+        uri: "/v1/submissions/create"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json;charset=UTF-8" }
+        ]
+        body_content:
+          "{\n"
+          "  \"action\" : \"CreateSubmissionResponse\",\n"
+          "  \"message\" : \"Standby cluster manager is not alive\",\n"
+          "  \"serverSparkVersion\" : \"4.0.0\",\n"
+          "  \"success\" : false\n"
+          "}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenReadOnlyReverseProxyBlocksCreate_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/v1/submissions/status/driver-00000000000000-0000"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json;charset=UTF-8" }
+        ]
+        body_content:
+          "{\n"
+          "  \"action\" : \"SubmissionStatusResponse\",\n"
+          "  \"serverSparkVersion\" : \"3.5.5\",\n"
+          "  \"submissionId\" : \"driver-00000000000000-0000\",\n"
+          "  \"success\" : false\n"
+          "}"
+      },
+      {
+        uri: "/v1/submissions/create"
+        status: 403
+        body_content: "Forbidden"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenEchoServerReflectsRequest_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "GET /v1/submissions/status/driver-00000000000000-0000 HTTP/1.1"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenGenericWebServer_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "<html><body>Welcome</body></html>"
+      }
+    ]
+  }
+}
