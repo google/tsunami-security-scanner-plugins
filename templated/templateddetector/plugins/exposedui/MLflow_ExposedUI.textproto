@@ -1,0 +1,133 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "MLflow_ExposedUI"
+  author: "Tsunami Team (tsunami-dev@google.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "MLFLOW_EXPOSED_UI"
+  }
+  severity: CRITICAL
+  title: "Exposed MLflow Tracking Server UI and REST API"
+  description:
+    "An MLflow Tracking Server is exposed to the network without authentication."
+    " By default, MLflow starts without access controls, allowing anonymous"
+    " network clients to query and modify experiments, runs, parameters,"
+    " registered models, and stored ML artifacts via the web UI and the"
+    " /api/2.0/mlflow/* and /ajax-api/2.0/mlflow/* REST endpoints."
+  recommendation:
+    "Do not expose MLflow Tracking Servers directly to untrusted networks."
+    " Bind local development servers to 127.0.0.1, enable MLflow HTTP"
+    " authentication (--app-name basic-auth with MLFLOW_AUTH_CONFIG_PATH and"
+    " strong non-default credentials), or place the server behind an"
+    " authenticating reverse proxy. See"
+    " https://mlflow.org/docs/latest/auth/index.html for configuration details."
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+# Probe the MLflow 2.0 Tracking REST API directly (with /ajax-api/ fallback for
+# UI reverse proxies) rather than relying on default root HTML so headless,
+# API-only, and customized-UI deployments across MLflow 1.x, 2.x, and 3.x are
+# detected while non-MLflow and auth-protected servers short-circuit cleanly.
+actions: {
+  name: "search_experiments_unauth"
+  action_phase: ACTION_PHASE_FINGERPRINT
+  http_request: {
+    method: POST
+    uri: "/api/2.0/mlflow/experiments/search"
+    uri: "/ajax-api/2.0/mlflow/experiments/search"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"max_results\": 1, \"view_type\": \"ALL\"}"
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { header: { name: "Content-Type" } contains: "application/json" },
+          { body: {} contains: "\"experiments\"" },
+          { body: {} contains: "\"artifact_location\"" },
+          { body: {} contains: "\"lifecycle_stage\"" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"experiment_id\"\\s*:\\s*\"([a-zA-Z0-9_-]+)\""
+            variable_name: "experiment_id"
+          },
+          {
+            from_body: {}
+            regexp: "\"lifecycle_stage\"\\s*:\\s*\"(active|deleted)\""
+            variable_name: "lifecycle_stage"
+          }
+        ]
+      }
+    }
+  }
+}
+
+# Confirm stateful read access to the extracted experiment via GetExperiment,
+# which returns a singular "experiment" object matching the extracted ID.
+actions: {
+  name: "get_experiment_metadata_unauth"
+  action_phase: ACTION_PHASE_DETECTION
+  http_request: {
+    method: GET
+    uri: "/api/2.0/mlflow/experiments/get?experiment_id={{ experiment_id }}"
+    uri: "/ajax-api/2.0/mlflow/experiments/get?experiment_id={{ experiment_id }}"
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { header: { name: "Content-Type" } contains: "application/json" },
+          { body: {} contains: "\"experiment\"" },
+          { body: {} contains: "\"artifact_location\"" },
+          { body: {} contains: "\"lifecycle_stage\"" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "(?s)\"experiment\"\\s*:\\s*\\{.*?\"experiment_id\"\\s*:\\s*\"({{ experiment_id }})\""
+            variable_name: "verified_experiment_id"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "search_experiments_unauth",
+    "get_experiment_metadata_unauth"
+  ]
+}

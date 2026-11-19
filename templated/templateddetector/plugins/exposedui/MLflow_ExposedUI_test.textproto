@@ -1,0 +1,209 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "MLflow_ExposedUI"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenUnauthenticatedStandardApi_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/2.0/mlflow/experiments/search"
+        status: 200
+        condition: {
+          request_type: POST
+          headers: [
+            { name: "Content-Type" value: "application/json" }
+          ]
+          body_content: ["\"max_results\": 1"]
+        }
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content:
+          "{"
+          "  \"experiments\": ["
+          "    {"
+          "      \"experiment_id\": \"0\","
+          "      \"name\": \"Default\","
+          "      \"artifact_location\": \"/app/artifacts/0\","
+          "      \"lifecycle_stage\": \"active\","
+          "      \"last_update_time\": 1795067182005,"
+          "      \"creation_time\": 1795067182005"
+          "    }"
+          "  ]"
+          "}"
+      },
+      {
+        uri: "/api/2.0/mlflow/experiments/get?experiment_id=0"
+        status: 200
+        condition: {
+          request_type: GET
+        }
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content:
+          "{"
+          "  \"experiment\": {"
+          "    \"experiment_id\": \"0\","
+          "    \"name\": \"Default\","
+          "    \"artifact_location\": \"/app/artifacts/0\","
+          "    \"lifecycle_stage\": \"active\","
+          "    \"last_update_time\": 1795067182005,"
+          "    \"creation_time\": 1795067182005"
+          "  }"
+          "}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenUnauthenticatedAjaxApiOnly_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/2.0/mlflow/experiments/search"
+        status: 404
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"error_code\": \"ENDPOINT_NOT_FOUND\"}"
+      },
+      {
+        uri: "/ajax-api/2.0/mlflow/experiments/search"
+        status: 200
+        condition: {
+          request_type: POST
+        }
+        headers: [
+          { name: "Content-Type" value: "application/json; charset=utf-8" }
+        ]
+        body_content:
+          "{"
+          "  \"experiments\": ["
+          "    {"
+          "      \"experiment_id\": \"42\","
+          "      \"name\": \"custom-prod-exp\","
+          "      \"artifact_location\": \"s3://mlflow-bucket/42\","
+          "      \"lifecycle_stage\": \"deleted\""
+          "    }"
+          "  ]"
+          "}"
+      },
+      {
+        uri: "/api/2.0/mlflow/experiments/get?experiment_id=42"
+        status: 404
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"error_code\": \"ENDPOINT_NOT_FOUND\"}"
+      },
+      {
+        uri: "/ajax-api/2.0/mlflow/experiments/get?experiment_id=42"
+        status: 200
+        condition: {
+          request_type: GET
+        }
+        headers: [
+          { name: "Content-Type" value: "application/json; charset=utf-8" }
+        ]
+        body_content:
+          "{"
+          "  \"experiment\": {"
+          "    \"experiment_id\": \"42\","
+          "    \"name\": \"custom-prod-exp\","
+          "    \"artifact_location\": \"s3://mlflow-bucket/42\","
+          "    \"lifecycle_stage\": \"deleted\""
+          "  }"
+          "}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenBasicAuthProtected_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 401
+        headers: [
+          { name: "WWW-Authenticate" value: "Basic realm=\"mlflow\"" },
+          { name: "Content-Type" value: "text/html; charset=utf-8" }
+        ]
+        body_content: "You are not authenticated. Please see https://www.mlflow.org/docs/latest/auth/index.html#authenticating-to-mlflow on how to authenticate."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenSsoRedirectOrHtmlCatchAll_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html; charset=utf-8" }
+        ]
+        body_content: "<!doctype html><html><head><title>Sign In</title></head><body>experiments artifact_location lifecycle_stage experiment_id</body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenJsonEchoOrUnrelatedApi_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"max_results\": 1, \"view_type\": \"ALL\", \"status\": \"ok\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenGetExperimentMismatchesId_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/2.0/mlflow/experiments/search"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"experiments\":[{\"experiment_id\":\"0\",\"artifact_location\":\"/tmp\",\"lifecycle_stage\":\"active\"}]}"
+      },
+      {
+        uri: "/api/2.0/mlflow/experiments/get?experiment_id=0"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"experiment\":{\"experiment_id\":\"999\",\"artifact_location\":\"/tmp\",\"lifecycle_stage\":\"active\"}}"
+      }
+    ]
+  }
+}
