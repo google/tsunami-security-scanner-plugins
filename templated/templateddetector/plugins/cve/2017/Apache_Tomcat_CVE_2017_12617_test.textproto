@@ -1,0 +1,65 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "CVE-2017-12617 Detector"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/tsunami_cve_2017_12617_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.jsp/"
+        status: 201
+        body_content: ""
+      },
+      {
+        uri: "/tsunami_cve_2017_12617_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.jsp"
+        status: 200
+        body_content: "tsunami_cve_2017_12617_234567"
+      },
+      {
+        uri: "/tsunami_cve_2017_12617_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.jsp/"
+        status: 204
+        body_content: ""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_putForbidden_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/tsunami_cve_2017_12617_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.jsp/"
+        status: 403
+        body_content: "<html><head><title>HTTP Status 403 - Forbidden</title></head></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPutFails_methodNotAllowed_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/tsunami_cve_2017_12617_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.jsp/"
+        status: 405
+        body_content: "<html><head><title>HTTP Status 405 - Method Not Allowed</title></head></html>"
+      }
+    ]
+  }
+}

