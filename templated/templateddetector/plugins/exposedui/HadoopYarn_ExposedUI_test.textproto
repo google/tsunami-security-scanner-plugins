@@ -1,0 +1,123 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "YarnExposedManagerApiDetector"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/ws/v1/cluster/info"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content:
+          '{"clusterInfo":{"id":1794625411122,"startedOn":1794625411122,'
+          '"state":"STARTED","haState":"ACTIVE","resourceManagerVersion":"3.3.6",'
+          '"hadoopVersion":"3.3.6"}}'
+        condition: {
+          request_type: GET
+        }
+      },
+      {
+        uri: "/ws/v1/cluster/apps/new-application"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content:
+          '{"application-id":"application_1794625411122_0001",'
+          '"maximum-resource-capability":{"memory":8192,"vCores":4}}'
+        condition: {
+          request_type: POST
+        }
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenAuthenticationRequiredOnNewApp_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/ws/v1/cluster/info"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content:
+          '{"clusterInfo":{"id":1794625411122,"startedOn":1794625411122,'
+          '"state":"STARTED","haState":"ACTIVE","resourceManagerVersion":"3.3.6",'
+          '"hadoopVersion":"3.3.6"}}'
+        condition: {
+          request_type: GET
+        }
+      },
+      {
+        uri: "/ws/v1/cluster/apps/new-application"
+        status: 401
+        headers: [
+          { name: "WWW-Authenticate" value: "PseudoAuth" },
+          { name: "Content-Type" value: "text/html;charset=iso-8859-1" }
+        ]
+        body_content:
+          '<html><head><title>Error 401 Authentication required</title></head>'
+          '<body><h2>HTTP ERROR 401 Authentication required</h2></body></html>'
+        condition: {
+          request_type: POST
+        }
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenAuthenticationRequiredOnClusterInfo_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/ws/v1/cluster/info"
+        status: 401
+        headers: [
+          { name: "WWW-Authenticate" value: "PseudoAuth" },
+          { name: "Content-Type" value: "text/html;charset=iso-8859-1" }
+        ]
+        body_content:
+          '<html><head><title>Error 401 Authentication required</title></head>'
+          '<body><h2>HTTP ERROR 401 Authentication required</h2></body></html>'
+        condition: {
+          request_type: GET
+        }
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotHadoop_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/ws/v1/cluster/info"
+        status: 404
+        body_content: '404 Not Found'
+        condition: {
+          request_type: GET
+        }
+      }
+    ]
+  }
+}

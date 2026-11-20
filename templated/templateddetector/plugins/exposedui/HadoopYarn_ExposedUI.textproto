@@ -1,0 +1,96 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "YarnExposedManagerApiDetector"
+  author: "Tsunami Team (tsunami-dev@google.com)"
+  version: "0.1"
+}
+
+###########
+# FINDING #
+###########
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "HADOOP_YARN_UNAUTHENTICATED_RESOURCE_MANAGER_API"
+  }
+  severity: CRITICAL
+  title: "Hadoop Yarn Unauthenticated ResourceManager API"
+  description: "Hadoop Yarn ResourceManager controls the computation and storage resources of a Hadoop cluster. Unauthenticated ResourceManager API allows any remote users to create and execute arbitrary applications on the host."
+  recommendation: "Set up authentication by following the instructions at https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/HttpAuthentication.html."
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_yarn_resourcemanager"
+  action_phase: ACTION_PHASE_FINGERPRINT
+  http_request: {
+    method: GET
+    uri: "/ws/v1/cluster/info"
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { header: { name: "Content-Type" } contains: "application/json" },
+          { body: {} contains: "\"clusterInfo\"" },
+          { body: {} contains: "\"hadoopVersion\"" },
+          { body: {} contains: "\"resourceManagerVersion\"" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "verify_unauthenticated_new_application"
+  action_phase: ACTION_PHASE_DETECTION
+  http_request: {
+    method: POST
+    uri: "/ws/v1/cluster/apps/new-application"
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { header: { name: "Content-Type" } contains: "application/json" },
+          { body: {} contains: "\"application-id\"" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            variable_name: "application_id"
+            regexp: "\"application-id\"\\s*:\\s*\"(application_[0-9]+_[0-9]+)\""
+            from_body: {}
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_yarn_resourcemanager",
+    "verify_unauthenticated_new_application"
+  ]
+}
