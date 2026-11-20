@@ -1,0 +1,63 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "CVE20221388VulnDetector"
+  disabled: false
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/mgmt/tm/util/bash"
+        status: 200
+        body_content: "{\"kind\":\"tm:util:bash:runstate\",\"command\":\"run\",\"utilCmdArgs\":\"-c 'cat /VERSION'\",\"reserved\":\"yes\",\"commandResult\":\"BIG-IP 16.1.2\\n\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable401_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/mgmt/tm/util/bash"
+        status: 401
+        body_content: "{\"code\":401,\"message\":\"Authorization failed: no authentication token found.\",\"errorStack\":[]}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable404_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/mgmt/tm/util/bash"
+        status: 404
+        body_content: "{\"code\":404,\"message\":\"Public URI path not found.\",\"errorStack\":[]}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenEchoServer_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/mgmt/tm/util/bash"
+        status: 200
+        body_content: "{\"command\":\"run\",\"utilCmdArgs\":\"-c 'cat /VERSION'\"}"
+      }
+    ]
+  }
+}

