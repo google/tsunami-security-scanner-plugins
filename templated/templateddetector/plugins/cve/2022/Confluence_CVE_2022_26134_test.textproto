@@ -1,0 +1,110 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ConfluenceOgnlInjectionRceDetector"
+}
+
+tests: {
+  name: "whenVulnerableRootRedirect_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/%24%7B%40com.opensymphony.webwork.ServletActionContext%40getResponse%28%29.setHeader%28%22X-Confluence-Check%22%2C%22tsunami%22%2B%2841827*39163%29%29%7D/"
+        status: 302
+        headers: [
+          { name: "X-Confluence-Check" value: "tsunami1638070801" },
+          { name: "Location" value: "/login.action?os_destination=%2Findex.action" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenAnonymousEnabledVulnerableViaAdminAction_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/%24%7B%40com.opensymphony.webwork.ServletActionContext%40getResponse%28%29.setHeader%28%22X-Confluence-Check%22%2C%22tsunami%22%2B%2841827*39163%29%29%7D/"
+        status: 302
+        headers: [
+          { name: "Location" value: "/dashboard.action" }
+        ]
+      },
+      {
+        uri: "/%24%7B%40com.opensymphony.webwork.ServletActionContext%40getResponse%28%29.setHeader%28%22X-Confluence-Check%22%2C%22tsunami%22%2B%2841827*39163%29%29%7D/longrunningtask.action"
+        status: 302
+        headers: [
+          { name: "X-Confluence-Check" value: "tsunami1638070801" },
+          { name: "Location" value: "/login.action?os_destination=%2Flongrunningtask.action" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenMountedUnderConfluenceSubpath_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/confluence/%24%7B%40com.opensymphony.webwork.ServletActionContext%40getResponse%28%29.setHeader%28%22X-Confluence-Check%22%2C%22tsunami%22%2B%2841827*39163%29%29%7D/"
+        status: 302
+        headers: [
+          { name: "X-Confluence-Check" value: "tsunami1638070801" },
+          { name: "Location" value: "/confluence/login.action" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedConfluenceRedirectsWithoutHeader_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 302
+        headers: [
+          { name: "Location" value: "/login.action?os_destination=%2Findex.action" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenServerReflectsUncomputedExpressionInHeader_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 302
+        headers: [
+          { name: "X-Confluence-Check" value: "\"tsunami\"+(41827*39163)" },
+          { name: "Location" value: "/%24%7B%40com.opensymphony.webwork.ServletActionContext%40getResponse%28%29.setHeader%28%22X-Confluence-Check%22%2C%22tsunami%22%2B%2841827*39163%29%29%7D/" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenEchoServer_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ECHO_SERVER"
+        status: 200
+      }
+    ]
+  }
+}
