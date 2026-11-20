@@ -1,0 +1,70 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "CVE202129441VulnDetector"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/nacos/v1/auth/users?pageNo=1&pageSize=9"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content:
+          '{"totalCount":1,"pageNumber":1,"pagesAvailable":1,'
+          '"pageItems":[{"username":"nacos","password":"$2a$10$EuWPZHzz32dJN7jexM34MOeYirDdFAZm2kuWj7VEOJhhZkDrxfvUu"}]}'
+        condition: {
+          request_type: GET
+        }
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedForbidden_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/nacos/v1/auth/users?pageNo=1&pageSize=9"
+        status: 403
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content:
+          '{"timestamp":"2026-11-14T03:20:05.411+0000","status":403,'
+          '"error":"Forbidden","message":"unknown user!","path":"/nacos/v1/auth/users"}'
+        condition: {
+          request_type: GET
+        }
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotNacos_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/nacos/v1/auth/users?pageNo=1&pageSize=9"
+        status: 404
+        body_content: '404 Not Found'
+        condition: {
+          request_type: GET
+        }
+      }
+    ]
+  }
+}
