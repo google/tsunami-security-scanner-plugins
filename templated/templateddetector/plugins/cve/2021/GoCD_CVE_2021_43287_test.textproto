@@ -1,0 +1,102 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "GoCDArbitraryFileReadingDetector"
+}
+
+tests: {
+  name: "whenCruiseConfigXmlDisclosed_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/go/add-on/business-continuity/api/plugin?folderName=&pluginName=../../config/cruise-config.xml"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/octet-stream;charset=utf-8" }
+        ]
+        body_content: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<cruise xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"cruise-config.xsd\" schemaVersion=\"139\">\n</cruise>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenLinuxEtcPasswdDisclosed_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/go/add-on/business-continuity/api/plugin?folderName=&pluginName=../../../../../../../../../../../../../../../../etc/passwd"
+        status: 200
+        body_content: "root:x:0:0:root:/root:/bin/ash\ndaemon:x:2:2:daemon:/sbin:/sbin/nologin\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenWindowsWinIniDisclosedOnRootMountedProxy_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/add-on/business-continuity/api/plugin?folderName=&pluginName=../../../../../../../../../../../../../../../../Windows/win.ini"
+        status: 200
+        body_content: "; for 16-bit app support\r\n[fonts]\r\n[extensions]\r\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedGoCdReturns404_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "<html><head><title>404 Not Found</title></head></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenGeneric200HtmlReturned_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "<html><body>GoCD Login</body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRedirectReturnedWithMarker_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 302
+        headers: [
+          { name: "Location" value: "/go/auth/login" }
+        ]
+        body_content: "root:x:0:0:"
+      }
+    ]
+  }
+}
