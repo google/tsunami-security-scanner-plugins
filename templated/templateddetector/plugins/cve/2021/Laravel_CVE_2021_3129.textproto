@@ -1,0 +1,67 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Cve20213129VulnDetector"
+  author: "Timo Mueller (work@mtimo.de)"
+  version: "0.1"
+  description: "Detects unauthenticated RCE in Laravel Ignition debug mode (CVE-2021-3129)."
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE_2021_3129"
+  }
+  severity: CRITICAL
+  title: "CVE-2021-3129: Unauthenticated RCE in Laravel using Debug Mode"
+  description: "Ignition before 2.5.2, as used in Laravel, allows unauthenticated remote attackers to execute arbitrary code because of insecure usage of file_get_contents() and file_put_contents(). This is exploitable on sites using debug mode with Laravel before 8.4.3"
+  recommendation: "Update Laravel to at least version 8.4.3, and facade/ignition to at least version 2.5.2.For production systems it is advised to disable debug mode within the Laravel configuration."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2021-3129"
+  }
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "check_laravel_ignition_rce"
+  http_request: {
+    method: POST
+    uri: "/_ignition/execute-solution"
+    headers: [
+      { name: "Content-Type" value: "application/json" },
+      { name: "Accept" value: "application/json" }
+    ]
+    data: "{\"solution\":\"Facade\\\\Ignition\\\\Solutions\\\\MakeViewVariableOptionalSolution\",\"parameters\":{\"variableName\":\"cve20213129_tsunami\",\"viewFile\":\"phar://Tsunami_iDontExist\"}}"
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 500
+      expect_all: {
+        conditions: [
+          { body: {} contains: "file_get_contents(phar://Tsunami_iDontExist" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "check_laravel_ignition_rce"
+  ]
+}

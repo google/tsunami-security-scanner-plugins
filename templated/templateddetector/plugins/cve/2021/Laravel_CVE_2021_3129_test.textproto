@@ -1,0 +1,91 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Cve20213129VulnDetector"
+}
+
+tests: {
+  name: "whenVulnerable_returnsVulnerable"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/_ignition/execute-solution"
+        status: 500
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"message\":\"file_get_contents(phar://Tsunami_iDontExist): failed to open stream: phar error\",\"exception\":\"ErrorException\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenAppDebugFalse_returnsNotVulnerable"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/_ignition/execute-solution"
+        status: 404
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"message\":\"\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenIgnitionPatched_returnsNotVulnerable"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/_ignition/execute-solution"
+        status: 500
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"message\":\"Invalid solution class given.\",\"exception\":\"InvalidArgumentException\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenEchoServer_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ECHO_SERVER"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenServerReturns200GenericHtml_returnsNotVulnerable"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/_ignition/execute-solution"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html" }
+        ]
+        body_content: "<html><body>Welcome to Laravel</body></html>"
+      }
+    ]
+  }
+}
