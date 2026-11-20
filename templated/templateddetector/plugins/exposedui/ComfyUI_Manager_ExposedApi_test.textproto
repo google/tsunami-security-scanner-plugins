@@ -1,0 +1,170 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ComfyUI Manager RCE via Custom Node Install"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/manager/version"
+        status: 200
+        body_content: "V3.25.1"
+      },
+      {
+        uri: "/api/manager/queue/install"
+        status: 200
+        body_content: ""
+      },
+      {
+        uri: "/api/manager/queue/status"
+        status: 200
+        body_content: "{\"total_count\": 1, \"done_count\": 0, \"in_progress_count\": 0, \"is_processing\": false}"
+      },
+      {
+        uri: "/api/manager/queue/reset"
+        status: 200
+        body_content: ""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenLegacyPrefix_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/manager/version"
+        status: 404
+        body_content: "Not Found"
+      },
+      {
+        uri: "/manager/version"
+        status: 200
+        body_content: "V3.25.1"
+      },
+      {
+        uri: "/api/manager/queue/install"
+        status: 404
+        body_content: "Not Found"
+      },
+      {
+        uri: "/manager/queue/install"
+        status: 200
+        body_content: ""
+      },
+      {
+        uri: "/api/manager/queue/status"
+        status: 404
+        body_content: "Not Found"
+      },
+      {
+        uri: "/manager/queue/status"
+        status: 200
+        body_content: "{\"total_count\": 2, \"done_count\": 0, \"in_progress_count\": 0, \"is_processing\": false}"
+      },
+      {
+        uri: "/api/manager/queue/reset"
+        status: 404
+        body_content: "Not Found"
+      },
+      {
+        uri: "/manager/queue/reset"
+        status: 200
+        body_content: ""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_forbiddenOnInstall_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/manager/version"
+        status: 200
+        body_content: "V3.38.0"
+      },
+      {
+        uri: "/api/manager/queue/install"
+        status: 403
+        body_content: "A security error has occurred. Please check the terminal logs"
+      },
+      {
+        uri: "/manager/queue/install"
+        status: 403
+        body_content: "A security error has occurred. Please check the terminal logs"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_emptyQueue_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/manager/version"
+        status: 200
+        body_content: "V3.38.0"
+      },
+      {
+        uri: "/api/manager/queue/install"
+        status: 200
+        body_content: ""
+      },
+      {
+        uri: "/api/manager/queue/status"
+        status: 200
+        body_content: "{\"total_count\": 0, \"done_count\": 0, \"in_progress_count\": 0, \"is_processing\": false}"
+      },
+      {
+        uri: "/api/manager/queue/reset"
+        status: 200
+        body_content: ""
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenEchoServer_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ECHO_SERVER"
+        status: 200
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRandomServer_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}

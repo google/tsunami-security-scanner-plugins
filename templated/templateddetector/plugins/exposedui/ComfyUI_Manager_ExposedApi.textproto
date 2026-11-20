@@ -1,0 +1,127 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "ComfyUI Manager RCE via Custom Node Install"
+  author: "Savino Sisco (savio@doyensec.com), Leonardo Giovannini (leonardo@doyensec.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "COMFYUI_2025_PREAUTH_RCE"
+  }
+  severity: CRITICAL
+  title: "ComfyUI Manager RCE via Custom Node Install"
+  description: "The scanner detected a ComfyUI instance vulnerable to remote code execution. The vulnerability can be exploited by sending a sequence of unauthenticated HTTP requests that would clone an arbitrary repository, reboot the instance and executes arbitrary commands.The vulnerability was confirmed via response matching."
+  recommendation: "Update the ComfyUI instance."
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_comfyui_manager"
+  http_request: {
+    method: GET
+    uri: [
+      "/api/manager/version",
+      "/manager/version"
+    ]
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "V3." },
+          { body: {} contains: "V4." },
+          { body: {} contains: "V0." },
+          { body: {} contains: "3." }
+        ]
+      }
+    }
+  }
+  action_phase: ACTION_PHASE_FINGERPRINT
+}
+
+actions: {
+  name: "enqueue_custom_node"
+  http_request: {
+    method: POST
+    uri: [
+      "/api/manager/queue/install",
+      "/manager/queue/install"
+    ]
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"id\":\"tsunami-probe-node\",\"version\":\"main\",\"selected_version\":\"main\",\"skip_post_install\":true,\"mode\":\"remote\",\"repository\":\"http://127.0.0.1:9999/repo\",\"channel\":\"http://127.0.0.1:9999/channel\"}"
+    response: {
+      http_status: 200
+    }
+  }
+  cleanup_actions: ["reset_queue"]
+}
+
+actions: {
+  name: "verify_task_queued"
+  http_request: {
+    method: GET
+    uri: [
+      "/api/manager/queue/status",
+      "/manager/queue/status"
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"total_count\":" },
+          { body: {} contains: "\"is_processing\":" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"total_count\"\\s*:\\s*([1-9][0-9]*)"
+            variable_name: "queued_count"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "reset_queue"
+  http_request: {
+    method: GET
+    uri: [
+      "/api/manager/queue/reset",
+      "/manager/queue/reset"
+    ]
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_comfyui_manager",
+    "enqueue_custom_node",
+    "verify_task_queued"
+  ]
+}
