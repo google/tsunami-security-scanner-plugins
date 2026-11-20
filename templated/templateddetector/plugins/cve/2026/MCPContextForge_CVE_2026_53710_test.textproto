@@ -1,0 +1,60 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "MCPContextForge_CVE_2026_53710"
+}
+
+#########
+# TESTS #
+#########
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        condition: {
+          request_type: GET
+        }
+        body_content: "Welcome to FastAPI Sandbox Server"
+      },
+      {
+        uri: "/docs"
+        status: 200
+        condition: {
+          request_type: GET
+        }
+        body_content: "<html><body>FastAPI Swagger UI with execute_code endpoint</body></html>"
+      },
+      {
+        uri: "/execute_code"
+        status: 200
+        condition: {
+          request_type: POST
+        }
+        body_content: "{\"status\": \"success\", \"output\": \"670\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 404
+        condition: {
+          request_type: GET
+        }
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
