@@ -1,0 +1,175 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+info: {
+  type: VULN_DETECTION
+  name: "PytorchServeExposedApiDetector"
+  author: "Tsunami Team (tsunami-dev@google.com)"
+  version: "0.1"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "PYTORCH_EXPOSED_UI"
+  }
+  severity: CRITICAL
+  title: "Pytorch Exposed API"
+  description: "Exposed API allows anonymous users to upload arbitrary ML models."
+  recommendation: "Please use firewalls or bind the service only to local network"
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_management_api"
+  action_phase: ACTION_PHASE_FINGERPRINT
+  http_request: {
+    method: GET
+    uri: [
+      "/api-description"
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            header: { name: "Content-Type" }
+            contains: "application/json"
+          },
+          {
+            body: {}
+            contains: "TorchServe APIs"
+          },
+          {
+            body: {}
+            contains: "registerModel"
+          }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"openapi\"\\s*:\\s*\"([0-9]+\\.[0-9]+\\.[0-9]+)\""
+            variable_name: "openapi_version"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "verify_unauthenticated_models_api"
+  action_phase: ACTION_PHASE_DETECTION
+  http_request: {
+    method: GET
+    uri: [
+      "/models"
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            header: { name: "Content-Type" }
+            contains: "application/json"
+          }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "(\"models\"\\s*:\\s*\\[)"
+            variable_name: "models_list_marker"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "verify_unrestricted_model_fetch_inband"
+  action_phase: ACTION_PHASE_DETECTION
+  cleanup_actions: [
+    "cleanup_probe_model"
+  ]
+  http_request: {
+    method: POST
+    uri: [
+      "/models?url=http://127.0.0.1:1/tsunami_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.mar&model_name=tsunamicheck{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 400
+      expect_all: {
+        conditions: [
+          {
+            header: { name: "Content-Type" }
+            contains: "application/json"
+          },
+          {
+            body: {}
+            contains: "DownloadArchiveException"
+          },
+          {
+            body: {}
+            contains: "Failed to download archive from"
+          }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"code\"\\s*:\\s*(400)"
+            variable_name: "ts_err_code"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "cleanup_probe_model"
+  action_phase: ACTION_PHASE_DETECTION
+  http_request: {
+    method: DELETE
+    uri: [
+      "/models/tsunamicheck{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+    ]
+    client_options: {
+      disable_follow_redirects: true
+      ignore_http_client_errors: true
+    }
+    response: {}
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_management_api",
+    "verify_unauthenticated_models_api",
+    "verify_unrestricted_model_fetch_inband"
+  ]
+}

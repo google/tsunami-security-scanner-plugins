@@ -1,0 +1,172 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "PytorchServeExposedApiDetector"
+}
+
+tests: {
+  name: "whenVulnerableWithUnrestrictedAllowedUrls_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api-description"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json; charset=UTF-8" }
+        ]
+        body_content:
+          "{\"openapi\":\"3.0.1\",\"info\":{\"title\":\"TorchServe APIs\"},"
+          "\"paths\":{\"/models\":{\"post\":{\"operationId\":\"registerModel\"}}}}"
+      },
+      {
+        uri: "/models?url=http://127.0.0.1:1/tsunami_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.mar&model_name=tsunamicheck{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+        status: 400
+        condition: {
+          request_type: POST
+        }
+        headers: [
+          { name: "Content-Type" value: "application/json; charset=UTF-8" }
+        ]
+        body_content:
+          "{\"code\":400,\"type\":\"DownloadArchiveException\","
+          "\"message\":\"Failed to download archive from: http://127.0.0.1:1/tsunami_probe.mar\"}"
+      },
+      {
+        uri: "/models"
+        status: 200
+        condition: {
+          request_type: GET
+        }
+        headers: [
+          { name: "Content-Type" value: "application/json; charset=UTF-8" }
+        ]
+        body_content: "{\"models\":[]}"
+      },
+      {
+        uri: "/models/tsunamicheck{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+        status: 404
+        condition: {
+          request_type: DELETE
+        }
+        body_content: "{\"code\":404,\"type\":\"ModelNotFoundException\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenAllowedUrlsRestricted_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api-description"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json; charset=UTF-8" }
+        ]
+        body_content:
+          "{\"openapi\":\"3.0.1\",\"info\":{\"title\":\"TorchServe APIs\"},"
+          "\"paths\":{\"/models\":{\"post\":{\"operationId\":\"registerModel\"}}}}"
+      },
+      {
+        uri: "/models?url=http://127.0.0.1:1/tsunami_{{ T_UTL_CURRENT_TIMESTAMP_MS }}.mar&model_name=tsunamicheck{{ T_UTL_CURRENT_TIMESTAMP_MS }}"
+        status: 404
+        condition: {
+          request_type: POST
+        }
+        headers: [
+          { name: "Content-Type" value: "application/json; charset=UTF-8" }
+        ]
+        body_content:
+          "{\"code\":404,\"type\":\"ModelNotFoundException\","
+          "\"message\":\"Given URL does not match any allowed URL(s)\"}"
+      },
+      {
+        uri: "/models"
+        status: 200
+        condition: {
+          request_type: GET
+        }
+        headers: [
+          { name: "Content-Type" value: "application/json; charset=UTF-8" }
+        ]
+        body_content: "{\"models\":[]}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenTokenAuthEnabledReturns401_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api-description"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json; charset=UTF-8" }
+        ]
+        body_content:
+          "{\"openapi\":\"3.0.1\",\"info\":{\"title\":\"TorchServe APIs\"},"
+          "\"paths\":{\"/models\":{\"post\":{\"operationId\":\"registerModel\"}}}}"
+      },
+      {
+        uri: "/models"
+        status: 401
+        condition: {
+          request_type: GET
+        }
+        headers: [
+          { name: "Content-Type" value: "application/json; charset=UTF-8" }
+        ]
+        body_content: "{\"code\":401,\"type\":\"InvalidKeyException\",\"message\":\"Token Authorization failed.\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenInferenceApiPort8080Only_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api-description"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json; charset=UTF-8" }
+        ]
+        body_content:
+          "{\"openapi\":\"3.0.1\",\"info\":{\"title\":\"TorchServe APIs\"},"
+          "\"paths\":{\"/predictions/{model_name}\":{\"post\":{\"operationId\":\"predictions\"}}}}"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenEchoServer_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ECHO_SERVER"
+        status: 200
+      }
+    ]
+  }
+}
