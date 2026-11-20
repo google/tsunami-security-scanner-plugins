@@ -50,17 +50,18 @@ actions: {
 }
 
 # -------------------------------------------------------------
-# Reflective In-Band Check
+# Out-of-Band Redirect & In-Band Reflection Check
 # -------------------------------------------------------------
 actions: {
   name: "create_webhook"
+  cleanup_actions: ["cleanup_webhook"]
   http_request: {
     method: POST
     uri: "/api/2.0/mlflow/webhooks"
     headers: [
       { name: "Content-Type" value: "application/json" }
     ]
-    data: "{\"name\":\"{{ webhook_name }}\",\"url\":\"https://httpbin.org/redirect-to?url=http%3A%2F%2F127.0.0.1%3A5000%2Fapi%2F2.0%2Fmlflow%2Fexperiments%2Flist\",\"events\":[{\"entity\":\"REGISTERED_MODEL\",\"action\":\"CREATED\"}]}"
+    data: "{\"name\":\"{{ webhook_name }}\",\"url\":\"{{ T_CBS_URI }}?to=http%3A%2F%2F127.0.0.1%3A5000%2Fapi%2F2.0%2Fmlflow%2Fexperiments%2Flist\",\"events\":[{\"entity\":\"REGISTERED_MODEL\",\"action\":\"CREATED\"}]}"
     response: {
       http_status: 200
       extract_all: {
@@ -97,6 +98,11 @@ actions: {
 }
 
 actions: {
+  name: "check_callback_server"
+  callback_server: { action_type: CHECK }
+}
+
+actions: {
   name: "cleanup_webhook"
   http_request: {
     method: DELETE
@@ -112,6 +118,7 @@ actions: {
 #############
 
 workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
   variables: [
     { name: "webhook_name" value: "tsunami-refl-{{ T_UTL_CURRENT_TIMESTAMP_MS }}" }
   ]
@@ -119,6 +126,6 @@ workflows: {
     "fingerprint_mlflow",
     "create_webhook",
     "trigger_webhook_and_verify_reflection",
-    "cleanup_webhook"
+    "check_callback_server"
   ]
 }
