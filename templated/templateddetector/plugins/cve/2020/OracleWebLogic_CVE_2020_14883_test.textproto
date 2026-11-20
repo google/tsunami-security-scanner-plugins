@@ -1,0 +1,219 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "WebLogicAdminConsoleRceDetector"
+}
+
+tests: {
+  name: "whenCallbackReceived_returnsVulnerable"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/console/login/LoginForm.jsp"
+        status: 200
+        body_content: "<link rel=\"stylesheet\" href=\"/console/framework/skins/wlsconsole/css/login.css\"/><form method=\"post\" action=\"j_security_check\"></form>"
+      },
+      {
+        uri: "/console/images/.%252e/console.portal"
+        status: 302
+        headers: [
+          { name: "Location" value: "/console/console.portal?_nfpb=true&_pageLabel=UnexpectedExceptionPage" }
+        ]
+      },
+      {
+        uri: "/console/css/%252e%252e%252fconsole.portal"
+        status: 302
+        headers: [
+          { name: "Location" value: "/console/console.portal?_nfpb=true&_pageLabel=UnexpectedExceptionPage" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedNoCallback_returnsNotVulnerable"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/console/login/LoginForm.jsp"
+        status: 200
+        body_content: "<link rel=\"stylesheet\" href=\"/console/framework/skins/wlsconsole/css/login.css\"/><form method=\"post\" action=\"/console/j_security_check\"></form>"
+      },
+      {
+        uri: "/console/images/.%252e/console.portal"
+        status: 302
+        headers: [
+          { name: "Location" value: "/console/login/LoginForm.jsp" }
+        ]
+      },
+      {
+        uri: "/console/css/%252e%252e%252fconsole.portal"
+        status: 302
+        headers: [
+          { name: "Location" value: "/console/login/LoginForm.jsp" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNonWebLogicJ2eeLoginPage_returnsNotVulnerable"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "<html><body><form action=\"j_security_check\">Tomcat Login</form></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallbackServerAndMixedDotMvelEvaluates_returnsVulnerable"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/console/login/LoginForm.jsp"
+        status: 200
+        body_content: "<img src=\"/console/framework/skins/wlsconsole/images/logo.png\"/><form method=\"post\" action=\"/console/j_security_check\"></form>"
+      },
+      {
+        uri: "/console/images/.%252e/console.portal"
+        status: 302
+        headers: [
+          { name: "X-Tsunami-Weblogic" value: "TSUNAMI_32776741" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallbackServerAndFallbackCssUriSucceeds_returnsVulnerable"
+  expect_vulnerability: true
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/console/login/LoginForm.jsp"
+        status: 200
+        body_content: "<img src=\"/console/framework/skins/wlsconsole/images/logo.png\"/><form method=\"post\" action=\"j_security_check\"></form>"
+      },
+      {
+        uri: "/console/images/.%252e/console.portal"
+        status: 404
+      },
+      {
+        uri: "/console/css/%252e%252e%252fconsole.portal"
+        status: 302
+        headers: [
+          { name: "X-Tsunami-Weblogic" value: "TSUNAMI_32776741" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNoCallbackServerAndPatched_returnsNotVulnerable"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/console/login/LoginForm.jsp"
+        status: 200
+        body_content: "<img src=\"/console/framework/skins/wlsconsole/images/logo.png\"/><form method=\"post\" action=\"/console/j_security_check\"></form>"
+      },
+      {
+        uri: "/console/images/.%252e/console.portal"
+        status: 302
+        headers: [
+          { name: "Location" value: "/console/login/LoginForm.jsp" }
+        ]
+      },
+      {
+        uri: "/console/css/%252e%252e%252fconsole.portal"
+        status: 302
+        headers: [
+          { name: "Location" value: "/console/login/LoginForm.jsp" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenEchoServerReflectsPayload_returnsNotVulnerable"
+  expect_vulnerability: false
+
+  mock_callback_server: {
+    enabled: false
+    has_interaction: false
+  }
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ECHO_SERVER"
+        status: 200
+      }
+    ]
+  }
+}
