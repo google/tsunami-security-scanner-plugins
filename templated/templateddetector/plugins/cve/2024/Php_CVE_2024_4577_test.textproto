@@ -1,0 +1,115 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "CVE-2024-4577 Detector"
+}
+
+tests: {
+  name: "whenRootCgiEndpointVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/?%ADd+cgi.force_redirect%3d0+%ADd+cgi.redirect_status_env%3d0+%ADd+allow_url_fopen%3d1+%ADd+allow_url_include%3d1+%ADd+auto_prepend_file%3dphp://input"
+        status: 200
+        condition: {
+          request_type: POST
+          headers: [
+            { name: "Content-Type" value: "text/plain" },
+            { name: "Redirect-Status" value: "1" }
+          ]
+          body_content: [
+            "41829 * 23917"
+          ]
+        }
+        body_content: "TSUNAMI_1000424193_ec833cec3bf2079a68cbb47f5519d8df"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenXamppPhpCgiScriptAliasVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/php-cgi/php-cgi.exe?%ADd+cgi.force_redirect%3d0+%ADd+cgi.redirect_status_env%3d0+%ADd+allow_url_fopen%3d1+%ADd+allow_url_include%3d1+%ADd+auto_prepend_file%3dphp://input"
+        status: 200
+        condition: {
+          request_type: POST
+          headers: [
+            { name: "Content-Type" value: "text/plain" }
+          ]
+        }
+        body_content: "TSUNAMI_1000424193_ec833cec3bf2079a68cbb47f5519d8df"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPhpManualScriptAliasVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/php/php-cgi.exe?%ADd+cgi.force_redirect%3d0+%ADd+cgi.redirect_status_env%3d0+%ADd+allow_url_fopen%3d1+%ADd+allow_url_include%3d1+%ADd+auto_prepend_file%3dphp://input"
+        status: 200
+        condition: {
+          request_type: POST
+        }
+        body_content: "TSUNAMI_1000424193_ec833cec3bf2079a68cbb47f5519d8df"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedPhpServerIgnoresInjectedOptions_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "<!DOCTYPE html><html><body><h1>Welcome to XAMPP for Windows 8.1.29</h1></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenEchoServerReflectsSentPhpCode_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "<?php echo \"TSUNAMI_\" . (41829 * 23917) . \"_\" . md5(\"cve_2024_4577\"); die(); ?>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNon200ErrorPageContainsMarker_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 500
+        body_content: "TSUNAMI_1000424193_ec833cec3bf2079a68cbb47f5519d8df"
+      }
+    ]
+  }
+}
