@@ -1,0 +1,77 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "VLLM_CVE_2026_22778"
+}
+
+# -------------------------------------------------------------
+# Positive Test: Vulnerable vLLM leaks heap pointer
+# -------------------------------------------------------------
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/v1/models"
+        status: 200
+        condition: {
+          request_type: GET
+        }
+        body_content: "{\"object\":\"list\",\"data\":[{\"id\":\"llava-hf/llava-1.5-7b-hf\",\"object\":\"model\",\"owned_by\":\"vllm\",\"root\":\"llava-hf/llava-1.5-7b-hf\"}]}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      },
+      {
+        uri: "/v1/chat/completions"
+        status: 400
+        condition: {
+          request_type: POST
+        }
+        body_content: "{\"error\":{\"message\":\"cannot identify image file <_io.BytesIO object at 0x7fa890123450>\",\"type\":\"BadRequest\",\"param\":\"messages\",\"code\":400}}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+# -------------------------------------------------------------
+# Negative Test: Patched vLLM sanitizes memory address
+# -------------------------------------------------------------
+tests: {
+  name: "whenPatched_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/v1/models"
+        status: 200
+        condition: {
+          request_type: GET
+        }
+        body_content: "{\"object\":\"list\",\"data\":[{\"id\":\"llava-hf/llava-1.5-7b-hf\",\"object\":\"model\",\"owned_by\":\"vllm\",\"root\":\"llava-hf/llava-1.5-7b-hf\"}]}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      },
+      {
+        uri: "/v1/chat/completions"
+        status: 400
+        condition: {
+          request_type: POST
+        }
+        body_content: "{\"error\":{\"message\":\"cannot identify image file <_io.BytesIO object>\",\"type\":\"BadRequest\",\"param\":\"messages\",\"code\":400}}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
