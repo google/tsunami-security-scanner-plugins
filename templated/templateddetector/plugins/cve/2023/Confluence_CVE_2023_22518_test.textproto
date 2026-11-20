@@ -1,0 +1,95 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Cve202322518VulnDetector"
+}
+
+tests: {
+  name: "whenVulnerableRootSetupRestore_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/json/setup-restore.action"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html;charset=UTF-8" }
+        ]
+        body_content: "<div class=\"aui-message aui-message-error error\"><p class=\"title\"><strong>Errors</strong></p><ul><li>The zip file did not contain an entry: exportDescriptor.properties</li></ul></div>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerableUnderConfluenceSubpath_returnsTrue"
+  expect_vulnerability: true
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/json/setup-restore.action"
+        status: 404
+      },
+      {
+        uri: "/setup/setup-restore.action"
+        status: 404
+      },
+      {
+        uri: "/confluence/json/setup-restore.action"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html;charset=UTF-8" }
+        ]
+        body_content: "<div class=\"aui-message aui-message-error error\"><p class=\"title\"><strong>Errors</strong></p><ul><li>The zip file did not contain an entry: exportDescriptor.properties</li></ul></div>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedConfluenceReturnsForbidden_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 403
+        headers: [
+          { name: "Content-Type" value: "text/html;charset=UTF-8" }
+        ]
+        body_content: "<h1>Access Denied</h1><p>You do not have permission to access this resource.</p>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenServerReturnsGenericErrorWithoutProperties_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html;charset=UTF-8" }
+        ]
+        body_content: "<div class=\"error\">Upload failed: invalid zip format</div>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenEchoServer_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ECHO_SERVER"
+        status: 200
+      }
+    ]
+  }
+}

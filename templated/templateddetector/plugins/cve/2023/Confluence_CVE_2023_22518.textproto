@@ -1,0 +1,92 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Cve202322518VulnDetector"
+  author: "amammad"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE-2023-22518"
+  }
+  severity: CRITICAL
+  title: "Atlassian Confluence Data Center Improper Authorization CVE-2023-22515"
+  description: "This Improper Authorization vulnerability allows an unauthenticated attacker to reset Confluence and create a Confluence instance administrator account."
+  recommendation: "Patch the confluence version to one of the following versions: 7.19.16, 8.3.4, 8.4.4, 8.5.3, 8.6.1"
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2023-22518"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+# Probes /json/setup-restore.action and /setup/setup-restore.action across both
+# "/" and "/confluence" context paths. Sends a non-destructive multipart/form-data
+# request uploading an invalid zip archive. Vulnerable Confluence instances process
+# the setup restore action pre-authentication and return HTTP 200 with
+# "The zip file did not contain an entry: exportDescriptor.properties", whereas
+# patched instances reject access with HTTP 403 Forbidden.
+actions: {
+  name: "probe_setup_restore_authorization"
+  http_request: {
+    method: POST
+    uri: [
+      "/json/setup-restore.action",
+      "/setup/setup-restore.action",
+      "/confluence/json/setup-restore.action",
+      "/confluence/setup/setup-restore.action"
+    ]
+    headers: [
+      {
+        name: "Content-Type"
+        value: "multipart/form-data; boundary=------------------------tsunamiboundary"
+      },
+      {
+        name: "X-Atlassian-Token"
+        value: "no-check"
+      }
+    ]
+    data: "--------------------------tsunamiboundary\r\nContent-Disposition: form-data; name=\"buildIndex\"\r\n\r\nfalse\r\n--------------------------tsunamiboundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"fiw7rai5kp9ue42r.zip\"\r\nContent-Type: application/zip\r\n\r\nfi1242fsd3w7rfd2sf2ai5kfs2d4p9ue4fd2sf2r\r\n--------------------------tsunamiboundary\r\nContent-Disposition: form-data; name=\"edit\"\r\n\r\nUpload and import\r\n--------------------------tsunamiboundary--\r\n"
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            body: {}
+            contains: "The zip file did not contain an entry"
+          },
+          {
+            body: {}
+            contains: "exportDescriptor.properties"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "probe_setup_restore_authorization"
+  ]
+}
