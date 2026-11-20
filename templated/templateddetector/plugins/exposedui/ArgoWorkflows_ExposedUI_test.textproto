@@ -1,0 +1,109 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "ExposedArgoWorkflowsDetector"
+}
+
+tests: {
+  name: "when_exposed_argo_workflows_returns_vuln"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/v1/version"
+        status: 200
+        headers: [
+          {
+            name: "Content-Type"
+            value: "application/json"
+          }
+        ]
+        body_content: "{\"version\":\"v3.5.5\",\"buildDate\":\"2024-02-29T21:01:29Z\",\"gitCommit\":\"c80b2e91ebd7e7f604e88442f45ec630380effa0\"}"
+      },
+      {
+        uri: "/api/v1/workflows/"
+        status: 200
+        headers: [
+          {
+            name: "Content-Type"
+            value: "application/json"
+          }
+        ]
+        body_content: "{\"metadata\":{\"resourceVersion\":\"124\"},\"items\":null}"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "when_secure_argo_workflows_returns_not_vuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/v1/version"
+        status: 401
+        headers: [
+          {
+            name: "Content-Type"
+            value: "application/json"
+          }
+        ]
+        body_content: "{\"code\":16,\"message\":\"token not valid. see https://argo-workflows.readthedocs.io/en/release-3.5/faq/\"}"
+      },
+      {
+        uri: "/api/v1/workflows/"
+        status: 401
+        headers: [
+          {
+            name: "Content-Type"
+            value: "application/json"
+          }
+        ]
+        body_content: "{\"code\":16,\"message\":\"token not valid. see https://argo-workflows.readthedocs.io/en/release-3.5/faq/\"}"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "when_not_argo_returns_not_vuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "when_echo_server_returns_not_vuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ECHO_SERVER"
+        status: 200
+      }
+    ]
+  }
+}
