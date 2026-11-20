@@ -1,0 +1,101 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "DockerExposedUiDetector"
+}
+
+tests: {
+  name: "whenDockerApiExposed_returnsVuln"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/version"
+        status: 200
+        body_content: "{\"Platform\":{\"Name\":\"Docker Engine - Community\"},\"Version\":\"20.10.3\",\"ApiVersion\":\"1.41\",\"MinAPIVersion\":\"1.12\",\"Os\":\"linux\",\"Arch\":\"amd64\",\"KernelVersion\":\"4.19.0-14-cloud-amd64\"}"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "{\"status\":200}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenDockerApiProtectedWithTls_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/version"
+        status: 400
+        body_content: "Client sent an HTTP request to an HTTPS server."
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "{\"status\":200}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenMissingKernelVersion_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/version"
+        status: 200
+        body_content: "{\"ApiVersion\":\"1.41\",\"MinAPIVersion\":\"1.12\"}"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "{\"status\":200}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNonDockerServer404_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/version"
+        status: 404
+        body_content: "{\"message\":\"page not found\"}"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "{\"status\":200}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenGenericServer_returnsNotVuln"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "<html><body>Welcome to Apache</body></html>"
+      }
+    ]
+  }
+}

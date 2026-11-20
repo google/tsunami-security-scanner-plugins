@@ -1,0 +1,64 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "DockerExposedUiDetector"
+  author: "Manuel Karl (m.karl@tu-braunschweig.de) & Marius Musch (m.musch@tu-braunschweig.de)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "DOCKER_EXPOSED_UI"
+  }
+  severity: CRITICAL
+  title: "Docker API Exposed Ui"
+  description: "Docker API is not password or token protected. Attackers can use the API to access existing containers or launch new containers."
+  recommendation: "Docker API should be configured to only accept requests from specific IP addresses (0.0.0.0 should not be allowed). Check https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-socket-option to add fine-grained allow list for your dockerd service."
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "check_docker_version"
+  http_request: {
+    method: GET
+    uri: "/version"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "\"MinAPIVersion\":" },
+          { body: {} contains: "\"KernelVersion\":" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "\"ApiVersion\":\\s*\"([^\"]+)\""
+            variable_name: "API_VERSION"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "check_docker_version"
+  ]
+}
