@@ -1,0 +1,65 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "SpringBootExposedEndpointDetector"
+  author: "Tsunami Team (tsunami-dev@google.com)"
+  version: "0.1"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "EXPOSED_SPRING_BOOT_ACTUATOR_ENDPOINT"
+  }
+  severity: CRITICAL
+  title: "Exposed Spring Boot Actuator Endpoint"
+  description: "Spring Boot applications have several built-in Actuator endpoints enabled by default. For example, '/env' endpoint exposes all properties from Spring's ConfigurableEnvironment including system environment variables, and '/heapdump' will dump the entire memory of the server into a file. Exposing these endpoints could potentially leak sensitive information to any unauthenticated users."
+  recommendation: "Disable public access to Actuator endpoints."
+}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "check_exposed_spring_boot_heapdump"
+  http_request: {
+    method: HEAD
+    uri: "/actuator/heapdump"
+    uri: "/heapdump"
+    uri: "/management/heapdump"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { header: { name: "Content-Disposition" } contains: "heapdump" }
+        ]
+      }
+      extract_all: {
+        patterns: [
+          {
+            from_header: { name: "Content-Disposition" }
+            regexp: "(heapdump\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}.*\\.hprof)"
+            variable_name: "heapdump_filename"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "check_exposed_spring_boot_heapdump"
+  ]
+}

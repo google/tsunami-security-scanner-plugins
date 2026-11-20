@@ -1,0 +1,162 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "SpringBootExposedEndpointDetector"
+}
+
+tests: {
+  name: "whenActuatorHeapdumpExposed_returnsVulnerable"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/actuator/heapdump"
+        status: 200
+        headers: [
+          {
+            name: "Content-Disposition"
+            value: "attachment; filename=\"heapdump2020-06-15-09-20-live3506123733943811331.hprof.gz\""
+          }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenLegacyHeapdumpExposed_returnsVulnerable"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/actuator/heapdump"
+        status: 404
+      },
+      {
+        uri: "/heapdump"
+        status: 200
+        headers: [
+          {
+            name: "Content-Disposition"
+            value: "attachment; filename=\"heapdump2021-03-10-12-00-live12345.hprof\""
+          }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenManagementHeapdumpExposed_returnsVulnerable"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/actuator/heapdump"
+        status: 404
+      },
+      {
+        uri: "/heapdump"
+        status: 404
+      },
+      {
+        uri: "/management/heapdump"
+        status: 200
+        headers: [
+          {
+            name: "Content-Disposition"
+            value: "attachment; filename=\"heapdump2022-01-15-08-30-live98765.hprof.gz\""
+          }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenEndpointNotFound_returnsNotVulnerable"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/actuator/heapdump"
+        status: 404
+      },
+      {
+        uri: "/heapdump"
+        status: 404
+      },
+      {
+        uri: "/management/heapdump"
+        status: 404
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenHeaderDoesNotMatchHeapdump_returnsNotVulnerable"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/actuator/heapdump"
+        status: 200
+        headers: [
+          {
+            name: "Content-Disposition"
+            value: "attachment; filename=\"backup_database.zip\""
+          }
+        ]
+      },
+      {
+        uri: "/heapdump"
+        status: 200
+        headers: [
+          {
+            name: "Content-Disposition"
+            value: "attachment; filename=\"backup_database.zip\""
+          }
+        ]
+      },
+      {
+        uri: "/management/heapdump"
+        status: 200
+        headers: [
+          {
+            name: "Content-Disposition"
+            value: "attachment; filename=\"backup_database.zip\""
+          }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenServerReturns500_returnsNotVulnerable"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/actuator/heapdump"
+        status: 500
+      },
+      {
+        uri: "/heapdump"
+        status: 500
+      },
+      {
+        uri: "/management/heapdump"
+        status: 500
+      }
+    ]
+  }
+}
