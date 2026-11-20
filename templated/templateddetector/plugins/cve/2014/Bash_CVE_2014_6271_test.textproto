@@ -1,0 +1,105 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "CVE-2014-6271 - ShellShock Detector"
+}
+
+tests: {
+  name: "whenVulnerableCgiExecutesArithmeticPayload_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/cgi-bin/printenv"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/plain" }
+        ]
+        body_content: "TSUNAMI_SHELLSHOCK_1476693451_END\n<html><body>Hello world</body></html>"
+        condition: {
+          headers: [
+            {
+              name: "Referer"
+              value: "() { :; }; echo Content-Type: text/plain; echo; printf 'TSUNAMI_SHELLSHOCK_%s_END\\n' $((31337*47123))"
+            },
+            {
+              name: "Cookie"
+              value: "() { :; }; echo Content-Type: text/plain; echo; printf 'TSUNAMI_SHELLSHOCK_%s_END\\n' $((31337*47123))"
+            },
+            {
+              name: "Accept-Language"
+              value: "() { :; }; echo Content-Type: text/plain; echo; printf 'TSUNAMI_SHELLSHOCK_%s_END\\n' $((31337*47123))"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedPrintenvReflectsEnvironmentWithoutExecution_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/cgi-bin/printenv"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/plain" }
+        ]
+        body_content: "HTTP_REFERER=\"() { :; }; echo Content-Type: text/plain; echo; printf 'TSUNAMI_SHELLSHOCK_%s_END\\n' $((31337*47123))\"\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedCgiIgnoresTrailingFunctionCommand_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/cgi-bin/test.cgi"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html" }
+        ]
+        body_content: "<html><head><title>Bash ShellShock</title></head><body><p>Hello world</p></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenEchoServerReflectsRawHeaders_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ECHO_SERVER"
+        status: 200
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenUnrelatedWebServerReturnsGeneric200_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "<html><body>Welcome</body></html>"
+      }
+    ]
+  }
+}
