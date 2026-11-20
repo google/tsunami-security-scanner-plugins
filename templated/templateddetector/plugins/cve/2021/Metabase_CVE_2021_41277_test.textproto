@@ -1,0 +1,115 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "MetabaseCve202141277Detector"
+}
+
+tests: {
+  name: "whenEtcPasswdDisclosed_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/geojson?url=file:///etc/passwd"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json;charset=utf-8" }
+        ]
+        body_content: "root:x:0:0:root:/root:/bin/ash\nbin:x:1:1:bin:/bin:/sbin/nologin\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenWinIniDisclosed_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/api/geojson?url=file:///c:/windows/win.ini"
+        status: 200
+        body_content: "; for 16-bit app support\r\n[fonts]\r\n[extensions]\r\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedMetabaseReturns403_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 403
+        body_content: "You don't have permissions to do that."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedMetabaseReturns400_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 400
+        body_content: "GeoJSON URL must be http or https."
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenGeneric200HtmlReturned_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "<html><head><title>Metabase</title></head><body><h1>Welcome</h1></body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRedirectReturned_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 302
+        headers: [
+          { name: "Location" value: "/auth/login" }
+        ]
+        body_content: "root:x:0:0:"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenEchoServerReflects_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ECHO_SERVER"
+      }
+    ]
+  }
+}

