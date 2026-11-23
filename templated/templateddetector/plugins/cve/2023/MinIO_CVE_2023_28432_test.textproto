@@ -1,0 +1,121 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "CVE202328432MinIOCluster"
+}
+
+tests: {
+  name: "whenVulnerableRootPasswordDisclosed_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/minio/bootstrap/v1/verify"
+        status: 200
+        condition: {
+          request_type: POST
+        }
+        body_content:
+          "{\"MinioEndpoints\":[{\"Legacy\":true,\"SetCount\":1,\"DrivesPerSet\":4,"
+          "\"Endpoints\":[{\"Scheme\":\"http\",\"Host\":\"10.0.0.2:9000\","
+          "\"Path\":\"/data1\",\"IsLocal\":true}],\"CmdLine\":\"http://minio{1...4}/data1\","
+          "\"Platform\":\"OS: linux | Arch: amd64\"}],"
+          "\"MinioEnv\":{\"MINIO_ROOT_PASSWORD\":\"MinioClusterSecret2023!\","
+          "\"MINIO_ROOT_USER\":\"minio_cluster_admin\"}}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenVulnerableLegacySecretKeyDisclosed_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/minio/bootstrap/v1/verify"
+        status: 200
+        condition: {
+          request_type: POST
+        }
+        body_content:
+          "{\"MinioPlatform\":\"OS: linux | Arch: amd64\","
+          "\"MinioEndpoints\":[{\"Legacy\":false,\"SetCount\":1,\"DrivesPerSet\":8,"
+          "\"Endpoints\":[{\"Scheme\":\"http\",\"Host\":\"minio1:9000\",\"Path\":\"/data1\"}]}],"
+          "\"MinioEnv\":{\"MINIO_ACCESS_KEY\":\"minio\",\"MINIO_SECRET_KEY\":\"minio123\"}}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedForbiddenJwtMissing_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/minio/bootstrap/v1/verify"
+        status: 403
+        condition: {
+          request_type: POST
+        }
+        body_content: "JWT token missing"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenSecretFilesOnlyWithoutPlaintextCredentials_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/minio/bootstrap/v1/verify"
+        status: 200
+        condition: {
+          request_type: POST
+        }
+        body_content:
+          "{\"MinioEndpoints\":[{\"Legacy\":false,\"SetCount\":1,\"DrivesPerSet\":8,"
+          "\"Endpoints\":[{\"Scheme\":\"http\",\"Host\":\"minio1:9000\",\"Path\":\"/data1\"}]}],"
+          "\"MinioEnv\":{\"MINIO_ROOT_PASSWORD_FILE\":\"secret_key\","
+          "\"MINIO_ROOT_USER_FILE\":\"access_key\"}}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenEchoServer_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ECHO_SERVER"
+        status: 200
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenRandomServer_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 200
+        body_content: "{\"status\":\"ok\"}"
+      }
+    ]
+  }
+}
