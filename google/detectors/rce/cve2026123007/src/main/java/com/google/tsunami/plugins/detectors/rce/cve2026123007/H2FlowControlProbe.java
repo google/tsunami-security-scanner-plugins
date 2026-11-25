@@ -17,11 +17,14 @@ package com.google.tsunami.plugins.detectors.rce.cve2026123007;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.collect.Comparators.max;
+import static com.google.common.collect.Comparators.min;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.net.HostAndPort;
@@ -51,6 +54,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLContext;
@@ -74,25 +78,36 @@ final class H2FlowControlProbe {
   static final long NGINX_CONN_WINDOW_DELTA = 2147418112L;
   static final long NGINX_MAX_WINDOW = 0x7fffffffL;
 
+  private static final long H2_INITIAL_WINDOW_BYTES = 65_535L;
   private static final int SMALL_RECV_BUF_BYTES = 2304;
   private static final int LARGE_RECV_BUF_BYTES = 4 * 1024 * 1024;
   // Cap static candidates at 64 KiB so every queued response fits completely within NGINX's
   // default output_buffers (2 * 32 KiB = 65,536 bytes) when sendfile is inactive over TLS h2.
   static final int MAX_STATIC_BODY_BYTES = 65536;
+  private static final int MAX_FRAME_PAYLOAD_BYTES = MAX_STATIC_BODY_BYTES + 1024;
   static final int DISCOVERY_STREAM_WIN = MAX_STATIC_BODY_BYTES + 1;
   private static final int DISCOVERY_CONN_WIN_DELTA = 4 * 1024 * 1024;
   private static final int MAX_HEADER_BLOCK_BYTES = 32768;
   private static final int MAX_CONTINUATION_FRAMES = 16;
   private static final int MAX_EFFECTIVE_CONCURRENT = 256;
   private static final int MAX_SAFE_REFUSED_CAP = 96;
+  private static final int MIN_ZERO_REFUSED_SLACK = 8;
   private static final int MAX_BATCH_STREAMS = 64;
   private static final int MAX_BURST_STREAMS = 940;
   private static final int MAX_LADDER_STEP = 80;
   // Cap initial ladder attempts so MAX_CONCURRENT_STREAMS=1 endpoints cannot trigger hundreds of
   // retries (at most one additional overshoot-recovery attempt may be inserted at runtime).
   private static final int MAX_LADDER_ATTEMPTS = 16;
+  private static final long MIN_HIGH_CONCURRENCY_TARGET_BYTES = 131_072L;
+  private static final long PARKED_TARGET_QUEUED_BYTES = 2L * 1024L * 1024L;
+  private static final long PARKED_CONCURRENCY_HEADROOM = 16L;
+  private static final int MIN_PARKED_STREAMS = 64;
+  private static final int MAX_PARKED_STREAMS = 2048;
+  static final int PARK_SYNC_BATCH_STREAMS = 256;
+  private static final int MAX_PARK_SYNC_FRAMES = 16384;
   private static final int MAX_DRAIN_FRAMES = 32768;
   private static final int MAX_HOST_CHARS = 253;
+  private static final Duration MAX_ADAPTIVE_PRE_DRAIN_DELAY = Duration.ofMillis(250);
   private static final Duration MIN_SOCKET_TIMEOUT = Duration.ofMillis(1);
   private static final Duration MAX_SOCKET_TIMEOUT = Duration.ofMillis(Integer.MAX_VALUE);
 
@@ -184,9 +199,10 @@ final class H2FlowControlProbe {
       int bodyLen,
       String path,
       boolean fastMismatch,
-      Optional<InetAddress> validatedAddress) {
+      Optional<InetAddress> validatedAddress,
+      Duration discoveryRtt) {
     static DiscoveryResult empty(boolean fastMismatch) {
-      return new DiscoveryResult(0, 0, 0, "", fastMismatch, Optional.empty());
+      return new DiscoveryResult(0, 0, 0, "", fastMismatch, Optional.empty(), Duration.ZERO);
     }
   }
 
@@ -207,12 +223,67 @@ final class H2FlowControlProbe {
       long prePingBDataBytes,
       long windowIncrement) {}
 
+  private static final class RawFrame {
+    private final FrameHeader header;
+    private final byte[] payload;
+
+    RawFrame(FrameHeader header, byte[] payload) {
+      this.header = header;
+      this.payload = payload;
+    }
+
+    FrameHeader header() {
+      return header;
+    }
+
+    byte[] payload() {
+      return payload;
+    }
+  }
+
+  @FunctionalInterface
+  private interface Phase2SessionAction {
+    AttemptResult run(Socket rawSocket, InputStream in, OutputStream out) throws IOException;
+  }
+
+  private record Phase2Context(
+      boolean useTls,
+      String dialHost,
+      String sniHost,
+      int port,
+      String authority,
+      DiscoveryResult disc,
+      Duration effectivePreDrain) {
+    byte[] buildFirstRequestHeaders() {
+      return buildGetHeaders(useTls, authority, disc.path(), /* indexDynamicHeaders= */ true);
+    }
+
+    byte[] buildSubsequentRequestHeaders() {
+      return buildCompactSubsequentHeaders(useTls);
+    }
+
+    ProbeMatch toMatch(int burstStreams, int refusedStreams, long windowIncrement) {
+      return new ProbeMatch(
+          useTls ? "h2" : "h2c",
+          authority,
+          disc.path(),
+          disc.settingsPayloadLen(),
+          disc.maxStreams(),
+          disc.bodyLen(),
+          burstStreams,
+          refusedStreams,
+          windowIncrement);
+    }
+  }
+
   private final TsunamiSocketFactory socketFactory;
   private final Duration timeout;
   private final Duration interBatchDelay;
   private final Duration preDrainDelay;
   private final SecureRandom secureRandom;
   private final SSLSocketFactory alpnSslSocketFactory;
+  private final Ticker ticker;
+  private final Consumer<Duration> sleeper;
 
   H2FlowControlProbe(TsunamiSocketFactory socketFactory, Duration timeout) {
     this(socketFactory, timeout, Duration.ofMillis(20), Duration.ofMillis(15), new SecureRandom());
@@ -242,12 +313,35 @@ final class H2FlowControlProbe {
       Duration preDrainDelay,
       SecureRandom secureRandom,
       SSLSocketFactory alpnSslSocketFactory) {
+    this(
+        socketFactory,
+        timeout,
+        interBatchDelay,
+        preDrainDelay,
+        secureRandom,
+        alpnSslSocketFactory,
+        Ticker.systemTicker(),
+        H2FlowControlProbe::defaultSleep);
+  }
+
+  @VisibleForTesting
+  H2FlowControlProbe(
+      TsunamiSocketFactory socketFactory,
+      Duration timeout,
+      Duration interBatchDelay,
+      Duration preDrainDelay,
+      SecureRandom secureRandom,
+      SSLSocketFactory alpnSslSocketFactory,
+      Ticker ticker,
+      Consumer<Duration> sleeper) {
     this.socketFactory = checkNotNull(socketFactory);
     this.timeout = checkNotNull(timeout);
     this.interBatchDelay = checkNotNull(interBatchDelay);
     this.preDrainDelay = checkNotNull(preDrainDelay);
     this.secureRandom = checkNotNull(secureRandom);
     this.alpnSslSocketFactory = checkNotNull(alpnSslSocketFactory);
+    this.ticker = checkNotNull(ticker);
+    this.sleeper = checkNotNull(sleeper);
   }
 
   ProbeOutcome probeCleartextH2c(
@@ -263,6 +357,15 @@ final class H2FlowControlProbe {
       String authority,
       ImmutableList<String> crawledPaths) {
     return runTwoPhaseProbe(/* useTls= */ true, dialHost, sniHost, port, authority, crawledPaths);
+  }
+
+  @VisibleForTesting
+  Duration computeEffectivePreDrainDelay(Duration discoveryRtt) {
+    if (!preDrainDelay.isPositive()) {
+      return Duration.ZERO;
+    }
+    Duration cappedRtt = min(discoveryRtt, MAX_ADAPTIVE_PRE_DRAIN_DELAY);
+    return max(cappedRtt, preDrainDelay);
   }
 
   static boolean isValidAuthorityHost(String host) {
@@ -384,6 +487,13 @@ final class H2FlowControlProbe {
       return ProbeOutcome.notVulnerable();
     }
 
+    Duration effectivePreDrain = computeEffectivePreDrainDelay(disc.discoveryRtt());
+    Phase2Context ctx =
+        new Phase2Context(useTls, dialHost, sniHost, port, authority, disc, effectivePreDrain);
+    if (disc.maxStreams() > MAX_EFFECTIVE_CONCURRENT) {
+      return runHighConcurrencyProbe(ctx);
+    }
+
     // Keep refused tail streams within [1, min(effM, 96)] and total streams <= 940:
     // >= 1 refused stream proves active concurrency saturation, refused <= effM keeps
     // unpatched h2c->send_window + wuIncrement <= 0x7fffffff, and capping at 96 / 940
@@ -401,12 +511,9 @@ final class H2FlowControlProbe {
     }
 
     boolean targetedRetryDone = false;
-    String transportLabel = useTls ? "h2" : "h2c";
     for (int idx = 0; idx < ladder.size(); idx++) {
       int nStreams = ladder.get(idx);
-      Optional<AttemptResult> attemptOpt =
-          executeFlowControlAttempt(
-              useTls, dialHost, sniHost, port, authority, disc, effM, nStreams);
+      Optional<AttemptResult> attemptOpt = executeFlowControlAttempt(ctx, effM, nStreams);
       if (attemptOpt.isEmpty()) {
         return ProbeOutcome.ioOrTimeout();
       }
@@ -419,16 +526,7 @@ final class H2FlowControlProbe {
           long maxPrePingBData = (long) (nStreams - effM) * disc.bodyLen();
           if (attempt.prePingBDataBytes() < maxPrePingBData) {
             return ProbeOutcome.matched(
-                new ProbeMatch(
-                    transportLabel,
-                    authority,
-                    disc.path(),
-                    disc.settingsPayloadLen(),
-                    disc.maxStreams(),
-                    disc.bodyLen(),
-                    nStreams,
-                    attempt.refusedCount(),
-                    attempt.windowIncrement()));
+                ctx.toMatch(nStreams, attempt.refusedCount(), attempt.windowIncrement()));
           }
           // Flushed DATA bytes before PING(ACK, B) consumed >= (nStreams - effM)*bodyLen
           // (e.g. limit_req error responses or partial multi-stream chunks), so patched
@@ -453,6 +551,114 @@ final class H2FlowControlProbe {
       if (attempt.sawFlowControlGoAway() || !(attempt.gotPingA() && attempt.gotPingB())) {
         return ProbeOutcome.notVulnerable();
       }
+    }
+    return ProbeOutcome.notVulnerable();
+  }
+
+  private ProbeOutcome runHighConcurrencyProbe(Phase2Context ctx) {
+    DiscoveryResult disc = ctx.disc();
+    // When MAX_CONCURRENT_STREAMS > 256 (e.g. 1000 or 10000), NGINX's default keepalive_requests
+    // (1000) closes the connection before REFUSED_STREAM can be reached. Validate directly against
+    // queued last_out bytes without requiring REFUSED_STREAM:
+    // - Grant initConnWin = max(65535, nStreams * bodyLen) and send wuIncrement = 0x7fffffff -
+    //   initConnWin + maxPrePingBData where maxPrePingBData = (nStreams - slack) * bodyLen.
+    // - On patched NGINX, send_window + send_queued == initConnWin - S (invariantly across all
+    //   stream outcomes), so patched NGINX rejects wuIncrement whenever S < maxPrePingBData.
+    //   Enforcing prePingBDataBytes < maxPrePingBData guarantees S <= prePingBDataBytes <
+    //   maxPrePingBData (zero false positives even if all DATA flushes before PING(ACK, B)).
+    int maxBurst = (int) Math.min(disc.maxStreams(), MAX_BURST_STREAMS);
+    int firstBurst =
+        (int)
+            Math.min(
+                maxBurst,
+                Math.max(
+                    (long) MAX_EFFECTIVE_CONCURRENT,
+                    Math.ceilDiv(MIN_HIGH_CONCURRENCY_TARGET_BYTES, disc.bodyLen())));
+    ImmutableList<Integer> burstCandidates =
+        (firstBurst < maxBurst)
+            ? ImmutableList.of(firstBurst, maxBurst)
+            : ImmutableList.of(firstBurst);
+
+    for (int nStreams : burstCandidates) {
+      int slack = Math.max(MIN_ZERO_REFUSED_SLACK, Math.min(nStreams / 8, MAX_SAFE_REFUSED_CAP));
+      long maxPrePingBData = (long) (nStreams - slack) * disc.bodyLen();
+      Optional<AttemptResult> attemptOpt =
+          executeHighConcurrencyBurstAttempt(ctx, nStreams, maxPrePingBData);
+      if (attemptOpt.isEmpty()) {
+        return ProbeOutcome.ioOrTimeout();
+      }
+      AttemptResult attempt = attemptOpt.get();
+      boolean validRefused =
+          attempt.refusedCount() == 0
+              || (attempt.isContiguousTail() && attempt.refusedCount() <= slack);
+      if (!attempt.sawFlowControlGoAway()
+          && validRefused
+          && attempt.gotPingA()
+          && attempt.gotPingB()
+          && attempt.gotPingC()) {
+        if (attempt.prePingBDataBytes() < maxPrePingBData) {
+          return ProbeOutcome.matched(
+              ctx.toMatch(nStreams, attempt.refusedCount(), attempt.windowIncrement()));
+        }
+        continue;
+      }
+      return ProbeOutcome.notVulnerable();
+    }
+
+    // Fallback for L4 TCP proxies whose client-read pause or larger backend SO_SNDBUF absorbed the
+    // multi-flight burst: park streams in h2c->waiting while draining initial responses cleanly so
+    // downstream proxy buffers are empty, then release all parked streams and validate Stream 0
+    // WINDOW_UPDATE inside a single 60-byte atomic record.
+    int drainStreams = (int) (H2_INITIAL_WINDOW_BYTES / disc.bodyLen()) + 1;
+    if (drainStreams > MAX_PARKED_STREAMS) {
+      return ProbeOutcome.notVulnerable();
+    }
+    long maxOpenAllowed =
+        Math.min(disc.maxStreams() - PARKED_CONCURRENCY_HEADROOM, MAX_PARKED_STREAMS);
+    int desiredParkStreams =
+        (int)
+            Math.min(
+                maxOpenAllowed,
+                Math.max(
+                    (long) MAX_EFFECTIVE_CONCURRENT,
+                    Math.ceilDiv(PARKED_TARGET_QUEUED_BYTES, disc.bodyLen())));
+    // Keep the initial Stage-2 total stream count <= MAX_BURST_STREAMS (940) so endpoints with
+    // NGINX's default keepalive_requests (1000) do not emit GOAWAY(NO_ERROR) during Phase A; step
+    // up to desiredParkStreams only if the keepalive-safe release flushes completely without
+    // GOAWAY.
+    int keepaliveSafeParkStreams = Math.min(desiredParkStreams, MAX_BURST_STREAMS - drainStreams);
+    ImmutableList<Integer> parkCandidates =
+        (keepaliveSafeParkStreams >= MIN_PARKED_STREAMS
+                && keepaliveSafeParkStreams < desiredParkStreams)
+            ? ImmutableList.of(keepaliveSafeParkStreams, desiredParkStreams)
+            : ImmutableList.of(desiredParkStreams);
+
+    for (int parkStreams : parkCandidates) {
+      int slackStreams =
+          Math.max(MIN_ZERO_REFUSED_SLACK, Math.min(parkStreams / 8, MAX_SAFE_REFUSED_CAP));
+      long remFirstBytes = (long) drainStreams * disc.bodyLen() - H2_INITIAL_WINDOW_BYTES;
+      long triggerWin = remFirstBytes + (long) parkStreams * disc.bodyLen();
+      long maxPrePingBData = triggerWin - (long) slackStreams * disc.bodyLen();
+
+      Optional<AttemptResult> parkedOpt =
+          executeParkedAtomicAttempt(ctx, drainStreams, parkStreams, triggerWin, maxPrePingBData);
+      if (parkedOpt.isEmpty()) {
+        return ProbeOutcome.ioOrTimeout();
+      }
+      AttemptResult parked = parkedOpt.get();
+      if (!parked.sawFlowControlGoAway()
+          && parked.refusedCount() == 0
+          && parked.gotPingA()
+          && parked.gotPingB()
+          && parked.gotPingC()) {
+        if (parked.prePingBDataBytes() < maxPrePingBData) {
+          return ProbeOutcome.matched(
+              ctx.toMatch(
+                  drainStreams + parkStreams, /* refusedStreams= */ 0, parked.windowIncrement()));
+        }
+        continue;
+      }
+      return ProbeOutcome.notVulnerable();
     }
     return ProbeOutcome.notVulnerable();
   }
@@ -491,6 +697,7 @@ final class H2FlowControlProbe {
           1,
           buildGetHeaders(useTls, authority, firstPath, /* indexDynamicHeaders= */ true),
           /* endStream= */ true);
+      long greetStartNanos = ticker.read();
       flight.writeTo(out);
       out.flush();
 
@@ -544,6 +751,7 @@ final class H2FlowControlProbe {
       if (resp1Opt.isEmpty() || isExcludedNonNginxServer(resp1Opt.get().headers())) {
         return Optional.of(DiscoveryResult.empty(false));
       }
+      Duration discoveryRtt = Duration.ofNanos(Math.max(0L, ticker.read() - greetStartNanos));
       StreamDiscoveryResp resp1 = resp1Opt.get();
 
       int nextStreamId = 3;
@@ -557,7 +765,13 @@ final class H2FlowControlProbe {
         if (check.resp().isPresent() && check.resp().get().bodyLen() == resp1.bodyLen()) {
           return Optional.of(
               new DiscoveryResult(
-                  fh1.length(), maxStreams, resp1.bodyLen(), firstPath, false, validatedAddress));
+                  fh1.length(),
+                  maxStreams,
+                  resp1.bodyLen(),
+                  firstPath,
+                  false,
+                  validatedAddress,
+                  discoveryRtt));
         }
       }
 
@@ -615,7 +829,7 @@ final class H2FlowControlProbe {
 
       return Optional.of(
           new DiscoveryResult(
-              fh1.length(), maxStreams, bestLen, bestPath, false, validatedAddress));
+              fh1.length(), maxStreams, bestLen, bestPath, false, validatedAddress, discoveryRtt));
     } catch (IOException | HpackException e) {
       logger.atFine().withCause(e).log( // NOMUTANTS -- diagnostic logging
           "Phase 1 HTTP/2 discovery failed on %s:%d.", dialHost, port);
@@ -623,7 +837,7 @@ final class H2FlowControlProbe {
     }
   }
 
-  private static DiscoveryFetch sendDiscoveryGet(
+  private DiscoveryFetch sendDiscoveryGet(
       InputStream in,
       OutputStream out,
       HpackDecoder hpackDec,
@@ -649,14 +863,8 @@ final class H2FlowControlProbe {
   }
 
   private Optional<AttemptResult> executeFlowControlAttempt(
-      boolean useTls,
-      String dialHost,
-      String sniHost,
-      int port,
-      String authority,
-      DiscoveryResult disc,
-      int effM,
-      int nStreams) {
+      Phase2Context ctx, int effM, int nStreams) {
+    DiscoveryResult disc = ctx.disc();
     // With pre-SYN SO_RCVBUF clamped to 2304 bytes so accepted DATA frames stay queued
     // in h2c->last_out:
     // - Unpatched NGINX deducts A = nStreams - refusedCount streams from send_window,
@@ -665,195 +873,479 @@ final class H2FlowControlProbe {
     // - Patched NGINX (commit e27f5fa84fe6) includes queued last_out bytes (effM*bodyLen),
     //   so send_window + send_queued + wuIncrement = 0x7fffffff + refusedCount*bodyLen > 0x7fffffff
     //   for all refusedCount >= 1, rejecting the frame with GOAWAY(FLOW_CONTROL_ERROR).
-    long initStreamWin = Math.max(65535L, disc.bodyLen());
+    long initStreamWin = Math.max(H2_INITIAL_WINDOW_BYTES, disc.bodyLen());
     long targetConnWin = (long) nStreams * disc.bodyLen();
-    long initConnWin = Math.max(65535L, targetConnWin);
+    long initConnWin = Math.max(H2_INITIAL_WINDOW_BYTES, targetConnWin);
     long wuIncrement = NGINX_MAX_WINDOW - initConnWin + (long) (nStreams - effM) * disc.bodyLen();
 
-    try (Socket rawSocket = connectConstrainedSocket(dialHost, disc.validatedAddress(), port);
-        Socket tlsSocket =
-            useTls ? openAlpnTlsSocket(rawSocket, sniHost, port).orElse(null) : null) {
-      if (useTls && tlsSocket == null) {
-        return Optional.of(
-            new AttemptResult(0, 0, false, false, false, false, false, false, 0L, wuIncrement));
-      }
-      Socket transportSocket = useTls ? tlsSocket : rawSocket;
-      InputStream in = transportSocket.getInputStream();
-      OutputStream out = transportSocket.getOutputStream();
+    return runPhase2Session(
+        ctx,
+        SMALL_RECV_BUF_BYTES,
+        wuIncrement,
+        "Phase 2 flow-control attempt",
+        (rawSocket, in, out) -> {
+          writeBurstPreface(out, initStreamWin, targetConnWin);
 
-      ByteArrayOutputStream pre = new ByteArrayOutputStream();
-      H2Frames.writeClientPreface(pre);
-      H2Frames.writeSettingsFrame(pre, 4096, initStreamWin);
-      if (targetConnWin > 65535L) {
-        H2Frames.writeWindowUpdateFrame(pre, 0, targetConnWin - 65535L);
-      }
-      pre.writeTo(out);
-      out.flush();
-      sleepQuietly(interBatchDelay.dividedBy(2));
+          byte[] hdr1 = ctx.buildFirstRequestHeaders();
+          byte[] hdrc = ctx.buildSubsequentRequestHeaders();
+          byte[] nonceA = nextNonce8();
+          byte[] nonceB = nextNonce8();
+          byte[] nonceC = nextNonce8();
 
-      byte[] hdr1 =
-          buildGetHeaders(useTls, authority, disc.path(), /* indexDynamicHeaders= */ true);
-      byte[] hdrc = buildCompactSubsequentHeaders(useTls);
-      byte[] nonceA = nextNonce8();
-      byte[] nonceB = nextNonce8();
-      byte[] nonceC = nextNonce8();
-
-      int batchLimit = Math.max(1, Math.min(MAX_BATCH_STREAMS, effM));
-      int sent = 0;
-      while (sent < nStreams) {
-        int batch = Math.min(batchLimit, nStreams - sent);
-        ByteArrayOutputStream batchBuf = new ByteArrayOutputStream();
-        for (int j = 0; j < batch; j++) {
-          int sid = 1 + 2 * (sent + j);
-          H2Frames.writeHeadersFrame(batchBuf, sid, sid == 1 ? hdr1 : hdrc, /* endStream= */ true);
-        }
-        sent += batch;
-        if (sent == nStreams) {
-          H2Frames.writePingFrame(batchBuf, /* ack= */ false, nonceA);
-          H2Frames.writeWindowUpdateFrame(batchBuf, 0, wuIncrement);
-          H2Frames.writePingFrame(batchBuf, /* ack= */ false, nonceB);
-        }
-        try {
-          batchBuf.writeTo(out);
-          out.flush();
-        } catch (IOException e) {
-          break;
-        }
-        if (sent < nStreams) {
-          sleepQuietly(interBatchDelay);
-        }
-      }
-
-      sleepQuietly(preDrainDelay);
-      try {
-        rawSocket.setReceiveBufferSize(
-            LARGE_RECV_BUF_BYTES); // NOMUTANTS -- kernel drain speed hint
-      } catch (IOException ignored) {
-        // Non-fatal on custom socket implementations.
-      }
-
-      List<Integer> refusedSids = new ArrayList<>();
-      boolean sawFlowControlGoAway = false;
-      boolean gotA = false;
-      boolean gotB = false;
-      boolean gotC = false;
-      long prePingBDataBytes = 0L;
-
-      for (int frameCount = 0; frameCount < MAX_DRAIN_FRAMES; frameCount++) {
-        Optional<FrameHeader> fhOpt;
-        byte[] payload;
-        try {
-          fhOpt = H2Frames.readNextFrameHeader(in);
-          if (fhOpt.isEmpty()) {
-            break;
-          }
-          FrameHeader fh = fhOpt.get();
-          if (fh.length() > MAX_STATIC_BODY_BYTES + 1024) {
-            break;
-          }
-          payload = in.readNBytes(fh.length());
-          if (payload.length < fh.length()) {
-            break;
-          }
-          switch (fh.type()) {
-            case H2Frames.TYPE_DATA -> {
-              if (!gotB) {
-                prePingBDataBytes += fh.length();
-              }
+          int batchLimit = Math.max(1, Math.min(MAX_BATCH_STREAMS, effM));
+          int sent = 0;
+          while (sent < nStreams) {
+            int batch = Math.min(batchLimit, nStreams - sent);
+            ByteArrayOutputStream batchBuf = new ByteArrayOutputStream();
+            for (int j = 0; j < batch; j++) {
+              int sid = 1 + 2 * (sent + j);
+              H2Frames.writeHeadersFrame(
+                  batchBuf, sid, sid == 1 ? hdr1 : hdrc, /* endStream= */ true);
             }
-            case H2Frames.TYPE_RST_STREAM -> {
-              if (payload.length == 4
-                  && H2Frames.readUint32(payload, 0) == H2Frames.ERR_REFUSED_STREAM) {
-                refusedSids.add(fh.streamId());
-              }
+            sent += batch;
+            if (sent == nStreams) {
+              H2Frames.writePingFrame(batchBuf, /* ack= */ false, nonceA);
+              H2Frames.writeWindowUpdateFrame(batchBuf, 0, wuIncrement);
+              H2Frames.writePingFrame(batchBuf, /* ack= */ false, nonceB);
             }
-            case H2Frames.TYPE_GOAWAY -> {
-              if (payload.length >= 8
-                  && H2Frames.readUint32(payload, 4) == H2Frames.ERR_FLOW_CONTROL) {
-                sawFlowControlGoAway = true;
-              }
-              return Optional.of(
-                  finalizeAttempt(
-                      refusedSids,
-                      nStreams,
-                      sawFlowControlGoAway,
-                      gotA,
-                      gotB,
-                      gotC,
-                      prePingBDataBytes,
-                      wuIncrement));
+            try {
+              batchBuf.writeTo(out);
+              out.flush();
+            } catch (IOException e) {
+              break;
             }
-            case H2Frames.TYPE_PING -> {
-              if ((fh.flags() & H2Frames.FLAG_ACK) != 0 && payload.length == 8) {
-                if (Arrays.equals(payload, nonceA)) {
-                  gotA = true;
-                } else if (Arrays.equals(payload, nonceB)) {
-                  if (!gotB) {
-                    gotB = true;
-                    ByteArrayOutputStream pingC = new ByteArrayOutputStream();
-                    H2Frames.writePingFrame(pingC, /* ack= */ false, nonceC);
-                    pingC.writeTo(out);
-                    out.flush();
-                  }
-                } else if (Arrays.equals(payload, nonceC)) {
-                  gotC = true;
-                  return Optional.of(
-                      finalizeAttempt(
-                          refusedSids,
-                          nStreams,
-                          sawFlowControlGoAway,
-                          gotA,
-                          gotB,
-                          gotC,
-                          prePingBDataBytes,
-                          wuIncrement));
-                }
-              }
+            if (sent < nStreams) {
+              sleepQuietly(interBatchDelay);
             }
-            default -> {}
           }
-        } catch (IOException e) {
-          break;
-        }
-      }
 
-      return Optional.of(
-          finalizeAttempt(
-              refusedSids,
+          return settleAndDrainVerification(
+              rawSocket,
+              in,
+              out,
+              ctx.effectivePreDrain(),
               nStreams,
-              sawFlowControlGoAway,
-              gotA,
-              gotB,
-              gotC,
-              prePingBDataBytes,
-              wuIncrement));
+              nonceA,
+              nonceB,
+              nonceC,
+              wuIncrement);
+        });
+  }
+
+  private Optional<AttemptResult> executeHighConcurrencyBurstAttempt(
+      Phase2Context ctx, int nStreams, long maxPrePingBData) {
+    DiscoveryResult disc = ctx.disc();
+    long initStreamWin = Math.max(H2_INITIAL_WINDOW_BYTES, disc.bodyLen());
+    long targetConnWin = (long) nStreams * disc.bodyLen();
+    long initConnWin = Math.max(H2_INITIAL_WINDOW_BYTES, targetConnWin);
+    long wuIncrement = NGINX_MAX_WINDOW - initConnWin + maxPrePingBData;
+
+    return runPhase2Session(
+        ctx,
+        SMALL_RECV_BUF_BYTES,
+        wuIncrement,
+        "High-concurrency burst attempt",
+        (rawSocket, in, out) -> {
+          writeBurstPreface(out, initStreamWin, targetConnWin);
+
+          byte[] hdr1 = ctx.buildFirstRequestHeaders();
+          byte[] hdrc = ctx.buildSubsequentRequestHeaders();
+          byte[] nonceA = nextNonce8();
+          byte[] nonceB = nextNonce8();
+          byte[] nonceC = nextNonce8();
+
+          // Send all nStreams back-to-back without inter-batch sleeps so early responses cannot
+          // drain out of h2c->last_out across high-RTT links before the trailing WINDOW_UPDATE
+          // arrives.
+          ByteArrayOutputStream burstBuf = new ByteArrayOutputStream();
+          for (int i = 0; i < nStreams; i++) {
+            int sid = 1 + 2 * i;
+            H2Frames.writeHeadersFrame(
+                burstBuf, sid, sid == 1 ? hdr1 : hdrc, /* endStream= */ true);
+            if (burstBuf.size() >= 8192) {
+              try {
+                burstBuf.writeTo(out);
+                out.flush();
+              } catch (IOException e) {
+                break;
+              }
+              burstBuf.reset();
+            }
+          }
+          H2Frames.writePingFrame(burstBuf, /* ack= */ false, nonceA);
+          H2Frames.writeWindowUpdateFrame(burstBuf, 0, wuIncrement);
+          H2Frames.writePingFrame(burstBuf, /* ack= */ false, nonceB);
+          try {
+            burstBuf.writeTo(out);
+            out.flush();
+          } catch (IOException ignored) {
+            // Proceed to drain any server GOAWAY or partial frames already in flight.
+          }
+
+          return settleAndDrainVerification(
+              rawSocket,
+              in,
+              out,
+              ctx.effectivePreDrain(),
+              nStreams,
+              nonceA,
+              nonceB,
+              nonceC,
+              wuIncrement);
+        });
+  }
+
+  private Optional<AttemptResult> runPhase2Session(
+      Phase2Context ctx,
+      int recvBufBytes,
+      long wuIncrement,
+      String attemptLabel,
+      Phase2SessionAction action) {
+    try (Socket rawSocket =
+        connectConfiguredSocket(
+            ctx.dialHost(), ctx.disc().validatedAddress(), ctx.port(), recvBufBytes)) {
+      if (!ctx.useTls()) {
+        return Optional.of(
+            action.run(rawSocket, rawSocket.getInputStream(), rawSocket.getOutputStream()));
+      }
+      Optional<Socket> tlsOpt = openAlpnTlsSocket(rawSocket, ctx.sniHost(), ctx.port());
+      if (tlsOpt.isEmpty()) {
+        return Optional.of(emptyAttempt(wuIncrement));
+      }
+      try (Socket tlsSocket = tlsOpt.get()) {
+        return Optional.of(
+            action.run(rawSocket, tlsSocket.getInputStream(), tlsSocket.getOutputStream()));
+      }
     } catch (IOException e) {
       logger.atFine().withCause(e).log( // NOMUTANTS -- diagnostic logging
-          "Phase 2 flow-control attempt failed on %s:%d.", dialHost, port);
+          "%s failed on %s:%d.", attemptLabel, ctx.dialHost(), ctx.port());
       return Optional.empty();
     }
   }
 
-  private Socket connectConstrainedSocket(
-      String host, Optional<InetAddress> validatedAddress, int port) throws IOException {
+  private void writeBurstPreface(OutputStream out, long initStreamWin, long targetConnWin)
+      throws IOException {
+    ByteArrayOutputStream pre = new ByteArrayOutputStream();
+    H2Frames.writeClientPreface(pre);
+    H2Frames.writeSettingsFrame(pre, 4096, initStreamWin);
+    if (targetConnWin > H2_INITIAL_WINDOW_BYTES) {
+      H2Frames.writeWindowUpdateFrame(pre, 0, targetConnWin - H2_INITIAL_WINDOW_BYTES);
+    }
+    pre.writeTo(out);
+    out.flush();
+    sleepQuietly(interBatchDelay.dividedBy(2));
+  }
+
+  private AttemptResult settleAndDrainVerification(
+      Socket rawSocket,
+      InputStream in,
+      OutputStream out,
+      Duration effectivePreDrain,
+      int totalStreams,
+      byte[] nonceA,
+      byte[] nonceB,
+      byte[] nonceC,
+      long wuIncrement) {
+    sleepQuietly(effectivePreDrain);
+    widenReceiveBufferQuietly(rawSocket);
+    return drainVerificationFrames(in, out, totalStreams, nonceA, nonceB, nonceC, wuIncrement);
+  }
+
+  private Optional<AttemptResult> executeParkedAtomicAttempt(
+      Phase2Context ctx, int drainStreams, int parkStreams, long triggerWin, long maxPrePingBData) {
+    DiscoveryResult disc = ctx.disc();
+    long wuIncrement = NGINX_MAX_WINDOW - triggerWin + maxPrePingBData;
+    int totalStreams = drainStreams + parkStreams;
+
+    return runPhase2Session(
+        ctx,
+        LARGE_RECV_BUF_BYTES,
+        wuIncrement,
+        "Parked-stream atomic attempt",
+        (rawSocket, in, out) -> {
+          // Phase A: Keep Stream 0 send_window at default 65,535 while granting per-stream window
+          // so the first 65,535 bytes flush cleanly and the remaining parkStreams park in
+          // h2c->waiting.
+          ByteArrayOutputStream pre = new ByteArrayOutputStream();
+          H2Frames.writeClientPreface(pre);
+          H2Frames.writeSettingsFrame(pre, 4096, Math.max(H2_INITIAL_WINDOW_BYTES, disc.bodyLen()));
+          pre.writeTo(out);
+          out.flush();
+
+          if (!parkStreamsInWaiting(
+              in,
+              out,
+              ctx.buildFirstRequestHeaders(),
+              ctx.buildSubsequentRequestHeaders(),
+              totalStreams,
+              disc.bodyLen())) {
+            return emptyAttempt(wuIncrement);
+          }
+
+          // Phase B: Clamp SO_RCVBUF and emit [WINDOW_UPDATE(triggerWin), PING(A),
+          // WINDOW_UPDATE(wuIncrement), PING(B)] as a single 60-byte atomic record so all parked
+          // streams wake synchronously before downstream proxies pause client reads.
+          try {
+            rawSocket.setReceiveBufferSize(
+                SMALL_RECV_BUF_BYTES); // NOMUTANTS -- pre-release SO_RCVBUF clamp
+          } catch (IOException ignored) {
+            // Non-fatal on custom socket implementations.
+          }
+
+          byte[] nonceA = nextNonce8();
+          byte[] nonceB = nextNonce8();
+          byte[] nonceC = nextNonce8();
+          ByteArrayOutputStream atomic = new ByteArrayOutputStream(64);
+          H2Frames.writeWindowUpdateFrame(atomic, 0, triggerWin);
+          H2Frames.writePingFrame(atomic, /* ack= */ false, nonceA);
+          H2Frames.writeWindowUpdateFrame(atomic, 0, wuIncrement);
+          H2Frames.writePingFrame(atomic, /* ack= */ false, nonceB);
+          atomic.writeTo(out);
+          out.flush();
+
+          return settleAndDrainVerification(
+              rawSocket,
+              in,
+              out,
+              ctx.effectivePreDrain(),
+              totalStreams,
+              nonceA,
+              nonceB,
+              nonceC,
+              wuIncrement);
+        });
+  }
+
+  private boolean parkStreamsInWaiting(
+      InputStream in, OutputStream out, byte[] hdr1, byte[] hdrc, int totalStreams, int bodyLen)
+      throws IOException {
+    int headersSeen = 0;
+    int endStreamsSeen = 0;
+    long phaseADataBytes = 0L;
+    int syncFramesRead = 0;
+    int sent = 0;
+    long phaseAStartNanos = ticker.read();
+    long maxPhaseANanos = computeMaxDrainNanos();
+
+    while (sent < totalStreams) {
+      int batch = Math.min(PARK_SYNC_BATCH_STREAMS, totalStreams - sent);
+      byte[] syncNonce = nextNonce8();
+      ByteArrayOutputStream batchBuf = new ByteArrayOutputStream();
+      for (int j = 0; j < batch; j++) {
+        int sid = 1 + 2 * (sent + j);
+        H2Frames.writeHeadersFrame(batchBuf, sid, sid == 1 ? hdr1 : hdrc, /* endStream= */ true);
+      }
+      sent += batch;
+      H2Frames.writePingFrame(batchBuf, /* ack= */ false, syncNonce);
+      batchBuf.writeTo(out);
+      out.flush();
+
+      boolean gotSyncPing = false;
+      long expectedBatchDataBytes = Math.min(H2_INITIAL_WINDOW_BYTES, (long) sent * bodyLen);
+      // NGINX queues PING(ACK) ahead of unblocked stream HEADERS/DATA frames and defers
+      // decrementing h2c->processing until queued stream DATA flushes. Drain each batch's
+      // expected HEADERS and DATA bytes before sending the next batch so cumulative streams
+      // never overrun MAX_CONCURRENT_STREAMS, while finishing early if all sent streams already
+      // ended (e.g. header-only 429/503 responses) to avoid blocking on SO_TIMEOUT.
+      while (!(gotSyncPing
+          && ((headersSeen >= sent && phaseADataBytes >= expectedBatchDataBytes)
+              || endStreamsSeen >= sent))) {
+        if (syncFramesRead >= MAX_PARK_SYNC_FRAMES
+            || ticker.read() - phaseAStartNanos >= maxPhaseANanos) {
+          return false;
+        }
+        Optional<RawFrame> frameOpt = readBoundedFrame(in);
+        if (frameOpt.isEmpty()) {
+          return false;
+        }
+        syncFramesRead++;
+        FrameHeader fh = frameOpt.get().header();
+        byte[] payload = frameOpt.get().payload();
+        switch (fh.type()) {
+          case H2Frames.TYPE_HEADERS -> {
+            if (fh.streamId() > 0) {
+              headersSeen++;
+              if ((fh.flags() & H2Frames.FLAG_END_STREAM) != 0) {
+                endStreamsSeen++;
+              }
+            }
+          }
+          case H2Frames.TYPE_DATA -> {
+            phaseADataBytes += fh.length();
+            if ((fh.flags() & H2Frames.FLAG_END_STREAM) != 0) {
+              endStreamsSeen++;
+            }
+            if (phaseADataBytes > H2_INITIAL_WINDOW_BYTES) {
+              return false;
+            }
+          }
+          case H2Frames.TYPE_PING -> {
+            if ((fh.flags() & H2Frames.FLAG_ACK) != 0 && Arrays.equals(payload, syncNonce)) {
+              gotSyncPing = true;
+            }
+          }
+          case H2Frames.TYPE_RST_STREAM, H2Frames.TYPE_GOAWAY -> {
+            return false;
+          }
+          default -> {}
+        }
+      }
+    }
+
+    return headersSeen >= totalStreams && phaseADataBytes == H2_INITIAL_WINDOW_BYTES;
+  }
+
+  private static Optional<RawFrame> readBoundedFrame(InputStream in) throws IOException {
+    Optional<FrameHeader> fhOpt = H2Frames.readNextFrameHeader(in);
+    if (fhOpt.isEmpty()) {
+      return Optional.empty();
+    }
+    FrameHeader fh = fhOpt.get();
+    if (fh.length() > MAX_FRAME_PAYLOAD_BYTES) {
+      return Optional.empty();
+    }
+    byte[] payload = in.readNBytes(fh.length());
+    if (payload.length < fh.length()) {
+      return Optional.empty();
+    }
+    return Optional.of(new RawFrame(fh, payload));
+  }
+
+  private static AttemptResult emptyAttempt(long wuIncrement) {
+    return new AttemptResult(0, 0, false, false, false, false, false, false, 0L, wuIncrement);
+  }
+
+  private static void widenReceiveBufferQuietly(Socket rawSocket) {
+    try {
+      rawSocket.setReceiveBufferSize(LARGE_RECV_BUF_BYTES); // NOMUTANTS -- kernel drain speed hint
+    } catch (IOException ignored) {
+      // Non-fatal on custom socket implementations.
+    }
+  }
+
+  private long computeMaxDrainNanos() {
+    return Duration.ofMillis(clampSocketTimeoutMillis(timeout)).multipliedBy(2).toNanos();
+  }
+
+  private AttemptResult drainVerificationFrames(
+      InputStream in,
+      OutputStream out,
+      int nStreams,
+      byte[] nonceA,
+      byte[] nonceB,
+      byte[] nonceC,
+      long wuIncrement) {
+    List<Integer> refusedSids = new ArrayList<>();
+    boolean sawFlowControlGoAway = false;
+    boolean gotA = false;
+    boolean gotB = false;
+    boolean gotC = false;
+    long prePingBDataBytes = 0L;
+    long drainStartNanos = ticker.read();
+    long maxDrainNanos = computeMaxDrainNanos();
+
+    for (int frameCount = 0; frameCount < MAX_DRAIN_FRAMES; frameCount++) {
+      if (ticker.read() - drainStartNanos >= maxDrainNanos) {
+        break;
+      }
+      try {
+        Optional<RawFrame> frameOpt = readBoundedFrame(in);
+        if (frameOpt.isEmpty()) {
+          break;
+        }
+        FrameHeader fh = frameOpt.get().header();
+        byte[] payload = frameOpt.get().payload();
+        switch (fh.type()) {
+          case H2Frames.TYPE_DATA -> {
+            if (!gotB) {
+              prePingBDataBytes += fh.length();
+            }
+          }
+          case H2Frames.TYPE_RST_STREAM -> {
+            if (payload.length == 4
+                && H2Frames.readUint32(payload, 0) == H2Frames.ERR_REFUSED_STREAM) {
+              refusedSids.add(fh.streamId());
+            }
+          }
+          case H2Frames.TYPE_GOAWAY -> {
+            if (payload.length >= 8
+                && H2Frames.readUint32(payload, 4) == H2Frames.ERR_FLOW_CONTROL) {
+              sawFlowControlGoAway = true;
+            }
+            return finalizeAttempt(
+                refusedSids,
+                nStreams,
+                sawFlowControlGoAway,
+                gotA,
+                gotB,
+                gotC,
+                prePingBDataBytes,
+                wuIncrement);
+          }
+          case H2Frames.TYPE_PING -> {
+            if ((fh.flags() & H2Frames.FLAG_ACK) != 0 && payload.length == 8) {
+              if (Arrays.equals(payload, nonceA)) {
+                gotA = true;
+              } else if (Arrays.equals(payload, nonceB)) {
+                if (!gotB) {
+                  gotB = true;
+                  ByteArrayOutputStream pingC = new ByteArrayOutputStream();
+                  H2Frames.writePingFrame(pingC, /* ack= */ false, nonceC);
+                  pingC.writeTo(out);
+                  out.flush();
+                }
+              } else if (Arrays.equals(payload, nonceC)) {
+                gotC = true;
+                return finalizeAttempt(
+                    refusedSids,
+                    nStreams,
+                    sawFlowControlGoAway,
+                    gotA,
+                    gotB,
+                    gotC,
+                    prePingBDataBytes,
+                    wuIncrement);
+              }
+            }
+          }
+          default -> {}
+        }
+      } catch (IOException e) {
+        break;
+      }
+    }
+
+    return finalizeAttempt(
+        refusedSids,
+        nStreams,
+        sawFlowControlGoAway,
+        gotA,
+        gotB,
+        gotC,
+        prePingBDataBytes,
+        wuIncrement);
+  }
+
+  private Socket connectConfiguredSocket(
+      String host, Optional<InetAddress> validatedAddress, int port, int recvBufBytes)
+      throws IOException {
     if (validatedAddress.isEmpty()) {
       Socket connected = socketFactory.createSocket(host, port, timeout);
-      connected.setReceiveBufferSize(SMALL_RECV_BUF_BYTES); // NOMUTANTS -- kernel buffer hint
+      connected.setReceiveBufferSize(recvBufBytes); // NOMUTANTS -- kernel buffer hint
       return connected;
     }
     InetAddress pinnedAddress = validatedAddress.get();
     Socket unconnected = socketFactory.createUnconnectedSocket();
     if (unconnected == null) {
       Socket connected = socketFactory.createSocket(pinnedAddress, port, timeout);
-      connected.setReceiveBufferSize(SMALL_RECV_BUF_BYTES); // NOMUTANTS -- kernel buffer hint
+      connected.setReceiveBufferSize(recvBufBytes); // NOMUTANTS -- kernel buffer hint
       return connected;
     }
     try {
       int timeoutMillis = clampSocketTimeoutMillis(timeout);
       unconnected.setSoTimeout(timeoutMillis); // NOMUTANTS -- defensive read timeout
       unconnected.setTcpNoDelay(true); // NOMUTANTS -- latency optimization
-      unconnected.setReceiveBufferSize(
-          SMALL_RECV_BUF_BYTES); // NOMUTANTS -- pre-SYN SO_RCVBUF clamp
+      unconnected.setReceiveBufferSize(recvBufBytes); // NOMUTANTS -- pre-SYN SO_RCVBUF hint
       unconnected.connect(new InetSocketAddress(pinnedAddress, port), timeoutMillis);
       return unconnected;
     } catch (Throwable t) {
@@ -1007,7 +1499,7 @@ final class H2FlowControlProbe {
     return Optional.of(val0);
   }
 
-  private static Optional<StreamDiscoveryResp> readDiscoveryStream(
+  private Optional<StreamDiscoveryResp> readDiscoveryStream(
       InputStream in, HpackDecoder hpackDec, int targetSid, Optional<byte[]> wantPing)
       throws IOException, HpackException {
     ImmutableList<HeaderField> headers = ImmutableList.of();
@@ -1015,23 +1507,22 @@ final class H2FlowControlProbe {
     ByteArrayOutputStream sample = new ByteArrayOutputStream();
     boolean gotEnd = false;
     boolean gotPing = wantPing.isEmpty();
+    long streamStartNanos = ticker.read();
+    long maxStreamNanos = computeMaxDrainNanos();
 
     for (int i = 0; i < 512; i++) {
       if (gotEnd && gotPing) {
         return Optional.of(new StreamDiscoveryResp(headers, bodyLen, sample.toString(ISO_8859_1)));
       }
-      Optional<FrameHeader> fhOpt = H2Frames.readNextFrameHeader(in);
-      if (fhOpt.isEmpty()) {
+      if (ticker.read() - streamStartNanos >= maxStreamNanos) {
         return Optional.empty();
       }
-      FrameHeader fh = fhOpt.get();
-      if (fh.length() > MAX_STATIC_BODY_BYTES + 1024) {
+      Optional<RawFrame> frameOpt = readBoundedFrame(in);
+      if (frameOpt.isEmpty()) {
         return Optional.empty();
       }
-      byte[] payload = in.readNBytes(fh.length());
-      if (payload.length < fh.length()) {
-        return Optional.empty();
-      }
+      FrameHeader fh = frameOpt.get().header();
+      byte[] payload = frameOpt.get().payload();
 
       switch (fh.type()) {
         case H2Frames.TYPE_PING -> {
@@ -1278,10 +1769,14 @@ final class H2FlowControlProbe {
     return sb.toString();
   }
 
-  private static void sleepQuietly(Duration d) {
+  private void sleepQuietly(Duration d) {
     if (!d.isPositive()) {
       return;
     }
+    sleeper.accept(d);
+  }
+
+  private static void defaultSleep(Duration d) {
     try {
       Thread.sleep(d);
     } catch (InterruptedException e) {

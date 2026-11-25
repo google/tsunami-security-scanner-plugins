@@ -15,10 +15,12 @@ overflow (`CVE-2026-123007`).
     deterministic `<= 64 KiB` static response path.
 2.  **Phase 2 — Non-Destructive Stream 0 `WINDOW_UPDATE` Differential**: Clamps
     the socket receive buffer so accepted `DATA` frames remain queued in
-    `h2c->last_out`, verifies concurrency saturation via a contiguous tail of
-    `RST_STREAM(REFUSED_STREAM)` frames, and tests Stream `0` `WINDOW_UPDATE`
-    acceptance across pre/post/liveness `PING` ACKs without sending client
-    `RST_STREAM` frames.
+    `h2c->last_out`, verifies either concurrency saturation (a contiguous tail
+    of `RST_STREAM(REFUSED_STREAM)` frames) or high-`MAX_CONCURRENT_STREAMS`
+    queued-window / parked-stream (`h2c->waiting`) retention where flushed
+    pre-`PING` `DATA` bytes stay strictly below the Stream `0` `WINDOW_UPDATE`
+    differential, and confirms connection liveness across pre/post/liveness
+    `PING` ACKs without sending client `RST_STREAM` frames.
 
 ## Build jar file for this plugin
 
