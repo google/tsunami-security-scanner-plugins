@@ -61,6 +61,7 @@ import com.google.tsunami.proto.TransportProtocol;
 import com.google.tsunami.proto.Vulnerability;
 import com.google.tsunami.proto.VulnerabilityId;
 import com.google.tsunami.proto.WebServiceContext;
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
@@ -1555,6 +1556,8 @@ public final class Cve2026123007DetectorTest {
 
     assertThat(reports.getDetectionReportsList()).isEmpty();
     assertThat(harness.totalConnections()).isEqualTo(4);
+    assertThat(harness.lastParkedPhaseADataBytes()).isEqualTo(65_535L);
+    assertThat(harness.lastParkedReleaseBytes()).isEqualTo(60);
     assertThat(harness.sawClientRstStream()).isFalse();
   }
 
@@ -1889,6 +1892,7 @@ public final class Cve2026123007DetectorTest {
     AtomicLong stage2BytesRead = new AtomicLong(0L);
     AtomicLong stage2BytesReadAtBatch2Write = new AtomicLong(-1L);
     AtomicInteger stage2Sockets = new AtomicInteger(0);
+    AtomicBoolean postConnectRecvBufShrunk = new AtomicBoolean(false);
     LoopbackSocketFactory baseFactory = new LoopbackSocketFactory();
     TsunamiSocketFactory recordingFactory =
         new ForwardingLoopbackFactory(baseFactory) {
@@ -1903,8 +1907,8 @@ public final class Cve2026123007DetectorTest {
                 if (!isConnected() && size > 65_536) {
                   stage2PhaseA = true;
                   stage2Sockets.incrementAndGet();
-                } else if (size <= 65_536) {
-                  stage2PhaseA = false;
+                } else if (isConnected() && size <= 65_536) {
+                  postConnectRecvBufShrunk.set(true);
                 }
                 super.setReceiveBufferSize(size);
               }
@@ -1980,6 +1984,7 @@ public final class Cve2026123007DetectorTest {
                 .getText())
         .contains("burst_streams=391, tail_refused_streams=0");
     assertThat(stage2Sockets.get()).isEqualTo(1);
+    assertThat(postConnectRecvBufShrunk.get()).isFalse();
     // Before Batch 2 is flushed on the Stage-2 Phase-A socket, the client must already have read
     // Batch 1's 256 HEADERS + 65,535 DATA bytes (> 68,000 wire bytes), not merely the leading
     // SETTINGS(ACK) + PING(ACK) (~26 wire bytes).
@@ -2315,7 +2320,7 @@ public final class Cve2026123007DetectorTest {
       activeSocket = sslServer;
     }
 
-    InputStream in = activeSocket.getInputStream();
+    InputStream in = new BufferedInputStream(activeSocket.getInputStream(), 65_536);
     OutputStream out = activeSocket.getOutputStream();
 
     byte[] preface = in.readNBytes(clientPreface.length);

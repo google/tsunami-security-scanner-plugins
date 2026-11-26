@@ -1082,16 +1082,12 @@ final class H2FlowControlProbe {
             return emptyAttempt(wuIncrement);
           }
 
-          // Phase B: Clamp SO_RCVBUF and emit [WINDOW_UPDATE(triggerWin), PING(A),
-          // WINDOW_UPDATE(wuIncrement), PING(B)] as a single 60-byte atomic record so all parked
-          // streams wake synchronously before downstream proxies pause client reads.
-          try {
-            rawSocket.setReceiveBufferSize(
-                SMALL_RECV_BUF_BYTES); // NOMUTANTS -- pre-release SO_RCVBUF clamp
-          } catch (IOException ignored) {
-            // Non-fatal on custom socket implementations.
-          }
-
+          // Phase B: Emit [WINDOW_UPDATE(triggerWin), PING(A), WINDOW_UPDATE(wuIncrement),
+          // PING(B)] as a single 60-byte atomic record so all parked streams wake synchronously in
+          // the same read pass before downstream proxies pause client reads. Do not shrink
+          // SO_RCVBUF on this already-connected socket: Phase A already advertised a multi-megabyte
+          // receive window, and lowering sk_rcvbuf after connect causes Linux to drop incoming
+          // segments that exceed the reduced buffer and enter multi-second TCP RTO backoff.
           byte[] nonceA = nextNonce8();
           byte[] nonceB = nextNonce8();
           byte[] nonceC = nextNonce8();
