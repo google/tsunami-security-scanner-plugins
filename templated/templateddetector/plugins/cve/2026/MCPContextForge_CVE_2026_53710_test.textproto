@@ -5,55 +5,47 @@ config: {
   tested_plugin: "MCPContextForge_CVE_2026_53710"
 }
 
-#########
-# TESTS #
-#########
-
 tests: {
-  name: "whenVulnerable_returnsTrue"
+  name: "whenVulnerableOob_returnsTrue"
   expect_vulnerability: true
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/"
+        uri: "/openapi.json"
         status: 200
-        condition: {
-          request_type: GET
-        }
-        body_content: "Welcome to FastAPI Sandbox Server"
-      },
-      {
-        uri: "/docs"
-        status: 200
-        condition: {
-          request_type: GET
-        }
-        body_content: "<html><body>FastAPI Swagger UI with execute_code endpoint</body></html>"
+        body_content: "{\"paths\":{\"/execute_code\":{\"post\":{}}}}"
       },
       {
         uri: "/execute_code"
         status: 200
-        condition: {
-          request_type: POST
-        }
-        body_content: "{\"status\": \"success\", \"output\": \"670\"}"
+        body_content: "{\"status\":\"success\",\"output\":\"SUCCESS\"}"
       }
     ]
   }
 }
 
 tests: {
-  name: "whenNotVulnerable_returnsFalse"
+  name: "whenPatchedOob_returnsFalse"
   expect_vulnerability: false
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
   mock_http_server: {
     mock_responses: [
       {
-        uri: "/"
-        status: 404
-        condition: {
-          request_type: GET
-        }
-        body_content: "Not Found"
+        uri: "/openapi.json"
+        status: 200
+        body_content: "{\"paths\":{\"/execute_code\":{\"post\":{}}}}"
+      },
+      {
+        uri: "/execute_code"
+        status: 400
+        body_content: "{\"detail\":\"Security Violation: Restricted pattern '__class__' detected.\"}"
       }
     ]
   }
