@@ -48,6 +48,7 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -80,6 +81,7 @@ final class H2FlowControlProbe {
 
   private static final long H2_INITIAL_WINDOW_BYTES = 65_535L;
   private static final int SMALL_RECV_BUF_BYTES = 2304;
+  @VisibleForTesting static final int STAGE2_RECV_BUF_BYTES = 32 * 1024;
   private static final int LARGE_RECV_BUF_BYTES = 4 * 1024 * 1024;
   // Cap static candidates at 64 KiB so every queued response fits completely within NGINX's
   // default output_buffers (2 * 32 KiB = 65,536 bytes) when sendfile is inactive over TLS h2.
@@ -100,11 +102,15 @@ final class H2FlowControlProbe {
   private static final int MAX_LADDER_ATTEMPTS = 16;
   private static final long MIN_HIGH_CONCURRENCY_TARGET_BYTES = 131_072L;
   private static final long PARKED_TARGET_QUEUED_BYTES = 2L * 1024L * 1024L;
+  private static final long EXTENDED_PARKED_TARGET_QUEUED_BYTES = 2_560_000L;
+  private static final long EXTENDED_CONCURRENCY_THRESHOLD = 4096L;
+  private static final int SMALL_BODY_PARK_THRESHOLD_BYTES = 1024;
   private static final long PARKED_CONCURRENCY_HEADROOM = 16L;
   private static final int MIN_PARKED_STREAMS = 64;
   private static final int MAX_PARKED_STREAMS = 2048;
+  private static final int EXTENDED_MAX_PARKED_STREAMS = 6000;
   static final int PARK_SYNC_BATCH_STREAMS = 256;
-  private static final int MAX_PARK_SYNC_FRAMES = 16384;
+  private static final int MAX_PARK_SYNC_FRAMES = 24576;
   private static final int MAX_DRAIN_FRAMES = 32768;
   private static final int MAX_HOST_CHARS = 253;
   private static final Duration MAX_ADAPTIVE_PRE_DRAIN_DELAY = Duration.ofMillis(250);
@@ -613,25 +619,8 @@ final class H2FlowControlProbe {
     if (drainStreams > MAX_PARKED_STREAMS) {
       return ProbeOutcome.notVulnerable();
     }
-    long maxOpenAllowed =
-        Math.min(disc.maxStreams() - PARKED_CONCURRENCY_HEADROOM, MAX_PARKED_STREAMS);
-    int desiredParkStreams =
-        (int)
-            Math.min(
-                maxOpenAllowed,
-                Math.max(
-                    (long) MAX_EFFECTIVE_CONCURRENT,
-                    Math.ceilDiv(PARKED_TARGET_QUEUED_BYTES, disc.bodyLen())));
-    // Keep the initial Stage-2 total stream count <= MAX_BURST_STREAMS (940) so endpoints with
-    // NGINX's default keepalive_requests (1000) do not emit GOAWAY(NO_ERROR) during Phase A; step
-    // up to desiredParkStreams only if the keepalive-safe release flushes completely without
-    // GOAWAY.
-    int keepaliveSafeParkStreams = Math.min(desiredParkStreams, MAX_BURST_STREAMS - drainStreams);
     ImmutableList<Integer> parkCandidates =
-        (keepaliveSafeParkStreams >= MIN_PARKED_STREAMS
-                && keepaliveSafeParkStreams < desiredParkStreams)
-            ? ImmutableList.of(keepaliveSafeParkStreams, desiredParkStreams)
-            : ImmutableList.of(desiredParkStreams);
+        buildParkCandidates(disc.maxStreams(), drainStreams, disc.bodyLen());
 
     for (int parkStreams : parkCandidates) {
       int slackStreams =
@@ -661,6 +650,38 @@ final class H2FlowControlProbe {
       return ProbeOutcome.notVulnerable();
     }
     return ProbeOutcome.notVulnerable();
+  }
+
+  private static ImmutableList<Integer> buildParkCandidates(
+      long maxStreams, int drainStreams, int bodyLen) {
+    long stdMaxOpen = Math.min(maxStreams - PARKED_CONCURRENCY_HEADROOM, MAX_PARKED_STREAMS);
+    int stdDesired =
+        (int)
+            Math.min(
+                stdMaxOpen,
+                Math.max(
+                    (long) MAX_EFFECTIVE_CONCURRENT,
+                    Math.ceilDiv(PARKED_TARGET_QUEUED_BYTES, bodyLen)));
+    // Keep the initial Stage-2 total stream count <= MAX_BURST_STREAMS (940) so endpoints with
+    // NGINX's default keepalive_requests (1000) do not emit GOAWAY(NO_ERROR) during Phase A; step
+    // up to larger parked counts only if the keepalive-safe release flushes completely without
+    // GOAWAY.
+    int keepaliveSafe = Math.min(stdDesired, MAX_BURST_STREAMS - drainStreams);
+    ImmutableList.Builder<Integer> candidates = ImmutableList.builder();
+    if (keepaliveSafe >= MIN_PARKED_STREAMS && keepaliveSafe < stdDesired) {
+      candidates.add(keepaliveSafe);
+    }
+    candidates.add(stdDesired);
+    if (maxStreams >= EXTENDED_CONCURRENCY_THRESHOLD && bodyLen < SMALL_BODY_PARK_THRESHOLD_BYTES) {
+      long extMaxOpen =
+          Math.min(maxStreams - PARKED_CONCURRENCY_HEADROOM, EXTENDED_MAX_PARKED_STREAMS);
+      int extDesired =
+          (int) Math.min(extMaxOpen, Math.ceilDiv(EXTENDED_PARKED_TARGET_QUEUED_BYTES, bodyLen));
+      if (extDesired > stdDesired) { // NOMUTANTS -- defensive monotonicity guard if thresholds tune
+        candidates.add(extDesired);
+      }
+    }
+    return candidates.build();
   }
 
   private Optional<DiscoveryResult> discoverEndpoint(
@@ -1059,13 +1080,13 @@ final class H2FlowControlProbe {
 
     return runPhase2Session(
         ctx,
-        LARGE_RECV_BUF_BYTES,
+        STAGE2_RECV_BUF_BYTES,
         wuIncrement,
         "Parked-stream atomic attempt",
         (rawSocket, in, out) -> {
-          // Phase A: Keep Stream 0 send_window at default 65,535 while granting per-stream window
-          // so the first 65,535 bytes flush cleanly and the remaining parkStreams park in
-          // h2c->waiting.
+          // Phase A: Open pre-SYN with STAGE2_RECV_BUF_BYTES (32 KiB) so active batch reads drain
+          // the initial 65,535 bytes cleanly without advertising a multi-megabyte client TCP
+          // receive window during Phase B, while avoiding any post-connect SO_RCVBUF shrink.
           ByteArrayOutputStream pre = new ByteArrayOutputStream();
           H2Frames.writeClientPreface(pre);
           H2Frames.writeSettingsFrame(pre, 4096, Math.max(H2_INITIAL_WINDOW_BYTES, disc.bodyLen()));
@@ -1084,10 +1105,9 @@ final class H2FlowControlProbe {
 
           // Phase B: Emit [WINDOW_UPDATE(triggerWin), PING(A), WINDOW_UPDATE(wuIncrement),
           // PING(B)] as a single 60-byte atomic record so all parked streams wake synchronously in
-          // the same read pass before downstream proxies pause client reads. Do not shrink
-          // SO_RCVBUF on this already-connected socket: Phase A already advertised a multi-megabyte
-          // receive window, and lowering sk_rcvbuf after connect causes Linux to drop incoming
-          // segments that exceed the reduced buffer and enter multi-second TCP RTO backoff.
+          // the same read pass before downstream proxies pause client reads;
+          // settleAndDrainVerification then widens SO_RCVBUF to LARGE_RECV_BUF_BYTES only after the
+          // pre-drain settle window.
           byte[] nonceA = nextNonce8();
           byte[] nonceB = nextNonce8();
           byte[] nonceC = nextNonce8();
@@ -1115,6 +1135,8 @@ final class H2FlowControlProbe {
   private boolean parkStreamsInWaiting(
       InputStream in, OutputStream out, byte[] hdr1, byte[] hdrc, int totalStreams, int bodyLen)
       throws IOException {
+    BitSet initialHeadersSeen = new BitSet(totalStreams);
+    BitSet endedStreamsSeen = new BitSet(totalStreams);
     int headersSeen = 0;
     int endStreamsSeen = 0;
     long phaseADataBytes = 0L;
@@ -1159,17 +1181,15 @@ final class H2FlowControlProbe {
         byte[] payload = frameOpt.get().payload();
         switch (fh.type()) {
           case H2Frames.TYPE_HEADERS -> {
-            if (fh.streamId() > 0) {
-              headersSeen++;
-              if ((fh.flags() & H2Frames.FLAG_END_STREAM) != 0) {
-                endStreamsSeen++;
-              }
+            headersSeen += markClientStreamSeen(initialHeadersSeen, fh.streamId(), totalStreams);
+            if ((fh.flags() & H2Frames.FLAG_END_STREAM) != 0) {
+              endStreamsSeen += markClientStreamSeen(endedStreamsSeen, fh.streamId(), totalStreams);
             }
           }
           case H2Frames.TYPE_DATA -> {
             phaseADataBytes += fh.length();
             if ((fh.flags() & H2Frames.FLAG_END_STREAM) != 0) {
-              endStreamsSeen++;
+              endStreamsSeen += markClientStreamSeen(endedStreamsSeen, fh.streamId(), totalStreams);
             }
             if (phaseADataBytes > H2_INITIAL_WINDOW_BYTES) {
               return false;
@@ -1189,6 +1209,18 @@ final class H2FlowControlProbe {
     }
 
     return headersSeen >= totalStreams && phaseADataBytes == H2_INITIAL_WINDOW_BYTES;
+  }
+
+  private static int markClientStreamSeen(BitSet seen, int sid, int totalStreams) {
+    if (sid <= 0 || (sid & 1) == 0) {
+      return 0;
+    }
+    int streamIdx = (sid - 1) >>> 1;
+    if (streamIdx >= totalStreams || seen.get(streamIdx)) {
+      return 0;
+    }
+    seen.set(streamIdx);
+    return 1;
   }
 
   private static Optional<RawFrame> readBoundedFrame(InputStream in) throws IOException {

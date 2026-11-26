@@ -1904,10 +1904,10 @@ public final class Cve2026123007DetectorTest {
 
               @Override
               public void setReceiveBufferSize(int size) throws SocketException {
-                if (!isConnected() && size > 65_536) {
+                if (!isConnected() && size == H2FlowControlProbe.STAGE2_RECV_BUF_BYTES) {
                   stage2PhaseA = true;
                   stage2Sockets.incrementAndGet();
-                } else if (isConnected() && size <= 65_536) {
+                } else if (isConnected() && size < H2FlowControlProbe.STAGE2_RECV_BUF_BYTES) {
                   postConnectRecvBufShrunk.set(true);
                 }
                 super.setReceiveBufferSize(size);
@@ -2201,6 +2201,255 @@ public final class Cve2026123007DetectorTest {
     assertThat(harness.totalConnections()).isEqualTo(3);
   }
 
+  @Test
+  public void detect_highConcurrencyParkedStage2SocketRecvBuf_opens32KiBPreSynAndWidensBeforeDrain()
+      throws Exception {
+    MockNginxHarness harness =
+        startMockNginxServer(
+            MockNginxConfig.unpatchedDefault()
+                .withMaxConcurrentStreams(10_000)
+                .withStage1FlushAllDataBeforePingB(true));
+    List<String> stage2RecvBufEvents = Collections.synchronizedList(new ArrayList<>());
+    TsunamiSocketFactory recordingFactory =
+        new ForwardingLoopbackFactory(new LoopbackSocketFactory()) {
+          @Override
+          public Socket createUnconnectedSocket() {
+            return new Socket() {
+              private boolean stage2Socket = false;
+
+              @Override
+              public void setReceiveBufferSize(int size) throws SocketException {
+                if (!isConnected() && size == H2FlowControlProbe.STAGE2_RECV_BUF_BYTES) {
+                  stage2Socket = true;
+                }
+                if (stage2Socket) {
+                  stage2RecvBufEvents.add((isConnected() ? "connected:" : "preSyn:") + size);
+                }
+                super.setReceiveBufferSize(size);
+              }
+            };
+          }
+        };
+
+    Cve2026123007Detector detector = newFastDetector(recordingFactory);
+    NetworkService service = buildHttpService(harness.port(), "http");
+    DetectionReportList reports =
+        detector.detect(
+            TargetInfo.newBuilder().addNetworkEndpoints(service.getNetworkEndpoint()).build(),
+            ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).hasSize(1);
+    assertThat(stage2RecvBufEvents)
+        .containsExactly("preSyn:" + H2FlowControlProbe.STAGE2_RECV_BUF_BYTES, "connected:4194304")
+        .inOrder();
+  }
+
+  @Test
+  public void detect_highConcurrencyPhaseATrailerHeadersEndStream_deduplicatesHeadersAcrossBatches()
+      throws Exception {
+    // With bodyLen=189 (drainStreams=347, totalStreams=940 across 4 batches), 346 finished drain
+    // streams emit both initial HEADERS and trailer HEADERS(END_STREAM). Without per-stream BitSet
+    // deduplication, headersSeen reaches 768 + 346 = 1114 >= 940 after Batch 3, causing Batch 4's
+    // leading PING(ACK) to exit Phase A before reading RST_STREAM on stream 1879.
+    MockNginxHarness harness =
+        startMockNginxServer(
+            MockNginxConfig.unpatchedDefault()
+                .withMaxConcurrentStreams(10_000)
+                .withRouteBody("/", new byte[189])
+                .withDefault404Body(new byte[189])
+                .withStage1FlushAllDataBeforePingB(true)
+                .withPhaseAPingAckBeforeBatchFrames(true)
+                .withPhaseATrailerEndStream(true)
+                .withPhaseARstOnStream(1879));
+    Cve2026123007Detector detector = newFastDetector(new LoopbackSocketFactory());
+    NetworkService service = buildHttpService(harness.port(), "http");
+
+    DetectionReportList reports =
+        detector.detect(
+            TargetInfo.newBuilder().addNetworkEndpoints(service.getNetworkEndpoint()).build(),
+            ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(harness.lastParkedReleaseBytes()).isEqualTo(0);
+  }
+
+  @Test
+  public void detect_highConcurrencyParkedPhaseAHeaderOnly429_drainsAllBatchesWithoutTimeout()
+      throws Exception {
+    // When NGINX returns header-only 429/503 responses (HEADERS with END_STREAM and 0 DATA bytes)
+    // during Phase A while keeping the connection open, endStreamsSeen >= sent must finish Batch 1
+    // (256 streams) immediately so Batch 2 (6 streams, total 262) is sent without blocking on
+    // SO_TIMEOUT, and Phase A then aborts cleanly because phaseADataBytes (0) != 65,535.
+    MockNginxHarness harness =
+        startMockNginxServer(
+            MockNginxConfig.unpatchedDefault()
+                .withMaxConcurrentStreams(10_000)
+                .withStage1FlushAllDataBeforePingB(true)
+                .withPhaseAOverrideBodyBytes(0));
+    Cve2026123007Detector detector =
+        new Cve2026123007Detector(
+            fakeUtcClock,
+            new H2FlowControlProbe(
+                new LoopbackSocketFactory(),
+                Duration.ofMillis(150),
+                Duration.ZERO,
+                Duration.ZERO,
+                new SecureRandom()));
+    NetworkService service = buildHttpService(harness.port(), "http");
+
+    DetectionReportList reports =
+        detector.detect(
+            TargetInfo.newBuilder().addNetworkEndpoints(service.getNetworkEndpoint()).build(),
+            ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(harness.lastParkedPhaseAStreams()).isEqualTo(262);
+    assertThat(harness.lastParkedReleaseBytes()).isEqualTo(0);
+  }
+
+  @Test
+  public void detect_highConcurrencyParkedPhaseAShortDataErrorBody_drainsAllBatchesWithoutTimeout()
+      throws Exception {
+    // Same early-exit invariant when Phase A streams end via short DATA(END_STREAM) error bodies
+    // (10 bytes * 256 = 2,560 < expectedBatchDataBytes = 65,535).
+    MockNginxHarness harness =
+        startMockNginxServer(
+            MockNginxConfig.unpatchedDefault()
+                .withMaxConcurrentStreams(10_000)
+                .withStage1FlushAllDataBeforePingB(true)
+                .withPhaseAOverrideBodyBytes(10));
+    Cve2026123007Detector detector =
+        new Cve2026123007Detector(
+            fakeUtcClock,
+            new H2FlowControlProbe(
+                new LoopbackSocketFactory(),
+                Duration.ofMillis(150),
+                Duration.ZERO,
+                Duration.ZERO,
+                new SecureRandom()));
+    NetworkService service = buildHttpService(harness.port(), "http");
+
+    DetectionReportList reports =
+        detector.detect(
+            TargetInfo.newBuilder().addNetworkEndpoints(service.getNetworkEndpoint()).build(),
+            ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(harness.lastParkedPhaseAStreams()).isEqualTo(262);
+    assertThat(harness.lastParkedReleaseBytes()).isEqualTo(0);
+  }
+
+  @Test
+  public void detect_highConcurrencyExtendedParkedCandidate_verifiesSmallBodyUnpatchedUpTo6000Cap()
+      throws Exception {
+    // bodyLen=300 (< 1024), max_concurrent_streams=10,000 (>= 4096): drainStreams=219 and Stage 2
+    // steps through [721, 2048, 6000] parked streams -> totalStreams [940, 2267, 6219].
+    MockNginxHarness harness =
+        startMockNginxServer(
+            MockNginxConfig.unpatchedDefault()
+                .withMaxConcurrentStreams(10_000)
+                .withKeepaliveRequests(10_000)
+                .withRouteBody("/", new byte[300])
+                .withDefault404Body(new byte[153])
+                .withStage1FlushAllDataBeforePingB(true)
+                .withStage2FlushAllAttempts(2));
+    Cve2026123007Detector detector = newFastDetector(new LoopbackSocketFactory());
+    NetworkService service = buildHttpService(harness.port(), "http");
+
+    DetectionReportList reports =
+        detector.detect(
+            TargetInfo.newBuilder().addNetworkEndpoints(service.getNetworkEndpoint()).build(),
+            ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).hasSize(1);
+    assertThat(
+            reports
+                .getDetectionReports(0)
+                .getVulnerability()
+                .getAdditionalDetails(0)
+                .getTextData()
+                .getText())
+        .contains("burst_streams=6219, tail_refused_streams=0");
+    assertThat(harness.stage2TotalStreamCounts()).containsExactly(940, 2267, 6219).inOrder();
+  }
+
+  @Test
+  public void
+      detect_highConcurrencyExtendedParkedCandidateAtExact4096Streams_respectsConcurrencyHeadroom()
+          throws Exception {
+    // At max_concurrent_streams=4,096 and bodyLen=500 (drainStreams=132, ceilDiv(2,560,000, 500) =
+    // 5,120), PARKED_CONCURRENCY_HEADROOM (16) caps parked streams at 4,080 (totalStreams=4,212)
+    // so partialSid + parked streams never overrun MAX_CONCURRENT_STREAMS and trigger
+    // REFUSED_STREAM.
+    MockNginxHarness harness =
+        startMockNginxServer(
+            MockNginxConfig.unpatchedDefault()
+                .withMaxConcurrentStreams(4_096)
+                .withKeepaliveRequests(10_000)
+                .withRouteBody("/", new byte[500])
+                .withDefault404Body(new byte[153])
+                .withStage1FlushAllDataBeforePingB(true)
+                .withStage2FlushAllAttempts(2));
+    Cve2026123007Detector detector = newFastDetector(new LoopbackSocketFactory());
+    NetworkService service = buildHttpService(harness.port(), "http");
+
+    DetectionReportList reports =
+        detector.detect(
+            TargetInfo.newBuilder().addNetworkEndpoints(service.getNetworkEndpoint()).build(),
+            ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).hasSize(1);
+    assertThat(harness.stage2TotalStreamCounts()).containsExactly(940, 2180, 4212).inOrder();
+  }
+
+  @Test
+  public void detect_highConcurrencyBelowConcurrency4096_omitsExtendedParkedCandidate()
+      throws Exception {
+    MockNginxHarness harness =
+        startMockNginxServer(
+            MockNginxConfig.unpatchedDefault()
+                .withMaxConcurrentStreams(4_095)
+                .withKeepaliveRequests(10_000)
+                .withRouteBody("/", new byte[500])
+                .withDefault404Body(new byte[153])
+                .withStage1FlushAllDataBeforePingB(true)
+                .withStage2FlushAllDataBeforePingB(true));
+    Cve2026123007Detector detector = newFastDetector(new LoopbackSocketFactory());
+    NetworkService service = buildHttpService(harness.port(), "http");
+
+    DetectionReportList reports =
+        detector.detect(
+            TargetInfo.newBuilder().addNetworkEndpoints(service.getNetworkEndpoint()).build(),
+            ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(harness.stage2TotalStreamCounts()).containsExactly(940, 2180).inOrder();
+  }
+
+  @Test
+  public void detect_highConcurrencyExtendedParkedCandidateOnPatchedServer_returnsEmpty()
+      throws Exception {
+    MockNginxHarness harness =
+        startMockNginxServer(
+            MockNginxConfig.patchedDefault()
+                .withMaxConcurrentStreams(10_000)
+                .withKeepaliveRequests(10_000)
+                .withRouteBody("/", new byte[300])
+                .withDefault404Body(new byte[153])
+                .withStage1FlushAllDataBeforePingB(true)
+                .withStage2FlushAllDataBeforePingB(true));
+    Cve2026123007Detector detector = newFastDetector(new LoopbackSocketFactory());
+    NetworkService service = buildHttpService(harness.port(), "http");
+
+    DetectionReportList reports =
+        detector.detect(
+            TargetInfo.newBuilder().addNetworkEndpoints(service.getNetworkEndpoint()).build(),
+            ImmutableList.of(service));
+
+    assertThat(reports.getDetectionReportsList()).isEmpty();
+    assertThat(harness.stage2TotalStreamCounts()).containsExactly(940, 2267, 6219).inOrder();
+  }
+
   private static byte[] buildValidGreetingBytes() {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     byte[] settings = MockNginxConfig.unpatchedDefault().buildSettingsPayload();
@@ -2390,6 +2639,7 @@ public final class Cve2026123007DetectorTest {
                 st.stage2PhaseBStarted = true;
                 st.stage2Idx = harness.stage2ConnectionCounter.incrementAndGet();
                 harness.lastParkedPhaseADataBytes.set(st.phaseADataSent);
+                harness.recordedStage2TotalStreams.add((int) st.acceptedRequestsOnConn);
               }
               if (st.stage2ReleasePingCount < 2) {
                 st.stage2ReleaseBytes += H2Frames.FRAME_HEADER_LEN + length;
@@ -2411,9 +2661,10 @@ public final class Cve2026123007DetectorTest {
             }
             st.sendWindow += inc;
             if (st.phase2Mode == Phase2Mode.STAGE2_PARKED && !st.waitingStreams.isEmpty()) {
+              int flushAllPrefix =
+                  config.firstStage2FlushAllDataBeforePingB ? 1 : config.stage2FlushAllAttempts;
               boolean flushAllStage2 =
-                  config.stage2FlushAllDataBeforePingB
-                      || (st.stage2Idx == 1 && config.firstStage2FlushAllDataBeforePingB);
+                  config.stage2FlushAllDataBeforePingB || st.stage2Idx <= flushAllPrefix;
               ByteArrayOutputStream wakeOut = new ByteArrayOutputStream();
               while (!st.waitingStreams.isEmpty() && st.sendWindow > 0) {
                 PendingStream ps = st.waitingStreams.pollFirst();
@@ -2459,6 +2710,7 @@ public final class Cve2026123007DetectorTest {
               }
             }
             if (st.phase2Mode == Phase2Mode.STAGE2_PARKED && !st.stage2PhaseBStarted) {
+              harness.lastParkedPhaseAStreams.set((int) st.acceptedRequestsOnConn);
               ByteArrayOutputStream syncAck = new ByteArrayOutputStream();
               H2Frames.writePingFrame(syncAck, /* ack= */ true, payload);
               if (st.deferredPhaseABatchFrames.size() > 0) {
@@ -2761,28 +3013,54 @@ public final class Cve2026123007DetectorTest {
       H2Frames.writeUint32(rst, 0, 0x02L);
       ByteArrayOutputStream resp = new ByteArrayOutputStream();
       H2Frames.writeFrame(resp, H2Frames.TYPE_RST_STREAM, 0, streamId, rst);
-      resp.writeTo(out);
-      out.flush();
+      if (config.phaseAPingAckBeforeBatchFrames) {
+        resp.writeTo(st.deferredPhaseABatchFrames);
+      } else {
+        resp.writeTo(out);
+        out.flush();
+      }
       return;
     }
     st.acceptedRequestsOnConn++;
     st.lastProcessedStreamId = streamId;
+    int effectiveBodyLen =
+        config.phaseAOverrideBodyBytes >= 0 ? config.phaseAOverrideBodyBytes : bufferedLen;
     ByteArrayOutputStream resp = new ByteArrayOutputStream();
     maybeWriteKeepaliveGoAway(resp, config, st);
     H2Frames.writeHeadersFrame(
-        resp, streamId, new byte[] {(byte) 0x88}, /* endStream= */ bufferedLen == 0);
-    if (bufferedLen > 0) {
+        resp, streamId, new byte[] {(byte) 0x88}, /* endStream= */ effectiveBodyLen == 0);
+    if (effectiveBodyLen > 0) {
       int grant =
           config.phaseAIgnoreConnWindow
-              ? bufferedLen
-              : (st.waitingStreams.isEmpty() ? (int) Math.min(bufferedLen, st.sendWindow) : 0);
+              ? effectiveBodyLen
+              : (st.waitingStreams.isEmpty() ? (int) Math.min(effectiveBodyLen, st.sendWindow) : 0);
       st.sendWindow = Math.max(0L, st.sendWindow - grant);
       if (grant > 0) {
-        writeChunkedDataFrames(resp, streamId, grant, /* endStream= */ grant == bufferedLen);
+        boolean finishWithTrailer = (grant == effectiveBodyLen && config.phaseATrailerEndStream);
+        writeChunkedDataFrames(
+            resp,
+            streamId,
+            grant,
+            /* endStream= */ grant == effectiveBodyLen && !finishWithTrailer);
+        if (finishWithTrailer) {
+          if (streamId == 1) {
+            // Also inject unsolicited even/out-of-range HEADERS(END_STREAM) frames to verify
+            // markClientStreamSeen ignores non-client and out-of-bounds stream IDs.
+            H2Frames.writeHeadersFrame(resp, 0, new byte[] {(byte) 0x88}, /* endStream= */ true);
+            H2Frames.writeHeadersFrame(resp, 2, new byte[] {(byte) 0x88}, /* endStream= */ true);
+            H2Frames.writeHeadersFrame(
+                resp, 99_999, new byte[] {(byte) 0x88}, /* endStream= */ true);
+          }
+          H2Frames.writeHeadersFrame(
+              resp,
+              streamId,
+              new byte[] {0x00, 0x02, 'o', 'k', 0x02, 'o', 'k'},
+              /* endStream= */ true);
+        }
         st.phaseADataSent += grant;
       }
-      if (grant < bufferedLen) {
-        st.waitingStreams.addLast(new PendingStream(streamId, bufferedLen - grant));
+      if (grant < effectiveBodyLen) {
+        st.waitingStreams.addLast(new PendingStream(streamId, effectiveBodyLen - grant));
       }
     }
     if (config.phaseAPingAckBeforeBatchFrames) {
@@ -2995,9 +3273,12 @@ public final class Cve2026123007DetectorTest {
     private final AtomicInteger stage2ConnectionCounter = new AtomicInteger(0);
     private final AtomicBoolean clientRstObserved = new AtomicBoolean(false);
     private final AtomicLong lastParkedPhaseADataBytes = new AtomicLong(0L);
+    private final AtomicInteger lastParkedPhaseAStreams = new AtomicInteger(0);
     private final AtomicInteger lastParkedReleaseBytes = new AtomicInteger(0);
     private final AtomicReference<ImmutableList<Integer>> lastParkedReleaseFrameTypes =
         new AtomicReference<>(ImmutableList.of());
+    private final List<Integer> recordedStage2TotalStreams =
+        Collections.synchronizedList(new ArrayList<>());
     private final List<String> recordedPaths = Collections.synchronizedList(new ArrayList<>());
 
     MockNginxHarness(int port) {
@@ -3020,12 +3301,22 @@ public final class Cve2026123007DetectorTest {
       return lastParkedPhaseADataBytes.get();
     }
 
+    int lastParkedPhaseAStreams() {
+      return lastParkedPhaseAStreams.get();
+    }
+
     int lastParkedReleaseBytes() {
       return lastParkedReleaseBytes.get();
     }
 
     ImmutableList<Integer> lastParkedReleaseFrameTypes() {
       return lastParkedReleaseFrameTypes.get();
+    }
+
+    ImmutableList<Integer> stage2TotalStreamCounts() {
+      synchronized (recordedStage2TotalStreams) {
+        return ImmutableList.copyOf(recordedStage2TotalStreams);
+      }
     }
 
     ImmutableList<String> requestedPaths() {
@@ -3071,8 +3362,11 @@ public final class Cve2026123007DetectorTest {
     boolean stage1FlushAllDataBeforePingB;
     boolean stage2FlushAllDataBeforePingB;
     boolean firstStage2FlushAllDataBeforePingB;
+    int stage2FlushAllAttempts;
     boolean phaseAIgnoreConnWindow;
     boolean phaseAPingAckBeforeBatchFrames;
+    boolean phaseATrailerEndStream;
+    int phaseAOverrideBodyBytes = -1;
     int phaseARstOnStream;
     long stage2PrePingBFlushBytes = 4_096L;
     Runnable onDiscoveryResponseHook = () -> {};
@@ -3158,6 +3452,24 @@ public final class Cve2026123007DetectorTest {
     MockNginxConfig withStage2FlushAllDataBeforePingB(boolean v) {
       MockNginxConfig c = copy();
       c.stage2FlushAllDataBeforePingB = v;
+      return c;
+    }
+
+    MockNginxConfig withStage2FlushAllAttempts(int n) {
+      MockNginxConfig c = copy();
+      c.stage2FlushAllAttempts = n;
+      return c;
+    }
+
+    MockNginxConfig withPhaseATrailerEndStream(boolean v) {
+      MockNginxConfig c = copy();
+      c.phaseATrailerEndStream = v;
+      return c;
+    }
+
+    MockNginxConfig withPhaseAOverrideBodyBytes(int bytes) {
+      MockNginxConfig c = copy();
+      c.phaseAOverrideBodyBytes = bytes;
       return c;
     }
 
