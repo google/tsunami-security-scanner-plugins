@@ -1,0 +1,52 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "MCPContextForge_CVE_2026_53710"
+}
+
+tests: {
+  name: "whenVulnerableOob_returnsTrue"
+  expect_vulnerability: true
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/openapi.json"
+        status: 200
+        body_content: "{\"paths\":{\"/execute_code\":{\"post\":{}}}}"
+      },
+      {
+        uri: "/execute_code"
+        status: 200
+        body_content: "{\"status\":\"success\",\"output\":\"SUCCESS\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenPatchedOob_returnsFalse"
+  expect_vulnerability: false
+  mock_callback_server: {
+    enabled: true
+    has_interaction: false
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/openapi.json"
+        status: 200
+        body_content: "{\"paths\":{\"/execute_code\":{\"post\":{}}}}"
+      },
+      {
+        uri: "/execute_code"
+        status: 400
+        body_content: "{\"detail\":\"Security Violation: Restricted pattern '__class__' detected.\"}"
+      }
+    ]
+  }
+}
