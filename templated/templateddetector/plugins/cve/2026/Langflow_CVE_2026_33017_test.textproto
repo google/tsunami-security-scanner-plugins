@@ -1,0 +1,112 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "Langflow_CVE_2026_33017"
+}
+
+########
+# TESTS #
+########
+
+tests: {
+  name: "whenVulnerableOob_returnsTrue"
+  expect_vulnerability: true
+  mock_callback_server: {
+    enabled: true
+    has_interaction: true
+  }
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <title>Langflow</title>\n  </head>\n  <body><div id=\"root\"></div></body>\n</html>"
+      },
+      {
+        uri: "/api/v1/auto_login"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"access_token\":\"mock-token-12345\",\"refresh_token\":\"mock-refresh\",\"token_type\":\"bearer\"}"
+      },
+      {
+        uri: "/api/v1/flows/"
+        status: 201
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"id\":\"11111111-2222-3333-4444-555555555555\",\"name\":\"tsunami_cve_2026_33017\",\"access_type\":\"PUBLIC\"}"
+      },
+      {
+        uri: "/api/v1/build_public_tmp/11111111-2222-3333-4444-555555555555/flow"
+        status: 200
+        body_content: "{\"job_id\":\"job-12345\"}"
+      },
+      {
+        uri: "/api/v1/flows/11111111-2222-3333-4444-555555555555"
+        status: 200
+        body_content: "{\"message\":\"Flow deleted successfully\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        body_content: "<!doctype html>\n<html><head><title>Langflow</title></head></html>"
+      },
+      {
+        uri: "/api/v1/auto_login"
+        status: 200
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"access_token\":\"mock-token-12345\",\"refresh_token\":\"mock-refresh\",\"token_type\":\"bearer\"}"
+      },
+      {
+        uri: "/api/v1/flows/"
+        status: 201
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"id\":\"11111111-2222-3333-4444-555555555555\",\"name\":\"tsunami_cve_2026_33017\",\"access_type\":\"PUBLIC\"}"
+      },
+      {
+        uri: "/api/v1/build_public_tmp/11111111-2222-3333-4444-555555555555/flow"
+        status: 400
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+        body_content: "{\"detail\":\"Invalid flow or method not supported\"}"
+      },
+      {
+        uri: "/api/v1/flows/11111111-2222-3333-4444-555555555555"
+        status: 200
+        body_content: "{\"message\":\"Flow deleted successfully\"}"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotLangflow_returnsFalse"
+  expect_vulnerability: false
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "TSUNAMI_MAGIC_ANY_URI"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
+
