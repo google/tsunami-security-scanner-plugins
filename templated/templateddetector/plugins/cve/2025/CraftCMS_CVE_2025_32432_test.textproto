@@ -1,0 +1,70 @@
+# proto-file: proto/templated_plugin_tests.proto
+# proto-message: TemplatedPluginTests
+
+config: {
+  tested_plugin: "CraftCMS_CVE_2025_32432"
+}
+
+tests: {
+  name: "whenVulnerable_returnsTrue"
+  expect_vulnerability: true
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "X-Powered-By" value: "Craft CMS" }
+        ]
+      },
+      {
+        uri: "/index.php?p=admin/actions/assets/generate-transform"
+        status: 200
+        body_content: "{\"status\": true, \"CRAFT_VERSION\": \"5.6.10\"}"
+        headers: [
+          { name: "Content-Type" value: "application/json" }
+        ]
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotVulnerable_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "X-Powered-By" value: "Craft CMS" }
+        ]
+      },
+      {
+        uri: "/index.php?p=admin/actions/assets/generate-transform"
+        status: 404
+        body_content: "Not Found"
+      }
+    ]
+  }
+}
+
+tests: {
+  name: "whenNotCraftCMS_returnsFalse"
+  expect_vulnerability: false
+
+  mock_http_server: {
+    mock_responses: [
+      {
+        uri: "/"
+        status: 200
+        headers: [
+          { name: "X-Powered-By" value: "Express" }
+        ]
+      }
+    ]
+  }
+}

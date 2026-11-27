@@ -1,0 +1,82 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+################ PLUGIN INFO ################
+info: {
+  type: VULN_DETECTION
+  name: "CraftCMS_CVE_2025_32432"
+  author: "dyeddala"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2025-32432"
+  }
+  severity: CRITICAL
+  title: "CraftCMS - Remote Code Execution (CVE-2025-32432)"
+  description: "Craft CMS versions 3.0.0-RC1 through 3.9.14, 4.0.0-RC1 through 4.14.14, and 5.0.0-RC1 through 5.6.16 contain a remote code execution vulnerability related to unsafe object handling in asset transform processing."
+  recommendation: "Upgrade Craft CMS to version 3.9.15, 4.14.15, or 5.6.17 or later, and ensure strict input validation and deserialization controls are enforced."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2025-32432"
+  }
+}
+
+config: {}
+
+############ ACTIONS ############
+
+actions: {
+  name: "fingerprint_craft_cms"
+  http_request: {
+    method: GET
+    uri: "/"
+    client_options: {
+      disable_follow_redirects: false
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { header: { name: "X-Powered-By" } contains: "Craft CMS" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "check_asset_transform_endpoint"
+  http_request: {
+    method: POST
+    uri: "/index.php?p=admin/actions/assets/generate-transform"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/json"
+      }
+    ]
+    data: "{}"
+    client_options: {
+      disable_follow_redirects: false
+    }
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "CRAFT_" }
+        ]
+      }
+    }
+  }
+}
+
+############## WORKFLOWS ##############
+workflows: {
+  actions: [
+    "fingerprint_craft_cms",
+    "check_asset_transform_endpoint"
+  ]
+}
